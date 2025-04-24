@@ -1,197 +1,244 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './LessonFeedItem.module.css';
+import styles from './LessonFeedItem.module.css'; // Use the correct CSS module name
 import './Editor/ViewerAccordion.css'; // Import global accordion styles
 
 // --- Helper Functions ---
 
-// Accordion Initialization Function (MODIFIED FOR CARD EXPANSION)
+// Accordion Initialization Function (Mostly Unchanged from your snippet)
+// IMPORTANT: This now operates *inside* the potentially height-restricted container
 function initializeAccordions(containerElement) {
-  if (!containerElement) return;
-  // Find accordions *directly within* this container first
-  // This helps scope the logic if accordions could be nested deeply outside our control
-  const accordions = containerElement.querySelectorAll(":scope > .accordion-item, .accordion-item"); // Find top-level or any descendant
+    if (!containerElement) return;
+    // Find accordions within the specific content container
+    const accordions = containerElement.querySelectorAll(".accordion-item"); // Find any descendant
 
-  accordions.forEach((accordion) => {
-    const header   = accordion.querySelector(":scope > .accordion-header"); // Use :scope for direct child
-    const contents = accordion.querySelectorAll(":scope > .accordion-content"); // Use :scope for direct child(ren)
-    const defaultState = accordion.getAttribute("data-default-state") || "closed";
+    accordions.forEach((accordion) => {
+        const header = accordion.querySelector(":scope > .accordion-header");
+        const contents = accordion.querySelectorAll(":scope > .accordion-content");
+        const defaultState = accordion.getAttribute("data-default-state") || "closed";
 
-    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") {
-      return;
-    }
-    accordion.dataset.accordionInitialized = "true";
-
-    // Find the parent card element for this accordion
-    // Assumes the main article tag has the 'lessonCard' class from the CSS module
-    const parentCard = accordion.closest(`.${styles.lessonCard}`); // Use the CSS module class name
-
-    if (defaultState === "open") {
-      accordion.classList.add("is-open");
-      // If default is open, ensure parent card is also marked as expanded initially
-      if (parentCard) {
-        parentCard.classList.add(styles.isExpanded); // Use module class name
-      }
-    } else {
-      accordion.classList.remove("is-open");
-      // Check if *other* accordions in the same card might be open
-      if (parentCard && !parentCard.querySelector('.accordion-item.is-open')) {
-         parentCard.classList.remove(styles.isExpanded); // Use module class name
-      }
-    }
-
-    const clickHandler = () => {
-      // Toggle the current accordion
-      const isOpening = !accordion.classList.contains("is-open");
-      accordion.classList.toggle("is-open");
-
-      // Update the parent card's expanded state
-      if (parentCard) {
-        // Check if *any* accordion within this specific card is now open
-        const anyAccordionOpen = parentCard.querySelector('.accordion-item.is-open');
-        if (anyAccordionOpen) {
-          parentCard.classList.add(styles.isExpanded); // Add module class
-        } else {
-          parentCard.classList.remove(styles.isExpanded); // Remove module class
+        if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") {
+            return; // Already initialized or invalid structure
         }
-      }
-    };
+        accordion.dataset.accordionInitialized = "true"; // Mark as initialized
 
-    if (header.__accordionClickHandler__) {
-      header.removeEventListener("click", header.__accordionClickHandler__);
-    }
-    header.addEventListener("click", clickHandler);
-    header.__accordionClickHandler__ = clickHandler;
+        // Set initial state based on data-attribute
+        if (defaultState === "open") {
+            accordion.classList.add("is-open");
+        } else {
+            accordion.classList.remove("is-open");
+        }
 
-    // Initialize nested accordions within the content
-    contents.forEach((content) => {
-      requestAnimationFrame(() => {
-        // Pass the content element itself for nested initialization
-        initializeAccordions(content);
-      });
+        // Click handler for toggling individual accordions
+        const clickHandler = (e) => {
+            e.stopPropagation(); // Prevent card navigation when clicking header
+            accordion.classList.toggle("is-open");
+            // Note: We are NOT toggling the main card's isExpanded class here
+            // That's handled by the "See More" button only
+        };
+
+        // Clean up previous listener if re-initializing
+        if (header.__accordionClickHandler__) {
+            header.removeEventListener("click", header.__accordionClickHandler__);
+        }
+        header.addEventListener("click", clickHandler);
+        header.__accordionClickHandler__ = clickHandler; // Store handler for cleanup
+
+        // Initialize nested accordions recursively (if any)
+        contents.forEach((content) => {
+            requestAnimationFrame(() => {
+                initializeAccordions(content); // Pass the content element
+            });
+        });
     });
-  });
-
-  // After initializing direct children, check if the parent card needs initial expansion state set
-  // This handles cases where an accordion might be deeply nested but open by default
-  if (containerElement.classList.contains(styles.lessonExcerpt)) { // Check if we are the excerpt container
-      const parentCard = containerElement.closest(`.${styles.lessonCard}`);
-      if (parentCard && parentCard.querySelector('.accordion-item.is-open') && !parentCard.classList.contains(styles.isExpanded)) {
-          parentCard.classList.add(styles.isExpanded);
-      }
-  }
-
 }
 
-// HTML Sanitization Function (Unchanged)
+// HTML Sanitization Function (Keep as before)
 const sanitizeContentViewerHTML = (htmlString) => {
-  if (!htmlString) return "";
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, "text/html");
-    const editableElements = doc.querySelectorAll('[contenteditable="true"]');
-    editableElements.forEach((el) => { el.removeAttribute("contenteditable"); });
-    return doc.body.innerHTML;
-  } catch (error) { console.error("Error sanitizing HTML:", error); return htmlString; }
+    if (!htmlString) return "";
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, "text/html");
+        const editableElements = doc.querySelectorAll('[contenteditable="true"]');
+        editableElements.forEach((el) => { el.removeAttribute("contenteditable"); });
+        const scripts = doc.querySelectorAll('script');
+        scripts.forEach(script => script.remove());
+        const allElements = doc.body.querySelectorAll('*');
+        allElements.forEach(el => {
+            for (const attr of el.attributes) {
+                if (attr.name.startsWith('on')) {
+                    el.removeAttribute(attr.name);
+                }
+            }
+        });
+        return doc.body.innerHTML;
+    } catch (error) {
+        console.error("Error sanitizing HTML:", error);
+        return htmlString;
+    }
 };
 
 
 // --- Lesson Feed Item Component ---
 const LessonFeedItem = ({ lesson, isNext = false }) => {
-  const navigate = useNavigate();
-  const excerptContainerRef = useRef(null);
+    const navigate = useNavigate();
+    const excerptContainerRef = useRef(null); // Ref for the outer container div (controls height)
+    const excerptContentRef = useRef(null);   // Ref for the inner content div (holds HTML, used for measurement and accordion init)
 
-  const { lesson_title, lesson_permalink, subject, excerpt, course_title } = lesson;
+    // State for overall container expansion ("See More")
+    const [isExpanded, setIsExpanded] = useState(false);
+    // State to track if the "See More" button is needed
+    const [needsTruncation, setNeedsTruncation] = useState(false);
 
-  // --- Accordion Initialization Effect ---
-  useEffect(() => {
-    let timeoutId = null;
-    let animationFrameId = null;
+    const { lesson_title, lesson_permalink, subject, excerpt, course_title } = lesson;
 
-    if (excerpt && excerptContainerRef.current) {
-      const container = excerptContainerRef.current;
+    // --- Effect 1: Check if container needs truncation ---
+    useEffect(() => {
+        setNeedsTruncation(false); // Reset on content change
+        setIsExpanded(false);      // Collapse on content change
 
-      // --- Cleanup Phase ---
-      const initializedAccordions = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-      initializedAccordions.forEach((accordion) => { /* ... cleanup logic ... */
-         const header = accordion.querySelector(".accordion-header");
-         if (header && header.__accordionClickHandler__) { header.removeEventListener("click", header.__accordionClickHandler__); delete header.__accordionClickHandler__; }
-         if (accordion.dataset.accordionInitialized) { delete accordion.dataset.accordionInitialized; }
-         // Also remove expanded class from parent on cleanup if necessary
-         const parentCard = accordion.closest(`.${styles.lessonCard}`);
-         if(parentCard) parentCard.classList.remove(styles.isExpanded);
-      });
+        const checkHeight = () => {
+            if (excerptContentRef.current && excerptContainerRef.current) {
+                // Use a fixed pixel height matching the CSS --lesson-excerpt-collapsed-height
+                // Convert '6.5em' to pixels (approximate, depends on root font size)
+                // It's often more reliable to use a pixel value directly in JS check
+                // Or getComputedStyle if you need dynamic em conversion.
+                const MAX_COLLAPSED_HEIGHT_PX = 104; // Adjust this based on your CSS value in pixels
 
-      // --- Initialization Phase (with delay) ---
-      animationFrameId = requestAnimationFrame(() => {
-        timeoutId = setTimeout(() => {
-          if (excerptContainerRef.current) {
-            initializeAccordions(excerptContainerRef.current);
-          }
-        }, 50);
-      });
-    }
+                if (excerptContentRef.current.scrollHeight > MAX_COLLAPSED_HEIGHT_PX) {
+                    setNeedsTruncation(true);
+                } else {
+                    setNeedsTruncation(false);
+                }
+            }
+        };
 
-    // --- Effect Cleanup ---
-    return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (timeoutId) clearTimeout(timeoutId);
-      if (excerpt && excerptContainerRef.current) {
-         const container = excerptContainerRef.current;
-         if (container) {
-            const accordionsToClean = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-            accordionsToClean.forEach((accordion) => { /* ... cleanup logic ... */
+        // Run check after render
+        const timeoutId = setTimeout(checkHeight, 50);
+        window.addEventListener('resize', checkHeight); // Recalculate on resize
+
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', checkHeight);
+        };
+    }, [excerpt]); // Dependency: only the excerpt content
+
+    // --- Effect 2: Initialize Accordions within the content ---
+    useEffect(() => {
+        let timeoutId = null;
+        let animationFrameId = null;
+
+        // Only run if we have content and the ref is attached
+        if (excerpt && excerptContentRef.current) {
+            const contentElement = excerptContentRef.current;
+
+            // --- Cleanup previous initializations ---
+            const initializedAccordions = contentElement.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
+            initializedAccordions.forEach((accordion) => {
                 const header = accordion.querySelector(".accordion-header");
-                if (header && header.__accordionClickHandler__) { header.removeEventListener("click", header.__accordionClickHandler__); delete header.__accordionClickHandler__; }
-                if (accordion.dataset.accordionInitialized) { delete accordion.dataset.accordionInitialized; }
-                const parentCard = accordion.closest(`.${styles.lessonCard}`);
-                if(parentCard) parentCard.classList.remove(styles.isExpanded);
+                if (header && header.__accordionClickHandler__) {
+                    header.removeEventListener("click", header.__accordionClickHandler__);
+                    delete header.__accordionClickHandler__;
+                }
+                delete accordion.dataset.accordionInitialized; // Remove marker
+                accordion.classList.remove('is-open'); // Ensure closed on cleanup/re-render
             });
-         }
-      }
+
+            // --- Initialize after a short delay ---
+            // Use rAF and setTimeout to ensure DOM is ready
+            animationFrameId = requestAnimationFrame(() => {
+                timeoutId = setTimeout(() => {
+                    if (excerptContentRef.current) { // Check ref again inside timeout
+                        initializeAccordions(excerptContentRef.current); // Initialize on the CONTENT div
+                    }
+                }, 50); // Adjust delay if needed
+            });
+        }
+
+        // --- Effect Cleanup for Accordions ---
+        return () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (timeoutId) clearTimeout(timeoutId);
+            // Cleanup listeners on unmount or before re-running
+            if (excerptContentRef.current) {
+                const accordionsToClean = excerptContentRef.current.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
+                accordionsToClean.forEach((accordion) => {
+                    const header = accordion.querySelector(".accordion-header");
+                    if (header && header.__accordionClickHandler__) {
+                        header.removeEventListener("click", header.__accordionClickHandler__);
+                        delete header.__accordionClickHandler__;
+                    }
+                    delete accordion.dataset.accordionInitialized;
+                    accordion.classList.remove('is-open');
+                });
+            }
+        };
+    }, [excerpt]); // Dependency: Re-initialize accordions if excerpt changes
+
+
+    // --- Handlers ---
+    const handleNavigate = (e) => {
+        e.stopPropagation();
+        navigate(`/lessons/${lesson_permalink}`);
     };
-  }, [excerpt, lesson_title]); // Dependencies
 
+    // Toggles the *container's* expansion state
+    const toggleContainerExpansion = (e) => {
+        e.stopPropagation();
+        setIsExpanded(prev => !prev);
+    };
 
-  const handleNavigate = (e) => {
-    e.stopPropagation();
-    navigate(`/lessons/${lesson_permalink}`);
-  };
+    // Sanitize excerpt only once using useMemo
+    const sanitizedExcerpt = useMemo(() => sanitizeContentViewerHTML(excerpt), [excerpt]);
 
-  return (
-    // Ensure the main article element has the lessonCard class from the module
-    <article className={`${styles.lessonCard} feedItem lessonCard`}>
-      <div className={styles.lessonHeader}>
-        <h3 className={styles.lessonTitle}>{lesson_title}</h3>
-        {subject && <span className={styles.subjectTag}>{subject.name}</span>}
-      </div>
-      {course_title && <div className={styles.courseTitle}>From: {course_title}</div>}
+    return (
+        <article className={styles.lessonCard}>
+            {/* Header */}
+            <div className={styles.lessonHeader}>
+                <h3 className={styles.lessonTitle}>{lesson_title}</h3>
+                {subject && <span className={styles.subjectTag}>{subject.name}</span>}
+            </div>
+            {course_title && <div className={styles.courseTitle}>From: {course_title}</div>}
 
-      {excerpt && (
-        <div
-          ref={excerptContainerRef}
-          // Make sure 'displayed-content' class is present if ViewerAccordion.css needs it
-          className={`${styles.lessonExcerpt} displayed-content`}
-          dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(excerpt) }}
-        />
-      )}
+            {/* Excerpt Container - Manages overall height and expansion class */}
+            {sanitizedExcerpt && (
+                <div
+                    ref={excerptContainerRef}
+                    className={`${styles.lessonExcerptContainer} ${isExpanded ? styles.isExpanded : ''}`}
+                >
+                    {/* Actual Content Div - Holds HTML, used for scrollHeight and accordion init */}
+                    <div
+                        ref={excerptContentRef}
+                        className={`${styles.lessonExcerptContent} displayed-content`} // Ensure 'displayed-content' class if needed by ViewerAccordion.css
+                        dangerouslySetInnerHTML={{ __html: sanitizedExcerpt }}
+                    />
+                </div>
+            )}
 
-      <div className={styles.cardFooter}>
-        <span className={styles.lessonType}>
-          {isNext ? 'Next Lesson' : 'Suggested Lesson'}
-        </span>
-        <span
-          className={styles.cardAction}
-          onClick={handleNavigate}
-          role="button"
-          tabIndex={0}
-          onKeyPress={(e) => e.key === 'Enter' && handleNavigate(e)}
-        >
-          View Lesson
-        </span>
-      </div>
-    </article>
-  );
+            {/* See More/Less Button - For the CONTAINER */}
+            {needsTruncation && (
+                <button onClick={toggleContainerExpansion} className={styles.seeMoreButton}>
+                    {isExpanded ? 'See Less' : 'See More'}
+                </button>
+            )}
+
+            {/* Footer */}
+            <div className={styles.cardFooter}>
+                <span className={styles.lessonType}>
+                    {isNext ? 'Next Lesson' : 'Suggested Lesson'}
+                </span>
+                <span
+                    className={styles.cardAction}
+                    onClick={handleNavigate}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => e.key === 'Enter' && handleNavigate(e)}
+                >
+                    View Lesson
+                </span>
+            </div>
+        </article>
+    );
 };
 
 export default LessonFeedItem;
