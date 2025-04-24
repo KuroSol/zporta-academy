@@ -71,7 +71,8 @@ class NextLessonFeedItemSerializer(_BaseFeedItemSerializer):
         }
         # give a short excerpt of the lesson content
         full_text = getattr(instance, 'content', '') or ''
-        representation['data']['excerpt'] = full_text[:100].strip() + ('…' if len(full_text) > 100 else '')
+        #representation['data']['excerpt'] = full_text[:100].strip() + ('…' if len(full_text) > 100 else '')
+        representation['data']['excerpt'] = full_text.strip()
 
         # Set timestamp for potential sorting (e.g., course enrollment time or lesson creation time)
         # representation['timestamp'] = instance.course.enrollment_set.first().created_at # Example, adjust as needed
@@ -99,7 +100,8 @@ class SuggestedLessonFeedItemSerializer(_BaseFeedItemSerializer):
         }
         # give a short excerpt of the lesson content
         full_text = getattr(instance, 'content', '') or ''
-        representation['data']['excerpt'] = full_text[:100].strip() + ('…' if len(full_text) > 100 else '')
+        #representation['data']['excerpt'] = full_text[:100].strip() + ('…' if len(full_text) > 100 else '')
+        representation['data']['excerpt'] = full_text.strip()
 
         # representation['timestamp'] = instance.created_at # Example timestamp
         return representation

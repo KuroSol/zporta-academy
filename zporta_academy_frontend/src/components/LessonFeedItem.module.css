@@ -1,0 +1,69 @@
+.lessonCard {
+    background-color: var(--zporta-background);
+    border-radius: var(--zporta-radius);
+    border: 1px solid var(--zporta-border);
+    box-shadow: var(--zporta-shadow);
+    padding: 1rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .lessonCard:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .lessonHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  
+  .lessonTitle {
+    font-size: 1.05rem;
+    color: var(--zporta-dark);
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .subjectTag {
+    font-size: 0.8rem;
+    color: var(--zporta-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: #eef4ff;
+  }
+  
+  .courseTitle {
+    font-size: 0.85rem;
+    color: var(--zporta-secondary);
+    margin-top: 0.3rem;
+  }
+  
+  .lessonExcerpt {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 0.75rem 0;
+    line-height: 1.4;
+    max-height: 2.8em; /* approximately 2 lines */
+    overflow: hidden;
+  }
+  
+  .cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--zporta-secondary);
+  }
+  
+  .cardAction {
+    color: var(--zporta-primary);
+    font-weight: 500;
+  }
+  

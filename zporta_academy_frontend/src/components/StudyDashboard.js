@@ -4,8 +4,10 @@ import apiClient from '../api'; // Assuming apiClient is configured
 import { AuthContext } from '../context/AuthContext'; // Assuming AuthContext provides token/user
 import styles from './StudyDashboard.module.css'; // Import CSS Module
 import QuizCard from './QuizCard'; // Import your QuizCard component
+import LessonFeedItem from './LessonFeedItem';
 // Import icons
 import { BookOpen, Lightbulb, HelpCircle, ArrowRight, Loader, AlertTriangle, RefreshCw, BookCopy, FileQuestion } from 'lucide-react'; // Added BookCopy, FileQuestion
+
 
 // --- Helper Function to Shuffle Array ---
 // (Fisher-Yates Algorithm) - Kept for potential randomization if needed
@@ -154,47 +156,7 @@ const QuizFeedItem = ({ quiz }) => {
         </article>
     );
 };
-// --- LESSON FEED ITEM ---
-const LessonFeedItem = ({ lesson, isNext = false }) => {
-  const navigate = useNavigate();
-  const { lesson_title, lesson_permalink, course, excerpt } = lesson;
-  const subjectName = course?.subject?.name || 'General';
 
-  return (
-    <article
-      className={`${styles.feedItem} ${isNext ? styles.nextLesson : styles.suggestedLesson}`}
-      onClick={() => navigate(`/lessons/${lesson_permalink}`)}
-      tabIndex={0}
-      aria-label={`${isNext ? 'Start next lesson' : 'View suggested lesson'}: ${lesson_title}`}
-    >
-      <div className={styles.cardHeader}>
-        <div className={styles.cardIcon}>
-          {isNext ? <HelpCircle size={20} /> : <Lightbulb size={20} />}
-        </div>
-        <div className={styles.cardHeaderText}>
-          <h3 className={styles.cardTitle}>{lesson_title}</h3>
-          <p className={styles.cardSubtitle}>
-            <span className={styles.itemTypeLabel}>
-              {isNext ? 'Next Lesson' : 'Suggested Lesson'}
-            </span>
-            <span className={styles.subjectTag}>{subjectName}</span>
-          </p>
-        </div>
-                {excerpt && (
-          <div
-            className={styles.cardDescription}
-            dangerouslySetInnerHTML={{ __html: excerpt }}
-          />
-        )}
-
-        <div className={styles.cardAction}>
-          <span>{isNext ? 'Start' : 'View'}</span>
-          <ArrowRight size={18} />
-        </div>
-      </div>
-    </article>
-  );
-};
 
 // --- Main Study Dashboard Component ---
 export default function StudyDashboard() {
@@ -425,15 +387,13 @@ export default function StudyDashboard() {
     <div className={styles.dashboardContainer}>
       <h1 className={styles.pageTitle}>Study Feed</h1>
       {user && <p className={styles.welcomeMessage}>Welcome back, {user.first_name || user.username}!</p>}
-
-
+  
       {/* --- Feed Items --- */}
       {feedItems.length > 0 ? (
         <div className={styles.feedContainer}>
           {feedItems.map((item) => {
-             // Use a stable key - prefer API-provided unique ID
-             const key = `${item.type}-${item.id}`;
-             switch (item.type) {
+            const key = `${item.type}-${item.id}`;
+            switch (item.type) {
               case 'enrolledCourse':
                 return (
                   <CourseFeedItem
@@ -444,7 +404,7 @@ export default function StudyDashboard() {
                   />
                 );
               case 'nextLesson':
-                return <LessonFeedItem key={key} lesson={item.data} isNext />;
+                return <LessonFeedItem key={key} lesson={item.data} isNext={true} />;
               case 'suggestedLesson':
                 return <LessonFeedItem key={key} lesson={item.data} />;
               case 'suggestedCourse':
@@ -454,16 +414,11 @@ export default function StudyDashboard() {
               default:
                 return null;
             }
-            
           })}
-
-          {/* Observer Target Element (for triggering load more) */}
-          {/* Placed after the list, will trigger when it comes into view */}
-          <div ref={observerTarget} className={styles.observerTarget}>
-              {/* This element should have some height or be visible to trigger intersection */}
-              {/* You might add padding or a min-height if needed */}
-          </div>
-
+  
+          {/* Observer Target Element (for infinite scroll) */}
+          <div ref={observerTarget} className={styles.observerTarget}></div>
+  
           {/* Loading More Indicator */}
           {isLoadingMore && (
             <div className={styles.centeredMessage} style={{ minHeight: 'auto', padding: '2rem 0' }}>
@@ -471,28 +426,28 @@ export default function StudyDashboard() {
               <p>Loading more...</p>
             </div>
           )}
-
-            {/* No More Items Message */}
-            {!hasMore && feedItems.length > 0 && !isLoadingMore && (
-              <div className={styles.centeredMessage} style={{ minHeight: 'auto', padding: '2rem 0', opacity: 0.7 }}>
-                <p>You've reached the end!</p>
-              </div>
-            )}
-
+  
+          {/* No More Items Message */}
+          {!hasMore && feedItems.length > 0 && !isLoadingMore && (
+            <div className={styles.centeredMessage} style={{ minHeight: 'auto', padding: '2rem 0', opacity: 0.7 }}>
+              <p>You've reached the end!</p>
+            </div>
+          )}
         </div>
       ) : (
         // --- Empty State (if no items at all after initial load) ---
-         !loading && feedItems.length === 0 && ( // Only show empty state if not loading and feed is empty
-            <div className={styles.emptyState}>
-              <BookCopy size={40} className={styles.emptyIcon} />
-              <p>Your study feed is looking a bit empty.</p>
-              <p>Why not explore some new topics?</p>
-              <Link to="/explore" className={styles.exploreLink}> {/* Changed link to /explore */}
-                Explore Courses & Quizzes <ArrowRight size={16} />
-              </Link>
-            </div>
-         )
+        !loading && feedItems.length === 0 && (
+          <div className={styles.emptyState}>
+            <BookCopy size={40} className={styles.emptyIcon} />
+            <p>Your study feed is looking a bit empty.</p>
+            <p>Why not explore some new topics?</p>
+            <Link to="/explore" className={styles.exploreLink}>
+              Explore Courses & Quizzes <ArrowRight size={16} />
+            </Link>
+          </div>
+        )
       )}
     </div>
   );
+  
 }
