@@ -17,16 +17,34 @@ config = Config(RepositoryEnv(env_path))
 # Production settings
 DEBUG = False
 
-# Use your public IPv4 address for production (or a domain if you have one)
-# Keeping the server's correct ALLOWED_HOSTS
-ALLOWED_HOSTS = ['34.194.162.240', '127.0.0.1']
+# --- STEP 1: Update ALLOWED_HOSTS ---
+# Add your new domain (and www subdomain) that will access the server.
+# Keep the IP if you might access it directly sometimes.
+ALLOWED_HOSTS = [
+    '34.194.162.240',   # Your server's IP address
+    '127.0.0.1',        # Localhost on the server
+    'eduhab.com',       # Your new domain
+    'www.eduhab.com',   # The www version of your domain
+    # Add 'zportaacademy.com', 'www.zportaacademy.com' later when you switch
+]
 
-# Keeping the server's correct CSRF_TRUSTED_ORIGINS
-CSRF_TRUSTED_ORIGINS = ['http://34.194.162.240','http://127.0.0.1']
-FRONTEND_URL_BASE = 'http://34.194.162.240' 
+# --- STEP 2: Update CSRF_TRUSTED_ORIGINS ---
+# Trust requests coming from your domain via HTTPS (Cloudflare handles the HTTPS)
+CSRF_TRUSTED_ORIGINS = [
+    'http://34.194.162.240', # Keep IP if needed (use http if accessing directly without SSL)
+    'http://127.0.0.1',      # Keep localhost
+    'https://eduhab.com',    # Trust your domain with HTTPS
+    'https://www.eduhab.com', # Trust www subdomain with HTTPS
+    # Add 'https://zportaacademy.com', 'https://www.zportaacademy.com' later
+]
+
+# --- STEP 3: Update FRONTEND_URL_BASE (If used for generating links etc.) ---
+# This should point to the primary URL users access your frontend from.
+FRONTEND_URL_BASE = 'https://eduhab.com' # Use HTTPS
+
 # *** ADDING the Correct MEDIA_ROOT definition ***
 MEDIA_ROOT = BASE_DIR / 'media'
-# MEDIA_URL = '/media/' # This should already be inherited correctly from base.py
+# MEDIA_URL = '/media/' # Inherited from base.py
 
 # Pull sensitive keys from your .env file
 SECRET_KEY = config('SECRET_KEY')
@@ -45,11 +63,29 @@ DATABASES = {
     }
 }
 
-# Additional security settings
-# Keeping the server's correct settings for HTTP (False)
+# --- STEP 4: Update Security Settings for HTTPS via Proxy (Cloudflare) ---
+# Tell Django to trust the X-Forwarded-Proto header from Cloudflare/Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = False # Correct for HTTP
-CSRF_COOKIE_SECURE = False    # Correct for HTTP
+# Set cookies to only be sent over HTTPS
+SESSION_COOKIE_SECURE = True # CHANGE TO TRUE
+CSRF_COOKIE_SECURE = True    # CHANGE TO TRUE
+# Other security headers (usually fine as they are)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_SSL_REDIRECT = False  # Set to True if you install SSL/TLS certificates
+# SECURE_SSL_REDIRECT = False # Keep False - Nginx/Cloudflare handles redirection to HTTPS
+
+# --- CORS Settings (Should be inherited from base.py, but ensure it's correct) ---
+# Make sure CORS_ALLOWED_ORIGINS is defined correctly either here or in base.py
+# If defined here, it should look like this:
+# CORS_ALLOWED_ORIGINS = [
+#     "https://eduhab.com",       # Allow frontend origin with HTTPS
+#     "https://www.eduhab.com",  # Allow www subdomain if used
+#     # "http://localhost:3000", # Only if needed for local dev against this backend
+# ]
+# CORS_ALLOW_CREDENTIALS = True # Should be True
+
+# --- Static and Media files (Usually no changes needed here) ---
+# STATIC_URL = '/django-static/' # Inherited
+# STATIC_ROOT = BASE_DIR / 'staticfiles' # Inherited
+
+# ... rest of your settings ...
