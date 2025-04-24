@@ -1,0 +1,190 @@
+/* EnrolledCourses.css */
+
+/* Container for enrolled courses */
+.enrolled-courses-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+  }
+  
+  /* Heading for enrolled courses */
+  .enrolled-courses-container .heading {
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Grid container for course cards */
+  .enrolled-courses-container .grid-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+  }
+  
+  /* Link wrapping each grid item */
+  .enrolled-courses-container .grid-item-link {
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  /* Card for each enrolled course */
+  .grid-item-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 280px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  
+  .grid-item-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  /* Course image in the grid card */
+  .grid-item-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+  
+  /* Placeholder for missing image */
+  .grid-item-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    width: 100%;
+    height: 150px;
+    color: #777;
+  }
+  
+  /* Info section of the card */
+  .grid-item-info {
+    padding: 15px;
+  }
+  
+  /* Title in grid card */
+  .grid-item-info h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #2c3e50;
+  }
+  
+  /* Meta info (enrollment date) */
+  .grid-item-meta {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+  }
+  
+  /* Progress bar container */
+  .progress-container {
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    height: 8px;
+  }
+  
+  /* Progress bar itself */
+  .progress-bar {
+    background: #27ae60;
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  
+  /* Pagination buttons */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .page-btn {
+    background: #2c3e50;
+    color: #fff;
+    border: none;
+    margin: 0 5px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .page-btn.active, .page-btn:hover {
+    background: #34495e;
+  }
+  
+  /* Error message styling */
+  .error-message {
+    color: red;
+    text-align: center;
+  }
+  
+  /* No enrollment message styling */
+  .no-enrollments-message {
+    text-align: center;
+    font-size: 18px;
+    color: #555;
+  }
+  
+  /* Suggested courses section */
+  .suggested-section {
+    margin-top: 40px;
+  }
+  
+  .suggested-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+  }
+  
+  .suggested-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    width: 220px;
+  }
+  
+  .suggested-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .suggested-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+  }
+  
+  .suggested-placeholder {
+    background: #f0f0f0;
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+  }
+  
+  .suggested-info {
+    padding: 10px;
+  }
+  
+  .suggested-info h3 {
+    font-size: 18px;
+    margin: 0;
+    color: #2c3e50;
+  }
+  
+  .suggested-info p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    color: #666;
+  }
+  

@@ -1,0 +1,452 @@
+/* HomePage.css */
+
+/* --- Define or Import Zporta Theme Variables --- */
+:root {
+  /* Use the same variables as defined in DiaryManagement.css or global styles */
+  --zporta-gold: #ffb606;
+  --zporta-gold-darker: #e0a005;
+  --zporta-navy: #1B2735;
+  --zporta-light-bg: #f8f9fa; /* Page background */
+  --zporta-text-dark: #212529;
+  --zporta-text-medium: #6c757d;
+  --zporta-text-light: #ffffff;
+  --zporta-border-light: #dee2e6;
+  --zporta-success: #28a745; /* Consistent success/progress color */
+  --zporta-card-bg: #ffffff; /* Card background */
+  --zporta-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+  --zporta-card-border: 1px solid var(--zporta-border-light);
+}
+
+/* --- Page Wrapper --- */
+.home-wrapper {
+  min-height: 100vh;
+  background: var(--zporta-light-bg);
+}
+
+/* --- REMOVE ALL STYLES FOR .home-hero and .home-hero-text --- */
+
+/* --- New Page Header Styles --- */
+.home-page-header {
+  padding: 2.5rem 2rem 1.5rem 2rem; /* Generous top padding */
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 90%;
+  box-sizing: border-box;
+}
+
+.home-page-title {
+  font-size: 1.9rem; /* Prominent but not huge */
+  font-weight: 600;
+  color: var(--zporta-navy);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.home-page-subtitle { /* Optional subtitle style */
+  font-size: 1.1rem;
+  color: var(--zporta-text-medium);
+  margin-top: 0.3rem;
+}
+
+/* --- Main Dashboard Grid --- */
+.home-content {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0rem auto 2.5rem auto; /* Reduced top margin */
+  display: grid;
+  gap: 1.75rem; /* Slightly larger gap */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Min width for cards */
+  box-sizing: border-box;
+}
+
+/* --- NEW Dashboard Card Styles --- */
+.dashboard-card {
+  background: var(--zporta-card-bg);
+  color: var(--zporta-text-dark);
+  border-radius: 10px; /* Slightly more rounded */
+  /* border: var(--zporta-card-border); */ /* Use border OR shadow */
+  box-shadow: var(--zporta-card-shadow);
+  padding: 1.5rem; /* Consistent padding */
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.dashboard-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+
+.dashboard-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.15rem; /* Clear title size */
+  font-weight: 600;
+  color: var(--zporta-navy);
+  display: flex; /* Optional: If adding icons */
+  align-items: center;
+  gap: 0.5rem; /* Optional: Gap for icon */
+}
+
+.dashboard-card p { /* General descriptive paragraphs */
+  margin: 0 0 1.25rem 0;
+  font-size: 0.95rem;
+  color: var(--zporta-text-medium);
+  line-height: 1.6;
+}
+.dashboard-card p.empty-state-message { /* "No courses", "No attempts" etc. */
+    font-style: italic;
+    color: var(--zporta-text-medium);
+    text-align: center;
+    padding: 1.5rem 0; /* More padding for empty state */
+    flex-grow: 1; /* Help push button down */
+    margin-bottom: 1.25rem;
+}
+
+.dashboard-card .error-message {
+    color: var(--zporta-danger);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+/* Consistent Action Button Styling */
+.dashboard-card-action-btn {
+  margin-top: auto; /* Push to bottom */
+  padding: 0.7rem 1.1rem;
+  background: transparent;
+  color: var(--zporta-gold);
+  border: 2px solid var(--zporta-gold);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none; /* Ensure links look like buttons */
+  transition: background-color 0.2s ease, color 0.2s ease;
+  align-self: flex-start; /* Align button left */
+  font-size: 0.9rem;
+}
+.dashboard-card-action-btn:hover {
+  background: var(--zporta-gold);
+  color: var(--zporta-navy);
+}
+
+/* --- Styling for Previews INSIDE Cards --- */
+
+/* Enrolled Courses Preview */
+.enrolled-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem; /* Space before action button */
+}
+
+.enrolled-preview-item {
+  display: flex;
+  align-items: center; /* Vertically align items */
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: var(--zporta-light-bg);
+  border: 1px solid var(--zporta-border-light);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.enrolled-preview-item:hover {
+  border-color: var(--zporta-gold);
+  background-color: #fff;
+}
+
+.enrolled-preview-thumb {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.enrolled-preview-placeholder {
+   flex-shrink: 0; width: 50px; height: 50px; border-radius: 4px;
+   background-color: #e9ecef; color: var(--zporta-text-medium); font-size: 0.7rem; display: flex; align-items: center; justify-content: center; text-align: center;
+}
+
+.enrolled-preview-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden; /* Prevent long text breaking layout */
+}
+
+.enrolled-preview-details h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--zporta-text-dark);
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Add ... for long titles */
+}
+.enrolled-preview-details p { /* Used for progress text? */
+    margin: 0; font-size: 0.8rem; color: var(--zporta-text-medium); line-height: 1.4;
+}
+
+/* Progress Bar */
+.small-progress-container {
+  background-color: var(--zporta-border-light);
+  border-radius: 10px; /* Pill shape */
+  height: 8px; /* Slightly thicker */
+  margin-top: 0.3rem;
+  overflow: hidden;
+}
+.small-progress-bar {
+  background-color: var(--zporta-success);
+  height: 100%;
+  transition: width 0.4s ease-in-out;
+  border-radius: 10px;
+}
+.small-progress-text {
+  font-size: 0.75rem; /* Slightly larger */
+  color: var(--zporta-text-medium);
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+
+/* Quiz Attempts Preview */
+.quiz-attempts-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.quiz-attempt-item {
+  padding: 0.8rem 1rem; /* More padding */
+  border-radius: 6px;
+  background-color: var(--zporta-light-bg);
+  border: 1px solid var(--zporta-border-light);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.quiz-attempt-item:hover {
+  border-color: var(--zporta-gold);
+  background-color: #fff;
+}
+
+.attempt-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  color: var(--zporta-text-medium);
+  margin-bottom: 0.5rem;
+}
+.attempt-quiz {
+    font-weight: 600; /* Make quiz title bolder */
+    color: var(--zporta-text-dark);
+}
+.attempt-date {
+    font-size: 0.8rem; /* Smaller date */
+}
+
+.attempt-stats {
+  display: flex;
+  justify-content: space-around; /* Keep space around */
+  font-size: 0.85rem;
+  color: var(--zporta-text-medium);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--zporta-border-light);
+}
+.attempt-stats span {
+    /* Style individual stats - maybe add icons */
+    /* Example: padding: 0 0.5rem; */
+}
+
+
+/* --- Discover Section --- */
+.discover-section-main-title { /* Use this class on the main H2 */
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem; /* Space below main title */
+  color: var(--zporta-navy);
+  padding-bottom: 0.5rem; /* Optional underline space */
+  border-bottom: 1px solid var(--zporta-border-light); /* Optional line */
+}
+/* REMOVE the old '.discover-section h2' rule if it exists */
+
+
+/* Container for all discover sections (posts, courses, etc.) */
+.discover-content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* Space BETWEEN sections (Posts, Courses) */
+  margin-top: 1.5rem; /* Space below main title if border removed */
+}
+
+/* Wrapper for a single type of content (e.g., Posts section) */
+.discover-content-section {
+  /* Add margin/padding here if needed */
+}
+
+/* Header within each discover section (Title + See All link) */
+.discover-section-header {
+  display: flex;
+  justify-content: space-between; /* Pushes title left, button right */
+  align-items: baseline; /* Align text baselines */
+  margin-bottom: 1rem; /* Space below header before grid */
+  padding-bottom: 0.3rem; /* Optional small space below baseline */
+}
+
+/* Title for the specific content type (e.g., "Recent Posts") */
+.discover-section-title {
+  font-size: 1.25rem; /* Sub-heading size */
+  font-weight: 600;
+  color: var(--zporta-navy);
+  margin: 0;
+}
+
+/* "See All" link styling */
+.discover-see-all-btn {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--zporta-gold); /* Use gold for the link */
+  text-decoration: none;
+  padding: 0.25rem 0.5rem; /* Small padding for hover effect area */
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap; /* Prevent wrapping */
+  border: 1px solid transparent; /* Add border for layout consistency on hover */
+}
+
+.discover-see-all-btn:hover {
+  color: var(--zporta-navy); /* Darker text on hover */
+  background-color: rgba(255, 182, 6, 0.1); /* Optional: Very light gold background */
+  border-color: rgba(255, 182, 6, 0.2); /* Optional: Subtle border */
+  text-decoration: underline;
+}
+
+/* Uses slightly different card style */
+.discover-section {
+  width: 90%;
+  max-width: 1200px;
+  margin: 2.5rem auto; /* Consistent margins */
+}
+.discover-section h2 {
+  font-size: 1.6rem; /* Standard section title */
+  margin-bottom: 1.5rem;
+  color: var(--zporta-navy);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--zporta-border-light);
+}
+/* --- Ensure these Existing Discover Grid/Card styles are present --- */
+.discover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+.discover-card {
+  /* Keep existing styles */
+  background: var(--zporta-card-bg);
+  border: var(--zporta-card-border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.discover-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--zporta-card-shadow);
+}
+.discover-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--zporta-border-light);
+}
+.discover-placeholder {
+   width: 100%; height: 150px; background-color: #e9ecef; color: var(--zporta-text-medium); font-size: 0.8rem; display: flex; align-items: center; justify-content: center; text-align: center; border-bottom: 1px solid var(--zporta-border-light);
+}
+.discover-info {
+  padding: 1rem;
+}
+.discover-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0;
+  color: var(--zporta-text-dark);
+  line-height: 1.4;
+}
+.discover-info p {
+  font-size: 0.85rem;
+  color: var(--zporta-text-medium);
+  margin: 0;
+}
+
+/* --- Loading State ( Placeholder) --- */
+.home-loading {
+    text-align: center;
+    padding: 4rem;
+    font-size: 1.2rem;
+    color: var(--zporta-text-medium);
+}
+
+
+/* --- Responsive Adjustments --- */
+@media screen and (max-width: 768px) {
+  .home-page-header { padding: 1.5rem 1rem 1rem 1rem; width: auto; }
+  .home-page-title { font-size: 1.6rem; }
+  .discover-section-main-title { font-size: 1.4rem; margin-bottom: 1.25rem;}
+  .discover-content-area { gap: 2rem; }
+  .discover-section-title { font-size: 1.15rem; }
+  .discover-see-all-btn { font-size: 0.85rem; }
+  .home-content {
+    width: auto;
+    margin: 1rem;
+    grid-template-columns: 1fr; /* Single column grid */
+    gap: 1.25rem;
+  }
+
+  .dashboard-card { padding: 1.25rem; }
+  .dashboard-card h2 { font-size: 1.1rem;}
+
+  .discover-section { width: auto; margin: 2rem 1rem; }
+  .discover-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+}
+
+@media screen and (max-width: 480px) {
+   .home-page-header { padding: 1.25rem 1rem 0.75rem 1rem; }
+   .home-page-title { font-size: 1.4rem; }
+
+   .home-content { margin: 0.75rem; gap: 1rem;}
+   .dashboard-card { padding: 1rem; }
+   .dashboard-card h2 { font-size: 1rem; }
+   .dashboard-card-action-btn { font-size: 0.85rem; padding: 0.6rem 0.9rem;}
+
+   .enrolled-preview-item { flex-direction: column; align-items: stretch; text-align: center; }
+   .enrolled-preview-thumb, .enrolled-preview-placeholder { margin-bottom: 0.75rem; width: 80px; height: 80px; align-self:center;}
+   .enrolled-preview-details h3 { white-space: normal; } /* Allow title wrap */
+
+   .quiz-attempt-item { padding: 0.75rem; }
+   .attempt-info, .attempt-stats { font-size: 0.8rem; }
+
+   .discover-section-header {
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.4rem;
+      /* Optional: Stack title and button on very small screens */
+      flex-direction: column; 
+      align-items: flex-start; 
+      gap: 0.25rem; 
+    }
+    .discover-section-title { font-size: 1.1rem; }
+    .discover-content-area { gap: 1.75rem; }
+    .discover-section-main-title { font-size: 1.3rem; margin-bottom: 1rem;}
+    .discover-see-all-btn {
+        padding: 0.4rem 0.6rem; /* Slightly larger tap target */
+        background-color: rgba(255, 182, 6, 0.05);  /* Optional subtle background */
+    }
+   .discover-grid { grid-template-columns: 1fr; } /* Single column discover */
+   .discover-info { padding: 0.75rem;}
+   .discover-info h3 { font-size: 0.95rem;}
+}

@@ -1,0 +1,408 @@
+/* Container for the entire course detail page */
+.courseDetailContainer {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+}
+
+/* Main Course Title */
+.courseTitle {
+  font-size: 32px;
+  color: #2c3e50; /* Dark gray-blue */
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Optional small info block for subject/tags under the title */
+.courseInfo {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #555;
+}
+
+/* Cover image styling */
+.courseImage {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* Course description text */
+.courseDescription {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 30px;
+}
+
+/* Price styling for premium courses */
+.coursePrice {
+  font-size: 20px;
+  color: #2c3e50;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Container for Edit & Delete buttons (creator only) */
+.courseActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;    /* space above */
+  margin-bottom: 30px; /* space below */
+}
+
+/* Admin buttons styling */
+.courseActions button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  outline: none; /* remove default focus outline */
+}
+
+.courseActions button:focus {
+  /* subtle focus style for accessibility */
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Specific styles for the Edit button */
+.courseDetailEditBtn {
+  background-color: #0275d8; /* Blue shade */
+  color: #fff;
+}
+.courseDetailEditBtn:hover {
+  background-color: #025aa5;
+}
+
+/* Specific styles for the Delete button */
+.courseDeleteBtn {
+  background-color: #d9534f; /* Red shade */
+  color: #fff;
+}
+.courseDeleteBtn:hover {
+  background-color: #c9302c;
+}
+
+/* Lessons Section Title */
+.sectionTitle {
+  font-size: 24px;
+  color: #6B8E23; /* Olive Drab */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #6B8E23;
+  padding-bottom: 5px;
+}
+
+/* Lessons List */
+.lessonsList {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 30px;
+}
+
+.lessonItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  transition: background 0.3s ease;
+}
+
+.lessonItem:hover {
+  background: #eef3f7;
+}
+
+/* Study button inside each lesson item */
+.studyBtn {
+  background: #2c3e50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.studyBtn:hover {
+  background: #34495e;
+}
+
+/* Detach button inside each lesson item (creator only) */
+.detachBtn {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: background 0.3s ease;
+}
+.detachBtn:hover {
+  background: #c0392b;
+}
+
+/* Enrollment section for non-creators */
+.enrollSection {
+  text-align: center;
+  margin-top: 30px;
+}
+
+/* Enroll or Buy button styling */
+.enrollSection .btn {
+  background: #F8B703;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+.enrollSection .btn:hover {
+  background: #dea602;
+}
+
+/* Disabled enrolled button */
+.enrollSection .btn.enrolled {
+  background: #ccc;
+  color: #666;
+  cursor: default;
+}
+
+/* Message styling (e.g., success/failure) */
+.message {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+/* Edit Course Form (displayed in edit mode) */
+.editCourseForm {
+  background: #f9f9f9;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.editCourseForm h2 {
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+.formGroup input,
+.formGroup textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Form actions for Save/Cancel in edit mode */
+.formActions {
+  display: flex;
+  gap: 10px;
+}
+.saveBtn {
+  background: #2C3E50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.saveBtn:hover {
+  background: #34495e;
+}
+.cancelBtn {
+  background: #ccc;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.cancelBtn:hover {
+  background: #b3b3b3;
+}
+
+/* Add Lesson Section (for creators) */
+.addLessonSection {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.addLessonSection h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+/* Lesson dropdown */
+.dropdown {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+/* Add Lesson button */
+.addBtn {
+  background: #2C3E50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.addBtn:hover {
+  background: #34495e;
+}
+
+/* Error messages */
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+/* Responsive Adjustments for smaller screens */
+@media (max-width: 600px) {
+  .courseTitle {
+    font-size: 28px;
+  }
+  .courseDescription {
+    font-size: 16px;
+  }
+  .studyBtn,
+  .enrollSection .btn,
+  .addBtn,
+  .detachBtn {
+    font-size: 14px;
+    padding: 10px 18px;
+  }
+  .courseActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .courseActions button {
+    width: 100%;
+  }
+}
+
+/* --- NEW Styles --- */
+
+/* Badge for Draft Status */
+.draftBadge {
+  font-size: 0.7em;
+  font-weight: bold;
+  color: #ff8c00; /* Dark Orange */
+  margin-left: 8px;
+  vertical-align: middle;
+  border: 1px solid #ff8c00;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* Badge for Locked Status */
+.lockedBadge {
+  color: #d9534f; /* Red shade */
+  font-size: 18px; /* Match existing locked style */
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Container for all creator actions */
+.creatorActionsSection {
+  border-top: 2px solid #eee;
+  margin-top: 30px;
+  padding-top: 20px;
+}
+
+/* Sections within creator actions */
+.courseStatusActions,
+.courseContentActions,
+.addContentSection {
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: #f8f9fa; /* Light grey background */
+  border: 1px solid #e9ecef; /* Slightly darker border */
+  border-radius: 8px;
+}
+
+.courseStatusActions h4,
+.courseContentActions h4,
+.addContentSection h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #495057; /* Darker grey for headings */
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 8px;
+}
+.addContentSection h5 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: #6c757d; /* Medium grey for sub-headings */
+}
+
+/* Status Management Buttons */
+.publishBtn,
+.unpublishBtn {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin-right: 10px; /* Add spacing */
+}
+
+.publishBtn {
+  background-color: #5cb85c; /* Green */
+  color: white;
+}
+.publishBtn:hover:not(:disabled) {
+  background-color: #4cae4c;
+}
+
+.unpublishBtn {
+  background-color: #f0ad4e; /* Orange */
+  color: white;
+}
+.unpublishBtn:hover:not(:disabled) {
+  background-color: #ec971f;
+}
+
+.publishBtn:disabled,
+.unpublishBtn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+

@@ -1,0 +1,350 @@
+/* --- Re-declare variables OR ensure they are globally available --- */
+/* If these are not in a global scope (like index.css), uncomment or add them here */
+/*
+:root {
+    --zporta-primary-color: #3498db;
+    --zporta-primary-hover: #2980b9;
+    --zporta-secondary-color: #2c3e50;
+    --zporta-secondary-light: #34495e;
+    --zporta-background-light: #ffffff;
+    --zporta-background-medium: #f9f9f9;
+    --zporta-border-color: #ccc;
+    --zporta-border-light: #ddd;
+    --zporta-success-color: #2ecc71;
+    --zporta-error-color: #e74c3c;
+    --zporta-text-light: #555;
+    --zporta-required-color: #e74c3c;
+    --zporta-font-family: 'Arial', sans-serif;
+}
+*/
+
+/* --- Container Styling (Used as top-level div in CreateLesson.js) --- */
+.createLessonContainer {
+    padding: 5px; /* Minimal padding, as the Modal provides outer padding */
+    background: var(--zporta-background-light);
+    font-family: var(--zporta-font-family);
+    /* Remove margin/max-width if used primarily in Modal */
+    /* max-width: 700px; */
+    /* margin: 20px auto; */
+}
+
+/* --- Modal Form Specific Title --- */
+.modalFormTitle {
+    font-size: 22px; /* Adjust size as needed for modal context */
+    color: var(--zporta-secondary-color);
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--zporta-border-light);
+    padding-bottom: 15px;
+}
+
+/* --- Message Styling (Same as CreateCourse) --- */
+.message {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.error {
+    background-color: #fdecea;
+    color: var(--zporta-error-color);
+    border: 1px solid var(--zporta-error-color);
+}
+
+.success {
+    background-color: #eafaf1;
+    color: var(--zporta-success-color);
+    border: 1px solid var(--zporta-success-color);
+}
+
+
+/* --- Form Structure --- */
+.lessonForm {
+    display: flex;
+    flex-direction: column;
+    gap: 18px; /* Spacing between form groups */
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.formGroup label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--zporta-secondary-light);
+}
+
+.required {
+    color: var(--zporta-required-color);
+    margin-left: 2px;
+}
+
+/* --- Input & Select Styling --- */
+.inputField,
+.selectField {
+    padding: 10px 12px;
+    border: 1px solid var(--zporta-border-color);
+    border-radius: 5px;
+    font-size: 14px;
+    color: var(--zporta-secondary-color);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.inputField:focus,
+.selectField:focus {
+    border-color: var(--zporta-primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    outline: none;
+}
+
+.inputField::placeholder {
+    color: #aaa;
+}
+
+/* --- Editor Styling --- */
+.editorContainer {
+    margin-top: 10px; /* Space above editor */
+    /* Add border/padding if needed */
+    border: 1px solid var(--zporta-border-color);
+    border-radius: 5px;
+    padding: 5px;
+    min-height: 200px; /* Default height inside modal */
+}
+
+.editorLabel { /* Optional style for the 'Content:' label */
+     font-size: 14px;
+     font-weight: bold;
+     color: var(--zporta-secondary-light);
+     margin-bottom: 8px;
+     display: block; /* Make it block to take its own line */
+}
+
+
+/* --- Modal Action Buttons --- */
+.modalActions {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 10px; /* Space between buttons */
+    padding-top: 20px;
+    margin-top: 15px;
+    border-top: 1px solid var(--zporta-border-light); /* Separator line */
+}
+
+/* General Button Styles (can be shared or specific) */
+.btn {
+    padding: 9px 20px; /* Slightly smaller padding */
+    border: none;
+    border-radius: 5px;
+    font-size: 14px; /* Slightly smaller font */
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn:disabled {
+    background-color: #bdc3c7 !important; /* Ensure disabled style overrides */
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+.btnPrimary {
+    background-color: var(--zporta-primary-color);
+    color: var(--zporta-background-light);
+}
+.btnPrimary:hover:not(:disabled) {
+    background-color: var(--zporta-primary-hover);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btnSecondary {
+    background-color: #ecf0f1; /* Light grey */
+    color: var(--zporta-secondary-light);
+    border: 1px solid var(--zporta-border-color);
+}
+.btnSecondary:hover:not(:disabled) {
+    background-color: #e0e6e8;
+    border-color: #b0b9be;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active:not(:disabled) {
+     transform: translateY(1px);
+}
+
+/* Style for the fieldset grouping */
+.formSection { /* Reuse style from CreateCourse or define similarly */
+     border: 1px solid var(--zporta-border-light);
+    border-radius: 8px;
+    padding: 15px 20px; /* Adjust padding */
+    margin: 10px 0; /* Add some vertical margin */
+    }
+    
+    .formSection legend { /* Reuse style from CreateCourse or define similarly */
+    font-size: 16px; /* Slightly smaller legend */
+    font-weight: 600;
+    color: var(--zporta-secondary-color);
+    padding: 0 8px;
+    margin-left: 10px;
+    }
+    
+    /* Header within the fieldset */
+    .contentSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .contentSectionHeader h3 {
+    font-size: 15px; /* Match legend size maybe */
+    color: var(--zporta-secondary-light);
+    margin: 0;
+    }
+    
+    /* Button used in the header */
+    .createContentBtn { /* Define if not already present */
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: var(--zporta-primary-color);
+    color: var(--zporta-background-light);
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .createContentBtn:hover:not(:disabled) {
+    background-color: var(--zporta-primary-hover);
+    }
+    .createContentBtn:disabled {
+         opacity: 0.6;
+         cursor: not-allowed;
+    }
+    
+    
+    /* Area containing the list or 'no content' message */
+    .contentListArea {
+    min-height: 50px;
+    display: flex;
+        /* Background can be slightly different if desired */
+        /* background-color: var(--zporta-background-medium); */
+        /* padding: 5px; */
+        /* border: 1px solid var(--zporta-border-light); */
+        /* border-radius: 4px; */
+    }
+    
+    /* Scrollable box for the list */
+    .scrollableBox { /* Define if not already present */
+    width: 100%;
+    max-height: 150px; /* Adjust height as needed */
+    overflow-y: auto;
+    border: 1px solid var(--zporta-border-color);
+    border-radius: 5px;
+    padding: 10px;
+    background: var(--zporta-background-light);
+    }
+    /* Optional: Add scrollbar styling */
+    .scrollableBox::-webkit-scrollbar { width: 6px; }
+    .scrollableBox::-webkit-scrollbar-thumb { background: var(--zporta-border-color); border-radius: 3px; }
+    .scrollableBox::-webkit-scrollbar-thumb:hover { background: var(--zporta-primary-color); }
+    
+    
+    /* Individual item in the list */
+    .contentItem { /* Define if not already present */
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 14px;
+        border-bottom: 1px dashed var(--zporta-border-light);
+    }
+    .contentItem:last-child {
+        border-bottom: none;
+    }
+    
+    .contentItem input[type="checkbox"] {
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: var(--zporta-primary-color);
+    }
+    .contentItem label {
+    cursor: pointer;
+        font-weight: normal; /* Override bold label from formGroup */
+    color: var(--zporta-secondary-light);
+    flex-grow: 1;
+    }
+    .contentItem input[type="checkbox"]:disabled + label {
+        cursor: not-allowed;
+        color: var(--zporta-text-light);
+        text-decoration: line-through; /* Indicate disabled */
+    }
+    
+    /* Message shown when list is empty */
+    .noContentMessage { /* Define if not already present */
+    padding: 15px;
+    color: var(--zporta-text-light);
+    font-style: italic;
+    text-align: center;
+    width: 100%;
+        font-size: 14px;
+        margin: auto; /* Center vertically in flex container */
+    }
+    
+    /* Style for '(In use)' text */
+    .alreadyAttached { /* Define if not already present */
+    font-size: 12px;
+    color: var(--zporta-attached-color);
+    margin-left: 5px;
+    font-style: italic;
+    }
+    
+    /* --- Responsive adjustments for quiz section --- */
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 600px) {
+    .modalFormTitle {
+        font-size: 20px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+    }
+
+    .lessonForm {
+        gap: 15px;
+    }
+
+    .inputField,
+    .selectField {
+        font-size: 13px;
+        padding: 9px 10px;
+    }
+
+    .formGroup label {
+        font-size: 13px;
+    }
+
+    .modalActions {
+        flex-direction: column-reverse; /* Stack buttons on mobile */
+        gap: 12px;
+    }
+
+    .btn {
+        width: 100%; /* Make buttons full width */
+        padding: 10px;
+        font-size: 14px;
+    }
+}

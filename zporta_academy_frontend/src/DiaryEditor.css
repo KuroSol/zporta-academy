@@ -1,0 +1,88 @@
+/* Container for the diary editor */
+.diary-editor-container {
+    padding: 20px;
+    margin: 0 auto;
+    max-width: 800px;
+    box-sizing: border-box;
+  }
+  
+  /* Heading style */
+  .diary-editor-container h1 {
+    color: #ffb606;
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+  }
+  
+  /* Error message style */
+  .error {
+    color: red;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  /* Mention container styling */
+  .mention-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mention-container label {
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  /* Button group styling */
+  .button-group {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  /* Base button style */
+  .zporta-btn {
+    padding: 10px 20px;
+    border: none;
+    background-color: #ffb606;
+    color: #fff;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Hover state for base button */
+  .zporta-btn:hover {
+    background-color: #e0a800;
+  }
+  
+  /* Specific styling for cancel button */
+  .cancel-btn {
+    background-color: #ccc;
+    color: #333;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #b3b3b3;
+  }
+  
+  /* Responsive design adjustments */
+  @media (max-width: 768px) {
+    .diary-editor-container {
+      padding: 15px;
+      max-width: 100%;
+    }
+    
+    .zporta-btn {
+      width: 100%;
+      font-size: 1em;
+    }
+  
+    .button-group {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+  

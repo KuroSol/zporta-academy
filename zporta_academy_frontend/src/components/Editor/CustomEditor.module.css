@@ -1,0 +1,329 @@
+/* --- Base and Tailwind (Optional) --- */
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; */
+
+/* --- Configuration Variables --- */
+:root {
+  --editor-theme-color: #ffb606; /* Orange theme */
+  --editor-theme-color-darker: #e0a005;
+  --editor-border-color: #d1d5db; /* Light grey border */
+  --editor-bg-light: #f9fafb; /* Very light grey background */
+  --editor-text-color: #1f2937; /* Dark grey text */
+  --editor-placeholder-color: #9ca3af; /* Medium grey placeholder */
+  --editor-readonly-bg: #f3f4f6; /* Background for readonly state */
+  --editor-error-bg: #fee2e2;
+  --editor-error-border: #fca5a5;
+  --editor-error-text: #b91c1c;
+}
+
+/* --- Base Container --- */
+.editorContainer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--editor-border-color);
+  border-radius: 6px; /* Slightly more rounded */
+  overflow: hidden;
+  background-color: #fff;
+  height: 70vh; /* Default height */
+  min-height: 400px; /* Ensure minimum space */
+  max-height: 90vh;
+  width: 100%;
+  position: relative;
+}
+
+/* --- Toolbar --- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px; /* Consistent gap */
+  padding: 6px 8px; /* Slightly tighter padding */
+  border-bottom: 1px solid var(--editor-border-color);
+  background: var(--editor-bg-light);
+  position: sticky;
+  top: 0;
+  z-index: 100; /* High z-index */
+  min-height: 45px; /* Ensure toolbar has some height */
+}
+
+/* --- General Toolbar Item Styling --- */
+.toolbar button,
+.toolbarSelect, /* Use specific class for selects */
+.toolbarColorInput, /* Use specific class for color */
+.toolbarButtonLabel {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--editor-text-color);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.toolbarColorInput {
+   padding: 2px;
+   width: 32px;
+   min-width: 32px;
+   height: 32px; /* Match height */
+   border: 1px solid #ccc; /* Add explicit border */
+}
+.toolbarSelect {
+    /* Add appearance none if you want to custom style arrow later */
+    /* -webkit-appearance: none; appearance: none; */
+    padding-right: 20px; /* Space for default arrow */
+}
+
+.toolbar button:hover,
+.toolbarSelect:hover,
+.toolbarColorInput:hover,
+.toolbarButtonLabel:hover {
+   border-color: #9ca3af; /* Darker grey border on hover */
+   background-color: #f3f4f6; /* Slight hover background */
+}
+.toolbar button:active,
+.toolbarSelect:active,
+.toolbarButtonLabel:active {
+    background-color: #e5e7eb; /* Slightly darker on active */
+}
+
+.toolbarButtonLabel {
+    /* Style label acting as button */
+}
+
+/* --- Editor Content Area (WYSIWYG and Source) --- */
+.editor {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 12px 15px; /* More padding */
+  outline: none;
+  line-height: 1.6;
+  color: var(--editor-text-color);
+  box-sizing: border-box;
+  width: 100%; /* Ensure takes full width */
+}
+
+.wysiwygView {
+  /* Styles specific to the contentEditable div */
+  white-space: pre-wrap; /* Respect whitespace */
+  word-wrap: break-word; /* Break long words */
+}
+
+/* CSS Placeholder */
+.wysiwygView[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: var(--editor-placeholder-color);
+  pointer-events: none;
+  display: block;
+  position: absolute; /* Position relative to padding */
+  top: 12px; /* Match editor padding */
+  left: 15px;
+}
+.wysiwygView[contenteditable]:empty {
+    position: relative; /* Needed for absolute positioning of ::before */
+}
+
+
+.sourceView {
+  font-family: 'Courier New', Courier, monospace; /* Monospace font */
+  font-size: 14px;
+  background-color: var(--editor-bg-light);
+  color: #374151; /* Slightly different text color for source */
+  border: none;
+  resize: none;
+}
+
+/* Readonly Styling */
+.isReadonly {
+  background-color: var(--editor-readonly-bg) !important;
+  cursor: default !important;
+  user-select: none; /* Prevent selecting text in readonly */
+}
+.isReadonly [contenteditable="true"] { /* Target nested editables */
+    cursor: default !important;
+    user-select: none;
+    opacity: 0.7;
+    background-color: transparent; /* Prevent nested bg color */
+    border: none; /* Remove borders on nested editables in readonly */
+}
+.isReadonly .toolbar {
+    /* Optionally style toolbar differently */
+    /* opacity: 0.6; */
+    /* pointer-events: none; */ /* If completely disabled */
+}
+
+
+/* --- Editor Actions Bar (Contextual Toolbar) --- */
+/* This appears within the main toolbar now */
+.editorElementActions {
+   display: inline-flex;
+   align-items: center;
+   gap: 5px; /* Space between action buttons */
+   /* Styles for border are applied inline in JSX */
+}
+.editorElementActions button {
+  background: #e5e7eb; /* Slightly different bg for context actions */
+  border: 1px solid #9ca3af;
+  color: #4b5563;
+  padding: 4px 8px;
+  height: 32px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px; /* Slightly smaller text */
+}
+.editorElementActions button:hover {
+  background-color: var(--editor-theme-color);
+  color: white;
+  border-color: var(--editor-theme-color-darker);
+}
+
+/* --- Fullscreen Mode --- */
+.fullscreen {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    max-height: 100vh; min-height: 100vh;
+    z-index: 1000; border: none; border-radius: 0; margin: 0;
+}
+/* Toolbar and actions are part of flex flow in fullscreen */
+.fullscreen .toolbar { position: relative; }
+.fullscreen .editorActions { position: relative; }
+.fullscreen .editor { height: auto; flex-grow: 1; } /* Let editor fill remaining space */
+
+/* --- Inserted Content Styles --- */
+
+/* General Media */
+.editor .wysiwygView img,
+.editor .wysiwygView audio,
+.editor .wysiwygView video {
+  max-width: 100%; height: auto; display: block; margin: 0.8em 0;
+}
+
+/* Image Wrapper & Resizing */
+.imageWrapper { position: relative; display: inline-block; max-width: 100%; margin: 0.5em 0; }
+.imageWrapper img { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.resizeHandle { position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px; background-color: var(--editor-theme-color); cursor: nwse-resize; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 5; }
+.isResizing { opacity: 0.7; }
+
+/* Audio Wrapper & Select Handle */
+.audioWrapper { position: relative; display: block; max-width: 100%; margin: 0.8em 0; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; }
+.audioWrapper audio { display: block; width: 100%; max-width: 450px; margin: 0 auto; }
+
+/* --- Select Handle Styling (Used by Audio & Accordion) --- */
+/* *** Ensure this class name 'selectHandle' matches JS *** */
+.selectHandle {
+  position: absolute;
+  top: -10px; /* Position slightly above */
+  right: -10px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 3px 6px; /* Adjust padding */
+  background-color: rgba(200, 200, 200, 0.85);
+  border: 1px solid #adb5bd;
+  border-radius: 50%; /* Round handle */
+  z-index: 50; /* Ensure above content */
+  user-select: none;
+  color: #495057;
+  display: none; /* Hidden by default */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.selectHandle:hover { background-color: rgba(150, 150, 150, 1); color: #fff; }
+
+/* Show handle on hover or when parent is selected */
+.audioWrapper:hover .selectHandle,
+.accordionItem:hover .selectHandle,
+.audioWrapper.editorElementSelected .selectHandle,
+.accordionItem.editorElementSelected .selectHandle {
+    display: inline-block; /* Show the handle */
+}
+
+/* Specific style when parent IS selected */
+.editorElementSelected .selectHandle {
+  background-color: var(--editor-theme-color);
+  color: white;
+  border-color: var(--editor-theme-color-darker);
+}
+
+
+/* Layout Columns */
+.editableLayoutContainer { display: flex; flex-wrap: wrap; gap: 15px; border: 1px dashed #adb5bd; padding: 10px; margin: 1em 0; background-color: #f8f9fa; }
+.layoutColumn { flex: 1; min-width: 150px; border: 1px dotted #ced4da; padding: 10px; background-color: #fff; outline: none; }
+.editableLayoutContainer[contenteditable="false"] { user-select: none; }
+.editableLayoutContainer[contenteditable="false"] [contenteditable="true"] { user-select: text; }
+
+/* --- ACCORDION Styles (Editor View) --- */
+.accordionItem {
+  position: relative; /* For handle positioning */
+  border: 1px solid #dee2e6; border-radius: 4px; margin: 1em 0; background: #fff; overflow: hidden;
+}
+
+.accordionHeader {
+  padding: 10px 15px; font-weight: 600; cursor: pointer; user-select: none;
+  display: flex; justify-content: space-between; align-items: center;
+  background: #f1f3f5; border-bottom: 1px solid #dee2e6; min-height: 40px;
+  outline: none; position: relative; /* For ::after */
+}
+.accordionHeader:hover { background: #e9ecef; }
+
+/* Accordion +/- Indicator */
+.accordionHeader::after {
+  content: '+'; font-size: 1.4em; font-weight: bold; color: #6c757d;
+  transition: transform 0.2s ease-in-out; padding-left: 10px;
+}
+.accordionItem.editorAccordionOpen .accordionHeader::after {
+  content: '−'; transform: rotate(180deg);
+}
+
+/* Accordion Content Styling (Handles multiple content blocks) */
+.accordionContent {
+  max-height: 0; overflow: hidden; padding: 0 15px; background-color: #fff; outline: none;
+  transition: max-height 0.35s ease-out, padding-top 0.35s ease-out, padding-bottom 0.35s ease-out, border-top-width 0.35s ease-out;
+  border-top: 0px solid #dee2e6; /* Start with 0 border */
+}
+/* Remove margins on direct children paragraphs */
+.accordionContent > p:first-child { margin-top: 0; }
+.accordionContent > p:last-child { margin-bottom: 0; }
+
+/* Accordion Open State (Editor View) */
+.accordionItem.editorAccordionOpen .accordionContent {
+  max-height: 1000px; /* Allow space for content */
+  padding-top: 15px; padding-bottom: 15px;
+  border-top-width: 1px; /* Add border only when open */
+}
+/* Add spacing between multiple content sections when open */
+.accordionItem.editorAccordionOpen .accordionContent + .accordionContent {
+    margin-top: 10px; /* Space between adjacent content blocks */
+    border-top-width: 1px; /* Ensure separator between added sections too */
+    padding-top: 15px; /* Ensure padding for added sections */
+}
+
+
+/* --- Selection Outline --- */
+.editorElementSelected {
+  outline: 3px solid var(--editor-theme-color) !important;
+  outline-offset: 2px; /* Adjust offset */
+  box-shadow: 0 0 0 4px rgba(255, 182, 6, 0.3); /* Slightly larger glow */
+}
+
+
+/* --- Misc --- */
+.editorUploadError {
+    color: var(--editor-error-text); font-size: 0.9em; padding: 8px 12px; margin: 8px 12px;
+    border: 1px solid var(--editor-error-border); background-color: var(--editor-error-bg);
+    border-radius: 4px; text-align: center;
+}
+
+/* show the little “finger” icon on hover or when its wrapper is selected */
+.audio-wrapper:hover .select-handle,
+.accordion-item:hover .select-handle,
+.audio-wrapper.editorElementSelected .select-handle,
+.accordion-item.editorElementSelected .select-handle,
+.accordion-item.is-open .select-handle {
+  display: inline-block;
+}

@@ -1,0 +1,16 @@
+/* src/components/ScoreChart.css */
+
+.user-score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .score-description {
+    font-size: 0.9rem;
+    color: #555;
+    text-align: center;
+    max-width: 200px;
+    margin-top: 0.5rem;
+  }

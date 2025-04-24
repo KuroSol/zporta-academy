@@ -1,0 +1,338 @@
+/* --- New Search Container Styles --- */
+.search-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.search-container input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 15px;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-container input[type="text"]:focus {
+  border-color: #ffb606;
+  box-shadow: 0 0 5px rgba(255, 182, 6, 0.5);
+}
+
+/* --- Existing Styles (with minor adjustments for consistency) --- */
+/* Base container styling */
+.diary-list-container {
+  padding: 20px;
+}
+
+.diary-list-title {
+  color: #ffb606;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+/* Table container */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto; /* Allow horizontal scroll if needed */
+}
+
+/* Table styling */
+.diary-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.diary-table th,
+.diary-table td {
+  border: 1px solid #ffb606;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.diary-table th {
+  background-color: #fff;
+  color: #ffb606;
+}
+
+/* Note text container */
+.note-text {
+  transition: max-height 0.3s ease;
+  margin-bottom: 5px;
+}
+
+/* Collapsed view */
+.note-text.collapsed {
+  max-height: 100px;  /* Desktop limit */
+  overflow: hidden;
+}
+
+/* See More toggle button */
+.see-more-btn {
+  background: none;
+  border: none;
+  color: #ffb606;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-top: 5px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Action icons */
+.edit-btn,
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  transition: color 0.3s;
+  margin-right: 5px;
+}
+
+.edit-btn {
+  color: #ffb606;
+}
+
+.edit-btn:hover {
+  color: #d19000;
+}
+
+.delete-btn {
+  color: red;
+}
+
+.delete-btn:hover {
+  color: darkred;
+}
+
+/* Pagination styling */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 5px;
+}
+
+.pagination button {
+  background: none;
+  border: 1px solid #ffb606;
+  color: #ffb606;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background-color: #ffb606;
+  color: #fff;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments for medium screens */
+@media (max-width: 768px) {
+  .diary-table th,
+  .diary-table td {
+    padding: 8px;
+    font-size: 0.9em;
+  }
+  
+  .diary-list-title {
+    font-size: 20px;
+  }
+  
+  .search-container input[type="text"] {
+    max-width: 300px;
+  }
+}
+
+/* Responsive adjustments for very small screens (mobile) */
+@media (max-width: 480px) {
+  .table-responsive {
+    overflow-x: hidden;
+  }
+  
+  .diary-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  
+  .diary-table th,
+  .diary-table td {
+    word-break: break-all;
+    white-space: normal;
+  }
+  
+  .diary-table th:first-child,
+  .diary-table td:first-child {
+    width: 8%;
+    min-width: 30px;
+  }
+  
+  .diary-table th:nth-child(2),
+  .diary-table td:nth-child(2) {
+    width: 55%;
+  }
+  
+  .diary-table th:nth-child(3),
+  .diary-table td:nth-child(3) {
+    width: 20%;
+    min-width: 80px;
+  }
+  
+  .diary-table th:nth-child(4),
+  .diary-table td:nth-child(4) {
+    /* REMOVE or COMMENT OUT these fixed widths */
+    /* width: 17%; */
+    /* min-width: 60px; */
+    /* text-align: center; */ /* Remove or adjust alignment below */
+    /* Give cell minimal padding if needed */
+     padding: 6px 4px;
+  }
+
+  /* --- ADD THIS RULE --- */
+  /* Stack action buttons vertically on small screens */
+  .diary-action-buttons {
+    flex-direction: column; /* Stack vertically */
+    align-items: center;  /* Center buttons in the stack */
+    /* align-items: flex-start; */ /* Or align left if preferred */
+    gap: 6px;             /* Adjust vertical gap */
+  }
+  /* --- END ADD --- */
+
+  /* Optional: Make buttons slightly smaller */
+  .diary-edit-btn,
+  .diary-delete-btn,
+  .diary-comment-btn { /* Make sure to include all action buttons */
+     padding: 5px 8px;
+     font-size: 1rem; /* Adjust icon size if needed */
+  }
+  
+  .note-text.collapsed {
+    max-height: 60px;
+  }
+  
+  .note-text {
+    font-size: 0.8em;
+  }
+  
+  .edit-btn,
+  .delete-btn {
+    font-size: 1.2em;
+  }
+}
+
+/* Modal overlay remains the same */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Updated Modal Content for Desktop */
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 20px;
+  width: 98vw !important;    /* Use almost the full viewport width */
+  height: 95vh !important;   /* Use almost the full viewport height */
+  overflow: auto;            /* Enable scroll if content overflows */
+  border-radius: 8px;
+  resize: both;              /* Allow user to resize horizontally and vertically */
+}
+/* Modal body gets its own scroll if content is long */
+.modal-body {
+  flex: 1;                 /* Takes all available vertical space */
+  overflow-y: auto;        /* Only the editor area scrolls */
+  margin-bottom: 10px;
+}
+.modal-body .editor-container {
+  max-height: 400px; /* Reduced dead space */
+}
+/* Modal actions remain at the bottom and always visible */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Modal actions button styling remains the same */
+.modal-actions button {
+  padding: 8px 12px;
+  cursor: pointer;
+  border: 1px solid #ffb606;
+  background: #ffb606;
+  color: #fff;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.modal-actions button:hover {
+  background: #d19000;
+}
+/* Container for action buttons */
+.diary-action-buttons {
+  display: flex;
+  gap: 8px; /* Adjust spacing as needed */
+  align-items: center;
+}
+
+/* Styling for each action button */
+.diary-action-buttons button {
+  background-color: rgba(0, 123, 255, 0.1); /* Subtle translucent blue */
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.diary-action-buttons button:hover {
+  background-color: rgba(0, 123, 255, 0.2); /* Slightly darker on hover */
+  transform: translateY(-2px);
+}
+
+.diary-action-buttons button:active {
+  transform: translateY(0);
+}
+/* For very small screens, use full-screen modal */
+@media (max-width: 480px) {
+  .modal-content {
+    width: 100%;
+    height: 100vh;         /* Full screen height on mobile */
+    border-radius: 0;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  .modal-body {
+    margin-bottom: 5px;
+  }
+  .modal-body .editor-container {
+    max-height: calc(100vh - 150px);
+  }
+}
+
+.highlight {
+  background-color: yellow !important;
+  font-weight: bold;
+}
+

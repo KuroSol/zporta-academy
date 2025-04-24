@@ -1,0 +1,257 @@
+/* DiaryManagement.css */
+
+/* --- Color Palette & Theme Variables --- */
+:root {
+  /* Primary Palette (Based on existing usage) */
+  --zporta-gold: #ffb606;
+  --zporta-gold-darker: #e0a005; /* For hover */
+
+  /* Secondary & Neutrals (Example - Adjust to match Zporta branding) */
+  --zporta-navy: #1B2735;     /* Dark blue for contrast, headings */
+  --zporta-light-bg: #f8f9fa; /* Very light grey background */
+  --zporta-text-dark: #212529;  /* Primary text */
+  --zporta-text-medium: #6c757d; /* Secondary text, inactive tabs */
+  --zporta-text-light: #ffffff;   /* Text on dark/gold backgrounds */
+  --zporta-border-light: #dee2e6;/* Subtle borders */
+  --zporta-danger: #dc3545;       /* Delete button */
+  --zporta-danger-darker: #c82333;
+}
+
+/* --- Main Page Layout --- */
+.diary-management-container {
+  background-color: var(--zporta-light-bg);
+  padding: 25px; /* Consistent padding */
+  min-height: calc(100vh - 50px); /* Adjust if you have a global header/footer */
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Header Area --- */
+.diary-header {
+  margin-bottom: 35px; /* More space below header */
+  text-align: center;
+}
+
+.diary-title {
+  color: var(--zporta-navy); /* Use navy for title */
+  font-size: 2rem; /* Slightly larger title */
+  font-weight: 600;
+  margin-bottom: 30px; /* Space below title */
+}
+
+/* --- Tab Navigation --- */
+.diary-tabs {
+  display: flex;
+  justify-content: center;
+  border-bottom: 2px solid var(--zporta-border-light); /* Line below tabs */
+  margin-bottom: 30px; /* Space below tabs before content */
+}
+
+.diary-tab-btn {
+  padding: 12px 25px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent; /* Invisible border for spacing */
+  color: var(--zporta-text-medium); /* Inactive color */
+  font-size: 1.05rem; /* Slightly larger tab text */
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  margin-bottom: -2px; /* Overlap container border */
+  position: relative;
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.diary-tab-btn:hover {
+  color: var(--zporta-navy); /* Darken text on hover */
+}
+
+.diary-tab-btn.active {
+  color: var(--zporta-gold); /* Gold color for active text */
+  font-weight: 600;
+  border-bottom-color: var(--zporta-gold); /* Gold underline */
+}
+
+/* --- Main Content Area --- */
+.diary-content {
+  flex-grow: 1; /* Takes up remaining vertical space */
+  /* Let the specific component (Editor, List, Mentions) handle its own internal layout */
+}
+
+/* --- Footer --- */
+.diary-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--zporta-border-light);
+  color: var(--zporta-text-medium);
+  font-size: 0.9rem;
+}
+
+/* --- Theming Existing Modal & Button Styles --- */
+/* Apply Zporta theme to modals and buttons used within diary components */
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 25px; /* Slightly more padding */
+  border-radius: 8px;
+  width: 90%; /* More responsive width */
+  max-width: 700px; /* Adjust max-width */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  position: relative;
+}
+
+.modal-body {
+  margin-top: 15px;
+  max-height: 60vh; /* Limit height based on viewport */
+  overflow-y: auto;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-actions button {
+  padding: 10px 22px; /* Consistent padding */
+  border: none;
+  border-radius: 5px; /* Slightly more rounded */
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.modal-actions button:active {
+    transform: scale(0.98); /* Click effect */
+}
+
+/* Add specific classes to buttons in your modal component JSX if possible */
+/* Example: <button className="modal-btn-primary">Save</button> */
+/* <button className="modal-btn-secondary">Cancel</button> */
+
+/* Primary Modal Button (Save/Confirm) */
+.modal-actions button.modal-btn-primary {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-navy); /* Dark text on gold */
+}
+.modal-actions button.modal-btn-primary:hover {
+  background-color: var(--zporta-gold-darker);
+}
+
+/* Secondary Modal Button (Cancel/Close) */
+.modal-actions button.modal-btn-secondary {
+  background-color: var(--zporta-text-medium);
+  color: var(--zporta-text-light);
+}
+.modal-actions button.modal-btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Fallback if specific classes aren't added */
+.modal-actions button:first-of-type { /* Assumes save is usually first */
+   background-color: var(--zporta-gold);
+   color: var(--zporta-navy);
+}
+.modal-actions button:first-of-type:hover {
+  background-color: var(--zporta-gold-darker);
+}
+.modal-actions button:last-of-type { /* Assumes cancel/close is last */
+   background-color: var(--zporta-text-medium);
+   color: var(--zporta-text-light);
+}
+.modal-actions button:last-of-type:hover {
+   background-color: #5a6268;
+}
+
+
+/* Diary List Buttons */
+.diary-edit-btn, .diary-delete-btn {
+   border: none;
+   padding: 6px 12px; /* Adjust padding */
+   border-radius: 5px;
+   cursor: pointer;
+   font-weight: 500; /* Slightly less bold */
+   font-size: 0.85rem; /* Smaller font */
+   transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.diary-edit-btn:active, .diary-delete-btn:active {
+    transform: scale(0.98);
+}
+
+.diary-edit-btn {
+   background: var(--zporta-gold);
+   color: var(--zporta-navy);
+}
+.diary-edit-btn:hover {
+   background: var(--zporta-gold-darker);
+}
+
+.diary-delete-btn {
+   background: var(--zporta-danger);
+   color: var(--zporta-text-light);
+}
+.diary-delete-btn:hover {
+   background: var(--zporta-danger-darker);
+}
+
+/* Other styles like .highlight, body.modal-open remain the same */
+.highlight {
+  background-color: yellow;
+  font-weight: bold;
+}
+body.modal-open {
+  overflow: hidden;
+}
+
+
+/* --- Mobile Adjustments --- */
+@media (max-width: 768px) {
+  .diary-management-container {
+     padding: 15px;
+  }
+  .diary-title {
+     font-size: 1.6rem; /* Adjust title size */
+  }
+  .diary-tabs {
+     margin-bottom: 20px;
+  }
+  .diary-tab-btn {
+     padding: 10px 12px; /* Adjust tab padding */
+     font-size: 0.95rem;
+  }
+  .modal-content {
+     width: 95%; /* Allow modal to be wider on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+    /* Further adjustments for very small screens */
+    .diary-tabs {
+        /* Allow tabs to wrap if needed, or adjust padding further */
+        /* flex-wrap: wrap; */ /* Uncomment if wrapping is desired */
+    }
+     .diary-tab-btn {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+     .modal-actions {
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 8px;
+    }
+     .modal-actions button {
+        width: 100%; /* Make buttons full width */
+    }
+}

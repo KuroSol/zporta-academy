@@ -1,0 +1,69 @@
+/* ViewerAccordion.css */
+
+.displayed-content .accordion-item {
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+  border-radius: 4px;
+  overflow: hidden; /* Needed to contain content during animation */
+}
+
+.displayed-content .accordion-header {
+  background-color: #f1f1f1;
+  padding: 12px 15px;
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+.displayed-content .accordion-header:hover {
+  background-color: #e0e0e0;
+}
+
+/* Indicator Symbol */
+.displayed-content .accordion-header::after {
+  content: '\002B'; /* Plus */
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.3s ease;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #777;
+}
+
+/* Symbol when open */
+.displayed-content .accordion-item.is-open .accordion-header::after {
+  content: '\2212'; /* Minus */
+}
+
+/* Content Panel - Base (Closed) State */
+.displayed-content .accordion-content {
+  padding: 0 18px; /* No vertical padding when closed */
+  max-height: 0; /* Collapsed */
+  overflow: hidden; /* Hide content */
+  background-color: #fff;
+  border-top: 1px solid #eee;
+  opacity: 0; /* Start transparent */
+  /* Define transitions */
+  transition: max-height 0.3s ease-out,
+              padding 0.3s ease-out,
+              opacity 0.3s ease-out 0.1s; /* Delay opacity slightly */
+}
+
+/* Content Panel - Open State */
+.displayed-content .accordion-item.is-open .accordion-content {
+  padding: 15px 18px; /* Add padding when open */
+  max-height: 10000px; /* VERY large value - acts like max-height: none */
+  opacity: 1; /* Fade in */
+}
+
+/* Optional: Nested Styles */
+.displayed-content .accordion-content .accordion-item {
+    margin-left: 20px;
+    margin-top: 10px;
+    border-color: #eee;
+    border-radius: 3px;
+}
+/* ... other nested styles ... */

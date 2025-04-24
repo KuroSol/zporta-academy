@@ -1,0 +1,64 @@
+.modalOverlay {
+    position: fixed; /* Stay in place even if page scrolls */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Dark semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's on top of other content */
+    padding: 20px; /* Add padding for smaller screens */
+    overflow-y: auto; /* Allow overlay itself to scroll if modal is too big */
+}
+
+.modalContent {
+    background-color: #fff;
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    position: relative; /* Needed for absolute positioning of close button */
+    max-width: 90%; /* Max width relative to viewport */
+    width: 700px; /* Default width, adjust as needed */
+    max-height: calc(100vh - 40px); /* Max height based on viewport height minus padding */
+    overflow-y: auto; /* Allow content inside modal to scroll */
+    margin: auto; /* Helps center in flex container, especially if content smaller than max */
+}
+
+.closeButton {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px; /* Make 'x' bigger */
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    z-index: 1010; /* Ensure close button is above modal content */
+}
+.closeButton:hover {
+    color: #333;
+}
+
+/* Responsive width */
+@media (max-width: 768px) {
+    .modalContent {
+        width: 95%;
+        padding: 20px 25px; /* Adjust padding */
+    }
+     .closeButton {
+        font-size: 22px;
+        top: 8px;
+        right: 10px;
+     }
+}
+
+@media (max-width: 500px) {
+     .modalContent {
+        padding: 15px 20px;
+     }
+}
