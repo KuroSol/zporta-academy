@@ -1,24 +1,36 @@
+/* --- Base Card --- */
 .lessonCard {
     background-color: var(--zporta-background);
     border-radius: var(--zporta-radius);
     border: 1px solid var(--zporta-border);
     box-shadow: var(--zporta-shadow);
     padding: 1rem;
-    cursor: pointer;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    /* cursor: pointer; */ /* Remove cursor pointer if only action is clickable */
+    transition: box-shadow 0.2s ease; /* Removed transform */
     display: flex;
     flex-direction: column;
+    /* Add overflow hidden to the card itself to contain expanding content smoothly */
+    overflow: hidden;
   }
+  
+  /* Add a class for when the card contains an open accordion */
+  .lessonCard.isExpanded {
+      /* Optional: Add subtle visual cue when expanded */
+      /* border-color: var(--zporta-primary-light); */
+  }
+  
   
   .lessonCard:hover {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); */ /* Removed transform */
   }
   
+  /* --- Header --- */
   .lessonHeader {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+    margin-bottom: 0.5rem; /* Add some space below header */
   }
   
   .lessonTitle {
@@ -26,9 +38,7 @@
     color: var(--zporta-dark);
     font-weight: 600;
     margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* Removed text overflow handling here, let it wrap if needed */
   }
   
   .subjectTag {
@@ -37,33 +47,78 @@
     padding: 2px 8px;
     border-radius: 4px;
     background-color: #eef4ff;
+    white-space: nowrap; /* Prevent tag from wrapping */
+    margin-left: 0.5rem; /* Space between title and tag */
   }
   
   .courseTitle {
     font-size: 0.85rem;
     color: var(--zporta-secondary);
-    margin-top: 0.3rem;
+    margin-top: 0; /* Reduced margin */
+    margin-bottom: 0.75rem; /* Add space below course title */
   }
   
+  /* --- Excerpt / Accordion Container --- */
   .lessonExcerpt {
     font-size: 0.9rem;
     color: #555;
-    margin: 0.75rem 0;
-    line-height: 1.4;
-    max-height: 2.8em; /* approximately 2 lines */
-    overflow: hidden;
+    margin: 0 0 0.75rem; /* Adjust margin */
+    line-height: 1.5; /* Increased line-height slightly */
+  
+    /* --- Accordion Expansion CSS --- */
+    /* Remove fixed height and overflow */
+    /* max-height: 2.8em; */ /* REMOVED */
+    /* overflow: hidden; */ /* REMOVED */
+  
+    /* Add transition for smooth height change */
+    transition: max-height 0.4s ease-in-out;
+  
+    /* Define initial collapsed height */
+    /* Adjust this value based on how much excerpt you want visible initially */
+    max-height: 6em; /* Approx 4 lines with 1.5 line-height */
+    overflow: hidden; /* Hide overflow INITIALLY */
   }
   
+  /* When the PARENT card has the isExpanded class, expand the excerpt's max-height */
+  .lessonCard.isExpanded .lessonExcerpt {
+     max-height: 1000px; /* Set a large value to allow full expansion */
+     /* Consider removing overflow hidden when expanded if content needs to break out */
+     overflow: visible; /* Allow content to be fully visible */
+  }
+  
+  
+  /* --- Footer --- */
   .cardFooter {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.8rem;
     color: var(--zporta-secondary);
+    margin-top: auto; /* Push footer to bottom */
+    padding-top: 0.5rem; /* Space above footer */
+    border-top: 1px solid var(--zporta-border-light); /* Optional separator */
+  }
+  
+  .lessonType {
+      font-style: italic;
   }
   
   .cardAction {
     color: var(--zporta-primary);
     font-weight: 500;
+    cursor: pointer; /* Make only action clickable */
+    padding: 0.2rem 0.4rem; /* Add padding for easier clicking */
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .cardAction:hover {
+      background-color: #eef4ff; /* Subtle hover background */
+  }
+  
+  /* Ensure accordion styles from ViewerAccordion.css apply within excerpt */
+  .lessonExcerpt .accordion-item {
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      /* Add any overrides needed for accordions inside cards */
   }
   
