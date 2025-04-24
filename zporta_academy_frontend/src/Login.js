@@ -1,219 +1,237 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react'; // Import useEffect, useCallback
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom'; // Keep Link
 import { AuthContext } from './context/AuthContext';
 import apiClient from './api';
+import styles from './Login.module.css'; // <-- Import the CSS module
+
+// --- Placeholder for AI Image ---
+// Ideally, host this image somewhere accessible (e.g., your public folder or a CDN)
+// For example purposes, using a placeholder service or a relative path if in public folder:
+// const aiImageUrl = '/images/login-visual.png'; // If image is in public/images
+const aiImageUrl = 'https://images.unsplash.com/photo-1580894742597-87bc8789db3d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8ZWR1Y2F0aW9uJTIwdGVjaG5vbG9neXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60'; // Example image (Replace with your actual AI-generated image URL)
+
 
 const Login = () => {
     const { login } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
-    // const navigate = useNavigate(); // Still likely not needed if context handles it
+    const [messageType, setMessageType] = useState(''); // 'error' or 'success'
 
-    // --- START: Google Sign-In Logic (Copied & Adapted from Register.js) ---
+    const showMessage = (text, type = 'error') => {
+        setMessage(text);
+        setMessageType(type);
+    }
 
+    // --- Google Sign-In Logic ---
     const handleGoogleResponse = useCallback(async (response) => {
-        const token = response.credential; // This is the Google ID Token
-
+        const token = response.credential;
         try {
-            setMessage(''); // Clear previous messages
-            console.log("Sending Google token to backend...");
-            // Send the token to your backend endpoint (SAME as in Register.js)
+            showMessage(''); // Clear message
             const apiResponse = await apiClient.post('/users/google-login/', { token });
-            const data = apiResponse.data; // Use apiResponse.data
-
-            // Check if the backend successfully logged in/created the user
-            // and returned the necessary data (user object and app token)
+            const data = apiResponse.data;
             if (data.token && data.user) {
-                console.log("Google login/signup success:", data);
-                // Use the login function from AuthContext to set user state and redirect
                 login(data.user, data.token);
-                // Message might briefly appear before navigation handled by login()
-                setMessage("Google login successful!");
+                showMessage("Google login successful!", 'success'); // Use success type
             } else {
-                // Handle cases where backend might just confirm/create account
-                // without returning a login token (less common for seamless flow)
-                console.warn("Google action successful, but no token/user returned by backend:", data);
-                setMessage("Google account verified, but login failed. Backend might need adjustment or contact support.");
-                // You might want to navigate somewhere specific or show a more detailed error
+                showMessage("Google verification successful, but login failed. Please check backend configuration.");
             }
-
         } catch (error) {
-            // Handle Axios errors specifically for Google login
             console.error("Google login error:", error.response ? error.response.data : error.message);
-            if (error.response && error.response.data) {
-                // Extract specific error message from backend if available
-                 setMessage(error.response.data.error || error.response.data.detail || "Google login failed.");
-            } else if (error.request) {
-                setMessage('Network error during Google login. Please check your connection.');
-            } else {
-                setMessage('An unexpected error occurred during Google login.');
-            }
+            const errorMsg = error.response?.data?.error || error.response?.data?.detail || "Google login failed.";
+            showMessage(errorMsg);
         }
-    }, [login]); // Add 'login' from context as a dependency
+    }, [login]);
+
+// INSIDE your Login component...
+
+useEffect(() => {
+  // Function to initialize and render the Google button for THIS component
+  const initializeAndRenderButton = () => {
+      // Check if the Google library is loaded and ready
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+          console.log("Login: Google library ready. Initializing and rendering button.");
+          try {
+              // Initialize: Configures the client ID and callback for this instance
+              window.google.accounts.id.initialize({
+                  client_id: "805972576303-q8o7etck8qjrjiapfre4df9j7oocl37s.apps.googleusercontent.com", // Your Client ID
+                  callback: handleGoogleResponse, // The callback specific to Login
+                  ux_mode: "popup",
+              });
+
+              // Find the button container specific to the Login page
+              const buttonContainer = document.getElementById("google-login-button");
+              if (buttonContainer) {
+                  // Clear the container first - important if re-rendering
+                  buttonContainer.innerHTML = '';
+                  // Render the button into the Login page's container
+                  window.google.accounts.id.renderButton(buttonContainer, {
+                      theme: "outline",
+                      size: "large",
+                      type: "standard",
+                      text: "signin_with",
+                      shape: "rectangular",
+                      width: "300" // Example width
+                  });
+                  console.log("Login: Google button rendered.");
+              } else {
+                  // If the container isn't found when the library is ready, log an error
+                  console.error("Login: google-login-button container not found in DOM.");
+              }
+          } catch (error) {
+              console.error("Login: Error initializing/rendering Google Sign-In:", error);
+              showMessage("Failed to initialize Google Sign-In.");
+          }
+      } else {
+          // This should ideally not happen if called after script load, but good to log
+          console.error("Login: Google library not available when initAndRender was called.");
+           showMessage("Failed to initialize Google Sign-In library.");
+      }
+  };
+
+  // --- Script Loading Logic ---
+  // Check if the script tag already exists
+  if (document.getElementById('google-jssdk')) {
+      console.log("Login: Google script tag found.");
+      // If script tag exists, assume it's loaded or loading.
+      // Check if the 'google' object is ready.
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+           console.log("Login: Google library already ready. Initializing/Rendering button.");
+           // Library is ready, proceed to initialize and render for Login page
+           initializeAndRenderButton();
+      } else {
+           // Script tag exists, but library isn't ready yet.
+           // This might happen if navigate happens *while* script is loading.
+           // The 'onload' of the *original* script tag should handle calling initAndRender.
+           // We can add a fallback just in case onload was missed or fired early.
+           console.log("Login: Google script tag found, but library not ready. Waiting for its onload.");
+           // Optional: Add a small delay or poll for window.google if onload proves unreliable across navigations.
+           // However, often the existing script's onload will trigger correctly.
+      }
+  } else {
+      // Script doesn't exist, create and load it
+      console.log("Login: Google script tag not found. Loading script.");
+      const script = document.createElement("script");
+      script.id = 'google-jssdk'; // Add the ID
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      // Set the onload handler *before* appending
+      script.onload = () => {
+          console.log("Login: Google script finished loading via onload.");
+          initializeAndRenderButton(); // Initialize and render AFTER script loads
+      };
+      script.onerror = () => {
+          console.error("Login: Failed to load Google API script.");
+          showMessage("Failed to load Google API script.");
+      };
+      document.body.appendChild(script);
+  }
+
+  // Cleanup function (Optional: You might want to clear the button on unmount)
+  return () => {
+       console.log("Login component unmounting/effect re-running.");
+       // Example: Clearing the button if it causes issues during navigation
+       // const buttonContainer = document.getElementById("google-login-button");
+       // if (buttonContainer) {
+       //     buttonContainer.innerHTML = '';
+       // }
+  };
+}, [handleGoogleResponse]); // Keep dependency on the callback handler
 
 
-    useEffect(() => {
-        // Ensure the Google script is loaded only once, even if component re-renders
-        if (document.getElementById('google-jssdk')) return; // Check if script already exists
-
-        const script = document.createElement("script");
-        script.id = 'google-jssdk'; // Give the script an ID to prevent duplicates
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-
-        // On successful load of the script
-        script.onload = () => {
-            if (window.google && window.google.accounts && window.google.accounts.id) {
-                // Initialize Google login
-                try {
-                    window.google.accounts.id.initialize({
-                        // IMPORTANT: Use the SAME Google Client ID as in your Register component
-                        client_id: "805972576303-q8o7etck8qjrjiapfre4df9j7oocl37s.apps.googleusercontent.com",
-                        callback: handleGoogleResponse, // Use the handler defined above
-                        ux_mode: "popup", // Or "redirect"
-                        // auto_select: true, // Optionally enable one-tap sign-in prompt
-                    });
-
-                    // Render Google Sign-In button specifically for the login page
-                    const buttonContainer = document.getElementById("google-login-button"); // Use a unique ID for the login button container
-                    if (buttonContainer) {
-                         window.google.accounts.id.renderButton(buttonContainer, {
-                            theme: "outline",
-                            size: "large",
-                            type: "standard", // Standard button look
-                            text: "signin_with", // Text like "Sign in with Google"
-                         });
-                    } else {
-                         console.error("Google Login button container ('google-login-button') not found.");
-                         //setMessage("Could not display Google Login button.");
-                    }
-
-                    // Optional: Display One Tap prompt
-                    // window.google.accounts.id.prompt();
-
-                } catch (error) {
-                     console.error("Error initializing Google Sign-In:", error);
-                     setMessage("Failed to initialize Google Sign-In.");
-                }
-            } else {
-                console.error("Google Sign-In library failed to load.");
-                setMessage("Failed to load Google Sign-In.");
-            }
-        };
-
-        // Handle script loading errors
-        script.onerror = () => {
-            console.error("Failed to load Google API script.");
-            setMessage("Failed to load Google API script. Check network connection or ad blockers.");
-        };
-
-        // Append the script to the body
-        document.body.appendChild(script);
-
-        // Cleanup function when the component unmounts
-        return () => {
-            const scriptTag = document.getElementById('google-jssdk');
-            if (scriptTag) {
-                // document.body.removeChild(scriptTag); // Be cautious removing script if other components might need it.
-            }
-             // It's generally good practice to clear the rendered button too if needed
-             const buttonContainer = document.getElementById("google-login-button");
-             if (buttonContainer) {
-                 // buttonContainer.innerHTML = ''; // Clear previous button render
-             }
-             // You might want to cancel any ongoing Google processes if applicable
-             // if (window.google && window.google.accounts && window.google.accounts.id) {
-             //   window.google.accounts.id.cancel();
-             // }
-        };
-    }, [handleGoogleResponse]); // useEffect depends on the callback
-
-
-    // --- END: Google Sign-In Logic ---
-
-
-    // Standard Username/Password Login Handler (Keep as is)
+    // --- Standard Username/Password Login Handler ---
     const handleLogin = async (e) => {
         e.preventDefault();
-        setMessage('');
+        showMessage(''); // Clear message
 
         try {
-            const response = await apiClient.post('/users/login/', {
-                username, // Or 'email' if your backend expects that
-                password,
-            });
+            const response = await apiClient.post('/users/login/', { username, password });
             const data = response.data;
-            login(data.user, data.token); // Use context login (assuming backend returns user and token keys)
+            login(data.user, data.token);
+             showMessage("Login successful!", 'success'); // Show success briefly
 
         } catch (error) {
             console.error('Error during standard login:', error);
-            if (error.response && error.response.data) {
-                const backendError = error.response.data.error ||
-                                     error.response.data.detail ||
-                                     (error.response.data.non_field_errors ? error.response.data.non_field_errors.join(' ') : null) ||
-                                     'Login failed. Please check credentials.';
-                setMessage(backendError);
-            } else if (error.request) {
-                setMessage('Network error. Could not connect to the server.');
-            } else {
-                setMessage('An unexpected error occurred. Please try again.');
-            }
+            const backendError = error.response?.data?.error ||
+                                 error.response?.data?.detail ||
+                                 (error.response?.data?.non_field_errors ? error.response.data.non_field_errors.join(' ') : null) ||
+                                 'Login failed. Please check credentials.';
+            showMessage(backendError);
         }
     };
 
-    // --- JSX Modification ---
     return (
-        <div style={{ padding: "20px", maxWidth: "400px", margin: "auto" }}> {/* Basic styling */}
-            <h2>Login</h2>
+        // Apply styles using CSS Modules
+        <div className={styles.loginPageContainer}>
+            <div className={styles.loginBox}>
 
-            {/* Standard Login Form */}
-            <form onSubmit={handleLogin}>
-                <div>
-                    <label>Username:</label> {/* Or Email */}
-                    <input
-                        type="text" // Or type="email"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        autoComplete="username"
-                        style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' }}
-                    />
+                {/* Image Panel (Left Side) */}
+                <div className={styles.imagePanel}>
+                    <img src={aiImageUrl} alt="Educational Platform Visual" />
+                    <h2>Welcome Back!</h2>
+                    <p>Log in to continue your learning journey with ZPorta Academy.</p>
+                    {/* You can add more branding or info here */}
                 </div>
-                <div>
-                    <label>Password:</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        autoComplete="current-password"
-                        style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' }}
-                    />
+
+                {/* Form Panel (Right Side) */}
+                <div className={styles.formPanel}>
+                    <h2>Login to Your Account</h2>
+
+                     {/* Display Message */}
+                    {message && (
+                        <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`}>
+                            {message}
+                        </p>
+                     )}
+
+                    {/* Standard Login Form */}
+                    <form onSubmit={handleLogin}>
+                        <div className={styles.formGroup}>
+                            <label htmlFor="login-username" className={styles.label}>Username or Email</label>
+                            <input
+                                id="login-username"
+                                type="text" // Consider type="email" if backend primarily uses email
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                autoComplete="username"
+                                className={styles.input}
+                            />
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label htmlFor="login-password" className={styles.label}>Password</label>
+                            <input
+                                id="login-password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                autoComplete="current-password"
+                                className={styles.input}
+                            />
+                        </div>
+
+                        {/* Forgot Password Link */}
+                        <Link to="/password-reset" className={styles.forgotPasswordLink}>Forgot your password?</Link>
+
+                        <button type="submit" className={styles.submitButton}>Login</button>
+                    </form>
+
+                    {/* Separator */}
+                    <div className={styles.separator}>Or</div>
+
+                    {/* Google Login Button Container */}
+                    <div id="google-login-button" className={styles.googleButtonContainer}>
+                        {/* Google button is rendered here by the script */}
+                    </div>
+
+                    {/* Link to Register Page */}
+                    <p className={styles.registerLink}>
+                        Don't have an account? <Link to="/register">Register here</Link>
+                    </p>
                 </div>
-                 <div style={{ marginBottom: '10px', textAlign: 'right' }}>
-                     <Link to="/password-reset">Forgot your password?</Link>
-                 </div>
-                <button type="submit" style={{ width: '100%', padding: '10px', marginBottom: '15px' }}>Login</button>
-            </form>
-
-            {/* Separator */}
-            <div style={{ textAlign: 'center', margin: '20px 0', color: '#888' }}>OR</div>
-
-            {/* Google Login Button Container */}
-            {/* Make sure this ID matches the one used in useEffect: getElementById("google-login-button") */}
-            <div id="google-login-button" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                {/* Google button will be rendered here by the script */}
             </div>
-
-            {/* Messages */}
-            {message && <p style={{ color: message.toLowerCase().includes('success') ? 'green' : 'red', textAlign: 'center', marginTop: '10px' }}>{message}</p>}
-
-            {/* Link to Register Page */}
-            <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                Don't have an account? <Link to="/register">Register here</Link>
-            </p>
         </div>
     );
 };
