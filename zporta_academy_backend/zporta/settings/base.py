@@ -128,7 +128,8 @@ STATIC_URL = 'django-static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "https://eduhab.com",       # Allow frontend origin with HTTPS
+    "https://www.eduhab.com",  # Allow www subdomain if used
 ]
 CORS_ALLOW_CREDENTIALS = True
 STATIC_ROOT = BASE_DIR / 'staticfiles'
