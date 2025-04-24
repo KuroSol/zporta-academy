@@ -1,95 +1,118 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import apiClient from './api'; // <-- Added apiClient import (Adjust path if needed)
+import { useParams, useNavigate, Link } from "react-router-dom"; // Import Link
+import apiClient from './api';
+import styles from './PasswordReset.module.css'; // Import the SAME CSS module
 
 const PasswordResetConfirm = () => {
     const { uid, token } = useParams(); // Extract uid and token from the URL
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState("");
+    const [messageType, setMessageType] = useState(''); // 'error' or 'success'
     const navigate = useNavigate();
+
+    const showMessage = (text, type = 'error') => {
+        setMessage(text);
+        setMessageType(type);
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage(""); // Clear previous message
+        showMessage(""); // Clear previous message
 
         if (newPassword !== confirmPassword) {
-            setMessage("Passwords do not match.");
+            showMessage("Passwords do not match.", 'error');
             return;
+        }
+        if (newPassword.length < 8) { // Example: Basic password length check
+             showMessage("Password must be at least 8 characters long.", 'error');
+             return;
         }
 
         try {
-            // Data object to send
             const resetData = {
-              uid,
-              token,
-              new_password: newPassword,
-              // confirm_new_password: confirmPassword // Often only new_password needed by backend here
+                uid,
+                token,
+                new_password: newPassword,
             };
 
-            // Use apiClient.post, relative URL, data object. Headers handled automatically.
             await apiClient.post('/users/password-reset/confirm/', resetData);
 
-            // If await finishes without error, it was successful (2xx status)
-            setMessage("Password reset successful! Redirecting to login...");
-            // Clear fields on success
+            showMessage("Password reset successful! Redirecting to login...", 'success');
             setNewPassword('');
             setConfirmPassword('');
-            setTimeout(() => navigate("/login"), 2000); // Keep redirect
+            setTimeout(() => navigate("/login"), 3000); // Redirect after a short delay
 
         } catch (error) {
-            // Handle Axios errors
-            console.error("Password Reset Confirm Error:", error); // Log the full error
+            console.error("Password Reset Confirm Error:", error);
+            let errorMsg = "Password reset failed. The link may be invalid or expired."; // Default error
             if (error.response && error.response.data) {
-                // Use backend error message if available
-                // Check common DRF fields or specific ones your backend might return
-                const backendError = error.response.data.error ||
-                                     error.response.data.detail ||
-                                     (error.response.data.token ? `Token: ${error.response.data.token.join(' ')}` : null) ||
-                                     (error.response.data.uid ? `UID: ${error.response.data.uid.join(' ')}` : null) ||
-                                     (error.response.data.new_password ? `Password: ${error.response.data.new_password.join(' ')}` : null) ||
-                                     (error.response.data.non_field_errors ? error.response.data.non_field_errors.join(' ') : null) ||
-                                     "Password reset failed."; // Fallback message
-                setMessage(backendError);
+                 // Try to extract a more specific error from backend response
+                 const backendError = error.response.data.error ||
+                                      error.response.data.detail ||
+                                      (error.response.data.token ? `Token Error: ${error.response.data.token.join(' ')}` : null) ||
+                                      (error.response.data.uid ? `UID Error: ${error.response.data.uid.join(' ')}` : null) ||
+                                      (error.response.data.new_password ? `Password Error: ${error.response.data.new_password.join(' ')}` : null) ||
+                                      (error.response.data.non_field_errors ? error.response.data.non_field_errors.join(' ') : null);
+                 if (backendError) {
+                    errorMsg = backendError;
+                 }
             } else if (error.request) {
-                // Network error
-                setMessage('Network error. Could not connect to the server.');
-            } else {
-                // Other unexpected errors
-                setMessage('An unexpected error occurred.');
+                 errorMsg = 'Network error. Could not connect to the server.';
             }
+            showMessage(errorMsg, 'error');
         }
     };
 
-    // JSX remains the same
     return (
-        <div style={{ padding: "20px" }}> {/* Consider CSS Modules or styled-components */}
-            <h1>Set New Password</h1>
-            {/* Display message - consider styling success/error differently */}
-            {message && <p className={message.includes("success") ? "success-message" : "error-message"}>{message}</p>}
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>New Password:</label>
-                    <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        autoComplete="new-password" // Added autocomplete
-                    />
-                </div>
-                <div>
-                    <label>Confirm Password:</label>
-                    <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        autoComplete="new-password" // Added autocomplete
-                    />
-                </div>
-                <button type="submit">Reset Password</button>
-            </form>
+        <div className={styles.resetPageContainer}>
+            <div className={styles.resetBox}>
+                <h1 className={styles.title}>Set New Password</h1>
+                <p className={styles.instructions}>
+                    Please enter your new password below. Make sure it's secure!
+                </p>
+
+                 {/* Display Message - Placed above form for visibility */}
+                 {message && (
+                    <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`} style={{ marginBottom: '20px' }}> {/* Add bottom margin when message shown */}
+                        {message}
+                    </p>
+                 )}
+
+                <form onSubmit={handleSubmit}>
+                    <div className={styles.formGroup}>
+                        <label htmlFor="new-password" className={styles.label}>New Password</label>
+                        <input
+                            id="new-password"
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            required
+                            className={styles.input}
+                            autoComplete="new-password"
+                        />
+                    </div>
+                    <div className={styles.formGroup}>
+                        <label htmlFor="confirm-password" className={styles.label}>Confirm New Password</label>
+                        <input
+                            id="confirm-password"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            className={styles.input}
+                            autoComplete="new-password"
+                        />
+                    </div>
+                    <button type="submit" className={styles.submitButton}>Reset Password</button>
+                </form>
+
+                 {/* Link back to Login - Conditionally show or always show */}
+                 <div className={styles.backLink}>
+                    <Link to="/login">Back to Login</Link>
+                 </div>
+
+            </div>
         </div>
     );
 };
