@@ -1,0 +1,385 @@
+/* StudyDashboard.module.css */
+
+/* --- Variables --- */
+:root {
+  --zporta-primary: #0d6efd; /* Example Blue */
+  --zporta-secondary: #6c757d; /* Example Gray */
+  --zporta-success: #198754; /* Example Green */
+  --zporta-info: #0dcaf0; /* Example Cyan */
+  --zporta-warning: #ffc107; /* Example Yellow */
+  --zporta-danger: #dc3545; /* Example Red */
+  --zporta-light: #f8f9fa; /* Light Gray */
+  --zporta-dark: #212529; /* Dark Gray */
+  --zporta-background: #ffffff;
+  --zporta-text: #333;
+  --zporta-border: #e0e0e0; /* Slightly lighter border */
+  --zporta-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Softer shadow */
+  --zporta-radius: 12px; /* More rounded corners */
+  --zporta-feed-bg: #f0f2f5; /* Light grey background for the feed area */
+}
+
+/* --- Base Container --- */
+.dashboardContainer {
+  max-width: 700px; /* Typical feed width */
+  margin: 1.5rem auto;
+  padding: 0 1rem; /* Padding on sides for smaller screens */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--zporta-text);
+  background-color: var(--zporta-feed-bg); /* Apply background to container */
+  min-height: 100vh; /* Ensure it takes full height */
+}
+
+/* --- Page Title & Welcome --- */
+.pageTitle {
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  font-weight: 700;
+  color: var(--zporta-dark);
+  margin-bottom: 0.5rem; /* Reduced margin */
+  padding-top: 1.5rem; /* Add padding top */
+  text-align: left; /* Align left for feed */
+}
+
+.welcomeMessage {
+    font-size: 1rem;
+    color: var(--zporta-secondary);
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+/* --- Feed Container --- */
+.feedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Space between feed items */
+  padding-bottom: 3rem; /* Space at the bottom */
+}
+
+/* --- Base Feed Item Styles --- */
+.feedItem {
+  background-color: var(--zporta-background);
+  border-radius: var(--zporta-radius);
+  border: 1px solid var(--zporta-border);
+  box-shadow: var(--zporta-shadow);
+  padding: 1rem 1.25rem; /* Slightly more horizontal padding */
+  display: flex;
+  flex-direction: column; /* Stack header, description, progress */
+  gap: 0.75rem; /* Space between elements inside the card */
+  cursor: pointer;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  overflow: hidden;
+}
+
+.feedItem:hover,
+.feedItem:focus {
+  transform: translateY(-2px); /* Subtle lift */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  outline: none;
+  border-color: #c0c0c0; /* Slightly darker border on hover */
+}
+
+/* --- Card Header (Icon, Text, Action) --- */
+.cardHeader {
+    display: flex;
+    align-items: center; /* Vertically align items in header */
+    gap: 0.75rem;
+}
+
+.cardIcon {
+  flex-shrink: 0;
+  width: 40px; /* Fixed size for consistency */
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--zporta-background); /* White icon color */
+}
+
+.cardHeaderText {
+    flex-grow: 1; /* Allow text to take available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+.cardTitle {
+  font-size: 1.05rem; /* Slightly smaller title */
+  font-weight: 600;
+  color: var(--zporta-dark);
+  margin: 0 0 0.1rem; /* Reduced bottom margin */
+  line-height: 1.3;
+  /* Truncate long titles */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardSubtitle {
+  font-size: 0.8rem;
+  color: var(--zporta-secondary);
+  margin: 0;
+  line-height: 1.3;
+  display: flex; /* Use flexbox for labels/tags */
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+}
+
+.itemTypeLabel {
+    font-weight: 500;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background-color: #eee;
+    color: #555;
+}
+
+.subjectTag {
+    font-weight: 500;
+    color: var(--zporta-primary); /* Use primary color for subject */
+}
+
+.cardAction {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem; /* Smaller gap */
+  color: var(--zporta-primary); /* Action color */
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-left: auto; /* Push action to the right */
+  flex-shrink: 0; /* Prevent shrinking */
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.feedItem:hover .cardAction {
+    opacity: 1;
+}
+
+/* --- Card Description --- */
+.cardDescription {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0; /* Removed extra margins */
+  line-height: 1.5;
+  /* Limit description lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Show max 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Progress Bar Section --- */
+.progressSection {
+    margin-top: 0.5rem; /* Add some space above progress */
+}
+
+.progressBarContainer {
+  background-color: #e9ecef;
+  border-radius: 4px; /* Smaller radius */
+  height: 6px; /* Thinner progress bar */
+  overflow: hidden;
+  margin-bottom: 0.25rem; /* Space between bar and text */
+}
+
+.progressBar {
+  height: 100%;
+  background-color: var(--zporta-success); /* Green progress */
+  border-radius: 4px;
+  transition: width 0.5s ease-in-out;
+}
+
+.progressText {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--zporta-secondary);
+  display: block;
+  text-align: right;
+}
+
+/* --- Specific Card Type Styles --- */
+.enrolledCard .cardIcon { background-color: var(--zporta-primary); }
+.enrolledCard .itemTypeLabel { background-color: #e7f1ff; color: var(--zporta-primary); }
+
+.suggestedCard .cardIcon { background-color: var(--zporta-warning); }
+.suggestedCard .itemTypeLabel { background-color: #fff8e1; color: #f59e0b; }
+
+.quizFeedItemContainer .cardIcon { background-color: var(--zporta-info); }
+.quizFeedItemContainer .itemTypeLabel { background-color: #e0f7fa; color: #06b6d4; }
+
+/* --- Quiz Card Wrapper --- */
+.quizCardWrapper {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--zporta-border);
+    padding-top: 0.75rem;
+    /* Ensure QuizCard styles don't conflict heavily */
+    /* You might need to adjust QuizCard.css */
+}
+.quizCardWrapper > div { /* Target the QuizCard component inside */
+    box-shadow: none; /* Remove shadow from inner card if needed */
+    border: none; /* Remove border from inner card if needed */
+    padding: 0; /* Remove padding from inner card if needed */
+}
+
+
+/* --- Empty State --- */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  background-color: var(--zporta-background); /* Match feed item background */
+  border: 1px solid var(--zporta-border); /* Match feed item border */
+  border-radius: var(--zporta-radius);
+  margin-top: 1rem;
+  box-shadow: var(--zporta-shadow);
+}
+
+.emptyIcon {
+  color: var(--zporta-secondary);
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.emptyState p {
+  color: var(--zporta-secondary);
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.emptyState p:last-of-type {
+    margin-bottom: 1.5rem;
+}
+
+.exploreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background-color: var(--zporta-primary);
+  color: var(--zporta-background);
+  border-radius: var(--zporta-radius);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.exploreLink:hover {
+  background-color: #0b5ed7; /* Darker primary on hover */
+}
+
+/* --- Loading / Error / Observer --- */
+.centeredMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: var(--zporta-secondary);
+}
+
+.spinner {
+  animation: spin 1.5s linear infinite;
+  margin-bottom: 1rem;
+  color: var(--zporta-primary);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.errorMessageContainer {
+    background-color: var(--zporta-background);
+    border: 1px solid var(--zporta-danger);
+    color: var(--zporta-danger);
+    border-radius: var(--zporta-radius);
+    margin: 1rem 0;
+    min-height: auto; /* Override default min-height */
+}
+.errorMessageContainer svg {
+    color: var(--zporta-danger);
+    margin-bottom: 1rem;
+}
+
+.retryButton {
+    margin-top: 1.5rem;
+    padding: 0.6rem 1.2rem;
+    background-color: var(--zporta-primary);
+    color: var(--zporta-background);
+    border: none;
+    border-radius: var(--zporta-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.retryButton:hover {
+    background-color: #0b5ed7;
+}
+
+/* Observer target - needs some height to be observed */
+.observerTarget {
+    height: 20px; /* Give it a small height */
+    /* background-color: rgba(255, 0, 0, 0.1); */ /* Optional: for debugging visibility */
+    margin: 1rem 0; /* Add some margin */
+    pointer-events: none; /* Make sure it doesn't interfere with clicks */
+}
+
+.errorItem {
+    color: var(--zporta-danger);
+    padding: 1rem;
+    border: 1px dashed var(--zporta-danger);
+    border-radius: var(--zporta-radius);
+    background-color: #fff5f5;
+}
+/* Lesson feed item colors */
+.nextLesson .cardIcon { background-color: var(--zporta-info); }
+.suggestedLesson .cardIcon { background-color: var(--zporta-warning); }
+.cardThumbnail {
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  border-top-left-radius: var(--zporta-radius);
+  border-top-right-radius: var(--zporta-radius);
+  margin-bottom: 0.75rem;
+}
+.cardThumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 600px) {
+  .dashboardContainer {
+    padding: 0 0.5rem; /* Less padding on small screens */
+    margin: 1rem auto;
+  }
+  .pageTitle {
+      padding-top: 1rem;
+      margin-bottom: 0.25rem;
+  }
+   .welcomeMessage {
+      margin-bottom: 1rem;
+  }
+  .feedItem {
+      padding: 0.75rem 1rem;
+      border-radius: 8px; /* Slightly smaller radius */
+  }
+  .cardIcon {
+      width: 36px;
+      height: 36px;
+  }
+  .cardTitle {
+      font-size: 1rem;
+  }
+  .cardSubtitle {
+      font-size: 0.75rem;
+  }
+  .cardAction {
+      font-size: 0.8rem;
+  }
+  .cardAction svg {
+      width: 16px;
+      height: 16px;
+  }
+}

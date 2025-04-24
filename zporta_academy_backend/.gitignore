@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+db.sqlite3
+staticfiles/
+media/
+*.pyc
+zporta_academy_frontend/package-lock.json
+zporta_academy_frontend/package.json
+zporta_academy_frontend/postcss.config.js
+zporta_academy_frontend/tailwind.config.js

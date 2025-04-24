@@ -1,0 +1,303 @@
+/* --- Re-declare variables OR ensure they are globally available --- */
+/* If these are not in a global scope (like index.css), uncomment or add them here */
+/*
+:root {
+    --zporta-primary-color: #3498db;
+    --zporta-primary-hover: #2980b9;
+    --zporta-secondary-color: #2c3e50;
+    --zporta-secondary-light: #34495e;
+    --zporta-background-light: #ffffff;
+    --zporta-background-medium: #f9f9f9;
+    --zporta-border-color: #ccc;
+    --zporta-border-light: #ddd;
+    --zporta-success-color: #2ecc71;
+    --zporta-error-color: #e74c3c;
+    --zporta-text-light: #555;
+    --zporta-required-color: #e74c3c;
+    --zporta-font-family: 'Arial', sans-serif;
+}
+*/
+
+/* --- Container Styling --- */
+.createQuizContainer {
+  padding: 5px; /* Minimal padding for modal use */
+  background: var(--zporta-background-light);
+  font-family: var(--zporta-font-family);
+  /* Remove margin/max-width if primarily in Modal */
+  /* max-width: 800px; */
+  /* margin: 20px auto; */
+}
+
+/* --- Modal Form Title --- */
+.modalFormTitle {
+  font-size: 22px;
+  color: var(--zporta-secondary-color);
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 20px; /* Slightly less margin before progress bar */
+  font-weight: 600;
+}
+
+/* --- Progress Bar --- */
+.progressContainer {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0; /* Light grey background */
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 25px; /* Space below progress bar */
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--zporta-primary-color); /* Use theme color */
+  transition: width 0.4s ease; /* Slightly smoother transition */
+  border-radius: 4px;
+}
+
+/* --- Message Styling (Same as others) --- */
+.message {
+  padding: 10px 15px;
+  margin-bottom: 20px; /* Increase space below message */
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.error {
+  background-color: #fdecea;
+  color: var(--zporta-error-color);
+  border: 1px solid var(--zporta-error-color);
+}
+
+.success {
+  background-color: #eafaf1;
+  color: var(--zporta-success-color);
+  border: 1px solid var(--zporta-success-color);
+}
+
+/* --- Form & Step Structure --- */
+.quizForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Spacing between steps/elements if form grows */
+}
+
+.step {
+  /* Base styling for steps if needed, used with step1, step2, step3 */
+  border: 1px solid var(--zporta-border-light); /* Optional border around step */
+  border-radius: 6px;
+  padding: 20px;
+  background-color: var(--zporta-background-light);
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* Space between form groups within a step */
+}
+
+/* Specific step styles if needed */
+.step1 {}
+.step2 {}
+.step3 {}
+
+/* --- Form Elements --- */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--zporta-secondary-light);
+}
+
+.required {
+  color: var(--zporta-required-color);
+  margin-left: 2px;
+}
+
+/* Input, Select, Textarea Styling */
+.inputField,
+.selectField,
+.textAreaField {
+  padding: 10px 12px;
+  border: 1px solid var(--zporta-border-color);
+  border-radius: 5px;
+  font-size: 14px;
+  font-family: inherit; /* Inherit font */
+  color: var(--zporta-secondary-color);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inputField:focus,
+.selectField:focus,
+.textAreaField:focus {
+  border-color: var(--zporta-primary-color);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  outline: none;
+}
+
+.inputField::placeholder,
+.textAreaField::placeholder {
+  color: #aaa;
+}
+
+.textAreaField {
+  min-height: 80px; /* Give textarea some default height */
+  resize: vertical; /* Allow vertical resize */
+}
+
+/* --- Editor Styling (Same as CreateLesson) --- */
+.editorContainer {
+  margin-top: 10px;
+  border: 1px solid var(--zporta-border-color);
+  border-radius: 5px;
+  padding: 5px;
+  min-height: 150px; /* Adjust height as needed for quiz explanation */
+}
+
+.editorLabel {
+   font-size: 14px;
+   font-weight: bold;
+   color: var(--zporta-secondary-light);
+   margin-bottom: 8px;
+   display: block;
+}
+
+/* --- Navigation Buttons (Similar to CreateLesson actions) --- */
+.navigationButtons {
+  display: flex;
+  justify-content: space-between; /* Space out Back/Cancel and Next/Submit */
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--zporta-border-light);
+}
+
+/* General Button Styles */
+.btn {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.btn:disabled {
+  background-color: #bdc3c7 !important;
+  border-color: #bdc3c7 !important; /* Ensure border also changes */
+  color: #fff !important; /* Ensure text color is consistent */
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+/* Specific Button Styles */
+.btnPrimary, /* General primary style */
+.btnNext,    /* Next button */
+.btnSubmit   /* Submit button */
+{
+  background-color: var(--zporta-primary-color);
+  color: var(--zporta-background-light);
+}
+.btnPrimary:hover:not(:disabled),
+.btnNext:hover:not(:disabled),
+.btnSubmit:hover:not(:disabled)
+{
+  background-color: var(--zporta-primary-hover);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btnSecondary, /* Cancel button */
+.btnBack       /* Back button */
+{
+  background-color: #ecf0f1;
+  color: var(--zporta-secondary-light);
+  border: 1px solid var(--zporta-border-color);
+}
+.btnSecondary:hover:not(:disabled),
+.btnBack:hover:not(:disabled)
+{
+  background-color: #e0e6e8;
+  border-color: #b0b9be;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active:not(:disabled) {
+   transform: translateY(1px);
+}
+
+
+/* --- Animation --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); } /* Slightly less movement */
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animateFadeIn {
+  animation: fadeIn 0.4s ease-in-out; /* Slightly slower */
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+  .modalFormTitle {
+      font-size: 20px;
+  }
+  .step {
+      padding: 15px;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .quizForm {
+      gap: 15px;
+  }
+  .formGroup label {
+      font-size: 13px;
+  }
+  .inputField,
+  .selectField,
+  .textAreaField {
+      font-size: 13px;
+      padding: 9px 10px;
+  }
+
+  .navigationButtons {
+      gap: 8px; /* Reduce gap slightly */
+      /* Let buttons potentially wrap if needed, though flex-end push might handle it */
+  }
+
+  .btn {
+      padding: 8px 15px; /* Smaller padding */
+      font-size: 13px;
+  }
+}
+
+@media (max-width: 450px) {
+   .navigationButtons {
+      /* Stack buttons for very small screens */
+      flex-direction: column;
+      gap: 10px;
+      align-items: stretch; /* Make buttons full width */
+   }
+   .navigationButtons > button:not(:first-child) {
+       margin-left: 0; /* Remove any auto margins */
+   }
+    /* Ensure cancel stays first visually if using flex-direction: column */
+   .btnSecondary { order: 1; }
+   .btnBack { order: 2; }
+   .btnNext { order: 3; }
+   .btnSubmit { order: 3; } /* Next and Submit share order */
+
+}
