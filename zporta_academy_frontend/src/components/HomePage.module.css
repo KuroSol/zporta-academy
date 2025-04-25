@@ -1,0 +1,609 @@
+/* --- HomePage.module.css --- */
+
+/* --- Base Variables (Consistent with Explorer) --- */
+:root {
+  --color-primary: #0a84ff;
+  --color-primary-hover: #0060df;
+  --color-primary-light: #e6f3ff; /* Lighter shade for backgrounds */
+  --color-secondary: #ffb606; /* Gold color */
+  --color-secondary-darker: #e0a005;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #a0a0a5;
+  --color-text-on-primary-bg: #ffffff;
+  --color-text-on-secondary-bg: #1d1d1f; /* Text on gold */
+  --color-background-page: #f5f5f7; /* Slightly off-white page */
+  --color-background-container: #ffffff;
+  --color-background-hover: #ebebef; /* Slightly darker hover */
+  --color-border: #d2d2d7;
+  --color-border-focus: var(--color-primary);
+  --color-success: #34c759; /* iOS Green */
+  --color-error: #ff3b30; /* iOS Red */
+  --color-error-bg: #ffebeb;
+  --color-placeholder-bg: #e5e5ea;
+  --color-placeholder-icon: #c7c7cc;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.07);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+  --transition-duration: 0.2s;
+  --transition-timing: ease-in-out;
+}
+
+/* --- General Placeholders --- */
+.loadingPlaceholder,
+.emptyStateMessage {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  width: 100%;
+  /* Ensure placeholders take up space */
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1; /* Added to help push button down */
+}
+.errorMessage {
+  color: var(--color-error);
+  background-color: var(--color-error-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0.5rem 0 1rem 0; /* Adjust margin */
+  text-align: center;
+}
+
+/* --- Page Wrapper --- */
+.homeWrapper {
+  background-color: var(--color-background-page);
+  min-height: 100vh;
+  padding-bottom: 3rem; /* Space at the bottom */
+}
+
+/* --- Page Header --- */
+.homeHeader {
+  padding: 2rem 1.5rem 2.5rem 1.5rem; /* Adjust padding */
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%); /* Subtle gradient background */
+  border-bottom: 1px solid var(--color-border);
+  text-align: center; /* Center content */
+}
+
+.homeTitle {
+  font-size: 1.8rem; /* Slightly smaller */
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.homeSubtitle {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 1.5rem 0; /* Space before button */
+  max-width: 600px; /* Limit width */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- THE CATCHY BUTTON --- */
+.startPlanButton {
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.8rem; /* Generous padding */
+  font-size: 1.05rem; /* Larger font */
+  font-weight: 600;
+  color: var(--color-text-on-primary-bg);
+  /* Catchy Gradient Background */
+  background: linear-gradient(45deg, var(--color-primary) 0%, #005ecb 100%);
+  border: none;
+  border-radius: var(--radius-pill); /* Pill shape */
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25), /* Primary color shadow */
+              inset 0 1px 1px rgba(255, 255, 255, 0.1); /* Subtle inner highlight */
+  transition: transform var(--transition-duration) var(--transition-timing),
+              box-shadow var(--transition-duration) var(--transition-timing);
+  text-decoration: none; /* Remove underline if it's a link styled as button */
+}
+
+.startPlanButton:hover {
+  transform: translateY(-2px) scale(1.02); /* Lift and slightly enlarge */
+  box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35),
+              inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.startPlanButton:active {
+  transform: translateY(0) scale(1); /* Push back down */
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2),
+              inset 0 1px 2px rgba(0, 0, 0, 0.1); /* Inner shadow */
+}
+
+.startPlanButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-background-page), 0 0 0 5px var(--color-primary); /* Clear focus ring */
+}
+
+.startPlanIcon {
+  margin-right: 0.6rem; /* Space between icon and text */
+  font-size: 1.2em; /* Make icon slightly larger */
+  display: inline-block; /* Prevents layout shifts */
+  animation: rocket-pulse 2s infinite ease-in-out; /* Subtle pulse */
+}
+
+@keyframes rocket-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+
+/* --- Main Content Grid --- */
+.homeContentGrid {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem; /* Padding around the grid */
+  max-width: 1300px; /* Max width for content */
+  margin: -1.5rem auto 0 auto; /* Negative margin to overlap header slightly, center */
+  position: relative; /* Ensure it's above header background */
+  /* Responsive Columns */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  /* Align items to start to prevent stretching if content varies */
+  align-items: start;
+}
+
+/* --- Dashboard Card Styles --- */
+.dashboardCard {
+  background: var(--color-background-container);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-lg); /* Use larger radius */
+  box-shadow: var(--shadow-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow var(--transition-duration) var(--transition-timing),
+              transform var(--transition-duration) var(--transition-timing);
+  /* Let grid determine height, remove fixed height */
+  min-height: 250px; /* Add minimum height for consistency */
+}
+.dashboardCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.dashboardCard h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+/* Default paragraph style within cards */
+.dashboardCard > p:not(.errorMessage):not(.emptyStateMessage) {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Action Button at bottom of cards */
+.cardActionButton {
+  margin-top: auto; /* Push to bottom */
+  padding: 0.6rem 1rem;
+  background: var(--color-primary-light); /* Light primary background */
+  color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color var(--transition-duration) var(--transition-timing),
+              color var(--transition-duration) var(--transition-timing);
+  align-self: flex-start;
+  font-size: 0.85rem;
+}
+.cardActionButton:hover {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary-bg);
+}
+.cardActionButton:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* --- Enrolled Courses Preview --- */
+.enrolledPreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-grow: 1; /* Allow list to take space */
+}
+.enrolledPreviewItem {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-background-page); /* Match page bg */
+  border: 1px solid transparent; /* Border shown on hover */
+  cursor: pointer;
+  transition: border-color var(--transition-duration) var(--transition-timing),
+              background-color var(--transition-duration) var(--transition-timing);
+}
+.enrolledPreviewItem:hover,
+.enrolledPreviewItem:focus { /* Add focus style */
+  border-color: var(--color-primary);
+  background-color: var(--color-background-container); /* White on hover */
+  outline: none;
+}
+.enrolledPreviewThumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.placeholderThumb {
+  background-color: var(--color-placeholder-bg);
+  color: var(--color-placeholder-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.placeholderThumb svg {
+    width: 18px; height: 18px;
+}
+.enrolledPreviewDetails {
+  flex: 1;
+  overflow: hidden;
+}
+.enrolledPreviewDetails h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Progress Bar */
+.progressWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+.progressBarContainer {
+  background-color: var(--color-border);
+  border-radius: var(--radius-pill);
+  height: 6px;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.progressBar {
+  background-color: var(--color-primary); /* Use primary for progress */
+  height: 100%;
+  transition: width 0.4s ease-in-out;
+  border-radius: var(--radius-pill);
+}
+.progressText {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* --- **NEW**: Lesson History Preview --- */
+.lessonHistoryPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* Consistent gap */
+  margin-bottom: 1.25rem; /* Consistent margin */
+  flex-grow: 1;
+}
+.lessonHistoryItem {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-background-page);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-duration) var(--transition-timing),
+              background-color var(--transition-duration) var(--transition-timing);
+}
+.lessonHistoryItem:hover,
+.lessonHistoryItem:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-background-container);
+  outline: none;
+}
+.lessonHistoryIcon {
+  flex-shrink: 0;
+  width: 40px; /* Match course thumb size */
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-light); /* Use light primary bg */
+  color: var(--color-primary); /* Icon color */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lessonHistoryIcon svg {
+    width: 20px; height: 20px;
+}
+.lessonHistoryDetails {
+  flex: 1;
+  overflow: hidden;
+}
+.lessonHistoryDetails h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.1rem; /* Small space below title */
+}
+.lessonCourseContext { /* Optional: Style for course title */
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* .lessonAccessDate { ... } */ /* Style for access date if added */
+
+
+/* --- Quiz Attempts Preview --- */
+.quizAttemptsPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-grow: 1;
+}
+.quizAttemptItem {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-background-page);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-duration) var(--transition-timing),
+              background-color var(--transition-duration) var(--transition-timing);
+}
+.quizAttemptItem:hover,
+.quizAttemptItem:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-background-container);
+  outline: none;
+}
+.attemptInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+.attemptQuiz {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.5rem; /* Space before date */
+}
+.attemptDate {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.attemptStats {
+  display: flex;
+  justify-content: flex-start; /* Align stats left */
+  gap: 1rem; /* Space between stats */
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--color-border);
+}
+.attemptStats span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem; /* Space between icon and number */
+}
+.statIconCorrect { color: var(--color-success); }
+.statIconIncorrect { color: var(--color-error); }
+.attemptStats svg {
+    width: 14px; height: 14px; /* Smaller icons */
+}
+
+/* --- Discover Section --- */
+/* Common styles for discover sections (Posts, Courses) */
+.discoverSection {
+  background: var(--color-background-container); /* White background */
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  /* Span across grid columns - adjust span based on desired layout */
+  grid-column: 1 / -1; /* Default: span all columns */
+}
+/* Specific section styling if needed */
+.postsSection { /* Add specific styles if needed */ }
+.coursesSection { /* Add specific styles if needed */ }
+
+.discoverHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Center vertically */
+  margin-bottom: 1.25rem;
+}
+.discoverHeader h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+.discoverSeeAllBtn {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-duration) var(--transition-timing);
+}
+.discoverSeeAllBtn:hover {
+  background-color: var(--color-primary-light);
+  text-decoration: underline;
+}
+.discoverSeeAllBtn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.discoverGrid {
+  display: grid;
+  /* Responsive columns */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 1rem; /* Gap between discover cards */
+}
+
+/* Discover Card Link (Wrapper) */
+.discoverCardLink {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--radius-md); /* Apply radius for focus */
+    transition: transform var(--transition-duration) var(--transition-timing),
+                box-shadow var(--transition-duration) var(--transition-timing);
+}
+.discoverCardLink:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+.discoverCardLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background-container), 0 0 0 4px var(--color-primary); /* Focus ring */
+}
+
+/* Discover Card (Inner Content) */
+.discoverCard {
+  background: var(--color-background-page); /* Subtle background */
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  height: 100%; /* Ensure cards fill link */
+  display: flex;
+  flex-direction: column;
+}
+
+.discoverImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10; /* Adjust aspect ratio */
+  object-fit: cover;
+  background-color: var(--color-placeholder-bg); /* BG for loading/placeholder */
+}
+.discoverPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-placeholder-icon);
+}
+.discoverPlaceholder svg {
+    width: 30px; height: 30px;
+}
+
+.discoverInfo {
+  padding: 0.75rem 1rem;
+  margin-top: auto; /* Push info down if needed */
+}
+.discoverInfo h4 { /* Use h4 for semantics */
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discoverInfo p {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.courseTypeLabel {
+    font-weight: 500;
+    color: var(--color-primary); /* Highlight course type */
+}
+
+/* Specific states for discover section */
+.discoverSectionLoading,
+.discoverSectionError,
+.discoverSectionEmpty {
+    grid-column: 1 / -1; /* Span all columns */
+    padding: 2rem;
+    text-align: center;
+    background: var(--color-background-container);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+  .homeHeader { padding: 1.5rem 1rem 2rem 1rem; }
+  .homeTitle { font-size: 1.6rem; }
+  .homeSubtitle { font-size: 0.95rem; margin-bottom: 1.25rem; }
+  .startPlanButton { font-size: 1rem; padding: 0.7rem 1.5rem; }
+  .startPlanIcon { margin-right: 0.5rem; }
+
+  .homeContentGrid {
+    padding: 1rem;
+    margin-top: -1rem; /* Adjust overlap */
+    gap: 1rem;
+    /* Keep auto-fit, browser will handle columns */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+
+  .dashboardCard { padding: 1rem; border-radius: var(--radius-md); min-height: auto; /* Remove min-height */ }
+  .dashboardCard h2 { font-size: 1rem; }
+
+  .discoverSection { padding: 1rem; grid-column: 1 / -1; } /* Ensure discover sections span */
+  .discoverHeader h3 { font-size: 1.1rem; }
+  .discoverGrid { gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); } /* Smaller cards */
+  .discoverInfo { padding: 0.6rem 0.8rem; }
+  .discoverInfo h4 { font-size: 0.85rem; }
+  .discoverInfo p { font-size: 0.75rem; }
+}
+
+@media (max-width: 480px) {
+  .homeTitle { font-size: 1.4rem; }
+  .homeSubtitle { font-size: 0.9rem; }
+  .startPlanButton { font-size: 0.95rem; padding: 0.6rem 1.2rem; }
+
+  .homeContentGrid {
+      padding: 0.75rem;
+      gap: 0.75rem;
+      /* Force single column for dashboard cards on very small screens */
+      grid-template-columns: 1fr;
+  }
+  .discoverGrid {
+      /* Keep 2 columns for discover */
+      grid-template-columns: repeat(2, 1fr);
+  }
+  .discoverImage { aspect-ratio: 1 / 1; } /* Square images */
+}
+

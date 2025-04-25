@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
+      apiClient.defaults.headers.common['Authorization'] = `Token ${storedToken}`;
       setToken(storedToken);
       fetchUserProfile(storedToken);
     } else {
@@ -49,6 +50,9 @@ export const AuthProvider = ({ children }) => {
   }, [fetchUserProfile]); // Dependency array ensures fetchUserProfile is stable due to useCallback
 
   const login = (userData, authToken) => {
+    //setUser(userData);
+    //setToken(authToken);
+    apiClient.defaults.headers.common['Authorization'] = `Token ${authToken}`;
     setUser(userData);
     setToken(authToken);
     localStorage.setItem("user", JSON.stringify(userData));

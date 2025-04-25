@@ -1,7 +1,7 @@
 # lessons/serializers.py
 from django.conf import settings
 from rest_framework import serializers
-from .models import Lesson
+from .models import Lesson, LessonCompletion
 from tags.models import Tag
 from subjects.models import Subject
 from bs4 import BeautifulSoup
@@ -13,6 +13,20 @@ from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
 
 # NOTE: Ensure you have installed beautifulsoup4: pip install beautifulsoup4
+
+class SimpleLessonSerializerForCompletion(serializers.ModelSerializer):
+    """ Minimal Lesson details needed for the history card """
+    course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
+    class Meta:
+        model = Lesson
+        fields = ['id', 'title', 'permalink', 'course_title'] # Add other fields if needed
+
+class SimpleLessonCompletionSerializer(serializers.ModelSerializer):
+    """ Serializer for the recent completions list """
+    lesson = SimpleLessonSerializerForCompletion(read_only=True)
+    class Meta:
+        model = LessonCompletion
+        fields = ['id', 'lesson', 'completed_at'] # Include fields needed by frontend
 
 class LessonSerializer(serializers.ModelSerializer):
     is_locked = serializers.BooleanField(read_only=True)
