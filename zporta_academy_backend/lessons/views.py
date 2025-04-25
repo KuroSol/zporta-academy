@@ -1,19 +1,32 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
-from .models import Lesson
 from .serializers import LessonSerializer
 from .models import Lesson, LessonCompletion
 from enrollment.models import Enrollment
 from courses.models import Course
-from .models import  LessonCompletion
+from .serializers import SimpleLessonCompletionSerializer 
 from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
 
+class RecentLessonCompletionsView(generics.ListAPIView):
+    """
+    Returns the 3 most recent lessons completed by the authenticated user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SimpleLessonCompletionSerializer
+
+    def get_queryset(self):
+        return LessonCompletion.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'lesson', 'lesson__course' # Preload lesson and course data
+        ).order_by('-completed_at')[:3] # Order by most recent, limit to 3
+    
 class MarkLessonCompleteView(APIView):
     permission_classes = [IsAuthenticated]
 

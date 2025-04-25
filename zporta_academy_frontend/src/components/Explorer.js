@@ -1,187 +1,282 @@
-import React, { useState, useEffect, useContext } from 'react'; // Added useContext
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import apiClient from '../api'; // <-- Added apiClient (Adjust path)
-import { AuthContext } from '../context/AuthContext'; // <-- Added AuthContext (Adjust path)
-import QuizCard from './QuizCard'; 
-import './Explorer.css'; // Assuming CSS path is correct
+import apiClient from '../api'; // Adjust path as needed
+import { AuthContext } from '../context/AuthContext'; // Adjust path as needed
+import QuizCard from './QuizCard'; // Assuming this component exists
+import styles from './Explorer.module.css'; // Import NEW CSS Module styles
 
+// --- Helper Functions (Keep as is) ---
+const stripHTML = (html) => {
+  if (!html) return '';
+  if (typeof DOMParser === 'function') {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
+  }
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  return tempDiv.textContent || tempDiv.innerText || "";
+};
+
+// --- Skeleton Loader Component ---
+// Uses new CSS classes for styling
+const SkeletonCard = () => (
+  <div className={styles.gridItem}> {/* Use gridItem directly */}
+    <div className={`${styles.gridItemCard} ${styles.skeleton}`}>
+      <div className={styles.skeletonImage}></div>
+      <div className={styles.skeletonInfo}>
+        <div className={styles.skeletonText} style={{ width: '70%', height: '1rem', marginBottom: '0.5rem' }}></div>
+        <div className={styles.skeletonText} style={{ width: '50%', height: '0.8rem' }}></div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Item Card Component ---
+// Uses new CSS classes for styling
+const ItemCard = ({ item, activeTab }) => {
+  if (!item || !item.id) {
+    console.warn("Skipping render for invalid item:", item);
+    return null;
+  }
+
+  // --- Determine Item Properties (Keep logic, update based on new design if needed) ---
+  let linkUrl = '#';
+  let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || null;
+  let title = item.title || item.username || 'Untitled Item';
+  // Simplified description/meta display for a more visual grid
+  let metaInfo = '';
+  if (activeTab === 'courses' && item.course_type) {
+      metaInfo = item.course_type.charAt(0).toUpperCase() + item.course_type.slice(1);
+  } else if (activeTab !== 'guides' && item.created_by) {
+      metaInfo = `By ${item.created_by}`;
+  } else if (item.created_at) {
+      metaInfo = new Date(item.created_at).toLocaleDateString();
+  }
+
+
+  // --- Determine Link URL (Keep as is) ---
+    if (activeTab === 'posts' && item.permalink) {
+        linkUrl = `/posts/${item.permalink}`;
+    } else if (activeTab === 'courses' && item.permalink) {
+        linkUrl = `/courses/${item.permalink}`;
+    } else if (activeTab === 'lessons' && item.permalink) {
+        linkUrl = `/lessons/${item.permalink}`;
+    } else if (activeTab === 'guides' && item.username) {
+        linkUrl = `/guide/${item.username}`;
+    }
+  // Note: Quizzes are handled separately
+
+  // --- Render Image or Placeholder ---
+  const renderImageOrPlaceholder = () => {
+    // Prioritize showing an image for visual grids
+    if (imageUrl && imageUrl !== 'https://via.placeholder.com/150') {
+      return (
+        <img
+          src={imageUrl}
+          alt={title}
+          className={styles.gridItemImage}
+          loading="lazy"
+          onError={(e) => {
+            e.target.onerror = null;
+            // Hide broken image, maybe show a minimal placeholder?
+            e.target.style.display = 'none';
+            const placeholder = e.target.nextElementSibling;
+            if (placeholder && placeholder.classList.contains(styles.gridItemPlaceholder)) {
+                placeholder.style.display = 'flex';
+            }
+          }}
+        />
+      );
+    }
+    // Minimal placeholder if no image
+    return (
+      <div className={styles.gridItemPlaceholder}>
+        {/* Simple Icon Placeholder */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+      </div>
+    );
+  };
+
+  return (
+    // Link now wraps the inner card content for better structure if needed
+    <div className={styles.gridItem}>
+        <Link to={linkUrl} className={styles.gridItemLink} aria-label={`View ${title}`}>
+            <div className={styles.gridItemCard}>
+                <div className={styles.gridItemImageContainer}>
+                    {renderImageOrPlaceholder()}
+                    {/* Fallback placeholder div in case image fails AND onError handler needs it */}
+                    { !imageUrl && (
+                        <div className={styles.gridItemPlaceholder} style={{display: 'none'}}> {/* Initially hidden */}
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        </div>
+                    )}
+                </div>
+                <div className={styles.gridItemInfo}>
+                    <h3 className={styles.gridItemTitle}>{title}</h3>
+                    {metaInfo && <p className={styles.gridItemMeta}>{metaInfo}</p>}
+                </div>
+            </div>
+        </Link>
+    </div>
+  );
+};
+
+
+// --- Main Explorer Component ---
 const Explorer = () => {
-    const [activeTab, setActiveTab] = useState('courses');
-    const [items, setItems] = useState([]);
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(true); // Added loading state
-    const { logout } = useContext(AuthContext); // Use context
+  const [activeTab, setActiveTab] = useState('courses');
+  const [items, setItems] = useState([]);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { logout } = useContext(AuthContext);
+  const tabBarRef = useRef(null); // Ref for tab bar scrolling
 
-    // Helper function remains the same
-    const stripHTML = (html) => {
-        if (!html) return '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        return tempDiv.textContent || tempDiv.innerText || "";
-    };
+  // Define tab configuration
+  const tabs = [
+    // { key: 'posts', label: 'Posts', path: '/posts/' },
+    { key: 'courses', label: 'Courses', path: '/courses/' },
+    { key: 'lessons', label: 'Lessons', path: '/lessons/' },
+    { key: 'quizzes', label: 'Quizzes', path: '/quizzes/' },
+    { key: 'guides', label: 'Guides', path: '/users/guides/' },
+  ];
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true); // Start loading
-            setMessage(''); // Clear message
-            let relativePath = '';
-            switch (activeTab) {
-                /*case 'posts': relativePath = '/posts/'; break;*/
-                case 'courses': relativePath = '/courses/'; break;
-                case 'lessons': relativePath = '/lessons/'; break;
-                case 'quizzes': relativePath = '/quizzes/'; break;
-                case 'guides': relativePath = '/users/guides/'; break;
-                default: relativePath = '/courses/';
-            }
+  // --- Data Fetching (Keep as is, uses useCallback) ---
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setMessage('');
+    setItems([]);
 
-            try {
-                const response = await apiClient.get(relativePath);
-                if (Array.isArray(response.data)) {
-                    setItems(response.data);
-                } else {
-                    console.warn(`Received non-array data for ${activeTab}:`, response.data);
-                    setItems([]);
-                    setMessage(`Received invalid data for ${activeTab}.`);
-                }
-            } catch (error) {
-                console.error(`Error fetching ${activeTab}:`, error.response ? error.response.data : error.message);
-                let errorMsg = `Failed to load ${activeTab}.`;
-                if (error.response?.data?.detail) {
-                    errorMsg = error.response.data.detail;
-                }
-                setMessage(errorMsg);
-                setItems([]); // Clear items on error
-                if (error.response?.status === 401) logout(); // Logout on auth error
-            } finally {
-                setLoading(false); // Stop loading
-            }
-        };
+    const currentTabConfig = tabs.find(tab => tab.key === activeTab);
+    if (!currentTabConfig) {
+        setMessage(`Invalid tab selected.`);
+        setLoading(false);
+        return;
+    }
+    const relativePath = currentTabConfig.path;
 
-        fetchData();
-        // Re-fetch when activeTab changes, include logout in dependencies
-    }, [activeTab, logout]);
+    try {
+      const response = await apiClient.get(relativePath);
+      if (Array.isArray(response.data)) {
+        setItems(response.data);
+      } else {
+        console.warn(`Received non-array data for ${activeTab}:`, response.data);
+        setMessage(`No ${activeTab} found or data format is incorrect.`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${activeTab}:`, error.response ? error.response.data : error.message);
+      let errorMsg = `Failed to load ${activeTab}. Please try again later.`;
+      if (error.response?.data?.detail) {
+        errorMsg = error.response.data.detail;
+      }
+      setMessage(errorMsg);
+      if (error.response?.status === 401) {
+        setMessage('Authentication failed. Logging out...');
+        setTimeout(logout, 1500);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, logout]); // Dependency array is correct
 
-    // Render Grid Item logic remains the same...
-// Inside the Explorer component...
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-    // UPDATED renderGridItem function
-    const renderGridItem = (item) => {
-        // Basic check for item validity
-        if (!item || !item.id) {
-            console.warn("Skipping render for invalid item:", item);
-            return null;
-        }
+  // Scroll active tab into view on mobile
+  useEffect(() => {
+    const activeTabElement = tabBarRef.current?.querySelector(`.${styles.active}`);
+    if (activeTabElement) {
+      activeTabElement.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
+  }, [activeTab]);
 
-        let linkUrl = '#'; // Default link
-        // Determine image URL (prefer specific fields, fallback to null)
-        let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || null;
-        let title = item.title || item.username || 'Untitled Item'; // Default title
-        // Use description field if available, otherwise fallback to content/bio snippet
-        let description = item.description || (item.content ? stripHTML(item.content).substring(0, 100) + '...' : (item.bio ? stripHTML(item.bio).substring(0, 100) + '...' : ''));
-        // Prefer username fields for creator display
-        let createdBy = item.created_by_username || item.creator_username || (item.user ? item.user.username : null) || 'Unknown';
-        let createdAt = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
-        let typeLabel = ''; // For course type, etc.
 
-        // Determine the correct link URL based on the active tab and available data
-        if (activeTab === 'posts' && item.permalink) {
-            linkUrl = `/posts/${item.permalink}`;
-        } else if (activeTab === 'courses' && item.permalink) {
-            linkUrl = `/courses/${item.permalink}`;
-        } else if (activeTab === 'lessons' && item.permalink) {
-            linkUrl = `/lessons/${item.permalink}`; // Assuming lessons have permalinks and a route
-        } else if (activeTab === 'quizzes' && item.id) {
-            // Quizzes might not have permalinks, link to a quiz detail/attempt page?
-            return <QuizCard key={item.id} quiz={item} />; // Example link using ID
-        } else if (activeTab === 'guides' && item.username) {
-            linkUrl = `/guide/${item.username}`; // Link to guide profile
-        }
+  // --- Render Content ---
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className={styles.gridContainer}>
+          {Array.from({ length: 8 }).map((_, index) => ( // Render more skeletons
+            <SkeletonCard key={`skeleton-${index}`} />
+          ))}
+        </div>
+      );
+    }
 
-        // Add specific labels for certain types
-        if (activeTab === 'courses' && item.course_type) {
-            typeLabel = item.course_type.charAt(0).toUpperCase() + item.course_type.slice(1) + ' Course';
-        }
+    if (message) {
+      const isError = message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') || message.toLowerCase().includes('invalid');
+      return (
+        <div className={`${styles.messageContainer} ${isError ? styles.errorMessage : styles.infoMessage}`} role="alert" aria-live="polite">
+          {message}
+        </div>
+      );
+    }
 
-        // --- Consistent Placeholder Rendering ---
-        const renderImageOrPlaceholder = () => {
-            // If we have a valid image URL
-            if (imageUrl && imageUrl !== 'https://via.placeholder.com/150') { // Also check against default placeholder URL if used previously
-                return <img src={imageUrl} alt={title} className="grid-item-image" loading="lazy" />;
-            }
-            // Specific placeholder for lessons/quizzes (usually no image)
-            if (activeTab === 'lessons' || activeTab === 'quizzes') {
-                 return (
-                     <div className="grid-item-placeholder lesson-quiz-placeholder">
-                         {/* You could add specific icons here later if desired */}
-                         <h3>{title}</h3> {/* Display title prominently */}
-                     </div>
-                 );
-            }
-            // Generic placeholder for Posts, Courses, Guides if no image
-            return (
-                <div className="grid-item-placeholder">
-                    {/* Optional: Add a generic icon here */}
-                    <p>No Image Available</p>
+    if (items.length === 0) {
+      return (
+        <div className={`${styles.messageContainer} ${styles.infoMessage}`} role="status" aria-live="polite">
+          No {activeTab} available yet. Explore other categories!
+        </div>
+      );
+    }
+
+    // Render Items using the new grid structure
+    return (
+      <div className={styles.gridContainer}>
+        {items.map((item) => {
+          if (activeTab === 'quizzes' && item?.id) {
+            // Quizzes might need their own styling or use a variation of ItemCard
+            // For now, wrap QuizCard in gridItem for layout consistency
+             return (
+                <div className={styles.gridItem} key={`quiz-container-${item.id}`}>
+                     <QuizCard quiz={item} />
                 </div>
             );
-        };
-
-        // Final Card structure using Link component
-        return (
-            <Link to={linkUrl} key={item.id} className="grid-item-link" aria-label={`View ${title}`}>
-                <div className="grid-item-card">
-                    {renderImageOrPlaceholder()} {/* Render image or correct placeholder */}
-                    <div className="grid-item-info">
-                        <h3>{title}</h3>
-                        {/* Conditionally render description/type */}
-                        {description && (activeTab === 'posts' || activeTab === 'guides') &&
-                            <p className="grid-item-description">{description}</p>
-                        }
-                        {typeLabel &&
-                            <p className="grid-item-type">{typeLabel}</p>
-                        }
-                        {/* Meta info */}
-                        <p className="grid-item-meta">
-                           {/* Show creator except for guides (where title IS the creator) */}
-                           {activeTab !== 'guides' && createdBy && `By: ${createdBy} | `}
-                           {createdAt}
-                        </p>
-                    </div>
-                </div>
-            </Link>
-        );
-    }; // End renderGridItem function
-
-    // ... rest of the Explorer component (useEffect, state, main return structure) ...
-
-
-    // Main JSX structure
-    return (
-        <div className="explorer-container">
-            <div className="tab-bar">
-                {[/*'posts'*/, 'courses', 'lessons', 'quizzes', 'guides'].map((tab) => (
-                    <button
-                        key={tab}
-                        className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab)}
-                    >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Display loading or error or content */}
-            {loading ? (
-                <p className="loading" style={{ textAlign: 'center', padding: '20px' }}>Loading {activeTab}...</p>
-            ) : message ? ( // Changed from error to message to show API errors
-                <p className="error-message" style={{ color: 'red', textAlign: 'center', padding: '20px' }}>{message}</p>
-            ) : (
-                <div className="grid-container">
-                    {items.length > 0 ? items.map(renderGridItem) : <p style={{ textAlign: 'center' }}>No {activeTab} available.</p>}
-                </div>
-            )}
-        </div>
+          }
+          return <ItemCard key={`${activeTab}-${item.id}`} item={item} activeTab={activeTab} />;
+        })}
+      </div>
     );
+  };
+
+  return (
+    <div className={styles.explorerContainer}>
+      {/* Redesigned Tab Bar */}
+      <div className={styles.tabBarContainer}>
+        <div className={styles.tabBar} ref={tabBarRef} role="tablist" aria-label="Content categories">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              aria-controls={`tabpanel-${tab.key}`}
+              id={`tab-${tab.key}`}
+              className={`${styles.tabBtn} ${activeTab === tab.key ? styles.active : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+              disabled={loading}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div
+        id={`tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={-1} // Make panel focusable programmatically if needed, -1 removes from tab order
+        className={styles.contentArea} // Added class for potential spacing
+      >
+         {renderContent()}
+      </div>
+    </div>
+  );
 };
 
 export default Explorer;

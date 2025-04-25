@@ -12,7 +12,7 @@ const PublicGuideProfile = () => {
   const { user: currentUser, token, logout } = useContext(AuthContext);
 
   const [profile, setProfile] = useState(null);
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("courses");
 
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -309,46 +309,46 @@ if (!profile) return <p>No profile found.</p>;
 
   const renderTabContent = () => {
     // POSTS TAB
-    if (activeTab === "posts") {
-      return (
-        <div className="tab-panel">
-          <h2>Posts</h2>
-          {/* Use postsLoading state for this tab */}
-          {postsLoading ? (
-            <p className="loading">Loading posts...</p>
-          ) : posts.length > 0 ? (
-            <div className="cards-grid">
-              {/* Map posts... (keep existing map logic) */}
-              {posts.map((post) => (
-                  post && ( // Safe access check
-                      <Link to={`/posts/${post.permalink}`} key={post.id} className="card">
-                          <div className="card-image">
-                              {post.og_image_url ? (
-                              <img src={post.og_image_url} alt={post.title || 'Post image'} />
-                              ) : (
-                              <div className="post-placeholder">
-                                  <p>{post.title || 'Untitled Post'}</p>
-                              </div>
-                              )}
-                          </div>
-                          <div className="card-info">
-                              <h3>{post.title || 'Untitled Post'}</h3>
-                              <p>
-                              {post.created_by} | {post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}
-                              </p>
-                          </div>
-                      </Link>
-                  )
-              ))}
-            </div>
-          ) : (
-            <p>No posts available.</p> // Message if loading done and no posts
-          )}
-        </div>
-      );
-    }
+    // if (activeTab === "posts") {
+    //   return (
+    //     <div className="tab-panel">
+    //       <h2>Posts</h2>
+    //       {/* Use postsLoading state for this tab */}
+    //       {postsLoading ? (
+    //         <p className="loading">Loading posts...</p>
+    //       ) : posts.length > 0 ? (
+    //         <div className="cards-grid">
+    //           {/* Map posts... (keep existing map logic) */}
+    //           {posts.map((post) => (
+    //               post && ( // Safe access check
+    //                   <Link to={`/posts/${post.permalink}`} key={post.id} className="card">
+    //                       <div className="card-image">
+    //                           {post.og_image_url ? (
+    //                           <img src={post.og_image_url} alt={post.title || 'Post image'} />
+    //                           ) : (
+    //                           <div className="post-placeholder">
+    //                               <p>{post.title || 'Untitled Post'}</p>
+    //                           </div>
+    //                           )}
+    //                       </div>
+    //                       <div className="card-info">
+    //                           <h3>{post.title || 'Untitled Post'}</h3>
+    //                           <p>
+    //                           {post.created_by} | {post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}
+    //                           </p>
+    //                       </div>
+    //                   </Link>
+    //               )
+    //           ))}
+    //         </div>
+    //       ) : (
+    //         <p>No posts available.</p> // Message if loading done and no posts
+    //       )}
+    //     </div>
+    //   );
+    // }
     // COURSES TAB
-    else if (activeTab === "courses") {
+    /* else*/ if (activeTab === "courses") {
       return (
         <div className="tab-panel">
           <h2>Courses</h2>
@@ -502,10 +502,10 @@ if (!profile) return <p>No profile found.</p>;
       </aside>
       <main className="public-profile-main">
         <div className="stats-section">
-          <div className="stat">
+          {/*<div className="stat">
             <h3>{posts.length}</h3>
             <p>Posts</p>
-          </div>
+          </div>*/}
           <div className="stat">
             <h3>{courses.length}</h3>
             <p>Courses</p>
@@ -524,7 +524,7 @@ if (!profile) return <p>No profile found.</p>;
           </div>
         </div>
         <div className="tab-navigation">
-          {["posts", "courses", "lessons", "quizzes"].map((tab) => (
+          {[/*"posts", */"courses", "lessons", "quizzes"].map((tab) => (
             <button
               key={tab}
               className={`tab-btn ${activeTab === tab ? "active" : ""}`}

@@ -1,438 +1,472 @@
-// src/components/HomePage.js
-
 import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import apiClient from '../api';
-import './HomePage.css';
+import { AuthContext } from '../context/AuthContext'; // Adjust path as needed
+import apiClient from '../api'; // Adjust path as needed
+import styles from './HomePage.module.css'; // Import NEW CSS Module styles
 
+// --- Helper Components (Keep as is) ---
+const LoadingPlaceholder = ({ message = "Loading..." }) => (
+    <div className={styles.loadingPlaceholder}>{message}</div>
+);
+const ErrorMessage = ({ message }) => (
+    <p className={styles.errorMessage}>{message}</p>
+);
+const EmptyState = ({ message }) => (
+    <p className={styles.emptyStateMessage}>{message}</p>
+);
+
+// --- Main HomePage Component ---
 const HomePage = () => {
-  const navigate = useNavigate();
-  const { user, token, logout } = useContext(AuthContext); 
+    const navigate = useNavigate();
+    const { user, token, logout } = useContext(AuthContext);
 
-  // Redirect to login if no token
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
+    // Redirect to login if no token
+    useEffect(() => {
+        if (!token) {
+            navigate('/login');
+        }
+    }, [token, navigate]);
+
+    // --- State Declarations ---
+    // Discover
+    const [latestPosts, setLatestPosts] = useState([]);
+    const [randomCourses, setRandomCourses] = useState([]);
+    const [loadingDiscover, setLoadingDiscover] = useState(true);
+    const [errorDiscover, setErrorDiscover] = useState('');
+    // Enrolled Courses
+    const [enrolledCourses, setEnrolledCourses] = useState([]);
+    const [loadingEnrolled, setLoadingEnrolled] = useState(true);
+    const [errorEnrolled, setErrorEnrolled] = useState('');
+    // Quiz Attempts
+    const [latestQuizAttempts, setLatestQuizAttempts] = useState([]);
+    const [loadingQuizAttempts, setLoadingQuizAttempts] = useState(true);
+    const [errorQuizAttempts, setErrorQuizAttempts] = useState('');
+    // **NEW**: Recent Lessons (will hold Lesson objects from completions)
+    const [latestLessons, setLatestLessons] = useState([]);
+    const [loadingLessons, setLoadingLessons] = useState(true);
+    const [errorLessons, setErrorLessons] = useState('');
+
+
+    // --- Data Fetching Effects ---
+
+    // Fetch Discover Content
+    useEffect(() => {
+        if (!token) return;
+        const fetchDiscoverContent = async () => { /* ... keep existing fetch logic ... */
+            setLoadingDiscover(true);
+            setErrorDiscover('');
+            try {
+                const [postsRes, coursesRes] = await Promise.all([
+                    apiClient.get('/posts/?ordering=-created_at&limit=4'),
+                    apiClient.get('/courses/?random=4')
+                ]);
+                setLatestPosts(Array.isArray(postsRes.data) ? postsRes.data : []);
+                setRandomCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
+            } catch (err) {
+                console.error("Error fetching discover content:", err.response ? err.response.data : err.message);
+                setErrorDiscover("Could not load discover content.");
+                setLatestPosts([]);
+                setRandomCourses([]);
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    logout();
+                }
+            } finally {
+                setLoadingDiscover(false);
+            }
+        };
+        fetchDiscoverContent();
+    }, [token, logout]);
+
+    // Fetch Enrolled Courses Preview
+    useEffect(() => {
+        if (!token) return;
+        const fetchEnrolledCourses = async () => { /* ... keep existing fetch logic ... */
+            setLoadingEnrolled(true);
+            setErrorEnrolled('');
+            try {
+                const response = await apiClient.get('/enrollments/user/?ordering=-enrollment_date&limit=3');
+                if (Array.isArray(response.data)) {
+                    setEnrolledCourses(response.data);
+                } else {
+                    console.warn("Unexpected format for enrolled courses:", response.data);
+                    setEnrolledCourses([]);
+                    setErrorEnrolled("Unexpected data format.");
+                }
+            } catch (err) {
+                console.error("Error fetching enrolled courses:", err.response ? err.response.data : err.message);
+                setEnrolledCourses([]);
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    setErrorEnrolled('Session expired. Please log in again.');
+                    logout();
+                } else {
+                    setErrorEnrolled(`Failed to load course preview: ${err.response?.data?.detail || err.message}`);
+                }
+            } finally {
+                setLoadingEnrolled(false);
+            }
+        };
+        fetchEnrolledCourses();
+    }, [token, logout]);
+
+    // Fetch Latest Quiz Attempts Preview
+    useEffect(() => {
+        if (!token) return;
+        const fetchQuizAttempts = async () => { /* ... keep existing fetch logic ... */
+             setLoadingQuizAttempts(true);
+             setErrorQuizAttempts('');
+             try {
+                 const res = await apiClient.get("/events/?event_type=quiz_answer_submitted&ordering=-timestamp");
+
+                 if (Array.isArray(res.data)) {
+                     const groupedByQuiz = res.data.reduce((acc, event) => {
+                         const quizId = event.object_id;
+                         if (!quizId) return acc;
+                         if (!acc[quizId]) {
+                             acc[quizId] = {
+                                 events: [],
+                                 quiz_title: event.quiz_title || `Quiz ${quizId}`,
+                                 // Assuming object_id is the actual Quiz ID for navigation
+                                 quizId: quizId
+                             };
+                         }
+                         acc[quizId].events.push(event);
+                         return acc;
+                     }, {});
+
+                     let aggregated = Object.entries(groupedByQuiz).map(([/* quizIdKey */ , data]) => {
+                         const { events, quiz_title, quizId } = data; // Use the quizId stored in the group
+                         const total = events.length;
+                         const correct = events.filter(e => e.metadata?.is_correct === true).length;
+                         const wrong = total - correct;
+                         const latestTimestamp = events.reduce((latest, event) => {
+                             const currentTs = new Date(event.timestamp);
+                             return currentTs > latest ? currentTs : latest;
+                         }, new Date(0));
+
+                         return {
+                             quizId, // Use the stored quizId
+                             quiz_title,
+                             total,
+                             correct,
+                             wrong,
+                             timestamp: latestTimestamp.toISOString(),
+                         };
+                     });
+                     aggregated.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                     setLatestQuizAttempts(aggregated.slice(0, 3));
+
+                 } else {
+                     console.warn("Unexpected data format for quiz attempts:", res.data);
+                     setErrorQuizAttempts("Unexpected data format received.");
+                     setLatestQuizAttempts([]);
+                 }
+             } catch (err) {
+                 console.error("Error fetching quiz attempts:", err.response ? err.response.data : err.message);
+                 setLatestQuizAttempts([]);
+                 if (err.response?.status === 401 || err.response?.status === 403) {
+                     setErrorQuizAttempts("Session expired. Please log in again.");
+                     logout();
+                 } else {
+                     setErrorQuizAttempts(`Failed to fetch quiz attempts: ${err.response?.data?.detail || err.message}`);
+                 }
+             } finally {
+                 setLoadingQuizAttempts(false);
+             }
+        };
+        fetchQuizAttempts();
+    }, [token, logout]);
+
+    // **UPDATED**: Fetch Recent Lesson Completions
+    useEffect(() => {
+        if (!token) return;
+
+        const fetchRecentLessonCompletions = async () => { // Renamed function
+            setLoadingLessons(true);
+            setErrorLessons('');
+            try {
+                // **CHANGED**: Call the new backend endpoint
+                const response = await apiClient.get('/lessons/completed/recent/'); // Use the new URL
+
+                if (Array.isArray(response.data)) {
+                    // The response data should be LessonCompletion objects with nested lesson details
+                    // Extract the lesson details for the state
+                    const lessons = response.data.map(completion => completion.lesson).filter(lesson => lesson); // Get lesson object and filter out nulls
+                    setLatestLessons(lessons);
+                } else {
+                    console.warn("Unexpected format for recent lesson completions:", response.data);
+                    setLatestLessons([]);
+                    setErrorLessons("Unexpected data format for completed lessons.");
+                }
+            } catch (err) {
+                console.error("Error fetching recent lesson completions:", err.response ? err.response.data : err.message);
+                setLatestLessons([]);
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    setErrorLessons("Session expired. Please log in again.");
+                    logout();
+                } else {
+                    setErrorLessons(`Failed to load recent lessons: ${err.response?.data?.detail || err.message}`);
+                }
+            } finally {
+                setLoadingLessons(false);
+            }
+        };
+
+        fetchRecentLessonCompletions(); // Call the renamed function
+    }, [token, logout]);
+
+
+    // --- Render Logic ---
+
+    if (!user && token) {
+        return <LoadingPlaceholder message="Loading user info..." />;
     }
-  }, [token, navigate]);
+    if (!user) return null;
 
-  // State for Discover Section
-  const [latestPosts, setLatestPosts] = useState([]);
-  const [randomCourses, setRandomCourses] = useState([]);
-  const [loadingDiscover, setLoadingDiscover] = useState(true);
-  const [errorDiscover, setErrorDiscover] = useState('');
+    const userRole = user.profile?.role || 'explorer';
+    const showStudentSections = userRole === 'explorer' || userRole === 'both';
+    const showTeacherSections = userRole === 'guide' || userRole === 'both';
 
-  // State for enrolled courses preview
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [loadingEnrolled, setLoadingEnrolled] = useState(true);
-  const [errorEnrolled, setErrorEnrolled] = useState('');
+    return (
+        <div className={styles.homeWrapper}>
+            {/* HERO SECTION */}
+            <header className={styles.homeHeader}>
+                <h1 className={styles.homeTitle}>Welcome back, {user.first_name || user.username}!</h1>
+                <p className={styles.homeSubtitle}>Ready to dive back into your learning journey?</p>
+                <button
+                    className={styles.startPlanButton}
+                    onClick={() => navigate('/study/dashboard')}
+                >
+                    <span className={styles.startPlanIcon}>🚀</span>
+                    Start Your Study Plan
+                </button>
+            </header>
 
-  // New state: Latest Quiz Attempts preview
-  const [latestQuizAttempts, setLatestQuizAttempts] = useState([]);
-  const [loadingQuizAttempts, setLoadingQuizAttempts] = useState(false);
-  const [errorQuizAttempts, setErrorQuizAttempts] = useState('');
+            {/* DASHBOARD & DISCOVER CONTENT AREA */}
+            <main className={styles.homeContentGrid}>
 
-  // Fetch Discover Content (posts and random courses)
-  useEffect(() => {
-    const fetchDiscoverContent = async () => {
-      setLoadingDiscover(true);
-      setErrorDiscover('');
-      try {
-        const [postsRes, coursesRes] = await Promise.all([
-          apiClient.get('/posts/?ordering=-created_at&limit=6'),
-          apiClient.get('/courses/?random=6')
-        ]);
-        if (postsRes.data && Array.isArray(postsRes.data)) {
-          setLatestPosts(postsRes.data);
-        } else {
-          console.warn("Unexpected format for posts:", postsRes.data);
-          setLatestPosts([]);
-        }
-        if (coursesRes.data && Array.isArray(coursesRes.data)) {
-          setRandomCourses(coursesRes.data);
-        } else {
-          console.warn("Unexpected format for courses:", coursesRes.data);
-          setRandomCourses([]);
-        }
-      } catch (err) {
-        console.error("Error fetching discover content:", err.response ? err.response.data : err.message);
-        setErrorDiscover("Could not load discover content. Please try refreshing.");
-        setLatestPosts([]);
-        setRandomCourses([]);
-      } finally {
-        setLoadingDiscover(false);
-      }
-    };
-
-    fetchDiscoverContent();
-  }, []);
-
-  // Fetch latest enrolled courses for preview
-  useEffect(() => {
-    if (!token) {
-      setEnrolledCourses([]);
-      setLoadingEnrolled(false);
-      setErrorEnrolled('');
-      return;
-    }
-    const fetchEnrolledCourses = async () => {
-      setLoadingEnrolled(true);
-      setErrorEnrolled('');
-      try {
-        const response = await apiClient.get('/enrollments/user/?ordering=-enrollment_date&limit=3');
-        if (response.data && Array.isArray(response.data)) {
-          setEnrolledCourses(response.data);
-        } else {
-          console.warn("Unexpected format for enrolled courses:", response.data);
-          setEnrolledCourses([]);
-          setErrorEnrolled("Failed to load course preview: Unexpected data format.");
-        }
-      } catch (err) {
-        console.error("Error fetching enrolled courses:", err.response ? err.response.data : err.message);
-        setEnrolledCourses([]);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          setErrorEnrolled('Session expired. Please log in again to see enrolled courses.');
-          logout();
-        } else {
-          const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-          setErrorEnrolled(`Failed to load course preview: ${apiErrorMessage || "Please try again."}`);
-        }
-      } finally {
-        setLoadingEnrolled(false);
-      }
-    };
-
-    fetchEnrolledCourses();
-  }, [token, logout]);
-
-  // Fetch latest quiz attempts preview
-  useEffect(() => {
-    if (!token) {
-      setLatestQuizAttempts([]);
-      setLoadingQuizAttempts(false);
-      setErrorQuizAttempts('');
-      return;
-    }
-    const fetchQuizAttempts = async () => {
-      setLoadingQuizAttempts(true);
-      setErrorQuizAttempts('');
-      try {
-        // Ensure your apiClient base URL maps "/events/" correctly (i.e. to /api/events/)
-        const res = await apiClient.get("/events/");
-        if (Array.isArray(res.data)) {
-          // Filter for answer events (each answer event logged via RecordQuizAnswerView)
-          const answerEvents = res.data.filter(event => event.event_type === 'quiz_answer_submitted');
-          // Group events by quiz id (object_id)
-          const grouped = answerEvents.reduce((acc, event) => {
-            const quizId = event.object_id;
-            if (!acc[quizId]) acc[quizId] = [];
-            acc[quizId].push(event);
-            return acc;
-          }, {});
-          // Aggregate data per quiz
-          let aggregated = Object.entries(grouped).map(([quizId, events]) => {
-            const total = events.length;
-            // Ensure the metadata field exists and has a boolean is_correct
-            const correct = events.filter(e => e.metadata && e.metadata.is_correct === true).length;
-            const wrong = total - correct;
-            // Use the earliest event timestamp as the attempt time
-            const timestamp = events.reduce((earliest, event) => {
-              return new Date(event.timestamp) < new Date(earliest)
-                ? event.timestamp
-                : earliest;
-            }, events[0].timestamp);
-            const quiz_title = events[0].quiz_title || `Quiz ${quizId}`;
-            return { quizId, quiz_title, total, correct, wrong, timestamp };
-          });
-          // Sort by timestamp descending (latest attempt first)
-          aggregated.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          // Take only the latest 3 attempts
-          aggregated = aggregated.slice(0, 3);
-          setLatestQuizAttempts(aggregated);
-        } else {
-          console.warn("Unexpected data format for quiz attempts:", res.data);
-          setErrorQuizAttempts("Unexpected data format received for quiz attempts.");
-        }
-      } catch (err) {
-        console.error("Error fetching quiz attempts:", err.response ? err.response.data : err.message);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          setErrorQuizAttempts("Session expired or unauthorized. Please log in again.");
-          logout();
-        } else {
-          const apiErrorMessage = err.response?.data?.detail || err.message;
-          setErrorQuizAttempts(`Failed to fetch quiz attempts: ${apiErrorMessage || "Please try again."}`);
-        }
-      } finally {
-        setLoadingQuizAttempts(false);
-      }
-    };
-
-    fetchQuizAttempts();
-  }, [token, logout]);
-
-  if (!token) return null;
-  if (!user) return <div className="home-loading">Loading user info...</div>;
-
-  const userRole = user.profile && user.profile.role ? user.profile.role : 'explorer';
-  const showStudentSections = userRole === 'explorer' || userRole === 'both';
-  const showTeacherSections = userRole === 'guide' || userRole === 'both';
-
-  return (
-    <div className="home-wrapper">
-      {/* HERO SECTION */}
-      <header className="home-page-header">
-          <h1 className="home-page-title">Welcome back, {user.first_name || user.username}!</h1>
-          {/* Optional: You can add a subtitle here if you like */}
-          {            <button
-              className="btn-primary start-plan-btn"
-              onClick={() => navigate('/study/dashboard')}
-            >
-              ▶ Start Your Study Plan
-            </button>}
-
-      </header>
-
-      <div className="home-content">
-        {/* Student Sections */}
-        {showStudentSections && (
-          <>
-            <div className="dashboard-card enrolled-courses-card">
-              <h2>Your Courses in Progress</h2>
-              {loadingEnrolled ? (
-                <p>Loading course preview...</p>
-              ) : errorEnrolled ? (
-                <p className="error-message">{errorEnrolled}</p>
-              ) : enrolledCourses.length > 0 ? (
-                <div className="enrolled-preview-list">
-                  {enrolledCourses.map(enrollment => (
-                    enrollment?.course && (
-                      <div
-                        key={enrollment.id}
-                        className="enrolled-preview-item horizontal"
-                        onClick={() =>
-                          enrollment.course.permalink
-                            ? navigate(`/courses/${enrollment.course.permalink}`)
-                            : null
-                        }
-                        style={{ cursor: enrollment.course.permalink ? "pointer" : "default" }}
-                      >
-                        {enrollment.course.cover_image ? (
-                          <img
-                            src={enrollment.course.cover_image}
-                            alt={`${enrollment.course.title || "Course"} cover`}
-                            className="enrolled-preview-thumb"
-                          />
-                        ) : (
-                          <div className="enrolled-preview-thumb enrolled-preview-placeholder">
-                            No Image
-                          </div>
-                        )}
-                        <div className="enrolled-preview-details">
-                          <h3>{enrollment.course.title || "Untitled Course"}</h3>
-                          {enrollment.progress !== null && (
-                            <>
-                              <div className="small-progress-container">
-                                <div
-                                  className="small-progress-bar"
-                                  style={{ width: `${enrollment.progress}%` }}
-                                ></div>
-                              </div>
-                              <div className="small-progress-text">{enrollment.progress}%</div>
-                            </>
-                          )}
+                {/* --- Student Focused Cards --- */}
+                {showStudentSections && (
+                    <>
+                        {/* Enrolled Courses Card */}
+                        <div className={`${styles.dashboardCard} ${styles.enrolledCoursesCard}`}>
+                            <h2>Your Courses</h2>
+                            {loadingEnrolled ? <LoadingPlaceholder /> : errorEnrolled ? <ErrorMessage message={errorEnrolled} /> : enrolledCourses.length > 0 ? (
+                                <div className={styles.enrolledPreviewList}>
+                                    {enrolledCourses.map(enrollment => (
+                                        enrollment?.course && (
+                                            <div
+                                                key={enrollment.id}
+                                                className={styles.enrolledPreviewItem}
+                                                onClick={() => enrollment.course.permalink ? navigate(`/courses/${enrollment.course.permalink}`) : null}
+                                                role="button" tabIndex={0}
+                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && enrollment.course.permalink ? navigate(`/courses/${enrollment.course.permalink}`) : null}
+                                                aria-label={`Go to course: ${enrollment.course.title || 'Untitled Course'}`}
+                                            >
+                                                {enrollment.course.cover_image ? (
+                                                    <img src={enrollment.course.cover_image} alt="" className={styles.enrolledPreviewThumb} />
+                                                ) : (
+                                                    <div className={`${styles.enrolledPreviewThumb} ${styles.placeholderThumb}`}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                    </div>
+                                                )}
+                                                <div className={styles.enrolledPreviewDetails}>
+                                                    <h3>{enrollment.course.title || "Untitled Course"}</h3>
+                                                    {enrollment.progress !== null && enrollment.progress >= 0 && (
+                                                        <div className={styles.progressWrapper}>
+                                                            <div className={styles.progressBarContainer}>
+                                                                <div className={styles.progressBar} style={{ width: `${enrollment.progress}%` }} aria-valuenow={enrollment.progress} aria-valuemin="0" aria-valuemax="100"></div>
+                                                            </div>
+                                                            <span className={styles.progressText}>{enrollment.progress}%</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="You haven't enrolled in any courses yet." />
+                            )}
+                            <button className={styles.cardActionButton} onClick={() => navigate('/enrolled-courses')}>
+                                See All Courses
+                            </button>
                         </div>
-                      </div>
 
-                    )
-                  ))}
-                </div>
-              ) : (
-                <p>You haven't enrolled in any courses yet.</p>
-              )}
-              <button className="dashboard-card-action-btn" onClick={() => navigate('/enrolled-courses')}>See All Enrolled</button>
-            </div>
-
-            {/* Dashboard Card: Latest Quizzes */}
-            <div className="dashboard-card quiz-attempts-card">
-              <h2>Your Latest Quizzes</h2>
-              <p>Review attempts, see results, or retry</p>
-              {loadingQuizAttempts ? (
-                <p>Loading quiz attempts...</p>
-              ) : errorQuizAttempts ? (
-                <p className="error-message">{errorQuizAttempts}</p>
-              ) : latestQuizAttempts.length > 0 ? (
-                <div className="quiz-attempts-preview">
-                  {latestQuizAttempts.map(attempt => (
-                    <div
-                      key={attempt.quizId}
-                      className="quiz-attempt-item"
-                      onClick={() => navigate('/quizzes/Attempts')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="attempt-info">
-                        <span className="attempt-date">
-                          {new Date(attempt.timestamp).toLocaleDateString()}
-                        </span>
-                        
-                      <span className="attempt-quiz">{attempt.quiz_title || `Quiz ${attempt.quizId}`}</span>
-
-                      </div>
-                      <div className="attempt-stats">
-                        <span>Total: {attempt.total}</span>
-                        <span>Correct: {attempt.correct}</span>
-                        <span>Wrong: {attempt.wrong}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No quiz attempts found.</p>
-              )}
-              
-              <button className="dashboard-card-action-btn" onClick={() => navigate('/quizzes/Attempts')}>See All Attempts</button>
-            </div>
-          </>
-        )}
-
-        {/* Teacher Sections */}
-        {showTeacherSections && (
-          <>
-            <div className="dashboard-card teacher-tools-card">
-              <h2>Teacher Tools</h2>
-              <p>Manage your courses, lessons, and quizzes</p>
-              <button className="dashboard-card-action-btn" onClick={() => navigate('/teacher-dashboard')}>Teacher Dashboard</button>
-            </div>
-            <div className="dashboard-card student-inquiries-card">
-              <h2>Student Inquiries</h2>
-              <p>Check who needs help or feedback</p>
-              <button className="dashboard-card-action-btn" onClick={() => navigate('/teacher-questions')}>View Questions</button>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Discover More Section */}
-      <section className="discover-section">
-        {/* Main section title */}
-        <h2 className="discover-section-main-title">Discover More</h2>
-
-        {/* Loading State */}
-        {loadingDiscover ? (
-          <p>Loading content...</p> /* Consider a more visual loader */
-
-        /* Error State */
-        ) : errorDiscover ? (
-          <p className="error-message">{errorDiscover}</p>
-
-        /* Empty State */
-        ) : latestPosts.length === 0 && randomCourses.length === 0 ? (
-          <p className="empty-state-message">Nothing new to discover right now.</p>
-
-        /* Content Exists State */
-        ) : (
-          // Container for the different content types (Posts, Courses, etc.)
-          <div className="discover-content-area">
-
-            {/* --- Latest Posts Section --- */}
-            {latestPosts.length > 0 && (
-              // 1. Wrapper for posts section
-              <div className="discover-content-section posts-section">
-                {/* 2. Header for this section */}
-                <div className="discover-section-header">
-                  <h3 className="discover-section-title">Recent Posts</h3>
-                  <Link to="/posts" className="discover-see-all-btn" title="See All Posts">
-                    See All
-                  </Link>
-                </div>
-                {/* 3. Grid containing post cards */}
-                <div className="discover-grid">
-                  {latestPosts.map(post => (
-                    // Ensure post object is valid before rendering card
-                    post && (
-                      // 4. Clickable Card - THIS div handles navigation
-                      <div
-                        key={post.id}
-                        className="discover-card"
-                        onClick={() => post.permalink ? navigate(`/posts/${post.permalink}`) : null}
-                        style={{ cursor: post.permalink ? 'pointer' : 'default' }}
-                        role="link" // Indicate it's interactive
-                        aria-label={`View post: ${post.title || 'Untitled Post'}`} // Accessibility
-                      >
-                        {/* Card Content */}
-                        {post.og_image_url ? (
-                          <img src={post.og_image_url} alt={post.title || 'Post image'} className="discover-image" loading="lazy" />
-                        ) : (
-                          <div className="discover-placeholder">No Image</div>
-                        )}
-                        <div className="discover-info">
-                          <h3>{post.title || 'Untitled Post'}</h3>
-                          <p>{post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
+                        {/* **UPDATED**: Recent Lessons Card (using completion data) */}
+                        <div className={`${styles.dashboardCard} ${styles.lessonsHistoryCard}`}>
+                            <h2>Recently Completed Lessons</h2> {/* Title changed */}
+                            {loadingLessons ? <LoadingPlaceholder /> : errorLessons ? <ErrorMessage message={errorLessons} /> : latestLessons.length > 0 ? (
+                                <div className={styles.lessonHistoryPreview}>
+                                    {latestLessons.map(lesson => ( // Now mapping over Lesson objects
+                                        lesson?.id && lesson?.permalink && ( // Check lesson details
+                                            <div
+                                                key={lesson.id} // Use lesson ID as key
+                                                className={styles.lessonHistoryItem}
+                                                onClick={() => navigate(`/lessons/${lesson.permalink}`)} // Navigate using permalink
+                                                role="button" tabIndex={0}
+                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/lessons/${lesson.permalink}`)}
+                                                aria-label={`Go to lesson: ${lesson.title || 'Untitled Lesson'}`}
+                                            >
+                                                <div className={styles.lessonHistoryIcon}>
+                                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                                                </div>
+                                                <div className={styles.lessonHistoryDetails}>
+                                                    <h3>{lesson.title || "Untitled Lesson"}</h3>
+                                                    {/* Use course_title from the serialized lesson data */}
+                                                    {lesson.course_title && <p className={styles.lessonCourseContext}>{lesson.course_title}</p>}
+                                                </div>
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="No recently completed lessons." /> // Message updated
+                            )}
+                             {/* Optional: Link to a page showing all completed lessons */}
+                            <button className={styles.cardActionButton} onClick={() => navigate('/lessons/completed')}>
+                                See All Completed
+                            </button>
                         </div>
-                      </div> // End Clickable Card
-                    )
-                  ))}
-                </div> {/* End Grid */}
-              </div> // End posts-section Wrapper
-            )} {/* End Latest Posts Section check */}
 
-            {/* --- Random Courses Section --- */}
-            {randomCourses.length > 0 && (
-              // 1. Wrapper for courses section
-              <div className="discover-content-section courses-section">
-                 {/* 2. Header for this section */}
-                 <div className="discover-section-header">
-                   <h3 className="discover-section-title">Explore Courses</h3>
-                   <Link to="/explore?tab=courses" className="discover-see-all-btn" title="See All Courses">
-                      See All
-                   </Link>
-                 </div>
-                 {/* 3. Grid containing course cards */}
-                <div className="discover-grid">
-                  {randomCourses.map(course => (
-                     // Ensure course object is valid
-                     course && (
-                       // 4. Clickable Card - THIS div handles navigation
-                       <div
-                         key={course.id}
-                         className="discover-card"
-                         onClick={() => course.permalink ? navigate(`/courses/${course.permalink}`) : null}
-                         style={{ cursor: course.permalink ? 'pointer' : 'default' }}
-                         role="link"
-                         aria-label={`View course: ${course.title || 'Untitled Course'}`}
-                       >
-                         {/* Card Content */}
-                          {course.cover_image ? (
-                            <img src={course.cover_image} alt={course.title || 'Course cover'} className="discover-image" loading="lazy"/>
-                          ) : (
-                            <div className="discover-placeholder">No Image</div>
-                          )}
-                          <div className="discover-info">
-                             <h3>{course.title || 'Untitled Course'}</h3>
-                             <p>{course.course_type === 'premium' ? 'Premium' : 'Free'} Course</p>
-                           </div>
-                       </div> // End Clickable Card
-                     )
-                  ))}
-                </div> {/* End Grid */}
-              </div> // End courses-section Wrapper
-            )} {/* End Random Courses Section check */}
+                        {/* Latest Quiz Attempts Card - Links fixed */}
+                        <div className={`${styles.dashboardCard} ${styles.quizAttemptsCard}`}>
+                            <h2>Recent Quizzes</h2>
+                             {loadingQuizAttempts ? <LoadingPlaceholder /> : errorQuizAttempts ? <ErrorMessage message={errorQuizAttempts} /> : latestQuizAttempts.length > 0 ? (
+                                <div className={styles.quizAttemptsPreview}>
+                                    {latestQuizAttempts.map(attempt => (
+                                        attempt?.quizId && (
+                                            <div
+                                                key={attempt.quizId}
+                                                className={styles.quizAttemptItem}
+                                                // **Navigate using quizId**
+                                                onClick={() => navigate(`/quizzes/${attempt.quizId}`)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/quizzes/${attempt.quizId}`)}
+                                                aria-label={`View quiz: ${attempt.quiz_title || `Quiz ${attempt.quizId}`}`}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className={styles.attemptInfo}>
+                                                    <span className={styles.attemptQuiz}>{attempt.quiz_title || `Quiz ${attempt.quizId}`}</span>
+                                                    <span className={styles.attemptDate}>
+                                                        {new Date(attempt.timestamp).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                <div className={styles.attemptStats}>
+                                                    <span title={`${attempt.correct} Correct`}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.statIconCorrect}><polyline points="20 6 9 17 4 12"></polyline></svg> {attempt.correct}</span>
+                                                    <span title={`${attempt.wrong} Incorrect`}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.statIconIncorrect}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> {attempt.wrong}</span>
+                                                    <span title={`${attempt.total} Total Questions`}>Σ {attempt.total}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="No recent quiz attempts found." />
+                            )}
+                            <button className={styles.cardActionButton} onClick={() => navigate('/quizzes/attempts')}>
+                                See All Attempts
+                            </button>
+                        </div>
+                    </>
+                )}
 
-            {/* --- Placeholder for other future sections if needed --- */}
-            {/* Example:
-            { latestQuizzes.length > 0 && (
-                <div className="discover-content-section quizzes-section">
-                    <div className="discover-section-header">...</div>
-                    <div className="discover-grid">...</div>
-                </div>
-            )}
-            */}
+                {/* --- Teacher Focused Cards --- */}
+                {showTeacherSections && (
+                   <>
+                       {/* ... Teacher cards remain the same ... */}
+                       <div className={`${styles.dashboardCard} ${styles.teacherToolsCard}`}>
+                           <h2>Teacher Dashboard</h2>
+                           <p>Manage your content and students.</p>
+                           <button className={styles.cardActionButton} onClick={() => navigate('/teacher-dashboard')}>
+                               Go to Dashboard
+                           </button>
+                       </div>
+                       <div className={`${styles.dashboardCard} ${styles.studentInquiriesCard}`}>
+                           <h2>Student Questions</h2>
+                           <p>Review questions needing your attention.</p>
+                           <button className={styles.cardActionButton} onClick={() => navigate('/teacher-questions')}>
+                               View Questions
+                           </button>
+                       </div>
+                   </>
+                )}
 
-          </div> // End discover-content-area
-        )}
-      </section>
-    </div>
-  );
+                {/* --- Discover Sections --- */}
+                 {/* ... Discover sections remain the same ... */}
+                 {loadingDiscover ? (
+                     <div className={styles.discoverSectionLoading}> <LoadingPlaceholder /> </div>
+                 ) : errorDiscover ? (
+                      <div className={styles.discoverSectionError}> <ErrorMessage message={errorDiscover} /> </div>
+                 ) : latestPosts.length > 0 && (
+                    <section className={`${styles.discoverSection} ${styles.postsSection}`}>
+                        <div className={styles.discoverHeader}>
+                            <h3>Recent Posts</h3>
+                            <Link to="/posts" className={styles.discoverSeeAllBtn}>See All</Link>
+                        </div>
+                        <div className={styles.discoverGrid}>
+                            {latestPosts.map(post => (
+                                post && (
+                                    <Link to={post.permalink ? `/posts/${post.permalink}` : '#'} key={post.id} className={styles.discoverCardLink}>
+                                        <div className={styles.discoverCard}>
+                                            {post.og_image_url ? (
+                                                <img src={post.og_image_url} alt="" className={styles.discoverImage} loading="lazy" />
+                                            ) : (
+                                                <div className={`${styles.discoverImage} ${styles.discoverPlaceholder}`}>
+                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                                </div>
+                                            )}
+                                            <div className={styles.discoverInfo}>
+                                                <h4>{post.title || 'Untitled Post'}</h4>
+                                                <p>{post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                )
+                            ))}
+                        </div>
+                    </section>
+                 )}
+                 {loadingDiscover ? null : errorDiscover ? null : randomCourses.length > 0 && (
+                    <section className={`${styles.discoverSection} ${styles.coursesSection}`}>
+                        <div className={styles.discoverHeader}>
+                            <h3>Explore Courses</h3>
+                            <Link to="/explore?tab=courses" className={styles.discoverSeeAllBtn}>See All</Link>
+                        </div>
+                        <div className={styles.discoverGrid}>
+                            {randomCourses.map(course => (
+                                course && (
+                                     <Link to={course.permalink ? `/courses/${course.permalink}` : '#'} key={course.id} className={styles.discoverCardLink}>
+                                        <div className={styles.discoverCard}>
+                                             {course.cover_image ? (
+                                                <img src={course.cover_image} alt="" className={styles.discoverImage} loading="lazy"/>
+                                            ) : (
+                                                <div className={`${styles.discoverImage} ${styles.discoverPlaceholder}`}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                </div>
+                                            )}
+                                            <div className={styles.discoverInfo}>
+                                                <h4>{course.title || 'Untitled Course'}</h4>
+                                                <p className={styles.courseTypeLabel}>
+                                                   {course.course_type ? course.course_type.charAt(0).toUpperCase() + course.course_type.slice(1) : 'Standard'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                )
+                            ))}
+                        </div>
+                    </section>
+                 )}
+                 {!loadingDiscover && !errorDiscover && latestPosts.length === 0 && randomCourses.length === 0 && (
+                     <div className={styles.discoverSectionEmpty}>
+                         <EmptyState message="Nothing new to discover right now. Check back later!" />
+                     </div>
+                 )}
+
+            </main>
+        </div>
+    );
 };
 
 export default HomePage;

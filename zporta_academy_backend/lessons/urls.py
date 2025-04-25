@@ -8,6 +8,7 @@ from .views import (
     LessonEnrollmentCompletionStatusView, 
     AddQuizToLessonView,
     DetachQuizFromLessonView,
+    RecentLessonCompletionsView,
 )
 
 urlpatterns = [
@@ -26,5 +27,6 @@ urlpatterns = [
     path('<path:permalink>/detach-quiz/', DetachQuizFromLessonView.as_view(), name='detach-quiz-from-lesson'),
 
     # ✅ This should always be at the bottom
+    path('completed/recent/', RecentLessonCompletionsView.as_view(), name='recent-lesson-completions'), # Add this line
     path('<path:permalink>/', DynamicLessonView.as_view(), name='dynamic_lesson'),
 ]
