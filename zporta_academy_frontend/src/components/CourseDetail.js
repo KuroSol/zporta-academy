@@ -1012,6 +1012,18 @@ const CourseDetail = () => {
         <>
           {/* Title */}
           <h1 className={styles.courseTitle}>{course.title}</h1>
+          
+          {course?.cover_image ? (
+            <img
+              src={course.cover_image}
+              alt={course.title}
+              className={styles.courseImage}
+            />
+          ) : (
+            <div className={styles.courseImagePlaceholder}>
+              No Image Available
+            </div>
+          )}
 
           {/* Subject/Tags Info */}
           <div className={styles.courseInfo}>
