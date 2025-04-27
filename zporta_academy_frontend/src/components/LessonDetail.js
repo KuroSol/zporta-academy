@@ -185,6 +185,14 @@ const LessonDetail = () => {
     const [prevLesson, setPrevLesson] = useState(null); // Link to the previous lesson in the course sequence
     const [nextLesson, setNextLesson] = useState(null); // Link to the next lesson in the course sequence
 
+    // Quiz state
+    const [quizzes, setQuizzes] = useState([]);                           // attached to this lesson
+    const [availableQuizzes, setAvailableQuizzes] = useState([]);         // user’s quizzes not yet attached
+    const [selectedQuiz, setSelectedQuiz] = useState("");                 // for dropdown
+    const [quizActionError, setQuizActionError] = useState("");           // error messaging
+
+
+
     // --- Refs ---
     const editorRef = useRef(null); // Ref to access the CustomEditor component instance (for getting content)
     const lessonContentDisplayRef = useRef(null); // Ref for the div rendering dangerouslySetInnerHTML (for accordion init)
@@ -229,6 +237,17 @@ const LessonDetail = () => {
                 ]);
 
                 if (!isMounted) return; // Exit if component unmounted during fetch
+
+                // 4a. Set attached quizzes
+                setQuizzes(lessonRes.data.lesson.quizzes || []);
+
+                // 4b. Fetch user’s quizzes for dropdown
+                const userQuizzesRes = await apiClient.get('/quizzes/my/');
+                if (!isMounted) return;
+                const notAttached = Array.isArray(userQuizzesRes.data)
+                ? userQuizzesRes.data.filter(q => !q.lesson)      // only quizzes not bound to any lesson
+                : [];
+                setAvailableQuizzes(notAttached);
 
                 // 4. Store Core Data in State
                 setLessonData(lessonRes.data);
@@ -300,74 +319,74 @@ const LessonDetail = () => {
     }, [permalink, token, logout, navigate]); // Dependencies for the effect
 
 
-  // --- Accordion Initialization Effect (Course-Aware Timing Fix) ---
-  // This effect initializes/cleans up accordions in dynamically rendered content.
-  // It now also depends on courseLessons to re-run after course context is loaded.
-  useEffect(() => {
-    // Conditions to run: Not in edit mode, lesson content exists, container ref available.
-    let timeoutId = null;
-    let animationFrameId = null;
+    // --- Accordion Initialization Effect (Course-Aware Timing Fix) ---
+    // This effect initializes/cleans up accordions in dynamically rendered content.
+    // It now also depends on courseLessons to re-run after course context is loaded.
+    useEffect(() => {
+        // Conditions to run: Not in edit mode, lesson content exists, container ref available.
+        let timeoutId = null;
+        let animationFrameId = null;
 
-    if (!editMode && lessonData?.lesson?.content && lessonContentDisplayRef.current) {
-        const container = lessonContentDisplayRef.current;
-
-        // --- Cleanup Phase ---
-        // Clean up any previously initialized accordions within this container.
-        const initializedAccordions = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-        initializedAccordions.forEach((accordion) => {
-            const header = accordion.querySelector(".accordion-header");
-            if (header && header.__accordionClickHandler__) {
-                header.removeEventListener("click", header.__accordionClickHandler__);
-                delete header.__accordionClickHandler__;
-            }
-            if (accordion.dataset.accordionInitialized) {
-               delete accordion.dataset.accordionInitialized;
-            }
-        });
-
-        // --- Initialization Phase ---
-        // Use rAF + setTimeout for robust timing, allowing React to settle.
-        animationFrameId = requestAnimationFrame(() => {
-            timeoutId = setTimeout(() => {
-                if (lessonContentDisplayRef.current) {
-                    console.log("Initializing accordions (Course-Aware Fix)"); // Debug log
-                    initializeAccordions(lessonContentDisplayRef.current);
-                }
-            }, 50); // Small delay
-        });
-
-    } // End of if condition
-
-    // --- Effect Cleanup Function ---
-    return () => {
-        // Cancel pending timers/frames
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-
-        // Perform cleanup only if the effect actually ran its setup logic.
         if (!editMode && lessonData?.lesson?.content && lessonContentDisplayRef.current) {
-           const container = lessonContentDisplayRef.current;
-           if (container) { // Check container exists during cleanup
-              const accordionsToClean = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-              accordionsToClean.forEach((accordion) => {
-                  const header = accordion.querySelector(".accordion-header");
-                  if (header && header.__accordionClickHandler__) {
-                      header.removeEventListener("click", header.__accordionClickHandler__);
-                      delete header.__accordionClickHandler__;
-                  }
-                  if (accordion.dataset.accordionInitialized) {
-                     delete accordion.dataset.accordionInitialized;
-                  }
-              });
-           }
-        }
-    };
-// Dependencies: Re-run if edit mode changes, lesson content changes, OR courseLessons changes.
-}, [editMode, lessonData?.lesson?.content, courseLessons]); // <--- Added courseLessons here!
+            const container = lessonContentDisplayRef.current;
+
+            // --- Cleanup Phase ---
+            // Clean up any previously initialized accordions within this container.
+            const initializedAccordions = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
+            initializedAccordions.forEach((accordion) => {
+                const header = accordion.querySelector(".accordion-header");
+                if (header && header.__accordionClickHandler__) {
+                    header.removeEventListener("click", header.__accordionClickHandler__);
+                    delete header.__accordionClickHandler__;
+                }
+                if (accordion.dataset.accordionInitialized) {
+                delete accordion.dataset.accordionInitialized;
+                }
+            });
+
+            // --- Initialization Phase ---
+            // Use rAF + setTimeout for robust timing, allowing React to settle.
+            animationFrameId = requestAnimationFrame(() => {
+                timeoutId = setTimeout(() => {
+                    if (lessonContentDisplayRef.current) {
+                        console.log("Initializing accordions (Course-Aware Fix)"); // Debug log
+                        initializeAccordions(lessonContentDisplayRef.current);
+                    }
+                }, 50); // Small delay
+            });
+
+        } // End of if condition
+
+        // --- Effect Cleanup Function ---
+        return () => {
+            // Cancel pending timers/frames
+            if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            }
+            if (timeoutId) {
+            clearTimeout(timeoutId);
+            }
+
+            // Perform cleanup only if the effect actually ran its setup logic.
+            if (!editMode && lessonData?.lesson?.content && lessonContentDisplayRef.current) {
+            const container = lessonContentDisplayRef.current;
+            if (container) { // Check container exists during cleanup
+                const accordionsToClean = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
+                accordionsToClean.forEach((accordion) => {
+                    const header = accordion.querySelector(".accordion-header");
+                    if (header && header.__accordionClickHandler__) {
+                        header.removeEventListener("click", header.__accordionClickHandler__);
+                        delete header.__accordionClickHandler__;
+                    }
+                    if (accordion.dataset.accordionInitialized) {
+                        delete accordion.dataset.accordionInitialized;
+                    }
+                });
+            }
+            }
+        };
+    // Dependencies: Re-run if edit mode changes, lesson content changes, OR courseLessons changes.
+    }, [editMode, lessonData?.lesson?.content, courseLessons]); // <--- Added courseLessons here!
 
 
 
@@ -530,6 +549,48 @@ const LessonDetail = () => {
     };
 
 
+    // Attach a quiz
+    const handleAddQuiz = async e => {
+        e.preventDefault();
+        if (!selectedQuiz || !permalink) return;
+        setQuizActionError("");
+        try {
+        const res = await apiClient.post(
+            `/lessons/${permalink}/add-quiz/`,
+            { quiz_id: selectedQuiz }
+        );
+        const added = res.data.quiz || res.data;
+        setQuizzes(prev => [...prev, added]);
+        setAvailableQuizzes(prev => prev.filter(q => q.id !== added.id));
+        setSelectedQuiz("");
+        } catch (err) {
+        console.error("Add quiz error:", err);
+        setQuizActionError(
+            err.response?.data?.detail || "Failed to attach quiz."
+        );
+        }
+    };
+    
+    // Detach a quiz
+    const handleDetachQuiz = async quizId => {
+        if (!quizId) return;
+        if (!window.confirm("Detach this quiz from the lesson?")) return;
+        try {
+        await apiClient.post(
+            `/lessons/${permalink}/detach-quiz/`,
+            { quiz_id: quizId }
+        );
+        setQuizzes(prev => prev.filter(q => q.id !== quizId));
+        // Put it back into available list
+        const detached = quizzes.find(q => q.id === quizId);
+        if (detached) setAvailableQuizzes(prev => [...prev, detached]);
+        } catch (err) {
+        console.error("Detach quiz error:", err);
+        alert(err.response?.data?.detail || "Failed to detach quiz.");
+        }
+    };
+  
+
     // --- Render Logic ---
 
     // 1. Loading State
@@ -613,6 +674,78 @@ const LessonDetail = () => {
                             // disabled={submittingEdit}
                         />
                     </div>
+
+                       {/* Tags Input */}
+                    <div className={styles.formGroup}>
+                        <label htmlFor="editLessonTags">Tags (comma separated):</label>
+                        <input
+                        id="editLessonTags"
+                        className={styles.inputField}
+                        type="text"
+                        placeholder="e.g., react, javascript, webdev"
+                        value={editLesson.tags || ''}
+                        onChange={(e) => setEditLesson({ ...editLesson, tags: e.target.value })}
+                        />
+                    </div>
+
+                       {/* ─── Manage Attached Quizzes ─── */}
+                       <fieldset className={styles.formSection}>
+                    <legend>Manage Attached Quizzes</legend>
+
+                    {/* 4a. Currently attached */}
+                    <div className={styles.attachedContentList}>
+                        <h3>Attached Quizzes ({quizzes.length})</h3>
+                        {quizzes.length > 0 ? (
+                        <ul>
+                            {quizzes.map(q => (
+                            <li key={q.id}>
+                                {q.title}
+                                <button
+                                type="button"
+                                className={styles.detachBtn}
+                                onClick={() => handleDetachQuiz(q.id)}
+                                >
+                                <FaTimes /> Remove
+                                </button>
+                            </li>
+                            ))}
+                        </ul>
+                        ) : (
+                        <p>No quizzes attached.</p>
+                        )}
+                    </div>
+
+                    {/* 4b. Attach new quiz */}
+                    <div className={styles.contentSectionHeader}>
+                        <select
+                        value={selectedQuiz}
+                        onChange={e => {
+                            setSelectedQuiz(e.target.value);
+                            setQuizActionError("");
+                        }}
+                        >
+                        <option value="">Select a quiz to attach…</option>
+                        {availableQuizzes.map(q => (
+                            <option key={q.id} value={q.id}>
+                            {q.title}
+                            </option>
+                        ))}
+                        </select>
+                        <button
+                        type="button"
+                        onClick={handleAddQuiz}
+                        disabled={!selectedQuiz}
+                        className={styles.addBtn}
+                        >
+                        <FaPlus /> Attach Quiz
+                        </button>
+                    </div>
+
+                    {quizActionError && (
+                        <p className={styles.formError}>{quizActionError}</p>
+                    )}
+                    </fieldset>
+                       {/* ────────────────────────────────── */}
 
                     {/* Tags Input */}
                     <div className={styles.formGroup}>
