@@ -1,3 +1,5 @@
+# quizzes/models.py
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
@@ -23,15 +25,7 @@ class Quiz(models.Model):
     title = models.CharField(max_length=200)
     content = CKEditor5Field(config_name='default', help_text="Main explanation or content about the quiz.")
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
-    question = CKEditor5Field(config_name='default', help_text="Primary question for the quiz.")
-    option1 = CKEditor5Field(config_name='default')
-    option2 = CKEditor5Field(config_name='default')
-    option3 = CKEditor5Field(config_name='default', blank=True)
-    option4 = CKEditor5Field(config_name='default', blank=True)
-    correct_option = models.PositiveSmallIntegerField(help_text="Index of the correct option (1-4).")
-    hint1 = CKEditor5Field(config_name='default', blank=True, help_text="First hint to help solve the quiz.")
-    hint2 = CKEditor5Field(config_name='default', blank=True, help_text="Second hint to help solve the quiz.")
-    # Use string references to break circular imports
+
     lesson = models.ForeignKey('lessons.Lesson', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     subject = models.ForeignKey('subjects.Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     course = models.ForeignKey('courses.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
@@ -50,28 +44,54 @@ class Quiz(models.Model):
     og_image = models.URLField(blank=True)
 
     def save(self, *args, **kwargs):
+        # auto-generate permalink on first save
         if not self.permalink:
             date_str = timezone.now().strftime('%Y-%m-%d')
             title_slug = slugify(japanese_to_romaji(self.title))
             username_slug = slugify(self.created_by.username) if self.created_by else 'unknown-user'
             subject_slug = slugify(self.subject.name) if self.subject else 'no-subject'
             self.permalink = f"{username_slug}/{subject_slug}/{date_str}/{title_slug}"
+
+        # default SEO title = title
         if not self.seo_title:
             self.seo_title = self.title
+
+        # default SEO description from content (first 160 chars of text-only)
         if not self.seo_description and self.content:
             soup = BeautifulSoup(self.content, "html.parser")
             text = soup.get_text()
             self.seo_description = text[:160]
+
+        # open-graph title
         if not self.og_title:
             self.og_title = self.title
+
+        # open-graph description from content (first 200 chars)
         if not self.og_description and self.content:
             soup = BeautifulSoup(self.content, "html.parser")
             text = soup.get_text()
             self.og_description = text[:200]
+
+        # fallback OG image
         if not self.og_image:
             self.og_image = "https://www.yourdomain.com/static/default_quiz_image.png"
+
         super(Quiz, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title
 
+
+class Question(models.Model):
+    quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
+    question_text = CKEditor5Field(config_name='default')
+    option1 = CKEditor5Field(config_name='default')
+    option2 = CKEditor5Field(config_name='default')
+    option3 = CKEditor5Field(config_name='default', blank=True)
+    option4 = CKEditor5Field(config_name='default', blank=True)
+    correct_option = models.PositiveSmallIntegerField()
+    hint1 = CKEditor5Field(config_name='default', blank=True)
+    hint2 = CKEditor5Field(config_name='default', blank=True)
+
+    def __str__(self):
+        return f"Question for {self.quiz.title}"

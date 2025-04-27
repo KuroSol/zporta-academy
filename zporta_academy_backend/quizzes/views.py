@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from .models import Quiz
 from .serializers import QuizSerializer
 from analytics.utils import log_event
-
+from .models import Question 
 
 
 class QuizSubmitView(APIView):
@@ -25,14 +25,19 @@ class QuizSubmitView(APIView):
         for answer in answers:
             question_id = answer.get("question_id")
             selected_option = answer.get("selected_option")
-            
-            is_correct = (selected_option == 1)  # Replace with actual logic
-            
+
+            if not question_id or not selected_option:
+                continue  # Skip incomplete answers
+
+            question = get_object_or_404(Question, pk=question_id, quiz_id=quiz.id)
+
+            is_correct = (selected_option == question.correct_option)
+
             if is_correct:
                 correct_answers += 1
 
             question_results.append({
-                "question_id": question_id,
+                "question_id": question.id,
                 "selected_option": selected_option,
                 "answered_correctly": is_correct
             })
@@ -138,32 +143,35 @@ class RecordQuizAnswerView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, pk):
-        quiz = get_object_or_404(Quiz, pk=pk)
+        question_id = request.data.get("question_id")
         selected_option = request.data.get("selected_option")
-        
-        if selected_option is None:
-            return Response({"error": "selected_option is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if selected_option is None or question_id is None:
+            return Response({"error": "selected_option and question_id are required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             selected_option = int(selected_option)
         except ValueError:
             return Response({"error": "selected_option must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
         
-        is_correct = (selected_option == quiz.correct_option)
-        
+        question = get_object_or_404(Question, pk=question_id, quiz_id=pk)
+
+        is_correct = (selected_option == question.correct_option)
+
         log_event(
             user=request.user,
-            event_type='quiz_answer_submitted', # Ensure correct event type here!
-            instance=quiz,
+            event_type='quiz_answer_submitted',
+            instance=question.quiz,
             metadata={
                 'selected_option': selected_option,
-                'correct_option': quiz.correct_option,
-                'is_correct': is_correct
+                'correct_option': question.correct_option,
+                'is_correct': is_correct,
+                'question_id': question.id
             }
         )
         
         return Response({"message": "Answer recorded", "is_correct": is_correct}, status=status.HTTP_200_OK)
-
+    
 class QuizListByCourseView(generics.ListAPIView):
     """
     Returns a list of quizzes attached to a given course.
