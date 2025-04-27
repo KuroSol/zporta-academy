@@ -27,4 +27,49 @@
     opacity: 0.6;
     cursor: default;
   }
+  /* Progress indicator under the title */
+.quiz-progress {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 4px 0 12px;
+  text-align: center;
+}
+
+/* Question text styling */
+.quiz-question {
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+/* Navigation buttons container */
+.quiz-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.quiz-no-questions {
+  text-align: center;
+  color: #777;
+  margin: 12px 0;
+  font-style: italic;
+}
+
+
+/* Prev/Next arrow buttons */
+.quiz-nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+.quiz-nav-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.quiz-nav-button:hover:not(:disabled) {
+  opacity: 1;
+}
+
   

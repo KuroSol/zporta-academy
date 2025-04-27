@@ -152,4 +152,62 @@
     pointer-events: none;
     opacity: 0.5;
   }
-  
+  /* Progress indicator */
+.quiz-detail-progress {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 8px 0 16px;
+  text-align: center;
+}
+
+/* Question text */
+.quiz-detail-question {
+  font-size: 1.125rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+/* Options list */
+.quiz-detail-options {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.quiz-detail-option {
+  background: #f9f9f9;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 0.3s, border-color 0.3s;
+}
+.quiz-detail-option:hover:not(.disabled) {
+  background: #e0f7fa;
+  border-color: #00acc1;
+}
+.quiz-detail-option.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Nav buttons */
+.quiz-detail-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+.quiz-nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.quiz-nav-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.quiz-nav-button:hover:not(:disabled) {
+  opacity: 1;
+}

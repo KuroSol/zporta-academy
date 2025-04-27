@@ -16,12 +16,26 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const [subjectOption, setSubjectOption] = useState(null);
 
   // Step 2 state
-  const [question, setQuestion] = useState('');
-  const [option1, setOption1] = useState('');
-  const [option2, setOption2] = useState('');
-  const [option3, setOption3] = useState('');
-  const [option4, setOption4] = useState('');
-  const [correctOption, setCorrectOption] = useState(1);
+  // Step 2 state: dynamic questions array
+  const [questions, setQuestions] = useState([
+    { question_text: '', option1: '', option2: '', option3: '', option4: '', correct_option: 1, hint1: '', hint2: '' }
+  ]);
+
+  // Add a blank question
+  const addNewQuestion = () => {
+    setQuestions([
+      ...questions,
+      { question_text: '', option1: '', option2: '', option3: '', option4: '', correct_option: 1, hint1: '', hint2: '' }
+    ]);
+  };
+
+  // Update a single question field
+  const updateQuestion = (index, field, value) => {
+    const updated = [...questions];
+    updated[index][field] = value;
+    setQuestions(updated);
+  };
+
 
   // Step 3 state
   const [hint1, setHint1] = useState('');
@@ -77,21 +91,17 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       ? tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '')
       : [];
 
-    const payload = {
-      title,
-      quiz_type: quizType,
-      question,
-      option1,
-      option2,
-      option3,
-      option4,
-      correct_option: parseInt(correctOption, 10),
-      hint1,
-      hint2,
-      subject: subjectValue,
-      tags: tagsArray,
-      content, // Explanation / Content from custom editor
-    };
+          const payload = {
+              title,
+              quiz_type: quizType,
+              content,
+              subject: subjectOption.isNew
+                       ? subjectOption.label
+                       : subjectOption.value,
+              questions,
+              tags: tagsArray,
+            };
+      
 
     // Inside handleSubmit, after payload definition
     setMessage(''); // Clear message before trying
@@ -221,89 +231,80 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       {/* --- Step 2: Question and Options --- */}
       {currentStep === 2 && (
         <div className={`${styles.step} ${styles.step2} ${styles.animateFadeIn}`}>
-          {/* Apply formGroup style, add label htmlFor/id, textAreaField style, required span, disable */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizQuestion">Question: <span className={styles.required}>*</span></label>
-            <textarea
-              id="quizQuestion"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Enter the main question"
-              required
-              className={styles.textAreaField} // Use specific textarea style if defined
-              disabled={submitting}
-            ></textarea>
-          </div>
-          {/* Apply updates to all option inputs */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizOption1">Option 1: <span className={styles.required}>*</span></label>
-            <input
-              id="quizOption1"
-              type="text"
-              value={option1}
-              onChange={(e) => setOption1(e.target.value)}
-              required
-              className={styles.inputField}
-              disabled={submitting}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="quizOption2">Option 2: <span className={styles.required}>*</span></label>
-            <input
-              id="quizOption2"
-              type="text"
-              value={option2}
-              onChange={(e) => setOption2(e.target.value)}
-              required
-              className={styles.inputField}
-              disabled={submitting}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="quizOption3">Option 3 (optional):</label>
-            <input
-              id="quizOption3"
-              type="text"
-              value={option3}
-              onChange={(e) => setOption3(e.target.value)}
-              className={styles.inputField}
-              disabled={submitting}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="quizOption4">Option 4 (optional):</label>
-            <input
-              id="quizOption4"
-              type="text"
-              value={option4}
-              onChange={(e) => setOption4(e.target.value)}
-              className={styles.inputField}
-              disabled={submitting}
-            />
-          </div>
-          {/* Apply updates to correct option select */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizCorrectOption">Correct Option (1-4): <span className={styles.required}>*</span></label>
-            <select
-              id="quizCorrectOption"
-              value={correctOption}
-              onChange={(e) => setCorrectOption(e.target.value)}
-              className={styles.selectField}
-              disabled={submitting}
-              required // Usually required
-            >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              {/* Only show options 3 and 4 if they have content, or always show */}
-              {option3 && <option value="3">3</option>}
-              {option4 && <option value="4">4</option>}
-              {/* Or always show if they must select from 4 */}
-              {/* <option value="3">3</option> */}
-              {/* <option value="4">4</option> */}
-            </select>
-          </div>
+          {questions.map((q, i) => (
+            <div key={i} className={styles.formGroup}>
+              <h4>Question {i + 1}</h4>
+              <textarea
+                value={q.question_text}
+                onChange={e => updateQuestion(i, 'question_text', e.target.value)}
+                placeholder="Enter question"
+                required
+                className={styles.textAreaField}
+              />
+              <input
+                type="text"
+                value={q.option1}
+                onChange={e => updateQuestion(i, 'option1', e.target.value)}
+                placeholder="Option 1"
+                required
+                className={styles.inputField}
+              />
+              <input
+                type="text"
+                value={q.option2}
+                onChange={e => updateQuestion(i, 'option2', e.target.value)}
+                placeholder="Option 2"
+                required
+                className={styles.inputField}
+              />
+              <input
+                type="text"
+                value={q.option3}
+                onChange={e => updateQuestion(i, 'option3', e.target.value)}
+                placeholder="Option 3 (optional)"
+                className={styles.inputField}
+              />
+              <input
+                type="text"
+                value={q.option4}
+                onChange={e => updateQuestion(i, 'option4', e.target.value)}
+                placeholder="Option 4 (optional)"
+                className={styles.inputField}
+              />
+              <select
+                value={q.correct_option}
+                onChange={e => updateQuestion(i, 'correct_option', parseInt(e.target.value))}
+                className={styles.selectField}
+              >
+                <option value={1}>Option 1</option>
+                <option value={2}>Option 2</option>
+                <option value={3}>Option 3</option>
+                <option value={4}>Option 4</option>
+              </select>
+              <textarea
+                value={q.hint1}
+                onChange={e => updateQuestion(i, 'hint1', e.target.value)}
+                placeholder="Hint 1 (optional)"
+                className={styles.textAreaField}
+              />
+              <textarea
+                value={q.hint2}
+                onChange={e => updateQuestion(i, 'hint2', e.target.value)}
+                placeholder="Hint 2 (optional)"
+                className={styles.textAreaField}
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addNewQuestion}
+            className={`${styles.btn} ${styles.btnPrimary}`}
+          >
+            + Add Another Question
+          </button>
         </div>
       )}
+
 
       {/* --- Step 3: Hints, Tags and Explanation --- */}
       {currentStep === 3 && (
