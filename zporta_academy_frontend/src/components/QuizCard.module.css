@@ -1,0 +1,284 @@
+/* QuizCard.module.css */
+
+/* --- Base Variables (Assume global or redefine) --- */
+:root {
+  --primary-color: #4f46e5;
+  --primary-color-hover: #4338ca;
+  --correct-color: #10b981;
+  --correct-bg: #ecfdf5;
+  --incorrect-color: #ef4444;
+  --incorrect-bg: #fee2e2;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --bg-light: #ffffff;
+  --bg-subtle: #f9fafb;
+  --border-color: #e5e7eb;
+  --border-radius: 8px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --transition-speed: 0.2s;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Card Container --- */
+.quizCard {
+  font-family: var(--font-sans);
+  background-color: var(--bg-light);
+  padding: 1rem 1.25rem; /* Default padding */
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  gap: 0.75rem; /* Space between sections */
+  transition: box-shadow var(--transition-speed) ease, border-color var(--transition-speed) ease;
+  position: relative; /* For potential absolute elements if needed */
+}
+
+.quizCard:hover {
+   box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.1), 0 3px 6px -3px rgba(0, 0, 0, 0.1); /* Slightly larger shadow */
+   /* border-color: #d1d5db; */ /* Optional: slightly darker border */
+}
+
+/* --- Card Header (Title + Progress) --- */
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline; /* Align title and progress text */
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.25rem; /* Space below header */
+}
+
+.cardTitle {
+  font-size: 1.1rem; /* Slightly smaller than page title */
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  /* Allow title to wrap if needed */
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit to 2 lines */
+  -webkit-box-orient: vertical;
+}
+
+.progressText {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: var(--bg-subtle);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap; /* Prevent wrapping */
+  flex-shrink: 0; /* Don't shrink */
+  margin-left: 0.5rem; /* Space from title */
+}
+
+/* --- Message for No Questions --- */
+.noQuestions {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1rem 0;
+  font-style: italic;
+}
+
+/* --- Question Area --- */
+.questionArea {
+  /* No background needed if card bg is light */
+  min-height: 40px; /* Ensure minimum height */
+}
+
+.questionText {
+  font-size: 1rem; /* Standard text size for card */
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+/* Add basic styling for potential HTML within question */
+.questionText p { margin-bottom: 0.5em; }
+.questionText strong { font-weight: 600; }
+.questionText code {
+  background-color: #e5e7eb;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+/* --- Options List --- */
+.optionsList {
+  display: grid;
+  grid-template-columns: 1fr; /* Single column layout */
+  gap: 0.5rem; /* Smaller gap for card */
+}
+
+/* --- Option Button Styling (Compact version) --- */
+.optionButton {
+  display: flex;
+  width: 100%;
+  padding: 0.65rem 0.85rem; /* Smaller padding */
+  font-family: inherit;
+  font-size: 0.95rem; /* Slightly smaller font */
+  text-align: left;
+  color: var(--text-primary);
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 6px; /* Slightly smaller radius */
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease,
+              border-color var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Hover/Focus (only when interactive) */
+.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):hover,
+.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):focus-visible {
+  background-color: var(--bg-subtle);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color); /* Subtle ring on focus/hover */
+  outline: none;
+}
+
+/* Disabled state (after submission, unselected) */
+.optionButton.disabled,
+.optionButton[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-subtle);
+  pointer-events: none;
+  box-shadow: none; /* Remove shadow when disabled */
+}
+
+/* Correct Answer Highlight */
+.optionButton.correct {
+  border-color: var(--correct-color);
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  font-weight: 500;
+}
+
+/* Selected Answer - Correct */
+.optionButton.selectedCorrect {
+  border-color: var(--correct-color);
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--correct-color); /* Clearer ring */
+}
+
+/* Selected Answer - Incorrect */
+.optionButton.selectedIncorrect {
+  border-color: var(--incorrect-color);
+  background-color: var(--incorrect-bg);
+  color: var(--incorrect-color);
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--incorrect-color);
+}
+
+/* --- Feedback Area --- */
+.feedbackArea {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem; /* Smaller gap */
+  padding: 0.5rem 0.75rem; /* Compact padding */
+  /* margin-top: 0.5rem; */ /* Added via card gap */
+  border-radius: 6px;
+  font-size: 0.85rem; /* Smaller feedback text */
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+.feedbackCorrect {
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  border: 1px solid var(--correct-color);
+}
+
+.feedbackIncorrect {
+  background-color: var(--incorrect-bg);
+  color: var(--incorrect-color);
+  border: 1px solid var(--incorrect-color);
+}
+
+.feedbackIcon {
+  flex-shrink: 0;
+}
+
+/* --- Navigation --- */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-top: 0.75rem; */ /* Added via card gap */
+  padding-top: 0.5rem; /* Space above nav */
+  border-top: 1px solid var(--border-color); /* Separator */
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center; /* Center icon */
+  background-color: transparent;
+  color: var(--primary-color);
+  border: none;
+  padding: 0.35rem; /* Smaller padding for icon-only */
+  border-radius: 50%; /* Circular buttons */
+  width: 32px; /* Fixed size */
+  height: 32px; /* Fixed size */
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease, opacity var(--transition-speed) ease;
+}
+
+.navButton:hover:not(:disabled) {
+  background-color: rgba(79, 70, 229, 0.1); /* Subtle hover */
+}
+
+.navButton:focus-visible {
+   outline: 2px solid var(--primary-color);
+   outline-offset: 1px;
+   background-color: rgba(79, 70, 229, 0.1);
+}
+
+.navButton:disabled {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: transparent;
+}
+
+/* --- Error Message Styling --- */
+.errorMessage {
+    color: var(--incorrect-color);
+    font-weight: 500;
+    text-align: center;
+    padding: 1rem;
+}
+
+
+/* --- Animations --- */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Adjustments (Optional for Cards) --- */
+/* Cards usually adapt well, but you could adjust padding/font size */
+@media (max-width: 640px) {
+  .quizCard {
+    padding: 0.75rem 1rem; /* Slightly less padding on small screens */
+  }
+  .cardTitle {
+    font-size: 1rem;
+  }
+  .questionText {
+    font-size: 0.95rem;
+  }
+  .optionButton {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.8rem;
+  }
+}

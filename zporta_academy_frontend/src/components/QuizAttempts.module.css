@@ -1,0 +1,513 @@
+/* QuizAttempts.module.css */
+
+/* --- Base Variables (Assume global or redefine if needed) --- */
+:root {
+  --primary-color: #2c3e50;   /* Deep navy */
+  --secondary-color: #e67e22; /* Warm accent/orange */
+  --background-color: #ecf0f1; /* Light grayish background */
+  --card-background: #ffffff;
+  --text-color: #333333;
+  --text-light: #555555;
+  --text-secondary: #6b7280; /* From previous examples */
+  --text-on-primary: #ffffff;
+  --success-color: #27ae60; /* Slightly different green */
+  --error-color: #c0392b;   /* Slightly different red */
+  --border-color: #dfe4ea; /* Lighter border */
+  --border-radius: 8px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  --spacing-unit: 1rem; /* 16px */
+  --transition-speed: 0.25s;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /* Consistent font */
+  --bg-subtle: #f8f9fa; /* Subtle background for footer etc. */
+}
+
+/* --- Page Container --- */
+.quizAttemptsPage {
+  max-width: 1200px;
+  margin: calc(var(--spacing-unit) * 1.5) auto;
+  padding: var(--spacing-unit);
+  font-family: var(--font-sans);
+  background-color: var(--background-color);
+}
+
+/* --- Section Titles --- */
+.sectionTitle {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: calc(var(--spacing-unit) * 1.5);
+  font-size: 1.8rem;
+  font-weight: 600;
+  padding-bottom: calc(var(--spacing-unit) * 0.5);
+  border-bottom: 2px solid var(--secondary-color);
+}
+
+/* --- Loading / Error / No Data Containers --- */
+.loadingContainer,
+.errorContainer,
+.noDataContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--spacing-unit) * 0.5);
+  text-align: center;
+  padding: calc(var(--spacing-unit) * 1.5);
+  margin: calc(var(--spacing-unit) * 1.5) auto;
+  border-radius: var(--border-radius);
+  max-width: 700px;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.errorContainer {
+  background-color: #fff0f0;
+  color: var(--error-color);
+  border-color: #fcc;
+  font-weight: 500;
+}
+
+.loadingContainer {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.loadingIcon {
+    animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.noDataContainer {
+  color: var(--text-light);
+  flex-direction: column;
+  gap: var(--spacing-unit);
+}
+
+.findQuizLink {
+  color: var(--secondary-color);
+  font-weight: 600;
+  text-decoration: none;
+  padding: calc(var(--spacing-unit) * 0.3) calc(var(--spacing-unit) * 0.6);
+  border: 1px solid var(--secondary-color);
+  border-radius: 4px;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+.findQuizLink:hover {
+  background-color: var(--secondary-color);
+  color: var(--text-on-primary);
+  text-decoration: none;
+}
+
+
+/* ================================================== */
+/* --- User Score by Subject Section (Improved Cards) --- */
+/* ================================================== */
+
+.userScoreContainer {
+  margin-bottom: calc(var(--spacing-unit) * 2);
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.subjectScoreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: calc(var(--spacing-unit) * 1.5);
+}
+
+.subjectScoreCard {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing-unit) * 1.25);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.subjectScoreCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.subjectScoreCardTop {
+  display: flex;
+  align-items: center;
+  /* Increased gap slightly to push text further from chart area */
+  gap: calc(var(--spacing-unit) * 1.5); /* <<< Increased gap */
+  margin-bottom: calc(var(--spacing-unit) * 1);
+  padding-bottom: calc(var(--spacing-unit) * 1);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.scoreChartWrapper {
+  flex-shrink: 0;
+  /*
+  width: 75px;
+  height: 75px;
+  */
+  position: relative;
+  /* Ensure the chart component *inside* doesn't overflow this visually */
+  overflow: hidden; /* Add overflow hidden as a safeguard */
+}
+
+.subjectScoreCardInfo {
+  flex-grow: 1;
+  min-width: 0; /* Important for flex item wrapping/shrinking */
+  /* Added slight left padding for extra safety margin */
+  padding-left: calc(var(--spacing-unit) * 0.25); /* <<< Added padding */
+}
+
+.subjectTitle {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+  margin: 0 0 calc(var(--spacing-unit) * 0.25) 0;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.subjectScoreValue {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+  margin: 0;
+  line-height: 1;
+}
+
+.scoreOutOf {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-light);
+    margin-left: 4px;
+}
+
+.scoreDetails {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 1);
+  margin-top: calc(var(--spacing-unit) * 0.5);
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing-unit) * 0.4);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.detailIcon {
+    flex-shrink: 0;
+    color: var(--primary-color);
+    opacity: 0.8;
+}
+
+.detailLabel {
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-color);
+}
+
+.detailValue {
+  font-weight: 600;
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+
+/* ================================================== */
+/* --- Quiz Attempts List Section (Remains the same) --- */
+/* ================================================== */
+.quizAttemptsContainer {
+    margin-top: calc(var(--spacing-unit) * 2);
+}
+
+.quizAttemptsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: calc(var(--spacing-unit) * 1.5);
+}
+
+.quizAttemptCard {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.quizAttemptCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cardHeader {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
+}
+
+.cardTitle {
+  margin: 0 0 calc(var(--spacing-unit) * 0.2) 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardDate {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.cardBody {
+  padding: var(--spacing-unit);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-unit);
+  align-items: center;
+  flex-grow: 1;
+}
+
+.cardChartContainer {
+  flex: 0 0 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cardPercentage {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: calc(var(--spacing-unit) * 0.4);
+}
+
+.cardStats {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.cardStats p {
+  margin: calc(var(--spacing-unit) * 0.3) 0;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: calc(var(--spacing-unit) * 0.3);
+  flex-wrap: wrap;
+}
+.cardStats p:last-child {
+    border-bottom: none;
+}
+
+.cardStats p span:first-child {
+    color: var(--text-secondary);
+    margin-right: var(--spacing-unit);
+    white-space: nowrap;
+}
+.cardStats p span:last-child {
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.statCorrect { color: var(--success-color); }
+.statWrong { color: var(--error-color); }
+
+.cardFooter {
+  padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
+  border-top: 1px solid var(--border-color);
+  text-align: right;
+  background-color: var(--bg-subtle);
+  margin-top: auto;
+}
+
+.cardReviewButton {
+  background-color: var(--secondary-color);
+  color: var(--text-on-primary);
+  padding: calc(var(--spacing-unit) * 0.4) calc(var(--spacing-unit) * 1);
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
+  display: inline-block;
+}
+
+.cardReviewButton:hover {
+  background-color: #d35400;
+  transform: scale(1.02);
+}
+
+.noReviewLink {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-style: italic;
+    padding: calc(var(--spacing-unit) * 0.4) 0;
+    display: inline-block;
+}
+
+
+/* ================================================== */
+/* --- Responsive Adjustments --- */
+/* ================================================== */
+@media screen and (max-width: 768px) {
+  .sectionTitle {
+    font-size: 1.6rem;
+  }
+
+  .subjectScoreGrid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-unit);
+  }
+
+  .quizAttemptsList {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-unit);
+  }
+
+  .cardBody {
+     gap: calc(var(--spacing-unit) * 1.5);
+  }
+
+  .cardChartContainer {
+     margin: 0 auto var(--spacing-unit) auto;
+  }
+
+  .cardStats {
+     text-align: left;
+  }
+   .cardStats p {
+     justify-content: space-between;
+   }
+
+   .subjectScoreCardTop {
+       /* Keep increased gap from above for consistency */
+       gap: calc(var(--spacing-unit) * 1); /* Can reduce gap slightly if needed on tablet */
+   }
+   .scoreChartWrapper {
+       width: 65px;
+       height: 65px;
+   }
+   .subjectScoreCardInfo {
+       padding-left: 0; /* Remove extra padding if gap is sufficient */
+   }
+   .subjectTitle {
+       font-size: 1.15rem;
+   }
+   .subjectScoreValue {
+       font-size: 1.6rem;
+   }
+   .scoreDetails {
+       grid-template-columns: 1fr;
+       gap: calc(var(--spacing-unit) * 0.5);
+   }
+   .detailItem {
+       font-size: 0.8rem;
+   }
+
+}
+
+@media screen and (max-width: 480px) {
+  .quizAttemptsPage {
+    margin-top: var(--spacing-unit);
+    margin-bottom: var(--spacing-unit);
+    padding: calc(var(--spacing-unit) * 0.5);
+  }
+  .sectionTitle {
+    font-size: 1.4rem;
+  }
+
+  .subjectScoreGrid {
+      grid-template-columns: 1fr;
+  }
+
+  .subjectScoreCard {
+    padding: var(--spacing-unit);
+  }
+
+  .quizAttemptCard {
+    padding: 0;
+  }
+   .cardHeader, .cardFooter {
+       padding: calc(var(--spacing-unit) * 0.5) calc(var(--spacing-unit) * 0.75);
+   }
+   .cardBody {
+       padding: var(--spacing-unit);
+       flex-direction: column;
+       align-items: stretch;
+   }
+   .cardChartContainer {
+       margin-bottom: var(--spacing-unit);
+   }
+   .cardStats {
+       flex-basis: auto;
+   }
+
+
+  .subjectScoreCardTop {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding-bottom: calc(var(--spacing-unit) * 0.75);
+      margin-bottom: calc(var(--spacing-unit) * 0.75);
+      gap: calc(var(--spacing-unit) * 0.5); /* Adjust gap for column layout */
+  }
+  .scoreChartWrapper {
+      width: 70px;
+      height: 70px;
+      margin-bottom: calc(var(--spacing-unit) * 0.5);
+  }
+   .subjectScoreCardInfo {
+       padding-left: 0; /* No left padding needed in column layout */
+   }
+  .subjectTitle {
+      font-size: 1.1rem;
+  }
+  .subjectScoreValue {
+      font-size: 1.5rem;
+  }
+  .scoreDetails {
+       gap: calc(var(--spacing-unit) * 0.6);
+  }
+  .detailItem {
+      font-size: 0.85rem;
+      gap: calc(var(--spacing-unit) * 0.5);
+  }
+
+
+  .cardTitle {
+     font-size: 1.1rem;
+     white-space: normal;
+  }
+  .cardDate { font-size: 0.75rem; }
+  .cardPercentage { font-size: 1.1rem; }
+  .cardStats p { font-size: 0.85rem; }
+  .cardReviewButton { font-size: 0.8rem; }
+
+  .cardFooter { text-align: center; }
+  .cardReviewButton {
+     width: 90%;
+     padding: calc(var(--spacing-unit) * 0.5) 0;
+  }
+}

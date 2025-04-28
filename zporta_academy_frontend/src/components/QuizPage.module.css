@@ -1,0 +1,364 @@
+/* QuizPage.module.css */
+
+/* --- Base Variables (Customize as needed) --- */
+:root {
+  /* Using :root for potential global overrides, but prefer scoping if possible */
+  --primary-color: #4f46e5; /* Example: Indigo */
+  --primary-color-hover: #4338ca;
+  --correct-color: #10b981; /* Example: Emerald */
+  --correct-bg: #ecfdf5;
+  --incorrect-color: #ef4444; /* Example: Red */
+  --incorrect-bg: #fee2e2;
+  --text-primary: #1f2937; /* Dark Gray */
+  --text-secondary: #6b7280; /* Medium Gray */
+  --bg-light: #ffffff;
+  --bg-subtle: #f9fafb; /* Very Light Gray */
+  --border-color: #e5e7eb; /* Light Gray */
+  --border-radius: 8px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --transition-speed: 0.2s;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Main Container --- */
+.quizContainer {
+  font-family: var(--font-sans);
+  background-color: var(--bg-light);
+  max-width: 700px; /* Slightly narrower for better readability */
+  margin: 2rem auto; /* Centering */
+  padding: 1.5rem; /* Default padding */
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  animation: fadeIn 0.5s ease-out;
+  overflow: hidden; /* Contain elements */
+}
+
+/* --- Quiz Header --- */
+.quizTitle {
+  font-size: 1.75rem; /* Slightly smaller title */
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 1.5rem; /* Adjusted margin */
+}
+
+/* --- Progress Bar --- */
+.progressContainer {
+  margin-bottom: 1.5rem;
+}
+
+.progressBar {
+  background-color: var(--border-color);
+  border-radius: 99px; /* Pill shape */
+  height: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progressFill {
+  background-color: var(--primary-color);
+  height: 100%;
+  border-radius: 99px;
+  transition: width var(--transition-speed) ease-in-out;
+}
+
+.progressText {
+  display: block;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+/* --- Question Area --- */
+.questionArea {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--bg-subtle);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  min-height: 60px; /* Ensure some minimum height */
+}
+
+.questionText {
+  font-size: 1.125rem; /* Slightly larger question text */
+  line-height: 1.6;
+  color: var(--text-primary);
+  /* Styles for potential HTML content within question */
+}
+.questionText p { margin-bottom: 0.5em; }
+.questionText strong { font-weight: 600; }
+.questionText code {
+  background-color: #e5e7eb;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+
+/* --- Options List --- */
+.optionsList {
+  display: grid;
+  grid-template-columns: 1fr; /* Default to single column */
+  gap: 0.75rem; /* Space between options */
+  margin-bottom: 1.5rem;
+}
+
+/* --- Option Button Styling --- */
+.optionButton {
+  display: flex; /* Use flex for alignment if needed */
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  color: var(--text-primary);
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease,
+              border-color var(--transition-speed) ease,
+              transform var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease;
+  position: relative; /* For potential pseudo-elements */
+  box-shadow: var(--shadow-sm);
+  min-height: 48px; /* Ensure minimum height */
+}
+
+/* Hover/Focus States (only when not disabled/submitted) */
+.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):hover,
+.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):focus-visible {
+  background-color: var(--bg-subtle);
+  border-color: var(--primary-color);
+  transform: translateY(-1px); /* Subtle lift */
+  box-shadow: var(--shadow-md);
+  outline: none; /* Remove default focus outline, rely on border */
+}
+
+/* Disabled state (after submission, for unselected options) */
+/* Also applies if button is explicitly disabled */
+.optionButton.disabled,
+.optionButton[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-subtle);
+  pointer-events: none; /* Ensure no interaction */
+  /* Prevent hover effects on disabled buttons */
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* Correct Answer Highlight (always shown after submission) */
+.optionButton.correct {
+  border-color: var(--correct-color);
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  font-weight: 500;
+}
+
+/* Selected Answer - Correct */
+.optionButton.selectedCorrect {
+  border-color: var(--correct-color);
+  background-color: var(--correct-bg);
+  color: var(--correct-color); /* Ensure text is readable */
+  font-weight: 600; /* Make it stand out more */
+  box-shadow: 0 0 0 2px var(--correct-color); /* Add ring */
+}
+
+/* Selected Answer - Incorrect */
+.optionButton.selectedIncorrect {
+  border-color: var(--incorrect-color);
+  background-color: var(--incorrect-bg);
+  color: var(--incorrect-color); /* Ensure text is readable */
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--incorrect-color); /* Subtle ring */
+}
+
+/* --- Feedback Area --- */
+.feedbackArea {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem; /* Space before nav */
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+.feedbackCorrect {
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  border: 1px solid var(--correct-color);
+}
+
+.feedbackIncorrect {
+  background-color: var(--incorrect-bg);
+  color: var(--incorrect-color);
+  border: 1px solid var(--incorrect-color);
+}
+
+.feedbackIcon {
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.correctAnswerText {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  opacity: 0.9;
+}
+.correctAnswerText span { font-weight: 600; }
+
+
+/* --- Navigation --- */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.navButton {
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  gap: 0.5rem; /* Space between icon and text */
+  background-color: transparent;
+  color: var(--primary-color);
+  border: none;
+  padding: 0.5rem 1rem; /* Adequate tap target */
+  border-radius: var(--border-radius);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease, opacity var(--transition-speed) ease;
+}
+
+.navButton:hover:not(:disabled) {
+  background-color: rgba(79, 70, 229, 0.1); /* Subtle primary hover */
+}
+
+.navButton:focus-visible {
+   outline: 2px solid var(--primary-color);
+   outline-offset: 2px;
+}
+
+
+.navButton:disabled {
+  color: var(--text-secondary);
+  opacity: 0.5; /* Slightly more visible disabled state */
+  cursor: not-allowed;
+  background-color: transparent; /* Ensure no hover background persists */
+}
+
+/* --- Completion Message --- */
+.completionMessage {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* --- Error State --- */
+.errorContainer {
+  text-align: center;
+  padding: 2rem;
+  background-color: var(--incorrect-bg);
+  border: 1px solid var(--incorrect-color);
+  color: var(--incorrect-color);
+  border-radius: var(--border-radius);
+  margin: 2rem auto;
+  max-width: 600px;
+}
+.errorMessage {
+  font-weight: 500;
+  color: #991b1b; /* Darker red for better contrast */
+}
+
+/* --- Skeleton Loader Styles --- */
+.skeletonContainer {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.skeleton {
+  background-color: #e5e7eb; /* Lighter gray for skeleton */
+  border-radius: 4px;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeletonTitle { height: 28px; width: 60%; margin: 0 auto 1.5rem; }
+.skeletonProgress { height: 8px; width: 100%; margin-bottom: 0.5rem; border-radius: 99px;} /* Reduced margin */
+.skeletonProgress + .skeletonText { height: 14px; width: 30%; margin: 0 auto 1.5rem; } /* Skeleton for progress text */
+.skeletonQuestion { height: 60px; width: 100%; margin-bottom: 1.5rem; } /* Increased height */
+.skeletonOption { height: 48px; width: 100%; margin-bottom: 0.75rem; }
+.skeletonNav { display: flex; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.skeletonButton { height: 36px; width: 100px; }
+
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Design (Mobile First Approach) --- */
+
+/* Base styles are mobile */
+
+/* Tablet and larger */
+@media (min-width: 640px) { /* sm breakpoint */
+  .quizContainer {
+    padding: 2rem; /* More padding on larger screens */
+  }
+  .quizTitle {
+    font-size: 2rem;
+  }
+  .questionText {
+    font-size: 1.25rem;
+  }
+  .optionButton {
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+  }
+  /* Optional: Uncomment for 2 columns on wider screens */
+  /* .optionsList {
+     grid-template-columns: 1fr 1fr;
+     gap: 1rem;
+   } */
+}
+
+/* Desktop */
+@media (min-width: 1024px) { /* lg breakpoint */
+  .quizContainer {
+    padding: 2.5rem;
+  }
+}
