@@ -2,14 +2,25 @@
 from .base import *
 from decouple import config, Csv
 import os
+from pathlib import Path
 
 # Explicitly specify the path to your .env file:
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env_path = os.path.join(BASE_DIR, '.env')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 from decouple import Config, RepositoryEnv
 config = Config(RepositoryEnv(env_path))
+
+# DEV: Use SQLite locally for simplicity
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        # now points to <...>\zporta_academy_backend\zporta\db.sqlite3
+        'NAME': str(PROJECT_ROOT / 'zporta' / 'db.sqlite3'),
+    }
+}
 
 DEBUG = True
 ALLOWED_HOSTS = ['*']
