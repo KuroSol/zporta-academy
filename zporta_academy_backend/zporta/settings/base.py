@@ -105,12 +105,7 @@ EMAIL_HOST_USER = 'AKIAVWABJTZQAEPJTKCH'
 EMAIL_HOST_PASSWORD = 'BOpN9hWAWh4R5vfcZdll3eloe9bU2Sia0arrGaIdctxK'
 DEFAULT_FROM_EMAIL = 'info@zportaacademy.com'
 STATIC_URL = '/django-static/'
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -128,7 +123,7 @@ STATIC_URL = 'django-static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    #"http://localhost:3000",
+    "http://localhost:3000",
     "https://eduhab.com",       # Allow frontend origin with HTTPS
     "https://www.eduhab.com",  # Allow www subdomain if used
 ]

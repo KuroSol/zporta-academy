@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaRegClock, FaUser, FaEye } from 'react-icons/fa';
 import apiClient from '../api'; // <-- Added import (Adjust path if needed)
-import './UserPosts.css'; // Assuming CSS path is correct
+import styles from './UserPosts.module.css';
 
 const UserPosts = () => {
     const [posts, setPosts] = useState([]);
@@ -53,41 +53,41 @@ const UserPosts = () => {
     }, []);
 
     // Conditional rendering based on state
-    if (loading) return <p className="loading" style={{ textAlign: 'center', padding: '20px' }}>Loading posts...</p>;
-    if (error) return <p className="error" style={{ color: 'red', textAlign: 'center', padding: '20px' }}>{error}</p>;
+    if (loading) return <p className={styles.loading} style={{ textAlign: 'center', padding: '20px' }}>Loading posts...</p>;
+    if (error) return <p className={styles.error} style={{ color: 'red', textAlign: 'center', padding: '20px' }}>{error}</p>;
 
     // Main JSX structure remains the same
     return (
-        <div className="user-posts-container">
+        <div className={styles['user-posts-container']}>
             <h2>📢 Explore User Posts</h2>
-            <div className="post-grid">
+            <div className={styles['post-grid']}>
                 {posts.length > 0 ? (
                     posts.map(post => (
                         <Link
                             // Ensure permalink exists before creating link
                             to={post.permalink ? `/posts/${post.permalink}` : '#'}
                             key={post.id}
-                            className="post-card"
+                            className={styles['post-card']}
                         >
-                            <div className="post-thumbnail">
+                            <div className={styles['post-thumbnail']}>
                                 {post.og_image_url ? (
                                     <img src={post.og_image_url} alt={post.title || 'Post image'} />
                                 ) : (
                                     // Make sure post.content exists before stripping/substringing
-                                    <p className="post-excerpt">
+                                    <p className={styles['post-excerpt']}>
                                         {post.content ? stripHTML(post.content).substring(0, 100) + '...' : 'No content preview'}
                                     </p>
                                 )}
                             </div>
-                            <div className="post-content">
-                                <h3 className="post-title">{post.title || 'Untitled Post'}</h3>
-                                <p className="post-meta">
-                                    <FaUser className="icon" /> {post.created_by || 'Unknown User'} &nbsp; | &nbsp;
-                                    <FaRegClock className="icon" /> {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Unknown Date'}
+                            <div className={styles['post-content']}>
+                                <h3 className={styles['post-title']}>{post.title || 'Untitled Post'}</h3>
+                                <p className={styles['post-meta']}>
+                                    <FaUser className={styles.icon} /> {post.created_by || 'Unknown User'} &nbsp; | &nbsp;
+                                    <FaRegClock className={styles.icon} /> {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Unknown Date'}
                                 </p>
-                                <div className="hover-overlay">
-                                    <button className="view-button">
-                                        <FaEye className="eye-icon" /> View Post
+                                <div className={styles['hover-overlay']}>
+                                    <button className={styles['view-button']}>
+                                        <FaEye className={styles['eye-icon']} /> View Post
                                     </button>
                                 </div>
                             </div>
