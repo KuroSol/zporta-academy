@@ -21,7 +21,7 @@ DEBUG = False
 # Add your new domain (and www subdomain) that will access the server.
 # Keep the IP if you might access it directly sometimes.
 ALLOWED_HOSTS = [
-    '34.194.162.240',   # Your server's IP address
+    '54.95.178.162',   # Your server's IP address
     '127.0.0.1',        # Localhost on the server
     'eduhab.com',       # Your new domain
     'www.eduhab.com',   # The www version of your domain
@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
 # --- STEP 2: Update CSRF_TRUSTED_ORIGINS ---
 # Trust requests coming from your domain via HTTPS (Cloudflare handles the HTTPS)
 CSRF_TRUSTED_ORIGINS = [
-    'http://34.194.162.240', # Keep IP if needed (use http if accessing directly without SSL)
+    'http://54.95.178.162', # Keep IP if needed (use http if accessing directly without SSL)
     'http://127.0.0.1',      # Keep localhost
     'https://eduhab.com',    # Trust your domain with HTTPS
     'https://www.eduhab.com', # Trust www subdomain with HTTPS
