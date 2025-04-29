@@ -15,6 +15,8 @@ const CustomEditor = forwardRef(({
     mediaCategory = 'course',
     editable = true
 }, ref) => {
+    const [randomWrapperClass] = useState(() => `userContent-${Math.random().toString(36).substr(2, 8)}`);
+
     const editorRef = useRef(null);
     const imageUploadInputRef = useRef(null);
     const audioUploadInputRef = useRef(null);
@@ -49,8 +51,26 @@ const CustomEditor = forwardRef(({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, viewSource]);
 
+    // ——— helper to strip our random wrapper DIV ———
+    const getContent = () => {
+        // pick source-mode text or WYSIWYG HTML
+        let html = viewSource
+          ? content
+          : (editorRef.current?.innerHTML || '');
+        const openTag = `<div class="${randomWrapperClass}">`;
+        // if wrapped, remove the outer DIV
+        if (html.startsWith(openTag) && html.endsWith(`</div>`)) {
+          html = html.slice(
+            openTag.length,
+            html.length - `</div>`.length
+          );
+        }
+        return html;
+      };
+  
+
     useImperativeHandle(ref, () => ({
-        getContent: () => viewSource ? content : (editorRef.current ? editorRef.current.innerHTML : ''),
+        getContent,    // ← use the helper above instead of the inline function
         getPrivacy: () => privacy,
         clearEditorSelection: clearSelection
     }));
@@ -703,15 +723,25 @@ const handleAddAccordionContentSection = () => {
     // --- Toggles ---
     const toggleViewSource = () => {
         if (!viewSource) {
-            clearSelection();
-            setElementToReplaceState(null); // Clear replace state
-            if(editorRef.current) setContent(editorRef.current.innerHTML);
+          // Switching from WYSIWYG to Source
+          clearSelection();
+          setElementToReplaceState(null);
+          if (editorRef.current) {
+            let html = editorRef.current.innerHTML;
+            // Only wrap if not already wrapped
+            if (!html.includes(`class="${randomWrapperClass}"`)) {
+              html = `<div class="${randomWrapperClass}">${html}</div>`;
+            }
+            setContent(html);
+          }
         } else {
-            clearSelection();
-            setElementToReplaceState(null); // Clear replace state
+          // Switching from Source to WYSIWYG
+          clearSelection();
+          setElementToReplaceState(null);
         }
         setViewSource(!viewSource);
-    };
+      };
+      
 
     const toggleFullscreen = () => {
         setIsFullscreen(!isFullscreen);
@@ -864,17 +894,19 @@ const handleAddAccordionContentSection = () => {
                     placeholder={placeholder}
                     style={{ width: '100%', minHeight: '300px', height: 'auto', boxSizing: 'border-box', flexGrow: 1 }}
                 />
-            ) : (
-              <div
-              ref={editorRef}
-              contentEditable={editable}
-              className={`editor wysiwyg-view ${!editable ? 'is-readonly' : ''}`} 
-              placeholder={placeholder}
-              onClick={handleElementClick} // <<< THIS LINE
-              onInput={updateContentFromEditor}
-              style={{ minHeight: '300px', border: '1px solid #ccc', padding: '10px', overflowY: 'auto', flexGrow: 1 }}
-            ></div>
-            )}
+                ) : (
+                <div
+                    ref={editorRef}
+                    contentEditable={editable}
+                    className={`editor wysiwyg-view ${!editable ? 'is-readonly' : ''}`}
+                    placeholder={placeholder}
+                    onClick={handleElementClick}
+                    onInput={updateContentFromEditor}
+                    style={{ minHeight: '300px', border: '1px solid #ccc', padding: '10px', overflowY: 'auto', flexGrow: 1 }}
+                    data-wrapper-class={randomWrapperClass} // <<< ADD THIS if needed
+                ></div>
+                )}
+
         </div>
     );
 });
