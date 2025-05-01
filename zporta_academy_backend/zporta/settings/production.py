@@ -31,16 +31,16 @@ ALLOWED_HOSTS = [
 # --- STEP 2: Update CSRF_TRUSTED_ORIGINS ---
 # Trust requests coming from your domain via HTTPS (Cloudflare handles the HTTPS)
 CSRF_TRUSTED_ORIGINS = [
-    'http://54.95.178.162', # Keep IP if needed (use http if accessing directly without SSL)
+    'http://18.176.206.74', # Keep IP if needed (use http if accessing directly without SSL)
     'http://127.0.0.1',      # Keep localhost
-    'https://eduhab.com',    # Trust your domain with HTTPS
-    'https://www.eduhab.com', # Trust www subdomain with HTTPS
+    'https://zportaacademy.com',    # Trust your domain with HTTPS
+    'https://www.zportaacademy.com', # Trust www subdomain with HTTPS
     # Add 'https://zportaacademy.com', 'https://www.zportaacademy.com' later
 ]
 
 # --- STEP 3: Update FRONTEND_URL_BASE (If used for generating links etc.) ---
 # This should point to the primary URL users access your frontend from.
-FRONTEND_URL_BASE = 'https://eduhab.com' # Use HTTPS
+FRONTEND_URL_BASE = 'https://zportaacademy.com' # Use HTTPS
 
 # *** ADDING the Correct MEDIA_ROOT definition ***
 MEDIA_ROOT = BASE_DIR / 'media'
