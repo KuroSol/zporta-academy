@@ -21,10 +21,10 @@ DEBUG = False
 # Add your new domain (and www subdomain) that will access the server.
 # Keep the IP if you might access it directly sometimes.
 ALLOWED_HOSTS = [
-    '54.95.178.162',   # Your server's IP address
+    '8.176.206.74',   # Your server's IP address
     '127.0.0.1',        # Localhost on the server
-    'eduhab.com',       # Your new domain
-    'www.eduhab.com',   # The www version of your domain
+    'zportaacademy.com',       # Your new domain
+    'www.zportaacademy.com',   # The www version of your domain
     # Add 'zportaacademy.com', 'www.zportaacademy.com' later when you switch
 ]
 
