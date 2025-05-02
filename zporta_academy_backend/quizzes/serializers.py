@@ -51,3 +51,34 @@ class QuizSerializer(serializers.ModelSerializer):
             Question.objects.create(quiz=quiz, **question_data)
 
         return quiz
+
+
+    def update(self, instance, validated_data):
+        questions_data = validated_data.pop('questions', None)
+
+        # Update quiz fields
+        for attr, val in validated_data.items():
+            setattr(instance, attr, val)
+        instance.save()
+
+        # If questions payload present, sync them:
+        if questions_data is not None:
+            existing = {q.id:q for q in instance.questions.all()}
+            incoming_ids = []
+            for qd in questions_data:
+                qid = qd.get('id', None)
+                if qid and qid in existing:
+                    q = existing[qid]
+                    for field,val in qd.items():
+                        if field!='id':
+                            setattr(q, field, val)
+                    q.save()
+                    incoming_ids.append(qid)
+                else:
+                    qnew = Question.objects.create(quiz=instance, **{k:v for k,v in qd.items() if k!='id'})
+                    incoming_ids.append(qnew.id)
+            # delete removed questions
+            for q in instance.questions.exclude(id__in=incoming_ids):
+                q.delete()
+
+        return instance

@@ -35,7 +35,6 @@ import GuideRequestsPage from './components/GuideRequestsPage';
 import EnrolledCourses from './components/EnrolledCourses';
 import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
-
 // Helper function to get permissions safely
 const getPermissionsFromStorage = () => {
   const stored = localStorage.getItem('permissions');
@@ -133,6 +132,8 @@ const App = () => {
             path="/admin/create-quiz"
             element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />}
           />
+          <Route path="/admin/create-quiz/:quizId" element={isLoggedIn ? <CreateQuiz />: <Navigate to="/login" replace />}
+/>
            <Route
              path="/admin/create-post"
              element={isLoggedIn ? <CreatePost /> : <Navigate to="/login" replace />}

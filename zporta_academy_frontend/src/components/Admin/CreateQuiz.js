@@ -5,8 +5,10 @@ import CreateSubjectSelect from './CreateSubjectSelect'; // Assuming path is cor
 import apiClient from '../../api'; // <-- ADD apiClient import (Adjust path ../../api if needed)
 import { AuthContext } from '../../context/AuthContext'; // <-- ADD AuthContext import (Adjust path)
 import styles from './CreateQuiz.module.css'; 
+import { useParams } from 'react-router-dom';
 
 const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
+  const { quizId } = useParams(); 
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -108,7 +110,19 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
 
     try {
         // Use apiClient.post, relative URL '/quizzes/', payload object. Auth/JSON handled.
-        const response = await apiClient.post('/quizzes/', payload);
+           const response = quizId
+              // EDIT mode
+              ? await apiClient.patch(
+                  `/quizzes/${quizId}/edit/`,
+                  payload,
+                  { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                )
+              // CREATE mode
+              : await apiClient.post(
+                  '/quizzes/',
+                  payload,
+                  { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
 
         // *** START REPLACEMENT ***
         const newQuizData = response.data; // Get the created quiz data
@@ -161,7 +175,42 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
 
   // Calculate progress percentage (for three steps)
   const progressPercentage = (currentStep / 3) * 100;
-
+  useEffect(() => {
+    if (!quizId) return;
+    apiClient
+      .get(`/quizzes/${quizId}/edit/`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      .then(res => {
+        const data = res.data;
+        setTitle(data.title);
+        setQuizType(data.quiz_type);
+        setSubjectOption({ value: data.subject, label: data.subject, isNew: false });
+        setContent(data.content);
+        setHint1(data.questions[0]?.hint1 || '');
+        setHint2(data.questions[0]?.hint2 || '');
+        setTags(Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''));
+        setQuestions(
+          data.questions.map(q => ({
+            id: q.id,                 // IMPORTANT: preserve id for update
+            question_text: q.question_text,
+            option1: q.option1,
+            option2: q.option2,
+            option3: q.option3 || '',
+            option4: q.option4 || '',
+            correct_option: q.correct_option,
+            hint1: q.hint1 || '',
+            hint2: q.hint2 || ''
+          }))
+        );
+      })
+      .catch(err => {
+        console.error('Load for edit failed', err);
+        logout();
+        navigate('/login');
+      });
+  }, [quizId]);
+  
   return (
     <div className={styles.createQuizContainer}>
       <h3 className={styles.modalFormTitle}>Create New Quiz</h3>

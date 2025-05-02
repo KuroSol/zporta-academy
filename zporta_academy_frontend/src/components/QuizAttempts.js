@@ -252,7 +252,7 @@ const QuizAttempts = () => {
                    </div>
                    <div className={styles.cardFooter}>
                      {attempt.quiz_permalink ? (
-                        <Link to={`/quiz/${attempt.quiz_permalink}`} className={styles.cardReviewButton}>
+                        <Link to={`/quizzes/${attempt.quiz_permalink}`} className={styles.cardReviewButton}>
                            View Quiz
                         </Link>
                      ) : (

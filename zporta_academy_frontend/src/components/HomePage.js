@@ -111,70 +111,85 @@ const HomePage = () => {
     // Fetch Latest Quiz Attempts Preview
     useEffect(() => {
         if (!token) return;
-        const fetchQuizAttempts = async () => { /* ... keep existing fetch logic ... */
-             setLoadingQuizAttempts(true);
-             setErrorQuizAttempts('');
-             try {
-                 const res = await apiClient.get("/events/?event_type=quiz_answer_submitted&ordering=-timestamp");
-
-                 if (Array.isArray(res.data)) {
-                     const groupedByQuiz = res.data.reduce((acc, event) => {
-                         const quizId = event.object_id;
-                         if (!quizId) return acc;
-                         if (!acc[quizId]) {
-                             acc[quizId] = {
-                                 events: [],
-                                 quiz_title: event.quiz_title || `Quiz ${quizId}`,
-                                 // Assuming object_id is the actual Quiz ID for navigation
-                                 quizId: quizId
-                             };
-                         }
-                         acc[quizId].events.push(event);
-                         return acc;
-                     }, {});
-
-                     let aggregated = Object.entries(groupedByQuiz).map(([/* quizIdKey */ , data]) => {
-                         const { events, quiz_title, quizId } = data; // Use the quizId stored in the group
-                         const total = events.length;
-                         const correct = events.filter(e => e.metadata?.is_correct === true).length;
-                         const wrong = total - correct;
-                         const latestTimestamp = events.reduce((latest, event) => {
-                             const currentTs = new Date(event.timestamp);
-                             return currentTs > latest ? currentTs : latest;
-                         }, new Date(0));
-
-                         return {
-                             quizId, // Use the stored quizId
-                             quiz_title,
-                             total,
-                             correct,
-                             wrong,
-                             timestamp: latestTimestamp.toISOString(),
-                         };
-                     });
-                     aggregated.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                     setLatestQuizAttempts(aggregated.slice(0, 3));
-
-                 } else {
-                     console.warn("Unexpected data format for quiz attempts:", res.data);
-                     setErrorQuizAttempts("Unexpected data format received.");
-                     setLatestQuizAttempts([]);
-                 }
-             } catch (err) {
-                 console.error("Error fetching quiz attempts:", err.response ? err.response.data : err.message);
-                 setLatestQuizAttempts([]);
-                 if (err.response?.status === 401 || err.response?.status === 403) {
-                     setErrorQuizAttempts("Session expired. Please log in again.");
-                     logout();
-                 } else {
-                     setErrorQuizAttempts(`Failed to fetch quiz attempts: ${err.response?.data?.detail || err.message}`);
-                 }
-             } finally {
-                 setLoadingQuizAttempts(false);
-             }
+      
+        const fetchQuizAttempts = async () => {
+          setLoadingQuizAttempts(true);
+          setErrorQuizAttempts('');
+      
+          try {
+            // 1) Fetch all quiz-answer events
+            const res = await apiClient.get(
+              "/events/?event_type=quiz_answer_submitted&ordering=-timestamp"
+            );
+      
+            if (!Array.isArray(res.data)) {
+              console.warn("Unexpected data format for quiz attempts:", res.data);
+              setErrorQuizAttempts("Unexpected data format received.");
+              setLatestQuizAttempts([]);
+              return;
+            }
+      
+            // 2) Group by quizId
+            const grouped = res.data.reduce((acc, event) => {
+              const quizId = event.object_id;
+              if (!quizId) return acc;
+              if (!acc[quizId]) {
+                acc[quizId] = {
+                  events: [],
+                  quiz_title: event.quiz_title || `Quiz ${quizId}`,
+                  quizId
+                };
+              }
+              acc[quizId].events.push(event);
+              return acc;
+            }, {});
+      
+            // 3) Aggregate stats
+            let aggregated = Object.values(grouped).map(({ events, quiz_title, quizId }) => {
+              const total = events.length;
+              const correct = events.filter(e => e.metadata?.is_correct).length;
+              const latestTimestamp = events
+                .map(e => new Date(e.timestamp))
+                .sort((a, b) => b - a)[0]
+                .toISOString();
+              return { quizId, quiz_title, total, correct, wrong: total - correct, timestamp: latestTimestamp };
+            });
+      
+            // 4) Sort and limit to 3
+            aggregated = aggregated
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+              .slice(0, 3);
+      
+            // 5) Fetch each quiz’s permalink
+            const withPermalinks = await Promise.all(
+              aggregated.map(async item => {
+                try {
+                  const quizRes = await apiClient.get(`/quizzes/detail/${item.quizId}/`);
+                  return { ...item, permalink: quizRes.data.permalink };
+                } catch {
+                  return { ...item, permalink: null };
+                }
+              })
+            );
+      
+            setLatestQuizAttempts(withPermalinks);
+          } catch (err) {
+            console.error("Error fetching quiz attempts:", err.response ?? err.message);
+            setErrorQuizAttempts(
+              err.response?.status === 401 || err.response?.status === 403
+                ? "Session expired. Please log in again."
+                : `Failed to fetch quiz attempts: ${err.response?.data?.detail || err.message}`
+            );
+            setLatestQuizAttempts([]);
+            if (err.response?.status === 401 || err.response?.status === 403) logout();
+          } finally {
+            setLoadingQuizAttempts(false);
+          }
         };
+      
         fetchQuizAttempts();
-    }, [token, logout]);
+      }, [token, logout]);
+      
 
     // **UPDATED**: Fetch Recent Lesson Completions
     useEffect(() => {
@@ -339,7 +354,7 @@ const HomePage = () => {
                                                 key={attempt.quizId}
                                                 className={styles.quizAttemptItem}
                                                 // **Navigate using quizId**
-                                                onClick={() => navigate(`/quizzes/${attempt.quizId}`)}
+                                                onClick={() => attempt.permalink && navigate(`/quizzes/${attempt.permalink}`)}
                                                 role="button"
                                                 tabIndex={0}
                                                 onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/quizzes/${attempt.quizId}`)}
