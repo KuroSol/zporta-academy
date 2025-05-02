@@ -305,6 +305,37 @@
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+
+.quizActions {
+  display: flex;
+  justify-content: center;    /* center horizontally */
+  gap: 1rem;                  /* space between icons */
+  margin-top: 1.5rem;         /* some breathing room */
+}
+
+/* common icon styles */
+.actionIcon {
+  cursor: pointer;
+  transition: transform var(--transition-speed) ease,
+              color var(--transition-speed) ease;
+  color: var(--primary-color);
+}
+
+.actionIcon:hover {
+  transform: scale(1.1);
+  color: var(--primary-color-hover);
+}
+
+/* delete icon gets a red theme */
+.actionIconDelete {
+  color: var(--incorrect-color);
+}
+
+.actionIconDelete:hover {
+  color: #dc2626; /* slightly darker red */
+}
+
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

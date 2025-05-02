@@ -6,52 +6,78 @@ import QuizCard from './QuizCard'; // Assuming this component exists
 import styles from './Explorer.module.css'; // Import NEW CSS Module styles
 
 // --- Helper Functions (Keep as is) ---
+// (No changes needed here)
 const stripHTML = (html) => {
   if (!html) return '';
-  if (typeof DOMParser === 'function') {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || "";
+  // Basic check if running in a browser environment
+  if (typeof window !== 'undefined' && typeof window.DOMParser === 'function') {
+    try {
+      const doc = new window.DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || "";
+    } catch (e) {
+      console.error("Error parsing HTML string:", e);
+      // Fallback for environments without DOMParser or if parsing fails
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || "";
+    }
+  } else if (typeof document !== 'undefined' && document.createElement) {
+      // Fallback for environments like Node.js testing setup with basic DOM
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || "";
   }
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  return tempDiv.textContent || tempDiv.innerText || "";
+  // Final fallback if no DOM is available
+  return String(html).replace(/<[^>]+>/g, ''); // Basic tag stripping
 };
 
+
 // --- Skeleton Loader Component ---
-// Uses new CSS classes for styling
+// Uses updated CSS classes for styling
 const SkeletonCard = () => (
   <div className={styles.gridItem}> {/* Use gridItem directly */}
     <div className={`${styles.gridItemCard} ${styles.skeleton}`}>
       <div className={styles.skeletonImage}></div>
       <div className={styles.skeletonInfo}>
-        <div className={styles.skeletonText} style={{ width: '70%', height: '1rem', marginBottom: '0.5rem' }}></div>
-        <div className={styles.skeletonText} style={{ width: '50%', height: '0.8rem' }}></div>
+        <div className={styles.skeletonText} style={{ width: '80%', height: '1rem', marginBottom: '0.5rem' }}></div>
+        <div className={styles.skeletonText} style={{ width: '60%', height: '0.8rem', marginBottom: '0.5rem' }}></div>
+         {/* Skeleton for creator */}
+        <div className={styles.skeletonCreator}>
+            <div className={styles.skeletonAvatar}></div>
+            <div className={styles.skeletonText} style={{ width: '40%', height: '0.7rem' }}></div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 // --- Item Card Component ---
-// Uses new CSS classes for styling
+// Uses updated CSS classes for styling and displays creator info
 const ItemCard = ({ item, activeTab }) => {
   if (!item || !item.id) {
     console.warn("Skipping render for invalid item:", item);
     return null;
   }
 
-  // --- Determine Item Properties (Keep logic, update based on new design if needed) ---
+  // --- Determine Item Properties (Logic mostly kept, adjusted for display) ---
   let linkUrl = '#';
-  let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || null;
+  // Use a default placeholder if no image is found
+  const defaultPlaceholder = 'https://placehold.co/600x400/f5f5f7/c7c7cc?text=No+Image';
+  let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || defaultPlaceholder;
   let title = item.title || item.username || 'Untitled Item';
-  // Simplified description/meta display for a more visual grid
+  let creatorName = item.created_by || null; // Get creator name
+
+  // Simplified meta info - maybe course type or date if no creator
   let metaInfo = '';
-  if (activeTab === 'courses' && item.course_type) {
+   if (activeTab === 'courses' && item.course_type) {
       metaInfo = item.course_type.charAt(0).toUpperCase() + item.course_type.slice(1);
-  } else if (activeTab !== 'guides' && item.created_by) {
-      metaInfo = `By ${item.created_by}`;
-  } else if (item.created_at) {
+   } else if (item.created_at && !creatorName) { // Show date only if no creator
       metaInfo = new Date(item.created_at).toLocaleDateString();
-  }
+   }
+   // Guides already show username as title, so creator might be redundant unless different
+   if (activeTab === 'guides' && item.username === creatorName) {
+       creatorName = null; // Avoid showing the same name twice
+   }
 
 
   // --- Determine Link URL (Keep as is) ---
@@ -66,63 +92,58 @@ const ItemCard = ({ item, activeTab }) => {
     }
   // Note: Quizzes are handled separately
 
-  // --- Render Image or Placeholder ---
-  const renderImageOrPlaceholder = () => {
-    // Prioritize showing an image for visual grids
-    if (imageUrl && imageUrl !== 'https://via.placeholder.com/150') {
-      return (
-        <img
-          src={imageUrl}
-          alt={title}
-          className={styles.gridItemImage}
-          loading="lazy"
-          onError={(e) => {
-            e.target.onerror = null;
-            // Hide broken image, maybe show a minimal placeholder?
+  // --- Render Image with Error Handling ---
+  const renderImage = () => (
+    <img
+      src={imageUrl}
+      alt={title}
+      className={styles.gridItemImage}
+      loading="lazy"
+      onError={(e) => {
+        // Prevent infinite loop if the placeholder itself fails
+        if (e.target.src !== defaultPlaceholder) {
+            e.target.onerror = null; // stop trying to load the broken image
+            e.target.src = defaultPlaceholder; // Fallback to default placeholder
+            e.target.classList.add(styles.placeholderImage); // Add class to style placeholder text if needed
+        } else {
+            // If the placeholder itself fails, hide the image element
             e.target.style.display = 'none';
-            const placeholder = e.target.nextElementSibling;
-            if (placeholder && placeholder.classList.contains(styles.gridItemPlaceholder)) {
-                placeholder.style.display = 'flex';
-            }
-          }}
-        />
-      );
-    }
-    // Minimal placeholder if no image
-    return (
-      <div className={styles.gridItemPlaceholder}>
-        {/* Simple Icon Placeholder */}
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-      </div>
-    );
-  };
+        }
+      }}
+    />
+  );
 
   return (
-    // Link now wraps the inner card content for better structure if needed
     <div className={styles.gridItem}>
-        <Link to={linkUrl} className={styles.gridItemLink} aria-label={`View ${title}`}>
-            <div className={styles.gridItemCard}>
-                <div className={styles.gridItemImageContainer}>
-                    {renderImageOrPlaceholder()}
-                    {/* Fallback placeholder div in case image fails AND onError handler needs it */}
-                    { !imageUrl && (
-                        <div className={styles.gridItemPlaceholder} style={{display: 'none'}}> {/* Initially hidden */}
-                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                        </div>
-                    )}
-                </div>
-                <div className={styles.gridItemInfo}>
-                    <h3 className={styles.gridItemTitle}>{title}</h3>
-                    {metaInfo && <p className={styles.gridItemMeta}>{metaInfo}</p>}
-                </div>
-            </div>
-        </Link>
+      {/* Link wraps the entire card content for better click/tap target */}
+      <Link to={linkUrl} className={styles.gridItemLink} aria-label={`View ${title}`}>
+        <div className={styles.gridItemCard}>
+          <div className={styles.gridItemImageContainer}>
+            {renderImage()}
+          </div>
+          <div className={styles.gridItemInfo}>
+            {/* Display Meta Info (e.g., Course Type) if available */}
+            {metaInfo && <p className={styles.gridItemMeta}>{metaInfo}</p>}
+            {/* Display Title */}
+            <h3 className={styles.gridItemTitle}>{title}</h3>
+            {/* Display Creator Info if available */}
+            {creatorName && (
+              <div className={styles.gridItemCreator}>
+                {/* Placeholder for potential avatar in the future */}
+                {/* <img src={creatorAvatarUrl || defaultAvatar} alt="" className={styles.creatorAvatar} /> */}
+                <span className={styles.creatorName}>{creatorName}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
     </div>
   );
 };
 
 
 // --- Main Explorer Component ---
+// (No significant logical changes, just using the updated ItemCard and styles)
 const Explorer = () => {
   const [activeTab, setActiveTab] = useState('courses');
   const [items, setItems] = useState([]);
@@ -133,7 +154,7 @@ const Explorer = () => {
 
   // Define tab configuration
   const tabs = [
-    // { key: 'posts', label: 'Posts', path: '/posts/' },
+    // { key: 'posts', label: 'Posts', path: '/posts/' }, // Uncomment if needed
     { key: 'courses', label: 'Courses', path: '/courses/' },
     { key: 'lessons', label: 'Lessons', path: '/lessons/' },
     { key: 'quizzes', label: 'Quizzes', path: '/quizzes/' },
@@ -144,7 +165,7 @@ const Explorer = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setMessage('');
-    setItems([]);
+    setItems([]); // Clear items before fetching new tab data
 
     const currentTabConfig = tabs.find(tab => tab.key === activeTab);
     if (!currentTabConfig) {
@@ -156,12 +177,13 @@ const Explorer = () => {
 
     try {
       const response = await apiClient.get(relativePath);
-      if (Array.isArray(response.data)) {
-        setItems(response.data);
-      } else {
-        console.warn(`Received non-array data for ${activeTab}:`, response.data);
-        setMessage(`No ${activeTab} found or data format is incorrect.`);
+      // Ensure data is always an array, even if API returns null or something else
+      const data = Array.isArray(response.data) ? response.data : [];
+      setItems(data);
+      if (data.length === 0) {
+          setMessage(`No ${activeTab} found.`); // Set info message if empty
       }
+
     } catch (error) {
       console.error(`Error fetching ${activeTab}:`, error.response ? error.response.data : error.message);
       let errorMsg = `Failed to load ${activeTab}. Please try again later.`;
@@ -176,37 +198,40 @@ const Explorer = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, logout]); // Dependency array is correct
+  }, [activeTab, logout]); // Dependency array includes activeTab and logout
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData]); // Re-run fetch when fetchData changes (i.e., when activeTab changes)
 
   // Scroll active tab into view on mobile
   useEffect(() => {
     const activeTabElement = tabBarRef.current?.querySelector(`.${styles.active}`);
-    if (activeTabElement) {
+    if (activeTabElement && typeof activeTabElement.scrollIntoView === 'function') {
       activeTabElement.scrollIntoView({
         behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
+        inline: 'center', // Centers the tab horizontally
+        block: 'nearest', // Avoids vertical scrolling if possible
       });
     }
-  }, [activeTab]);
+  }, [activeTab]); // Run when activeTab changes
 
 
   // --- Render Content ---
   const renderContent = () => {
+    // Show loading skeletons
     if (loading) {
       return (
         <div className={styles.gridContainer}>
-          {Array.from({ length: 8 }).map((_, index) => ( // Render more skeletons
+          {/* Render a good number of skeletons for visual feedback */}
+          {Array.from({ length: 12 }).map((_, index) => (
             <SkeletonCard key={`skeleton-${index}`} />
           ))}
         </div>
       );
     }
 
+    // Show messages (Error or Info like "No items found")
     if (message) {
       const isError = message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') || message.toLowerCase().includes('invalid');
       return (
@@ -216,27 +241,44 @@ const Explorer = () => {
       );
     }
 
-    if (items.length === 0) {
-      return (
-        <div className={`${styles.messageContainer} ${styles.infoMessage}`} role="status" aria-live="polite">
-          No {activeTab} available yet. Explore other categories!
-        </div>
-      );
-    }
+    // Show "No items" message specifically if items array is empty and no other message is set
+     if (!loading && items.length === 0 && !message) {
+         return (
+             <div className={`${styles.messageContainer} ${styles.infoMessage}`} role="status" aria-live="polite">
+                 No {activeTab} available yet. Explore other categories!
+             </div>
+         );
+     }
+
 
     // Render Items using the new grid structure
     return (
       <div className={styles.gridContainer}>
         {items.map((item) => {
-          if (activeTab === 'quizzes' && item?.id) {
-            // Quizzes might need their own styling or use a variation of ItemCard
-            // For now, wrap QuizCard in gridItem for layout consistency
-             return (
-                <div className={styles.gridItem} key={`quiz-container-${item.id}`}>
-                     <QuizCard quiz={item} />
-                </div>
-            );
+          // Handle invalid items defensively
+          if (!item || !item.id) {
+            console.warn("Skipping render for item without ID:", item);
+            return null;
           }
+
+          if (activeTab === 'quizzes') {
+             // Wrap QuizCard in gridItem for layout consistency
+             // Ensure QuizCard itself is styled appropriately or adapt here
+             return (
+                 <div className={styles.gridItem} key={`quiz-wrapper-${item.id}`}>
+                     <QuizCard quiz={item} />
+                     {/* Consider adding creator info here too if QuizCard doesn't handle it */}
+                     {item.created_by && (
+                        <div className={`${styles.gridItemInfo} ${styles.quizCreatorInfo}`}>
+                            <div className={styles.gridItemCreator}>
+                                <span className={styles.creatorName}>{item.created_by}</span>
+                            </div>
+                        </div>
+                     )}
+                 </div>
+             );
+          }
+          // Render standard items using the updated ItemCard
           return <ItemCard key={`${activeTab}-${item.id}`} item={item} activeTab={activeTab} />;
         })}
       </div>
@@ -245,7 +287,7 @@ const Explorer = () => {
 
   return (
     <div className={styles.explorerContainer}>
-      {/* Redesigned Tab Bar */}
+      {/* Tab Bar */}
       <div className={styles.tabBarContainer}>
         <div className={styles.tabBar} ref={tabBarRef} role="tablist" aria-label="Content categories">
           {tabs.map((tab) => (
@@ -253,11 +295,11 @@ const Explorer = () => {
               key={tab.key}
               role="tab"
               aria-selected={activeTab === tab.key}
-              aria-controls={`tabpanel-${tab.key}`}
-              id={`tab-${tab.key}`}
+              aria-controls={`tabpanel-${tab.key}`} // Links button to panel
+              id={`tab-${tab.key}`} // Unique ID for label association
               className={`${styles.tabBtn} ${activeTab === tab.key ? styles.active : ''}`}
               onClick={() => setActiveTab(tab.key)}
-              disabled={loading}
+              disabled={loading} // Disable tabs while loading
             >
               {tab.label}
             </button>
@@ -265,13 +307,13 @@ const Explorer = () => {
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Content Area - Linked to active tab via aria-labelledby */}
       <div
-        id={`tabpanel-${activeTab}`}
+        id={`tabpanel-${activeTab}`} // ID matches button's aria-controls
         role="tabpanel"
-        aria-labelledby={`tab-${activeTab}`}
-        tabIndex={-1} // Make panel focusable programmatically if needed, -1 removes from tab order
-        className={styles.contentArea} // Added class for potential spacing
+        aria-labelledby={`tab-${activeTab}`} // Associates panel with its controlling tab
+        tabIndex={-1} // Make panel focusable programmatically if needed, -1 removes from normal tab order
+        className={styles.contentArea}
       >
          {renderContent()}
       </div>

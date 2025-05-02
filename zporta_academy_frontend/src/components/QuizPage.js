@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import apiClient from '../api'; // Assuming apiClient is configured elsewhere
 import { AuthContext } from '../context/AuthContext'; // Assuming AuthContext is set up
-import { ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, XCircle, Edit3, Trash2 } from 'lucide-react';
 import styles from './QuizPage.module.css'; // Import CSS Module
 
 // --- Skeleton Loader Component ---
@@ -33,12 +33,13 @@ const QuizPage = () => {
   const [isCorrect, setIsCorrect] = useState(null); // Was the selected answer correct? (true/false)
   const [answerSubmitted, setAnswerSubmitted] = useState(false); // Has an answer been submitted for the current question?
 
+
   // --- Hooks ---
   const { username, subject, date, quizSlug } = useParams();
   const permalink = `${username}/${subject}/${date}/${quizSlug}`;
   const navigate = useNavigate();
   const { user, token, logout } = useContext(AuthContext); // Assuming context provides user, token, logout
-
+  const isCreator = user?.id === quizData?.creator;
   // --- Data Fetching ---
   const fetchQuiz = useCallback(async () => {
     // console.log("Fetching quiz for permalink:", permalink); // Debug log
@@ -181,6 +182,18 @@ const QuizPage = () => {
     return className;
   };
 
+  // --- Delete Handler (only for creator) ---
+  const handleDeleteQuiz = async () => {
+    if (!window.confirm('Are you sure you want to delete this quiz?')) return;
+    try {
+      await apiClient.delete(`/quizzes/${quizData.id}/delete/`, { headers: { Authorization: `Bearer ${token}` } });
+
+      navigate('/dashboard');  // or wherever you want to land
+    } catch (err) {
+      console.error('Error deleting quiz:', err);
+      setError('Failed to delete quiz. Please try again later.');
+    }
+  };
 
   // --- Render Component ---
   return (
@@ -292,6 +305,24 @@ const QuizPage = () => {
            {/* Example: <button onClick={() => navigate('/dashboard')}>View Results</button> */}
          </div>
        )}
+
+      {/* Conditionally render Edit and Delete buttons */}
+       {isCreator && (
+          <div className={styles.quizActions}>
+            <Edit3
+              size={24}
+              className={styles.actionIcon}
+              title="Edit Quiz"
+              onClick={() => navigate(`/admin/create-quiz/${quizData.id}`)}
+            />
+            <Trash2
+              size={24}
+              className={`${styles.actionIcon} ${styles.actionIconDelete}`}
+              title="Delete Quiz"
+              onClick={handleDeleteQuiz}
+            />
+          </div>
+ )}
 
     </div>
   );
