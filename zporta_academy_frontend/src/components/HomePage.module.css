@@ -1,38 +1,49 @@
-/* --- HomePage.module.css (Updated Discover Grid Layout) --- */
+/* --- HomePage.module.css (Fix Mobile Overflow) --- */
 
 /* --- Base Variables (Consistent with Explorer) --- */
 :root {
   --color-primary: #0a84ff;
   --color-primary-hover: #0060df;
-  --color-primary-light: #e6f3ff; /* Lighter shade for backgrounds */
-  --color-secondary: #ffb606; /* Gold color */
+  --color-primary-light: #e6f3ff;
+  --color-secondary: #ffb606;
   --color-secondary-darker: #e0a005;
   --color-text-primary: #1d1d1f;
   --color-text-secondary: #6e6e73;
   --color-text-tertiary: #a0a0a5;
   --color-text-on-primary-bg: #ffffff;
-  --color-text-on-secondary-bg: #1d1d1f; /* Text on gold */
-  --color-background-page: #f9f9f9; /* Updated to match Explorer */
+  --color-text-on-secondary-bg: #1d1d1f;
+  --color-background-page: #f9f9f9;
   --color-background-container: #ffffff;
-  --color-background-hover: #f5f5f7; /* Updated hover */
-  --color-border: #e1e1e6; /* Updated border */
+  --color-background-hover: #f5f5f7;
+  --color-border: #e1e1e6;
   --color-border-focus: var(--color-primary);
-  --color-success: #34c759; /* iOS Green */
-  --color-error: #ff3b30; /* iOS Red */
+  --color-success: #34c759;
+  --color-error: #ff3b30;
   --color-error-bg: #ffebeb;
-  --color-placeholder-bg: #f0f0f5; /* Updated placeholder bg */
+  --color-placeholder-bg: #f0f0f5;
   --color-placeholder-icon: #c7c7cc;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.04); /* Updated shadow */
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1); /* Updated shadow */
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
   --radius-sm: 4px;
   --radius-md: 8px;
-  --radius-lg: 16px; /* Use larger radius consistently */
-  --radius-xl: 20px; /* Added for larger elements if needed */
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-pill: 9999px;
   --transition-duration: 0.2s;
   --transition-timing: ease-in-out;
 }
+
+/* --- Global Box Sizing & Overflow Prevention --- */
+*, *::before, *::after {
+  box-sizing: border-box; /* Apply border-box globally */
+}
+
+html, body {
+    overflow-x: hidden; /* Prevent horizontal scroll on html/body */
+    /* Consider adding max-width: 100% if issues persist */
+}
+
 
 /* --- General Placeholders --- */
 .loadingPlaceholder,
@@ -64,6 +75,8 @@
   background-color: var(--color-background-page);
   min-height: 100vh;
   padding-bottom: 3rem;
+  width: 100%; /* Ensure wrapper takes full width */
+  overflow-x: hidden; /* Prevent horizontal scroll within the wrapper */
 }
 
 /* --- Page Header --- */
@@ -72,6 +85,9 @@
   background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
   border-bottom: 1px solid var(--color-border);
   text-align: center;
+  /* Ensure header doesn't cause overflow */
+  width: 100%;
+  max-width: 100%;
 }
 
 .homeTitle {
@@ -79,15 +95,15 @@
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0 0 0.25rem 0;
+  word-wrap: break-word; /* Prevent long words from overflowing */
 }
 
 .homeSubtitle {
   font-size: 1rem;
   color: var(--color-text-secondary);
-  margin: 0 0 1.5rem 0;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 1.5rem auto; /* Center and add bottom margin */
+  max-width: 600px; /* Limit width */
+  padding: 0 0.5rem; /* Add slight horizontal padding if needed */
 }
 
 /* --- Start Plan Button --- */
@@ -145,11 +161,12 @@
   display: grid;
   gap: 1.5rem;
   padding: 1.5rem;
-  max-width: 1300px;
-  margin: -1.5rem auto 0 auto; /* Negative margin to overlap header */
+  max-width: 1300px; /* Max width of content area */
+  margin: -1.5rem auto 0 auto; /* Negative margin & center */
   position: relative;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  align-items: start; /* Changed from stretch */
+  align-items: start;
+  width: 100%; /* Ensure grid container doesn't exceed parent */
 }
 
 /* --- Dashboard Card Styles --- */
@@ -163,7 +180,8 @@
   flex-direction: column;
   transition: box-shadow var(--transition-duration) var(--transition-timing),
               transform var(--transition-duration) var(--transition-timing);
-  min-height: 250px; /* Minimum height for consistency */
+  min-height: 250px;
+  overflow: hidden; /* Prevent content within card from overflowing */
 }
 .dashboardCard:hover {
   transform: translateY(-4px);
@@ -254,7 +272,8 @@
 }
 .enrolledPreviewDetails {
   flex: 1;
-  overflow: hidden;
+  overflow: hidden; /* Prevent text overflow */
+  min-width: 0; /* Help flexbox shrink */
 }
 .enrolledPreviewDetails h3 {
   margin: 0;
@@ -333,7 +352,8 @@
 }
 .lessonHistoryDetails {
   flex: 1;
-  overflow: hidden;
+  overflow: hidden; /* Prevent text overflow */
+  min-width: 0; /* Help flexbox shrink */
 }
 .lessonHistoryDetails h3 {
   margin: 0;
@@ -382,6 +402,8 @@
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.4rem;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  gap: 0.5rem;
 }
 .attemptQuiz {
   font-size: 0.9rem;
@@ -390,12 +412,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.5rem;
+  flex-grow: 1; /* Allow quiz title to take space */
+  min-width: 100px; /* Prevent excessive shrinking */
 }
 .attemptDate {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 .attemptStats {
   display: flex;
@@ -406,6 +430,7 @@
   padding-top: 0.4rem;
   margin-top: 0.4rem;
   border-top: 1px solid var(--color-border);
+  flex-wrap: wrap; /* Allow stats to wrap on small screens */
 }
 .attemptStats span {
     display: inline-flex;
@@ -424,14 +449,15 @@
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
-  /* Span across grid columns */
   grid-column: 1 / -1;
-  /* Add margin top to separate from dashboard cards */
-  margin-top: 0; /* Reset margin if it was set */
+  margin-top: 1.5rem; /* Add space above discover section */
+  width: 100%; /* Ensure section takes full width */
+  max-width: 100%; /* Prevent exceeding viewport */
+  overflow: hidden; /* Clip internal content if needed */
 }
-/* Add margin if discover section is directly after dashboard cards */
-.homeContentGrid > .discoverSection {
-    margin-top: 0; /* Keep it 0 for now, adjust if needed */
+/* Remove top margin if it's the first element after header */
+.homeContentGrid > .discoverSection:first-child {
+    margin-top: 0;
 }
 
 
@@ -440,6 +466,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap; /* Allow wrapping */
+  gap: 0.5rem;
 }
 .discoverHeader h3 {
   font-size: 1.2rem;
@@ -455,6 +483,7 @@
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   transition: background-color var(--transition-duration) var(--transition-timing);
+  flex-shrink: 0; /* Prevent button shrinking */
 }
 .discoverSeeAllBtn:hover {
   background-color: var(--color-primary-light);
@@ -468,10 +497,9 @@
 /* --- UPDATED Discover Grid --- */
 .discoverGrid {
   display: grid;
-  /* MOBILE FIRST: Start with 2 columns like Explorer */
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem; /* 12px gap for mobile */
-  align-items: start; /* Align items to top */
+  gap: 0.75rem;
+  align-items: start;
 }
 
 
@@ -480,19 +508,19 @@
     display: block;
     text-decoration: none;
     color: inherit;
-    border-radius: var(--radius-lg); /* Use larger radius */
-    overflow: hidden; /* Clip content */
+    border-radius: var(--radius-lg);
+    overflow: hidden;
     transition: transform var(--transition-duration) var(--transition-timing),
                 box-shadow var(--transition-duration) var(--transition-timing);
     position: relative;
-    background-color: var(--color-background-page); /* Match page bg */
-    box-shadow: var(--shadow-sm); /* Lighter shadow */
+    background-color: var(--color-background-page);
+    box-shadow: var(--shadow-sm);
     border: 1px solid var(--color-border);
     -webkit-tap-highlight-color: transparent;
 }
 .discoverCardLink:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-lg); /* Use larger hover shadow */
+    box-shadow: var(--shadow-lg);
 }
 .discoverCardLink:focus-visible {
   outline: none;
@@ -501,8 +529,7 @@
 
 /* Discover Card (Inner Content) */
 .discoverCard {
-  /* Removed background/border/shadow - now on link */
-  border-radius: var(--radius-lg); /* Match link radius */
+  border-radius: var(--radius-lg);
   overflow: hidden;
   height: 100%;
   display: flex;
@@ -513,18 +540,17 @@
   display: block;
   width: 100%;
   height: auto;
-  /* MOBILE: Use square aspect ratio for 2-column layout */
   aspect-ratio: 1 / 1;
   object-fit: cover;
   background-color: var(--color-placeholder-bg);
-  border-bottom: 1px solid var(--color-border); /* Add separator */
+  border-bottom: 1px solid var(--color-border);
 }
 .discoverPlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-placeholder-icon);
-  aspect-ratio: 1 / 1; /* Match image aspect ratio */
+  aspect-ratio: 1 / 1;
   border-bottom: 1px solid var(--color-border);
 }
 .discoverPlaceholder svg {
@@ -532,22 +558,22 @@
 }
 
 .discoverInfo {
-  padding: 0.6rem 0.8rem; /* Adjust padding for mobile */
-  margin-top: auto; /* Push info down */
+  padding: 0.6rem 0.8rem;
+  margin-top: auto;
   text-align: left;
 }
 .discoverInfo h4 {
-  font-size: 0.85rem; /* Smaller font for mobile */
+  font-size: 0.85rem;
   font-weight: 500;
-  margin: 0 0 0.2rem 0; /* Adjust margin */
+  margin: 0 0 0.2rem 0;
   color: var(--color-text-primary);
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap; /* Keep title on one line */
+  white-space: nowrap;
 }
 .discoverInfo p {
-  font-size: 0.75rem; /* Smaller secondary text */
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin: 0;
   white-space: nowrap;
@@ -577,19 +603,20 @@
 /* ~Small Tablets */
 @media (min-width: 640px) {
   .homeContentGrid {
-    /* Allow dashboard cards to potentially form 2 columns */
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 1.25rem;
     padding: 1.5rem;
   }
+  .discoverSection {
+      margin-top: 1.5rem; /* Add consistent margin */
+  }
 
   .discoverGrid {
-    /* Increase number of columns for discover items */
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
   }
   .discoverImage, .discoverPlaceholder {
-    aspect-ratio: 16 / 10; /* Revert to wider aspect ratio */
+    aspect-ratio: 16 / 10;
   }
    .discoverInfo {
      padding: 0.75rem 1rem;
@@ -605,7 +632,6 @@
 /* ~Standard Tablets & Small Laptops */
 @media (min-width: 768px) {
   .homeContentGrid {
-    /* Allow more columns for dashboard cards */
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   }
   .discoverGrid {
@@ -617,12 +643,11 @@
 /* ~Medium Laptops */
 @media (min-width: 1024px) {
   .homeContentGrid {
-    /* Example: Force 3 columns for dashboard cards */
-    /* grid-template-columns: repeat(3, 1fr); */
     gap: 1.5rem;
   }
   .discoverSection {
-     padding: 1.5rem 2rem; /* More padding */
+     padding: 1.5rem 2rem;
+     margin-top: 2rem; /* Increase margin */
   }
   .discoverGrid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -637,44 +662,56 @@
   }
 }
 
-/* Adjustments for when dashboard cards are single column on small screens */
-@media (max-width: 639px) { /* Target screens smaller than the first breakpoint */
+/* Adjustments for single column layout on small screens */
+@media (max-width: 639px) {
+  .homeHeader {
+      padding: 1.5rem 1rem 2rem 1rem; /* Reduce padding */
+  }
   .homeContentGrid {
-    /* Force single column for dashboard cards */
-    grid-template-columns: 1fr;
-    padding: 1rem; /* Adjust padding */
+    grid-template-columns: 1fr; /* Force single column */
+    padding: 1rem;
     gap: 1rem;
+    margin-top: -1rem; /* Adjust overlap */
   }
   .discoverSection {
-      padding: 1rem; /* Adjust padding */
+      padding: 1rem;
+      margin-top: 1rem; /* Ensure space above discover section */
   }
-  /* Keep discover grid at 2 columns */
   .discoverGrid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, 1fr); /* Keep 2 columns */
       gap: 0.75rem;
   }
   .discoverImage, .discoverPlaceholder {
-      aspect-ratio: 1 / 1; /* Keep square aspect ratio */
+      aspect-ratio: 1 / 1; /* Keep square */
   }
 }
 
-/* Final check for very small screens (redundant but safe) */
+/* Final check for very small screens */
 @media (max-width: 480px) {
-  .homeHeader { padding: 1.5rem 1rem 2rem 1rem; }
+  .homeHeader { padding: 1.5rem 0.75rem 2rem 0.75rem; } /* Further reduce padding */
   .homeTitle { font-size: 1.4rem; }
-  .homeSubtitle { font-size: 0.9rem; }
+  .homeSubtitle { font-size: 0.9rem; padding: 0 0.25rem; }
   .startPlanButton { font-size: 0.95rem; padding: 0.6rem 1.2rem; }
 
   .homeContentGrid {
-      padding: 0.75rem;
+      padding: 0.75rem; /* Reduce padding */
       gap: 0.75rem;
       grid-template-columns: 1fr; /* Ensure single column */
   }
+  .discoverSection {
+      padding: 0.75rem; /* Reduce padding */
+      margin-top: 1rem;
+  }
   .discoverGrid {
-      grid-template-columns: repeat(2, 1fr); /* Still 2 columns */
-      gap: 0.5rem; /* Slightly smaller gap */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
   }
   .discoverInfo { padding: 0.5rem 0.6rem; }
   .discoverInfo h4 { font-size: 0.8rem; }
   .discoverInfo p { font-size: 0.7rem; }
+
+  /* Reduce padding inside list items slightly */
+  .enrolledPreviewItem, .lessonHistoryItem { padding: 0.5rem 0.6rem; }
+  .quizAttemptItem { padding: 0.6rem 0.8rem; }
 }
+
