@@ -39,7 +39,8 @@ const QuizPage = () => {
   const permalink = `${username}/${subject}/${date}/${quizSlug}`;
   const navigate = useNavigate();
   const { user, token, logout } = useContext(AuthContext); // Assuming context provides user, token, logout
-  const isCreator = user?.id === quizData?.creator;
+  const isOwner = user?.username === quizData?.created_by;
+  const isCreator = user?.is_creator || isOwner; // Check if the user is a creator or the owner of the quiz
   // --- Data Fetching ---
   const fetchQuiz = useCallback(async () => {
     // console.log("Fetching quiz for permalink:", permalink); // Debug log
@@ -307,22 +308,22 @@ const QuizPage = () => {
        )}
 
       {/* Conditionally render Edit and Delete buttons */}
-       {isCreator && (
-          <div className={styles.quizActions}>
-            <Edit3
-              size={24}
-              className={styles.actionIcon}
-              title="Edit Quiz"
-              onClick={() => navigate(`/admin/create-quiz/${quizData.id}`)}
-            />
-            <Trash2
-              size={24}
-              className={`${styles.actionIcon} ${styles.actionIconDelete}`}
-              title="Delete Quiz"
-              onClick={handleDeleteQuiz}
-            />
-          </div>
- )}
+      {isOwner  && (
+            <div className={styles.quizActions}>
+              <Edit3
+                size={24}
+                className={styles.actionIcon}
+                title="Edit Quiz"
+                onClick={() => navigate(`/admin/create-quiz/${quizData.id}`)}
+              />
+              <Trash2
+                size={24}
+                className={`${styles.actionIcon} ${styles.actionIconDelete}`}
+                title="Delete Quiz"
+                onClick={handleDeleteQuiz}
+              />
+            </div>
+        )}
 
     </div>
   );
