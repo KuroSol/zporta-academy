@@ -21,7 +21,7 @@ DEBUG = False
 # Add your new domain (and www subdomain) that will access the server.
 # Keep the IP if you might access it directly sometimes.
 ALLOWED_HOSTS = [
-    '8.176.206.74',   # Your server's IP address
+    '18.176.206.74',   # Your server's IP address
     '127.0.0.1',        # Localhost on the server
     'zportaacademy.com',       # Your new domain
     'www.zportaacademy.com',   # The www version of your domain
