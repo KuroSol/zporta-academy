@@ -125,13 +125,11 @@ const QuizFeedItem = ({ quiz }) => {
     };
 
     return (
-        <article
+          <article
             className={`${styles.feedItem} ${styles.quizFeedItemContainer}`}
-            onClick={handleNavigate}
             tabIndex={0}
-            onKeyPress={(e) => e.key === 'Enter' && handleNavigate()}
-            aria-label={`Take quiz: ${title}`}
-        >
+            aria-label={`Quiz: ${title}`}
+          >
             <div className={styles.cardHeader}>
                 <div className={styles.cardIcon} style={{ backgroundColor: 'var(--zporta-info)' }}> {/* Specific color for quiz */}
                     <FileQuestion size={20} />
@@ -143,10 +141,15 @@ const QuizFeedItem = ({ quiz }) => {
                         <span className={styles.subjectTag}>{subjectName}</span>
                     </p>
                 </div>
-                 <div className={styles.cardAction}>
-                    <span>Take Quiz</span>
-                    <ArrowRight size={18} />
-                </div>
+                <Link
+                  to={`/quizzes/${permalink}`}
+                  className={styles.cardAction}
+                  aria-label={`Take quiz: ${title}`}
+                  onClick={(e) => e.stopPropagation()} // Prevents bubble just in case
+                >
+                  <span>Take Quiz</span>
+                  <ArrowRight size={18} />
+                </Link>
             </div>
             {/* Render QuizCard visually inside, but don't make it interactive here */}
             {/* Pass a prop like `isFeedView={true}` if QuizCard needs to disable interactions */}
