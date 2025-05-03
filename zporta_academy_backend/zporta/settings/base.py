@@ -123,9 +123,42 @@ STATIC_URL = 'django-static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    #"http://localhost:3000",
+    "http://localhost:3000",
     "https://zportaacademy.com",       # Allow frontend origin with HTTPS
     "https://www.zportaacademy.com",  # Allow www subdomain if used
 ]
 CORS_ALLOW_CREDENTIALS = True
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+CKEDITOR5_CONFIGS = {
+    'default': {
+        # 1) toolbar: include the “<>” button (htmlEmbed)
+        'toolbar': [
+            'heading', '|',
+            'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+            'htmlEmbed',   # the “<>” button
+            'undo', 'redo'
+        ],
+        # 2) plugins: bring in htmlEmbed and generalHtmlSupport
+        'plugins': [
+            'Essentials', 'Paragraph', 'Heading', 'Bold', 'Italic',
+            'Link', 'List', 'HtmlEmbed', 'GeneralHtmlSupport'
+        ],
+        # 3) htmlEmbed: optionally show a preview of pasted HTML
+        'htmlEmbed': {
+            'showPreviews': True,
+        },
+        # 4) htmlSupport: exactly which unknown tags+attrs to allow
+        'htmlSupport': {
+            'allow': [
+                {
+                    'name': 'audio',
+                    'attributes': ['src', 'controls', 'style'],
+                },
+                {
+                    'name': 'source',
+                    'attributes': ['src', 'type'],
+                },
+            ]
+        },
+    }
+}

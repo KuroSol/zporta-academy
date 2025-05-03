@@ -35,7 +35,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1',      # Keep localhost
     'https://zportaacademy.com',    # Trust your domain with HTTPS
     'https://www.zportaacademy.com', # Trust www subdomain with HTTPS
-    # Add 'https://zportaacademy.com', 'https://www.zportaacademy.com' later
+    'https://zportaacademy.com', 'https://www.zportaacademy.com' 
 ]
 
 # --- STEP 3: Update FRONTEND_URL_BASE (If used for generating links etc.) ---
