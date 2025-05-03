@@ -2,7 +2,6 @@
 
 from django.db import models
 from django.conf import settings
-from django_ckeditor_5.fields import CKEditor5Field
 from tags.models import Tag
 from subjects.models import Subject
 from courses.models import Course
@@ -23,7 +22,7 @@ def japanese_to_romaji(text):
 
 class Lesson(models.Model):
     title = models.CharField(max_length=200)
-    content = CKEditor5Field(config_name='default')
+    content = models.TextField()
     video_url = models.URLField(blank=True)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, related_name='lessons')
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons')

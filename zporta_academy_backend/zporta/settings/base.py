@@ -82,20 +82,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-CKEDITOR_5_CONFIGS = {
-    'default': {
-        'height': 300,
-        'width': '100%',
-        'toolbar': [
-            'heading', '|', 'bold', 'italic', 'underline', '|', 'link', 'bulletedList', 'numberedList', '|',
-            'blockQuote', 'insertTable', 'imageUpload', 'undo', 'redo', '|', 'sourceEditing',
-        ],
-        'language': 'en',
-        'allowedContent': True,
-        'extraAllowedContent': '*[*]{*}',
-        'removePlugins': ['ImageResize', 'EasyImage'],
-    }
-}
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'email-smtp.ap-northeast-1.amazonaws.com'
@@ -129,36 +115,3 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-CKEDITOR5_CONFIGS = {
-    'default': {
-        # 1) toolbar: include the “<>” button (htmlEmbed)
-        'toolbar': [
-            'heading', '|',
-            'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
-            'htmlEmbed',   # the “<>” button
-            'undo', 'redo'
-        ],
-        # 2) plugins: bring in htmlEmbed and generalHtmlSupport
-        'plugins': [
-            'Essentials', 'Paragraph', 'Heading', 'Bold', 'Italic',
-            'Link', 'List', 'HtmlEmbed', 'GeneralHtmlSupport'
-        ],
-        # 3) htmlEmbed: optionally show a preview of pasted HTML
-        'htmlEmbed': {
-            'showPreviews': True,
-        },
-        # 4) htmlSupport: exactly which unknown tags+attrs to allow
-        'htmlSupport': {
-            'allow': [
-                {
-                    'name': 'audio',
-                    'attributes': ['src', 'controls', 'style'],
-                },
-                {
-                    'name': 'source',
-                    'attributes': ['src', 'type'],
-                },
-            ]
-        },
-    }
-}
