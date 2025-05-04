@@ -119,8 +119,7 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
 
     try {
       const res = quizId
-        ? await apiClient.patch(
-            `/quizzes/${quizId}/edit/`,
+        ? await apiClient.patch(`/quizzes/${quizId}/`,
             payload,
             { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
           )
