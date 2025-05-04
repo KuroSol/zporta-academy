@@ -54,31 +54,38 @@ class QuizSerializer(serializers.ModelSerializer):
 
 
     def update(self, instance, validated_data):
-        questions_data = validated_data.pop('questions', None)
+            # 1) Remove title & permalink from incoming data so they stay unchanged
+            validated_data.pop('title', None)
+            validated_data.pop('permalink', None)
 
-        # Update quiz fields
-        for attr, val in validated_data.items():
-            setattr(instance, attr, val)
-        instance.save()
+            questions_data = validated_data.pop('questions', None)
 
-        # If questions payload present, sync them:
-        if questions_data is not None:
-            existing = {q.id:q for q in instance.questions.all()}
-            incoming_ids = []
-            for qd in questions_data:
-                qid = qd.get('id', None)
-                if qid and qid in existing:
-                    q = existing[qid]
-                    for field,val in qd.items():
-                        if field!='id':
-                            setattr(q, field, val)
-                    q.save()
-                    incoming_ids.append(qid)
-                else:
-                    qnew = Question.objects.create(quiz=instance, **{k:v for k,v in qd.items() if k!='id'})
-                    incoming_ids.append(qnew.id)
-            # delete removed questions
-            for q in instance.questions.exclude(id__in=incoming_ids):
-                q.delete()
+            # 2) Apply all the _other_ fields as before
+            for attr, val in validated_data.items():
+                setattr(instance, attr, val)
+            instance.save()
 
-        return instance
+            # 3) Sync questions exactly as you already do…
+            if questions_data is not None:
+                existing = {q.id: q for q in instance.questions.all()}
+                incoming_ids = []
+                for qd in questions_data:
+                    qid = qd.get('id', None)
+                    if qid and qid in existing:
+                        q = existing[qid]
+                        for field, v in qd.items():
+                            if field != 'id':
+                                setattr(q, field, v)
+                        q.save()
+                        incoming_ids.append(qid)
+                    else:
+                        qnew = Question.objects.create(
+                        quiz=instance,
+                        **{k: v for k, v in qd.items() if k != 'id'}
+                        )
+                        incoming_ids.append(qnew.id)
+                # delete removed ones
+                for q in instance.questions.exclude(id__in=incoming_ids):
+                    q.delete()
+
+            return instance

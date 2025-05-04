@@ -1,494 +1,393 @@
-import React, { useState, useEffect, useRef, useContext } from 'react'; // Added useContext
-import { useNavigate } from 'react-router-dom';
-import CustomEditor from '../Editor/CustomEditor'; // Assuming path is correct
-import CreateSubjectSelect from './CreateSubjectSelect'; // Assuming path is correct
-import apiClient from '../../api'; // <-- ADD apiClient import (Adjust path ../../api if needed)
-import { AuthContext } from '../../context/AuthContext'; // <-- ADD AuthContext import (Adjust path)
-import styles from './CreateQuiz.module.css'; 
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import apiClient from '../../api';
+import { AuthContext } from '../../context/AuthContext';
+import CustomEditor from '../Editor/CustomEditor';
+import CreateSubjectSelect from './CreateSubjectSelect';
+import styles from './CreateQuiz.module.css';
 
 const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
-  const { quizId } = useParams(); 
-  const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const { quizId } = useParams();
+  const navigate    = useNavigate();
+  const { logout }  = useContext(AuthContext);
 
-  // Step 1 state
-  const [title, setTitle] = useState('');
-  const [quizType, setQuizType] = useState('free');
+  // --- Step / form state ---
+  const [currentStep , setCurrentStep ] = useState(1);
+  const [title       , setTitle       ] = useState('');
+  const [quizType    , setQuizType    ] = useState('free');
   const [subjectOption, setSubjectOption] = useState(null);
-
-  // Step 2 state
-  // Step 2 state: dynamic questions array
-  const [questions, setQuestions] = useState([
-    { question_text: '', option1: '', option2: '', option3: '', option4: '', correct_option: 1, hint1: '', hint2: '' }
+  const [questions   , setQuestions   ] = useState([
+    { question_text: '', option1:'', option2:'', option3:'', option4:'', correct_option:1, hint1:'', hint2:'' }
   ]);
+  const [hint1       , setHint1       ] = useState('');
+  const [hint2       , setHint2       ] = useState('');
+  const [tags        , setTags        ] = useState('');
+  const [content     , setContent     ] = useState('');
+  const [message     , setMessage     ] = useState('');
+  const [messageType , setMessageType ] = useState('error');
+  const [submitting  , setSubmitting  ] = useState(false);
 
-  // Add a blank question
+  // --- Helpers for questions array ---
   const addNewQuestion = () => {
-    setQuestions([
-      ...questions,
-      { question_text: '', option1: '', option2: '', option3: '', option4: '', correct_option: 1, hint1: '', hint2: '' }
+    setQuestions(qs => [
+      ...qs,
+      { question_text:'', option1:'', option2:'', option3:'', option4:'', correct_option:1, hint1:'', hint2:'' }
     ]);
   };
-  
-  // ←– ADD BELOW addNewQuestion
-    // Remove a question at `index`
-    const removeQuestion = (index) => {
-      // keep at least one question
-      if (questions.length <= 1) return;
-      setQuestions(questions.filter((_, i) => i !== index));
-    };
-  // ←– END ADD
-
-  // Update a single question field
-  const updateQuestion = (index, field, value) => {
-    const updated = [...questions];
-    updated[index][field] = value;
-    setQuestions(updated);
+  const removeQuestion = i => {
+    setQuestions(qs => qs.length > 1 ? qs.filter((_, idx) => idx !== i) : qs);
+  };
+  const updateQuestion = (i, field, val) => {
+    setQuestions(qs => {
+      const copy = [...qs];
+      copy[i][field] = val;
+      return copy;
+    });
   };
 
+  // --- Navigation ---
+  const handleNext = ()  => setCurrentStep(s => Math.min(3, s+1));
+  const handleBack = ()  => setCurrentStep(s => Math.max(1, s-1));
 
-  // Step 3 state
-  const [hint1, setHint1] = useState('');
-  const [hint2, setHint2] = useState('');
-  const [tags, setTags] = useState('');
-  const [content, setContent] = useState('');
-  
-  // Message state for errors / confirmations
-  const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false); // To track final submission
-  const [messageType, setMessageType] = useState('error'); // To style messages
-  const { logout } = useContext(AuthContext);
-  // Called by CustomEditor to update the content state
-  const handleSaveContent = (editorContent) => {
-    setContent(editorContent);
-  };
-
-  // Navigate to next/previous steps
-  const handleNext = () => {
-    // (Optional) You could add per‑step validations here
-    setCurrentStep((prev) => prev + 1);
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prev) => prev - 1);
-  };
-
-  // Submit the complete form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true); // Indicate final submission has started
-
-    // Check for token and subject selection (you can add more validations as needed)
-   
-    if (!localStorage.getItem('token')) {
-      setMessage('You must be logged in to create a quiz.');
-      // Optionally navigate('/login');
-      return;
-    }
-    // Keep subject check
-    if (!subjectOption) {
-        setMessage('Please select or create a subject.');
-        return;
-    }
-
-    // Determine the subject value
-    const subjectValue = subjectOption.isNew
-      ? subjectOption.label
-      : subjectOption.value;
-
-    // Convert comma‑separated tags to an array
-    const tagsArray = tags
-      ? tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '')
-      : [];
-
-          const payload = {
-              title,
-              quiz_type: quizType,
-              content,
-              subject: subjectOption.isNew
-                       ? subjectOption.label
-                       : subjectOption.value,
-              questions,
-              tags: tagsArray,
-            };
-      
-
-    // Inside handleSubmit, after payload definition
-    setMessage(''); // Clear message before trying
-
-    try {
-        // Use apiClient.post, relative URL '/quizzes/', payload object. Auth/JSON handled.
-           const response = quizId
-              // EDIT mode
-              ? await apiClient.patch(
-                  `/quizzes/${quizId}/edit/`,
-                  payload,
-                  { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-                )
-              // CREATE mode
-              : await apiClient.post(
-                  '/quizzes/',
-                  payload,
-                  { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-                );
-
-        // *** START REPLACEMENT ***
-        const newQuizData = response.data; // Get the created quiz data
-
-        if (isModalMode && onSuccess) {
-            // --- Modal Mode ---
-            // Call the callback passed from CreateCourse
-            setMessage('Quiz saved!'); // Optional: Show temporary success in modal
-            setMessageType('success');
-            onSuccess(newQuizData); // Pass data back to parent (which handles closing)
-        } else {
-            // --- Standalone Mode ---
-            // Keep the original behavior for the standalone page
-            setMessage('Quiz created successfully!');
-            setMessageType('success'); // Set message type for styling
-            console.log('Quiz created:', newQuizData);
-            // Keep your original navigation for standalone mode
-            navigate('/admin/quizzes'); // Or navigate to the new quiz detail page, etc.
-        }
-        // *** END REPLACEMENT ***
-
-    } catch (error) {
-        // Handle Axios errors
-        console.error('Error creating quiz:', error.response ? error.response.data : error.message);
-        let errorMsg = 'Failed to create quiz.';
-        if (error.response && error.response.data) {
-            if (typeof error.response.data === 'object') {
-                errorMsg = Object.entries(error.response.data)
-                    .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`)
-                    .join(' | ');
-            } else {
-                errorMsg = error.response.data.error || error.response.data.detail || errorMsg;
-            }
-        } else if (error.request) {
-            errorMsg = 'Network error.';
-        } else {
-            errorMsg = 'An unexpected error occurred while creating the quiz.';
-        }
-        setMessageType('error'); // Ensure message type is set correctly on error
-        setMessage(errorMsg); // Show error
-        // Optionally logout on auth errors
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            logout();
-        }
-      } // closing brace of catch
-      finally { // Add this finally block
-          setSubmitting(false); // Indicate submission attempt has finished
-      }
-  }; // closing brace of handleSubmit function
-
-  // Calculate progress percentage (for three steps)
-  const progressPercentage = (currentStep / 3) * 100;
+  // --- Load existing quiz in edit mode ---
   useEffect(() => {
     if (!quizId) return;
-    apiClient
-      .get(`/quizzes/${quizId}/edit/`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      })
-      .then(res => {
-        const data = res.data;
-        setTitle(data.title);
-        setQuizType(data.quiz_type);
-        setSubjectOption({ value: data.subject, label: data.subject, isNew: false });
-        setContent(data.content);
-        setHint1(data.questions[0]?.hint1 || '');
-        setHint2(data.questions[0]?.hint2 || '');
-        setTags(Array.isArray(data.tags) ? data.tags.join(',') : (data.tags || ''));
-        setQuestions(
-          data.questions.map(q => ({
-            id: q.id,                 // IMPORTANT: preserve id for update
-            question_text: q.question_text,
-            option1: q.option1,
-            option2: q.option2,
-            option3: q.option3 || '',
-            option4: q.option4 || '',
-            correct_option: q.correct_option,
-            hint1: q.hint1 || '',
-            hint2: q.hint2 || ''
-          }))
-        );
-      })
-      .catch(err => {
-        console.error('Load for edit failed', err);
+
+    apiClient.get(`/quizzes/${quizId}/edit/`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    .then(({ data }) => {
+      setTitle(data.title);
+      setQuizType(data.quiz_type);
+      setSubjectOption({ value: data.subject, label: data.subject, isNew: false });
+      setContent(data.content);
+      setHint1(data.questions[0]?.hint1 || '');
+      setHint2(data.questions[0]?.hint2 || '');
+      setTags(Array.isArray(data.tags) ? data.tags.join(',') : data.tags || '');
+      setQuestions(data.questions.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        option1: q.option1,
+        option2: q.option2,
+        option3: q.option3 || '',
+        option4: q.option4 || '',
+        correct_option: q.correct_option,
+        hint1: q.hint1 || '',
+        hint2: q.hint2 || ''
+      })));
+    })
+    .catch(err => {
+      console.error('Failed to load quiz for edit:', err);
+      logout();
+      navigate('/login');
+    });
+  }, [quizId, logout, navigate]);
+
+  // --- Handle editor content ---
+  const handleSaveContent = html => setContent(html);
+
+  // --- Final submit (create or patch) ---
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setSubmitting(true);
+    setMessage('');
+
+    // --- Basic validations ---
+    if (!localStorage.getItem('token')) {
+      setMessage('You must be logged in to create a quiz.');
+      setSubmitting(false);
+      return;
+    }
+    if (!subjectOption) {
+      setMessage('Please select or create a subject.');
+      setSubmitting(false);
+      return;
+    }
+
+    // --- Build payload ---
+    const tagsArray = tags
+      ? tags.split(',').map(t => t.trim()).filter(t => t)
+      : [];
+    const payload = {
+      title,
+      quiz_type: quizType,
+      content,
+      subject: subjectOption.isNew ? subjectOption.label : subjectOption.value,
+      questions,
+      tags: tagsArray,
+    };
+
+    try {
+      const res = quizId
+        ? await apiClient.patch(
+            `/quizzes/${quizId}/edit/`,
+            payload,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+          )
+        : await apiClient.post(
+            '/quizzes/',
+            payload,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+          );
+
+      const newQuiz = res.data;
+      setMessageType('success');
+      setMessage(isModalMode ? 'Quiz saved!' : 'Quiz created successfully!');
+
+      if (isModalMode && onSuccess) {
+        onSuccess(newQuiz);
+      } else {
+        navigate(`/quizzes/${newQuiz.permalink}`);
+      }
+
+    } catch (err) {
+      console.error('Error saving quiz:', err);
+      let errMsg = 'Failed to save quiz.';
+      if (err.response?.data) {
+        const d = err.response.data;
+        if (typeof d === 'object') {
+          errMsg = Object.entries(d).map(([f, m]) =>
+            `${f}: ${Array.isArray(m) ? m.join(' ') : m}`
+          ).join(' | ');
+        } else {
+          errMsg = d.detail || d.error || errMsg;
+        }
+      } else if (err.request) {
+        errMsg = 'Network error.';
+      }
+      setMessageType('error');
+      setMessage(errMsg);
+
+      if ([401,403].includes(err.response?.status)) {
         logout();
         navigate('/login');
-      });
-  }, [quizId]);
-  
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // --- Progress bar percent ---
+  const progressPercent = (currentStep / 3) * 100;
+
   return (
     <div className={styles.createQuizContainer}>
-      <h3 className={styles.modalFormTitle}>Create New Quiz</h3>
-      {/* Progress Bar */}
+      <h3 className={styles.modalFormTitle}>
+        {quizId ? 'Edit Quiz' : 'Create New Quiz'}
+      </h3>
+
       <div className={styles.progressContainer}>
-        <div
-          className={styles.progressBar}
-          style={{ width: `${progressPercentage}%` }}
-        ></div>
+        <div className={styles.progressBar} style={{ width: `${progressPercent}%` }} />
       </div>
-      
-      {/* Updated Message Display */}
+
       {message && (
-          <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`}>
-              {message}
-          </p>
+        <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`}>
+          {message}
+        </p>
       )}
 
-      {/* ======== START: Replace block from here ======== */}
-      <form onSubmit={handleSubmit} className={styles.quizForm}> {/* Use CSS module */}
-
-      {/* --- Step 1: Quiz Details --- */}
-      {currentStep === 1 && (
-        // Apply step and animation classes from module
-        <div className={`${styles.step} ${styles.step1} ${styles.animateFadeIn}`}>
-          {/* Apply formGroup style, add label htmlFor/id, inputField style, required span, disable */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizTitle">Title: <span className={styles.required}>*</span></label>
-            <input
-              id="quizTitle"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className={styles.inputField} // Use module style
-              disabled={submitting} // Disable during final submission
-            />
-          </div>
-          {/* Apply formGroup style, add label htmlFor/id, selectField style, disable */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizType">Quiz Type:</label>
-            <select
-              id="quizType"
-              value={quizType}
-              onChange={(e) => setQuizType(e.target.value)}
-              className={styles.selectField} // Use module style
-              disabled={submitting} // Disable during final submission
-            >
-              <option value="free">Free</option>
-              <option value="premium">Premium</option>
-            </select>
-          </div>
-          {/* Apply formGroup style, add label htmlFor/id, required span, pass disabled prop */}
-          <div className={styles.formGroup}>
-            <label id="quizSubjectLabel">Subject: <span className={styles.required}>*</span></label> {/* Label for accessibility */}
-            {/* Pass isDisabled prop - CreateSubjectSelect needs to handle it */}
-            <CreateSubjectSelect
+      <form onSubmit={handleSubmit} className={styles.quizForm}>
+        {/* --- STEP 1: Details --- */}
+        {currentStep === 1 && (
+          <div className={`${styles.step} ${styles.step1}`}>
+                {/* Info text in edit mode */}
+              {quizId && (
+                <p className={styles.infoText}>
+                  ⚠️ Title cannot be changed after creation.
+                </p>
+              )}
+            <div className={styles.formGroup}>
+              <label htmlFor="quizTitle">Title: <span className={styles.required}>*</span></label>
+              <input
+                id="quizTitle"
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                required
+                disabled={submitting || Boolean(quizId)}    // ← disable if editing
+                className={styles.inputField}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="quizType">Quiz Type:</label>
+              <select
+                id="quizType"
+                value={quizType}
+                onChange={e => setQuizType(e.target.value)}
+                disabled={submitting}
+                className={styles.selectField}
+              >
+                <option value="free">Free</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="quizSubject">Subject: <span className={styles.required}>*</span></label>
+              <CreateSubjectSelect
                 onChange={setSubjectOption}
                 value={subjectOption}
-                isDisabled={submitting} // Pass submitting state down
-                aria-labelledby="quizSubjectLabel" // Link label to select component
-            />
-          </div>
-        </div>
-      )}
-
-      {/* --- Step 2: Question and Options --- */}
-      {currentStep === 2 && (
-        <div className={`${styles.step} ${styles.step2} ${styles.animateFadeIn}`}>
-          {questions.map((q, i) => (
-            <div key={i} className={styles.formGroup}>
-              <h4>Question {i + 1}</h4>
-              <textarea
-                value={q.question_text}
-                onChange={e => updateQuestion(i, 'question_text', e.target.value)}
-                placeholder="Enter question"
-                required
-                className={styles.textAreaField}
+                isDisabled={submitting}
+                aria-labelledby="quizSubject"
               />
-  
+            </div>
+          </div>
+        )}
 
-                {/* ←– ADD: remove button for this question */}
+        {/* --- STEP 2: Questions --- */}
+        {currentStep === 2 && (
+          <div className={`${styles.step} ${styles.step2}`}>
+            {questions.map((q, i) => (
+              <div key={i} className={styles.formGroup}>
+                <h4>Question {i + 1}</h4>
+                <textarea
+                  className={styles.textAreaField}
+                  placeholder="Question text"
+                  value={q.question_text}
+                  onChange={e => updateQuestion(i, 'question_text', e.target.value)}
+                  required
+                  disabled={submitting}
+                />
+                <input
+                  className={styles.inputField}
+                  placeholder="Option 1"
+                  value={q.option1}
+                  onChange={e => updateQuestion(i, 'option1', e.target.value)}
+                  required disabled={submitting}
+                />
+                <input
+                  className={styles.inputField}
+                  placeholder="Option 2"
+                  value={q.option2}
+                  onChange={e => updateQuestion(i, 'option2', e.target.value)}
+                  required disabled={submitting}
+                />
+                <input
+                  className={styles.inputField}
+                  placeholder="Option 3 (optional)"
+                  value={q.option3}
+                  onChange={e => updateQuestion(i, 'option3', e.target.value)}
+                  disabled={submitting}
+                />
+                <input
+                  className={styles.inputField}
+                  placeholder="Option 4 (optional)"
+                  value={q.option4}
+                  onChange={e => updateQuestion(i, 'option4', e.target.value)}
+                  disabled={submitting}
+                />
+                <select
+                  className={styles.selectField}
+                  value={q.correct_option}
+                  onChange={e => updateQuestion(i, 'correct_option', +e.target.value)}
+                  disabled={submitting}
+                >
+                  <option value={1}>Option 1</option>
+                  <option value={2}>Option 2</option>
+                  <option value={3}>Option 3</option>
+                  <option value={4}>Option 4</option>
+                </select>
+                <textarea
+                  className={styles.textAreaField}
+                  placeholder="Hint 1 (optional)"
+                  value={q.hint1}
+                  onChange={e => updateQuestion(i, 'hint1', e.target.value)}
+                  disabled={submitting}
+                />
+                <textarea
+                  className={styles.textAreaField}
+                  placeholder="Hint 2 (optional)"
+                  value={q.hint2}
+                  onChange={e => updateQuestion(i, 'hint2', e.target.value)}
+                  disabled={submitting}
+                />
                 <button
                   type="button"
                   onClick={() => removeQuestion(i)}
                   className={`${styles.btn} ${styles.btnSecondary}`}
                   disabled={submitting || questions.length <= 1}
-                  style={{ alignSelf: 'flex-end', marginTop: '8px' }}
                 >
                   Remove Question
                 </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addNewQuestion}
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              disabled={submitting}
+            >
+              + Add Another Question
+            </button>
+          </div>
+        )}
 
-
-
-              <input
-                type="text"
-                value={q.option1}
-                onChange={e => updateQuestion(i, 'option1', e.target.value)}
-                placeholder="Option 1"
-                required
-                className={styles.inputField}
-              />
-              <input
-                type="text"
-                value={q.option2}
-                onChange={e => updateQuestion(i, 'option2', e.target.value)}
-                placeholder="Option 2"
-                required
-                className={styles.inputField}
-              />
-              <input
-                type="text"
-                value={q.option3}
-                onChange={e => updateQuestion(i, 'option3', e.target.value)}
-                placeholder="Option 3 (optional)"
-                className={styles.inputField}
-              />
-              <input
-                type="text"
-                value={q.option4}
-                onChange={e => updateQuestion(i, 'option4', e.target.value)}
-                placeholder="Option 4 (optional)"
-                className={styles.inputField}
-              />
-              <select
-                value={q.correct_option}
-                onChange={e => updateQuestion(i, 'correct_option', parseInt(e.target.value))}
-                className={styles.selectField}
-              >
-                <option value={1}>Option 1</option>
-                <option value={2}>Option 2</option>
-                <option value={3}>Option 3</option>
-                <option value={4}>Option 4</option>
-              </select>
+        {/* --- STEP 3: Hints, Tags & Explanation --- */}
+        {currentStep === 3 && (
+          <div className={`${styles.step} ${styles.step3}`}>
+            <div className={styles.formGroup}>
+              <label htmlFor="quizHint1">Hint 1:</label>
               <textarea
-                value={q.hint1}
-                onChange={e => updateQuestion(i, 'hint1', e.target.value)}
+                id="quizHint1"
+                className={styles.textAreaField}
                 placeholder="Hint 1 (optional)"
-                className={styles.textAreaField}
-              />
-              <textarea
-                value={q.hint2}
-                onChange={e => updateQuestion(i, 'hint2', e.target.value)}
-                placeholder="Hint 2 (optional)"
-                className={styles.textAreaField}
+                value={hint1}
+                onChange={e => setHint1(e.target.value)}
+                disabled={submitting}
               />
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={addNewQuestion}
-            className={`${styles.btn} ${styles.btnPrimary}`}
-          >
-            + Add Another Question
-          </button>
-        </div>
-      )}
+            <div className={styles.formGroup}>
+              <label htmlFor="quizHint2">Hint 2:</label>
+              <textarea
+                id="quizHint2"
+                className={styles.textAreaField}
+                placeholder="Hint 2 (optional)"
+                value={hint2}
+                onChange={e => setHint2(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="quizTags">Tags:</label>
+              <input
+                id="quizTags"
+                className={styles.inputField}
+                placeholder="e.g. javascript, react"
+                value={tags}
+                onChange={e => setTags(e.target.value)}
+                disabled={submitting}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Explanation / Content:</label>
+              <CustomEditor onSave={handleSaveContent} isDisabled={submitting} />
+            </div>
+          </div>
+        )}
 
-
-      {/* --- Step 3: Hints, Tags and Explanation --- */}
-      {currentStep === 3 && (
-        <div className={`${styles.step} ${styles.step3} ${styles.animateFadeIn}`}>
-          {/* Apply updates to hint textareas */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizHint1">Hint 1 (optional):</label>
-            <textarea
-              id="quizHint1"
-              value={hint1}
-              onChange={(e) => setHint1(e.target.value)}
-              placeholder="Enter first hint (optional)"
-              className={styles.textAreaField}
-              disabled={submitting}
-            ></textarea>
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="quizHint2">Hint 2 (optional):</label>
-            <textarea
-              id="quizHint2"
-              value={hint2}
-              onChange={(e) => setHint2(e.target.value)}
-              placeholder="Enter second hint (optional)"
-              className={styles.textAreaField}
-              disabled={submitting}
-            ></textarea>
-          </div>
-          {/* Apply updates to tags input */}
-          <div className={styles.formGroup}>
-            <label htmlFor="quizTags">Tags (comma separated):</label>
-            <input
-              id="quizTags"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="e.g. javascript, react"
-              className={styles.inputField}
-              disabled={submitting}
-            />
-          </div>
-          {/* Apply updates to editor container */}
-          <div className={styles.editorContainer}>
-            {/* Use label style if defined */}
-            <label className={styles.editorLabel} htmlFor="quizExplanation">Explanation / Content:</label>
-            {/* Pass isDisabled prop if CustomEditor supports it */}
-            <CustomEditor onSave={handleSaveContent} isDisabled={submitting} />
-            {/* Add hidden input for accessibility if needed */}
-            <input type="hidden" id="quizExplanation" />
-          </div>
-        </div>
-      )}
-
-      {/* --- Navigation buttons --- */}
-      <div className={styles.navigationButtons}> {/* Use module style */}
-        {/* ADD Cancel Button for Modal mode */}
-        {isModalMode && (
-              <button
-                  type="button"
-                  onClick={onClose}
-                  className={`${styles.btn} ${styles.btnSecondary}`} // Use secondary style
-                  disabled={submitting} // Disable if submitting
-                  // Add margin-right to push other buttons over if needed
-                  style={{ marginRight: 'auto' }}
-              >
-                  Cancel
-              </button>
+        {/* --- Navigation Buttons --- */}
+        <div className={styles.navigationButtons}>
+          {currentStep > 1 && (
+            <button type="button" onClick={handleBack} className={`${styles.btn} ${styles.btnBack}`} disabled={submitting}>
+              Back
+            </button>
           )}
-
-        {/* Back Button */}
-        {currentStep > 1 && (
-          <button
-            type="button"
-            onClick={handleBack}
-            className={`${styles.btn} ${styles.btnBack}`} // Apply module style
-            disabled={submitting} // Disable during final submission
-          >
-            Back
-          </button>
-        )}
-
-        {/* Spacer to push Next/Submit to the right if Cancel isn't shown */}
-        {!isModalMode && currentStep > 1 && (
-              <div style={{ flexGrow: 1 }}></div> /* Spacer */
+          {currentStep < 3 && (
+            <button type="button" onClick={handleNext} className={`${styles.btn} ${styles.btnNext}`} disabled={submitting}>
+              Next
+            </button>
           )}
-
-
-        {/* Next Button */}
-        {currentStep < 3 && (
-          <button
-            type="button"
-            onClick={handleNext}
-            className={`${styles.btn} ${styles.btnNext}`} // Apply module style
-            disabled={submitting} // Disable during final submission
-          >
-            Next
-          </button>
-        )}
-
-        {/* Submit Button */}
-        {currentStep === 3 && (
-          <button
-            type="submit" // Keep type="submit" to trigger form's onSubmit
-            className={`${styles.btn} ${styles.btnSubmit}`} // Apply module style
-            disabled={submitting} // Disable while submitting
-          >
-            {submitting ? 'Submitting...' : 'Submit Quiz'} {/* Change text */}
-          </button>
-        )}
-      </div>
+          {currentStep === 3 && (
+            <button type="submit" className={`${styles.btn} ${styles.btnSubmit}`} disabled={submitting}>
+              {submitting ? 'Submitting...' : (quizId ? 'Save Changes' : 'Create Quiz')}
+            </button>
+          )}
+          {isModalMode && (
+            <button type="button" onClick={onClose} className={`${styles.btn} ${styles.btnSecondary}`} disabled={submitting}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
-      {/* ======== END: Replace block up to here ======== */}
     </div>
   );
 };
