@@ -235,8 +235,22 @@
 .btn:active:not(:disabled) {
    transform: translateY(1px);
 }
-
-
+.btnDanger {
+  background-color: var(--zporta-error-color);
+  color: var(--zporta-background-light);
+}
+.btnDanger:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+.infoText {
+  background-color: #fff4e5;
+  color: #663c00;
+  padding: 8px;
+  border-left: 4px solid #ffa500;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
 /* --- Animation --- */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); } /* Slightly less movement */
