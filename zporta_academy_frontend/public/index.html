@@ -1,48 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Primary Meta Tags -->
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+    <title>Zporta Academy | Interactive Online Education & E-Learning Platform</title>
+    <meta name="description" content="Zporta Academy is an interactive online educational platform offering courses, lessons, and quizzes to help learners of all levels achieve their goals." />
+    <meta name="keywords" content="Zporta Academy, online learning, e-learning, educational platform, courses, lessons, quizzes, interactive learning" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://zportaacademy.com/" />
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+    <!-- Mobile Specific Meta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a3d62" />
+
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+
+    <!-- Manifest for PWA -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://zportaacademy.com/" />
+    <meta property="og:title" content="Zporta Academy | Interactive Online Education & E-Learning Platform" />
+    <meta property="og:description" content="Join Zporta Academy to access interactive courses, lessons, and quizzes designed to help you achieve your learning goals." />
+    <meta property="og:image" content="https://zportaacademy.com/static/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://zportaacademy.com/" />
+    <meta name="twitter:title" content="Zporta Academy | Interactive Online Education" />
+    <meta name="twitter:description" content="Explore interactive courses, lessons, and quizzes at Zporta Academy to level up your skills." />
+    <meta name="twitter:image" content="https://zportaacademy.com/static/og-image.png" />
+
+    <!-- Structured Data: EducationalOrganization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "Zporta Academy",
+      "url": "https://zportaacademy.com",
+      "logo": "https://zportaacademy.com/static/logo.png",
+      "sameAs": [
+        "https://www.facebook.com/zportaacademy",
+        "https://instagram.com/zportaacademy",
+        "https://twitter.com/zportaacademy"
+      ],
+      "description": "Zporta Academy is an interactive online e-learning platform offering courses, lessons, and quizzes for learners worldwide.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "info@zportaacademy.com",
+        "contactType": "customer support",
+        "availableLanguage": ["English", "Japanese"]
+      }
+    }
+    </script>
+
+    <!-- Third-Party Scripts -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
+
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-    
-
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   </body>
 </html>

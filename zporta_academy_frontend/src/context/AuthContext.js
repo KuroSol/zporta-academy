@@ -50,6 +50,11 @@ export const AuthProvider = ({ children }) => {
   }, [fetchUserProfile]); // Dependency array ensures fetchUserProfile is stable due to useCallback
 
   const login = (userData, authToken) => {
+    if (!userData || typeof userData.username !== 'string') {
+      console.error("AuthContext.login: expected userData.username, got", userData);
+      // Optionally show an error to the user here…
+      return;
+    }
     //setUser(userData);
     //setToken(authToken);
     apiClient.defaults.headers.common['Authorization'] = `Token ${authToken}`;
