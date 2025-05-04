@@ -3,7 +3,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
-from django_ckeditor_5.fields import CKEditor5Field
 from django.utils import timezone
 from bs4 import BeautifulSoup
 from pykakasi import kakasi
@@ -23,7 +22,7 @@ class Quiz(models.Model):
         ('premium', 'Premium'),
     ]
     title = models.CharField(max_length=200)
-    content = CKEditor5Field(config_name='default', help_text="Main explanation or content about the quiz.")
+    content = models.TextField(help_text="Main explanation or content about the quiz.")
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
 
     lesson = models.ForeignKey('lessons.Lesson', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
@@ -74,7 +73,7 @@ class Quiz(models.Model):
 
         # fallback OG image
         if not self.og_image:
-            self.og_image = "https://www.yourdomain.com/static/default_quiz_image.png"
+            self.og_image = "https://www.zportaacademy.com/static/default_quiz_image.png"
 
         super(Quiz, self).save(*args, **kwargs)
 
@@ -84,14 +83,14 @@ class Quiz(models.Model):
 
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
-    question_text = CKEditor5Field(config_name='default')
-    option1 = CKEditor5Field(config_name='default')
-    option2 = CKEditor5Field(config_name='default')
-    option3 = CKEditor5Field(config_name='default', blank=True)
-    option4 = CKEditor5Field(config_name='default', blank=True)
+    question_text = models.TextField()
+    option1      = models.TextField()
+    option2      = models.TextField()
+    option3      = models.TextField(blank=True)
+    option4      = models.TextField(blank=True)
     correct_option = models.PositiveSmallIntegerField()
-    hint1 = CKEditor5Field(config_name='default', blank=True)
-    hint2 = CKEditor5Field(config_name='default', blank=True)
+    hint1        = models.TextField(blank=True)
+    hint2        = models.TextField(blank=True)
 
     def __str__(self):
         return f"Question for {self.quiz.title}"

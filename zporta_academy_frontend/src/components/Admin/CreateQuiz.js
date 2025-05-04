@@ -159,9 +159,12 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       setMessageType('error');
       setMessage(errMsg);
 
-      if ([401,403].includes(err.response?.status)) {
+      if (err.response?.status === 401) {
         logout();
         navigate('/login');
+      } else if (err.response?.status === 403) {
+        setMessageType('error');
+        setMessage("You don't have permission to edit this quiz.");
       }
     } finally {
       setSubmitting(false);

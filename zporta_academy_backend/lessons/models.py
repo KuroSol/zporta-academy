@@ -33,7 +33,7 @@ class Lesson(models.Model):
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
 
     # SEO fields
-    seo_title = models.CharField(max_length=60, blank=True)
+    seo_title = models.CharField(max_length=200, blank=True)
     seo_description = models.TextField(max_length=160, blank=True)
     focus_keyword = models.CharField(max_length=100, blank=True)
     canonical_url = models.URLField(blank=True)
@@ -70,7 +70,8 @@ class Lesson(models.Model):
 
         # --- Keep SEO field generation logic ---
         if not self.seo_title:
-            self.seo_title = self.title
+            # truncate to 60 chars so we never overflow the field
+            self.seo_title = self.title[:200]
         if not self.seo_description and self.content:
             # Ensure BeautifulSoup is imported: from bs4 import BeautifulSoup
             text = BeautifulSoup(self.content, "html.parser").get_text(separator=' ', strip=True)
