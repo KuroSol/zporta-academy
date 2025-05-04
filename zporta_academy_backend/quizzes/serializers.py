@@ -12,6 +12,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'quiz']
 
 class QuizSerializer(serializers.ModelSerializer):
+    content = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Main explanation or content about the quiz."
+    )
     is_locked = serializers.BooleanField(read_only=True)
     created_by = serializers.SerializerMethodField()
     questions = QuestionSerializer(many=True)
