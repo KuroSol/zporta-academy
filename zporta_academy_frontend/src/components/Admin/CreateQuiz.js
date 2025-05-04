@@ -30,6 +30,15 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       { question_text: '', option1: '', option2: '', option3: '', option4: '', correct_option: 1, hint1: '', hint2: '' }
     ]);
   };
+  
+  // ←– ADD BELOW addNewQuestion
+    // Remove a question at `index`
+    const removeQuestion = (index) => {
+      // keep at least one question
+      if (questions.length <= 1) return;
+      setQuestions(questions.filter((_, i) => i !== index));
+    };
+  // ←– END ADD
 
   // Update a single question field
   const updateQuestion = (index, field, value) => {
@@ -290,6 +299,21 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                 required
                 className={styles.textAreaField}
               />
+  
+
+                {/* ←– ADD: remove button for this question */}
+                <button
+                  type="button"
+                  onClick={() => removeQuestion(i)}
+                  className={`${styles.btn} ${styles.btnSecondary}`}
+                  disabled={submitting || questions.length <= 1}
+                  style={{ alignSelf: 'flex-end', marginTop: '8px' }}
+                >
+                  Remove Question
+                </button>
+
+
+
               <input
                 type="text"
                 value={q.option1}
