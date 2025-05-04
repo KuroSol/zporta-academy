@@ -30,6 +30,7 @@ const Login = () => {
             showMessage(''); // Clear message
             const apiResponse = await apiClient.post('/users/google-login/', { token });
             const data = apiResponse.data;
+            console.log("🔍 Google login response:", data);
             if (data.token && data.user) {
                 login(data.user, data.token);
                 showMessage("Google login successful!", 'success'); // Use success type
@@ -148,7 +149,8 @@ useEffect(() => {
         try {
             const response = await apiClient.post('/users/login/', { username, password });
             const data = response.data;
-            login(data.user, data.token);
+            console.log("🔍 Standard login response:", data);
+            login(data, data.token);
              showMessage("Login successful!", 'success'); // Show success briefly
 
         } catch (error) {
