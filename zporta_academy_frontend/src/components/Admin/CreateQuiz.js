@@ -119,15 +119,17 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
 
     try {
       const res = quizId
-        ? await apiClient.patch(`/quizzes/${quizId}/`,
-            payload,
-            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-          )
-        : await apiClient.post(
-            '/quizzes/',
-            payload,
-            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-          );
+      ? await apiClient.patch(
+          `/quizzes/${quizId}/edit/`,         // ← correct endpoint
+          payload,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        )
+      : await apiClient.post(
+          '/quizzes/',
+          payload,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+    
 
       const newQuiz = res.data;
       setMessageType('success');
