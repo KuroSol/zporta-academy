@@ -22,7 +22,7 @@ class Quiz(models.Model):
         ('premium', 'Premium'),
     ]
     title = models.CharField(max_length=200)
-    content = models.TextField(help_text="Main explanation or content about the quiz.")
+    content = models.TextField(blank=True, help_text="Main explanation or content about the quiz.")
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
 
     lesson = models.ForeignKey('lessons.Lesson', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
