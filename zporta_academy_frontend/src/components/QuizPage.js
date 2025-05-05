@@ -96,11 +96,28 @@ const QuizPage = () => {
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentIndex] ?? {}; // Use empty object as fallback
   const options = [
-    currentQuestion.option1,
-    currentQuestion.option2,
-    currentQuestion.option3,
-    currentQuestion.option4,
-  ].filter(Boolean); // Filter out null/empty options
+    {
+      html: currentQuestion.option1,
+      img:  currentQuestion.option1_image,
+      aud:  currentQuestion.option1_audio,
+    },
+    {
+      html: currentQuestion.option2,
+      img:  currentQuestion.option2_image,
+      aud:  currentQuestion.option2_audio,
+    },
+    {
+      html: currentQuestion.option3,
+      img:  currentQuestion.option3_image,
+      aud:  currentQuestion.option3_audio,
+    },
+    {
+      html: currentQuestion.option4,
+      img:  currentQuestion.option4_image,
+      aud:  currentQuestion.option4_audio,
+    },
+  ].filter(o => o.html || o.img || o.aud);
+  
 
   // --- Event Handlers ---
   const handleAnswer = async (selectedIndex) => {
@@ -225,52 +242,63 @@ const QuizPage = () => {
         </span>
       </div>
 
-      {/* Question Area */}
-      <div className={styles.questionArea}>
-        <div
-          className={styles.questionText}
-          // Ensure currentQuestion.question_text exists before rendering
-          dangerouslySetInnerHTML={{ __html: currentQuestion.question_text || 'Question not available.' }}
-        />
+      {/* Flash-card Question + Feedback */}
+      <div className={`${styles.flashCard}${answerSubmitted ? ` ${styles.flipped}` : ''}`}>
+
+        {/* Front side: question + media */}
+        <div className={styles.cardFront}>
+          {currentQuestion.question_image && (
+            <img
+              src={currentQuestion.question_image}
+              alt={currentQuestion.question_image_alt}
+              className={styles.mediaImage}
+            />
+          )}
+          {currentQuestion.question_audio && (
+            <audio
+              controls
+              src={currentQuestion.question_audio}
+              className={styles.mediaAudio}
+            />
+          )}
+          <div
+            className={styles.questionText}
+            dangerouslySetInnerHTML={{ __html: currentQuestion.question_text }}
+          />
+        </div>
+
+        {/* Back side: correct / incorrect feedback */}
+        <div className={styles.cardBack}>
+          <div className={`${styles.feedbackArea} ${isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`}>
+            {isCorrect
+              ? <><CheckCircle size={24} /> Correct!</>
+              : <><XCircle    size={24} /> Incorrect.</>
+            }
+          </div>
+        </div>
+
       </div>
 
       {/* Options List */}
       <div className={styles.optionsList}>
-        {options.map((optionHtml, index) => (
+        {options.map((opt, idx) => (
           <button
-            key={index}
+            key={idx}
             type="button"
-            className={getOptionClassName(index)}
-            onClick={() => handleAnswer(index)}
-            disabled={answerSubmitted} // Disable button after submission
-            // Use dangerouslySetInnerHTML carefully if HTML is trusted/sanitized
-            dangerouslySetInnerHTML={{ __html: optionHtml }}
-            aria-pressed={selectedAnswerIndex === index} // Indicate selection state for screen readers
-          />
+            className={getOptionClassName(idx)}
+            onClick={() => handleAnswer(idx)}
+            disabled={answerSubmitted}
+          >
+            {opt.img && (
+              <img src={opt.img} alt="" className={styles.optionMedia} />
+            )}
+            {opt.aud && (
+              <audio controls src={opt.aud} className={styles.optionMedia} />
+            )}
+            <span dangerouslySetInnerHTML={{ __html: opt.html }} />
+          </button>
         ))}
       </div>
-
-       {/* Feedback Area (replaces alert) */}
-       {answerSubmitted && (
-        <div className={`${styles.feedbackArea} ${isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`}>
-          {isCorrect ? (
-            <>
-              <CheckCircle size={20} className={styles.feedbackIcon} /> Correct!
-            </>
-          ) : (
-            <>
-              <XCircle size={20} className={styles.feedbackIcon} /> Incorrect.
-              {/* Optional: Show the correct answer text if needed */}
-              {/* You might need to ensure options and correct_option are valid before uncommenting */}
-              {/* { typeof currentQuestion.correct_option === 'number' && currentQuestion.correct_option > 0 && options[currentQuestion.correct_option - 1] &&
-                <div className={styles.correctAnswerText}>
-                   Correct answer: <span dangerouslySetInnerHTML={{ __html: options[currentQuestion.correct_option - 1] }} />
-                </div>
-              } */}
-            </>
-          )}
-        </div>
-      )}
 
 
       {/* Navigation Controls */}
