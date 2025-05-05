@@ -2,6 +2,7 @@ import os
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+import uuid
 
 def profile_image_upload_to(instance, filename):
     """
@@ -9,7 +10,7 @@ def profile_image_upload_to(instance, filename):
     MEDIA_ROOT/user_<username>/profile_image/<username>_profile_image_zporta_academy.<ext>
     """
     ext = filename.split('.')[-1]  # Get the file extension
-    new_filename = f"{instance.user.username}_profile_image_zporta_academy.{ext}"
+    new_filename = f"{instance.user.username}-profile-image-zporta-academy-{uuid.uuid4().hex}.{ext}"
     return os.path.join(f"user_{instance.user.username}", "profile_image", new_filename)
 
 class Profile(models.Model):
