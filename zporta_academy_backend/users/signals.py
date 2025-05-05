@@ -66,3 +66,7 @@ def quiz_created_update_profile(sender, instance, created, **kwargs):
     """
     if created and hasattr(instance, 'created_by') and instance.created_by:
         update_profile_to_both(instance.created_by)
+@receiver(post_delete, sender=Profile)
+def delete_profile_image_on_delete(sender, instance, **kwargs):
+    if instance.image and os.path.isfile(instance.image.path):
+        os.remove(instance.image.path)
