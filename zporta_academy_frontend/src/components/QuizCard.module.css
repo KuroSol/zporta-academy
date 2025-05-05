@@ -1,22 +1,33 @@
 /* QuizCard.module.css */
 
-/* --- Base Variables (Assume global or redefine) --- */
+/* --- Base Variables --- */
 :root {
-  --primary-color: #4f46e5;
-  --primary-color-hover: #4338ca;
-  --correct-color: #10b981;
-  --correct-bg: #ecfdf5;
-  --incorrect-color: #ef4444;
-  --incorrect-bg: #fee2e2;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
+  --primary-color: #4f46e5; /* indigo-600 */
+  --primary-color-hover: #4338ca; /* indigo-700 */
+  --primary-color-light: #e0e7ff; /* indigo-100 */
+  --correct-color: #16a34a; /* green-600 */
+  --correct-bg: #f0fdf4; /* green-50 */
+  --correct-border: #86efac; /* green-300 */
+  --incorrect-color: #dc2626; /* red-600 */
+  --incorrect-bg: #fee2e2; /* red-100 */
+  --incorrect-border: #fca5a5; /* red-300 */
+  --error-color-dark: #b91c1c; /* red-700 */
+  --text-primary: #1f2937; /* gray-800 */
+  --text-secondary: #4b5563; /* gray-600 */
+  --text-light: #6b7280; /* gray-500 */
+  --text-disabled: #9ca3af; /* gray-400 */
   --bg-light: #ffffff;
-  --bg-subtle: #f9fafb;
-  --border-color: #e5e7eb;
-  --border-radius: 8px;
+  --bg-subtle: #f9fafb; /* gray-50 */
+  --bg-page: #f3f4f6; /* gray-100 */
+  --border-color: #e5e7eb; /* gray-200 */
+  --border-color-medium: #d1d5db; /* gray-300 */
+  --border-radius: 0.75rem; /* 12px */
+  --border-radius-sm: 0.375rem; /* 6px */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --transition-speed: 0.2s;
+  --transition-speed-fast: 0.15s;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -32,13 +43,57 @@
   flex-direction: column; /* Stack elements vertically */
   gap: 0.75rem; /* Space between sections */
   transition: box-shadow var(--transition-speed) ease, border-color var(--transition-speed) ease;
-  position: relative; /* For potential absolute elements if needed */
+  /* max-width: 450px; /* REMOVED from base rule */
+  width: 100%; /* Take full width of container */
+  /* Center itself within the wrapper if needed (e.g., if wrapper is wider) */
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.quizCard:hover {
-   box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.1), 0 3px 6px -3px rgba(0, 0, 0, 0.1); /* Slightly larger shadow */
-   /* border-color: #d1d5db; */ /* Optional: slightly darker border */
+/* Apply max-width only on smaller screens (e.g., up to medium breakpoint) */
+@media (max-width: 768px) { /* Adjust breakpoint as needed (768px is md) */
+  .quizCard {
+    max-width: 450px; /* Limit width on smaller screens */
+  }
 }
+
+
+.quizCard:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Styles for invalid/empty states */
+.errorCard, .emptyCard {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 1.5rem 1rem;
+    background-color: var(--bg-subtle);
+    gap: 0.5rem; /* Smaller gap for error/empty */
+    /* Ensure centering applies here too if needed */
+    margin-left: auto;
+    margin-right: auto;
+}
+.errorMessage {
+    color: var(--error-color-dark);
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin: 0;
+}
+.errorIcon {
+    color: var(--incorrect-color);
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0 auto 0.25rem;
+}
+.noQuestions {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem 0;
+    font-style: italic;
+    margin: 0;
+}
+
 
 /* --- Card Header (Title + Progress) --- */
 .cardHeader {
@@ -76,36 +131,55 @@
   margin-left: 0.5rem; /* Space from title */
 }
 
-/* --- Message for No Questions --- */
-.noQuestions {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  text-align: center;
-  padding: 1rem 0;
-  font-style: italic;
+/* --- Question Display Area --- */
+.questionDisplayArea {
+  background-color: var(--bg-light); /* Can be subtle or same as card */
+  /* border: 1px solid var(--border-color); */ /* Optional border */
+  border-radius: var(--border-radius-sm);
+  padding: 1rem; /* Padding inside question area */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem; /* Space between media and text */
+  min-height: 100px; /* Smaller min height for card */
 }
 
-/* --- Question Area --- */
-.questionArea {
-  /* No background needed if card bg is light */
-  min-height: 40px; /* Ensure minimum height */
+/* --- Media inside Question Area --- */
+.mediaImage {
+  display: block;
+  width: 100%;
+  max-width: 300px; /* Smaller max width for card */
+  max-height: 180px; /* Smaller max height for card */
+  object-fit: contain;
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
 }
 
+.mediaAudio {
+  display: block;
+  width: 100%;
+  max-width: 300px; /* Smaller max width */
+  height: 40px; /* Consistent height */
+}
+
+/* --- Question Text inside Question Area --- */
 .questionText {
   font-size: 1rem; /* Standard text size for card */
   line-height: 1.5;
   color: var(--text-primary);
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
 }
-/* Add basic styling for potential HTML within question */
 .questionText p { margin-bottom: 0.5em; }
 .questionText strong { font-weight: 600; }
 .questionText code {
-  background-color: #e5e7eb;
+  background-color: var(--border-color);
   padding: 0.1em 0.4em;
   border-radius: 4px;
   font-size: 0.9em;
-  font-family: monospace;
 }
+
 
 /* --- Options List --- */
 .optionsList {
@@ -117,6 +191,7 @@
 /* --- Option Button Styling (Compact version) --- */
 .optionButton {
   display: flex;
+  flex-direction: column;
   width: 100%;
   padding: 0.65rem 0.85rem; /* Smaller padding */
   font-family: inherit;
@@ -124,88 +199,162 @@
   text-align: left;
   color: var(--text-primary);
   background-color: var(--bg-light);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color-medium); /* Use medium border */
   border-radius: 6px; /* Slightly smaller radius */
   cursor: pointer;
-  transition: background-color var(--transition-speed) ease,
-              border-color var(--transition-speed) ease,
-              box-shadow var(--transition-speed) ease;
+  transition: all var(--transition-speed-fast) ease-in-out;
   position: relative;
-  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  min-height: 48px; /* Adjust min height */
+  gap: 0.4rem; /* Smaller gap */
 }
 
-/* Hover/Focus (only when interactive) */
-.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):hover,
-.optionButton:not([disabled]):not(.correct):not(.selectedIncorrect):not(.disabled):focus-visible {
-  background-color: var(--bg-subtle);
+.optionButton.interactive:hover {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color); /* Subtle ring on focus/hover */
-  outline: none;
+  background-color: var(--primary-color-light);
+  box-shadow: var(--shadow-sm); /* Subtle shadow */
+}
+.optionButton.interactive:focus-visible {
+  outline: 1px solid var(--primary-color); /* Use outline for focus */
+  outline-offset: 1px;
+  border-color: var(--primary-color);
 }
 
-/* Disabled state (after submission, unselected) */
-.optionButton.disabled,
-.optionButton[disabled] {
+.optionContent {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Smaller gap */
+    width: 100%;
+}
+
+.optionMediaImage {
+    width: 40px; /* Smaller image */
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background-color: var(--border-color);
+}
+
+.optionAudioControl {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    height: 35px; /* Smaller height */
+}
+.optionAudioControl::-webkit-media-controls-panel {
+  background-color: var(--bg-subtle);
+  border-radius: 4px;
+}
+
+.optionText {
+    flex-grow: 1;
+    line-height: 1.4; /* Tighter line height */
+}
+.optionText p { margin: 0; }
+.optionText strong { font-weight: 600; }
+.optionText code {
+    background-color: var(--border-color);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.optionFeedbackIcon {
+    position: absolute;
+    top: 0.4rem; /* Adjust position */
+    right: 0.5rem;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity var(--transition-speed-fast), transform var(--transition-speed-fast);
+    pointer-events: none;
+}
+.optionButton.correct .optionFeedbackIcon,
+.optionButton.selectedIncorrect .optionFeedbackIcon {
+    opacity: 1;
+    transform: scale(1);
+}
+.optionButton.correct .optionFeedbackIcon { color: var(--correct-color); }
+.optionButton.selectedIncorrect .optionFeedbackIcon { color: var(--incorrect-color); }
+
+.optionButton.disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background-color: var(--bg-subtle);
+  border-color: var(--border-color);
+  box-shadow: none;
   pointer-events: none;
-  box-shadow: none; /* Remove shadow when disabled */
+}
+.optionButton:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
-/* Correct Answer Highlight */
 .optionButton.correct {
   border-color: var(--correct-color);
   background-color: var(--correct-bg);
   color: var(--correct-color);
-  font-weight: 500;
+  font-weight: 500; /* Slightly less bold */
 }
-
-/* Selected Answer - Correct */
 .optionButton.selectedCorrect {
-  border-color: var(--correct-color);
-  background-color: var(--correct-bg);
-  color: var(--correct-color);
-  font-weight: 600;
-  box-shadow: 0 0 0 2px var(--correct-color); /* Clearer ring */
+   border-color: var(--correct-color);
+   background-color: var(--correct-bg);
+   box-shadow: 0 0 0 1px var(--correct-color); /* Subtle ring */
 }
-
-/* Selected Answer - Incorrect */
 .optionButton.selectedIncorrect {
   border-color: var(--incorrect-color);
   background-color: var(--incorrect-bg);
   color: var(--incorrect-color);
   font-weight: 500;
-  box-shadow: 0 0 0 1px var(--incorrect-color);
+  box-shadow: 0 0 0 1px var(--incorrect-color); /* Subtle ring */
 }
+
 
 /* --- Feedback Area --- */
 .feedbackArea {
   display: flex;
   align-items: center;
-  gap: 0.4rem; /* Smaller gap */
-  padding: 0.5rem 0.75rem; /* Compact padding */
-  /* margin-top: 0.5rem; */ /* Added via card gap */
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem; /* Space above feedback */
   border-radius: 6px;
-  font-size: 0.85rem; /* Smaller feedback text */
+  font-size: 0.85rem;
   font-weight: 500;
-  animation: slideDown 0.3s ease-out;
+  text-align: center;
+  animation: fadeInScale 0.3s ease-out;
+}
+/* Added specific error feedback style */
+.feedbackError {
+    background-color: var(--incorrect-bg);
+    color: var(--error-color-dark);
+    border: 1px solid var(--incorrect-border);
 }
 
 .feedbackCorrect {
   background-color: var(--correct-bg);
   color: var(--correct-color);
-  border: 1px solid var(--correct-color);
+  border: 1px solid var(--correct-border);
 }
 
 .feedbackIncorrect {
   background-color: var(--incorrect-bg);
   color: var(--incorrect-color);
-  border: 1px solid var(--incorrect-color);
+  border: 1px solid var(--incorrect-border);
 }
 
 .feedbackIcon {
+  width: 1.1rem;
+  height: 1.1rem;
   flex-shrink: 0;
+}
+
+.explanation {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    line-height: 1.4;
 }
 
 /* --- Navigation --- */
@@ -213,7 +362,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* margin-top: 0.75rem; */ /* Added via card gap */
   padding-top: 0.5rem; /* Space above nav */
   border-top: 1px solid var(--border-color); /* Separator */
 }
@@ -234,51 +382,43 @@
 }
 
 .navButton:hover:not(:disabled) {
-  background-color: rgba(79, 70, 229, 0.1); /* Subtle hover */
+  background-color: var(--primary-color-light); /* Subtle hover */
 }
 
 .navButton:focus-visible {
-   outline: 2px solid var(--primary-color);
-   outline-offset: 1px;
-   background-color: rgba(79, 70, 229, 0.1);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+    background-color: var(--primary-color-light);
 }
 
 .navButton:disabled {
-  color: var(--text-secondary);
+  color: var(--text-disabled);
   opacity: 0.5;
   cursor: not-allowed;
   background-color: transparent;
 }
 
-/* --- Error Message Styling --- */
-.errorMessage {
-    color: var(--incorrect-color);
-    font-weight: 500;
-    text-align: center;
-    padding: 1rem;
-}
-
 
 /* --- Animations --- */
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-5px); }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-/* --- Responsive Adjustments (Optional for Cards) --- */
-/* Cards usually adapt well, but you could adjust padding/font size */
-@media (max-width: 640px) {
-  .quizCard {
-    padding: 0.75rem 1rem; /* Slightly less padding on small screens */
-  }
-  .cardTitle {
-    font-size: 1rem;
-  }
-  .questionText {
-    font-size: 0.95rem;
-  }
-  .optionButton {
-    font-size: 0.9rem;
-    padding: 0.6rem 0.8rem;
-  }
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
+
+/* Utility for visually hidden elements */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+

@@ -1,120 +1,197 @@
-/* --- Re-declare variables OR ensure they are globally available --- */
-/* If these are not in a global scope (like index.css), uncomment or add them here */
-/*
+/* CreateQuiz.module.css */
+
+/* --- Base Variables (Copied from QuizPage for consistency) --- */
 :root {
-    --zporta-primary-color: #3498db;
-    --zporta-primary-hover: #2980b9;
-    --zporta-secondary-color: #2c3e50;
-    --zporta-secondary-light: #34495e;
-    --zporta-background-light: #ffffff;
-    --zporta-background-medium: #f9f9f9;
-    --zporta-border-color: #ccc;
-    --zporta-border-light: #ddd;
-    --zporta-success-color: #2ecc71;
-    --zporta-error-color: #e74c3c;
-    --zporta-text-light: #555;
-    --zporta-required-color: #e74c3c;
-    --zporta-font-family: 'Arial', sans-serif;
+  --primary-color: #4f46e5; /* indigo-600 */
+  --primary-color-hover: #4338ca; /* indigo-700 */
+  --primary-color-light: #e0e7ff; /* indigo-100 */
+  --correct-color: #16a34a; /* green-600 */
+  --correct-bg: #f0fdf4; /* green-50 */
+  --correct-border: #86efac; /* green-300 */
+  --incorrect-color: #dc2626; /* red-600 */
+  --incorrect-bg: #fee2e2; /* red-100 */
+  --incorrect-border: #fca5a5; /* red-300 */
+  --error-color-dark: #b91c1c; /* red-700 */ /* Added for consistency */
+  --text-primary: #1f2937; /* gray-800 */
+  --text-secondary: #4b5563; /* gray-600 */
+  --text-light: #6b7280; /* gray-500 */
+  --text-disabled: #9ca3af; /* gray-400 */
+  --bg-light: #ffffff;
+  --bg-subtle: #f9fafb; /* gray-50 */
+  --bg-page: #f3f4f6; /* gray-100 */ /* Background for page */
+  --border-color: #e5e7eb; /* gray-200 */
+  --border-color-medium: #d1d5db; /* gray-300 */
+  --border-radius: 0.75rem; /* 12px */
+  --border-radius-sm: 0.375rem; /* 6px */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --transition-speed: 0.2s;
+  --transition-speed-fast: 0.15s;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --required-color: var(--incorrect-color); /* Use theme color */
 }
-*/
 
 /* --- Container Styling --- */
+/* Assuming this is used as a page, center it */
+.pageWrapper {
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  padding: 1rem;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 .createQuizContainer {
-  padding: 5px; /* Minimal padding for modal use */
-  background: var(--zporta-background-light);
-  font-family: var(--zporta-font-family);
-  /* Remove margin/max-width if primarily in Modal */
-  /* max-width: 800px; */
-  /* margin: 20px auto; */
+  font-family: var(--font-sans);
+  background-color: var(--bg-light);
+  width: 100%;
+  max-width: 800px; /* Slightly wider for form */
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+@media (min-width: 640px) {
+  .pageWrapper { padding: 2rem; }
+  .createQuizContainer { padding: 2rem; }
+}
+@media (min-width: 1024px) {
+  .createQuizContainer { padding: 2.5rem; }
 }
 
 /* --- Modal Form Title --- */
-.modalFormTitle {
-  font-size: 22px;
-  color: var(--zporta-secondary-color);
+.modalFormTitle { /* Renamed from createQuizTitle for clarity */
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
   text-align: center;
-  margin-top: 0;
-  margin-bottom: 20px; /* Slightly less margin before progress bar */
-  font-weight: 600;
+  margin: 0 0 1.5rem 0; /* Consistent margin */
+}
+@media (min-width: 640px) {
+  .modalFormTitle { font-size: 2.25rem; margin-bottom: 2rem;}
 }
 
 /* --- Progress Bar --- */
 .progressContainer {
   width: 100%;
-  height: 8px;
-  background: #e2e8f0; /* Light grey background */
-  border-radius: 4px;
+  height: 10px;
+  background: var(--border-color);
+  border-radius: 99px;
   overflow: hidden;
-  margin-bottom: 25px; /* Space below progress bar */
+  margin-bottom: 1.5rem; /* Consistent spacing */
 }
 
 .progressBar {
   height: 100%;
-  background: var(--zporta-primary-color); /* Use theme color */
-  transition: width 0.4s ease; /* Slightly smoother transition */
-  border-radius: 4px;
+  background: linear-gradient(to right, var(--primary-color), #a78bfa); /* Gradient like QuizPage */
+  transition: width 0.4s ease;
+  border-radius: 99px;
 }
 
-/* --- Message Styling (Same as others) --- */
+/* --- Message Styling --- */
 .message {
-  padding: 10px 15px;
-  margin-bottom: 20px; /* Increase space below message */
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
   text-align: center;
   font-weight: 500;
+  border: 1px solid transparent;
 }
 
 .error {
-  background-color: #fdecea;
-  color: var(--zporta-error-color);
-  border: 1px solid var(--zporta-error-color);
+  background-color: var(--incorrect-bg);
+  color: var(--error-color-dark);
+  border-color: var(--incorrect-border);
 }
 
 .success {
-  background-color: #eafaf1;
-  color: var(--zporta-success-color);
-  border: 1px solid var(--zporta-success-color);
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  border-color: var(--correct-border);
 }
 
 /* --- Form & Step Structure --- */
 .quizForm {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Spacing between steps/elements if form grows */
+  gap: 1.5rem; /* Spacing between steps/navigation */
 }
 
 .step {
-  /* Base styling for steps if needed, used with step1, step2, step3 */
-  border: 1px solid var(--zporta-border-light); /* Optional border around step */
-  border-radius: 6px;
-  padding: 20px;
-  background-color: var(--zporta-background-light);
+  /* Remove border/background from step container itself */
+  /* padding: 20px; */ /* Remove padding here, handled by form groups */
   display: flex;
   flex-direction: column;
-  gap: 18px; /* Space between form groups within a step */
+  gap: 1.25rem; /* Space between form groups within a step */
+  animation: stepFadeIn 0.5s ease-out; /* Add animation */
 }
 
-/* Specific step styles if needed */
-.step1 {}
-.step2 {}
-.step3 {}
+@keyframes stepFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* --- Form Elements --- */
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem; /* Space between label and input */
+}
+/* Style for individual question blocks */
+.questionBlock {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    background-color: var(--bg-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Space within a question block */
+    position: relative; /* For remove button */
+}
+.questionBlock h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color-medium);
+    padding-bottom: 0.5rem;
+}
+.removeQuestionButton {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--incorrect-color);
+    padding: 0.25rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color var(--transition-speed-fast);
+}
+.removeQuestionButton:hover:not(:disabled) {
+    background-color: var(--incorrect-bg);
+}
+.removeQuestionButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.formGroup label {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--zporta-secondary-light);
+
+.formGroup label,
+.inputLabel { /* Added class for consistency */
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .required {
-  color: var(--zporta-required-color);
+  color: var(--required-color);
   margin-left: 2px;
 }
 
@@ -122,13 +199,14 @@
 .inputField,
 .selectField,
 .textAreaField {
-  padding: 10px 12px;
-  border: 1px solid var(--zporta-border-color);
-  border-radius: 5px;
-  font-size: 14px;
-  font-family: inherit; /* Inherit font */
-  color: var(--zporta-secondary-color);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 0.65rem 0.85rem; /* Consistent padding */
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-light);
+  transition: border-color var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease;
   width: 100%;
   box-sizing: border-box;
 }
@@ -136,182 +214,200 @@
 .inputField:focus,
 .selectField:focus,
 .textAreaField:focus {
-  border-color: var(--zporta-primary-color);
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
   outline: none;
 }
-
 .inputField::placeholder,
 .textAreaField::placeholder {
-  color: #aaa;
+  color: var(--text-disabled);
+  opacity: 0.8;
+}
+.inputField:disabled,
+.selectField:disabled,
+.textAreaField:disabled {
+    background-color: var(--bg-subtle);
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .textAreaField {
-  min-height: 80px; /* Give textarea some default height */
-  resize: vertical; /* Allow vertical resize */
+  min-height: 100px;
+  resize: vertical;
 }
 
-/* --- Editor Styling (Same as CreateLesson) --- */
+/* File Input Styling */
+.fileInputGroup {
+    display: flex;
+    gap: 0.75rem; /* Space between text input and file labels */
+    flex-wrap: wrap; /* Allow wrapping */
+    align-items: center;
+}
+.fileInputGroup > .inputField {
+    flex-grow: 1; /* Allow text input to grow */
+}
+
+.fileLabel {
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color var(--transition-speed-fast), border-color var(--transition-speed-fast), color var(--transition-speed-fast);
+  white-space: nowrap;
+}
+.fileLabel:hover {
+  background-color: var(--border-color);
+  border-color: var(--border-color-medium);
+  color: var(--text-primary);
+}
+/* Hide the actual file input */
+.fileLabel input[type="file"] {
+  display: none;
+}
+
+/* Option Group Styling */
+.optionGroup {
+    padding: 0.75rem;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--bg-light);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Space within option group */
+}
+.optionGroup .inputLabel { /* Specific label style for options if needed */
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+
+/* --- Editor Styling --- */
 .editorContainer {
-  margin-top: 10px;
-  border: 1px solid var(--zporta-border-color);
-  border-radius: 5px;
+  margin-top: 0.5rem; /* Space above editor */
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
   padding: 5px;
-  min-height: 150px; /* Adjust height as needed for quiz explanation */
+  min-height: 200px; /* Adjust height */
+  background-color: var(--bg-light);
 }
 
-.editorLabel {
-   font-size: 14px;
-   font-weight: bold;
-   color: var(--zporta-secondary-light);
-   margin-bottom: 8px;
-   display: block;
-}
-
-/* --- Navigation Buttons (Similar to CreateLesson actions) --- */
+/* --- Navigation Buttons --- */
 .navigationButtons {
   display: flex;
-  justify-content: space-between; /* Space out Back/Cancel and Next/Submit */
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  padding-top: 20px;
-  margin-top: 20px;
-  border-top: 1px solid var(--zporta-border-light);
+  gap: 0.75rem;
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
-/* General Button Styles */
+/* General Button Styles - Reuse from QuizPage */
 .btn {
-  padding: 9px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   border: none;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  white-space: nowrap; /* Prevent text wrapping */
+  transition: background-color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
 .btn:disabled {
-  background-color: #bdc3c7 !important;
-  border-color: #bdc3c7 !important; /* Ensure border also changes */
-  color: #fff !important; /* Ensure text color is consistent */
-  cursor: not-allowed;
+  background-color: var(--border-color-medium) !important;
+  color: var(--text-disabled) !important;
+  border-color: var(--border-color-medium) !important;
   opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
   box-shadow: none;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Specific Button Styles */
-.btnPrimary, /* General primary style */
-.btnNext,    /* Next button */
-.btnSubmit   /* Submit button */
-{
-  background-color: var(--zporta-primary-color);
-  color: var(--zporta-background-light);
+.btnNext,
+.btnSubmit {
+  background-color: var(--primary-color);
+  color: var(--bg-light);
 }
-.btnPrimary:hover:not(:disabled),
 .btnNext:hover:not(:disabled),
-.btnSubmit:hover:not(:disabled)
-{
-  background-color: var(--zporta-primary-hover);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.btnSubmit:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
 }
 
-.btnSecondary, /* Cancel button */
-.btnBack       /* Back button */
-{
-  background-color: #ecf0f1;
-  color: var(--zporta-secondary-light);
-  border: 1px solid var(--zporta-border-color);
+.btnBack,
+.btnSecondary { /* Use btnSecondary for Cancel */
+  background-color: var(--bg-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color-medium);
 }
-.btnSecondary:hover:not(:disabled),
-.btnBack:hover:not(:disabled)
-{
-  background-color: #e0e6e8;
-  border-color: #b0b9be;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+.btnBack:hover:not(:disabled),
+.btnSecondary:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
-.btn:active:not(:disabled) {
-   transform: translateY(1px);
+/* Add Question / Remove Question Buttons */
+.btnAddQuestion {
+    composes: btn btnSecondary; /* Inherit secondary style */
+    align-self: flex-start; /* Align to left */
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
 }
-.btnDanger {
-  background-color: var(--zporta-error-color);
-  color: var(--zporta-background-light);
-}
-.btnDanger:hover:not(:disabled) {
-  background-color: #c0392b;
-}
+
+/* --- Info Text --- */
 .infoText {
-  background-color: #fff4e5;
-  color: #663c00;
-  padding: 8px;
-  border-left: 4px solid #ffa500;
-  border-radius: 4px;
-  margin-bottom: 12px;
+  background-color: #fffbeb; /* yellow-50 */
+  color: #b45309; /* yellow-700 */
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #facc15; /* yellow-400 */
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 1rem;
   font-size: 0.9rem;
 }
-/* --- Animation --- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); } /* Slightly less movement */
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animateFadeIn {
-  animation: fadeIn 0.4s ease-in-out; /* Slightly slower */
+.infoText code { /* Style code inside info text */
+    background-color: rgba(250, 204, 21, 0.2); /* yellow-400 with alpha */
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-family: monospace;
 }
 
 
 /* --- Responsive Adjustments --- */
-@media (max-width: 768px) {
-  .modalFormTitle {
-      font-size: 20px;
-  }
-  .step {
-      padding: 15px;
-  }
-}
-
-
 @media (max-width: 600px) {
-  .quizForm {
-      gap: 15px;
-  }
-  .formGroup label {
-      font-size: 13px;
-  }
-  .inputField,
-  .selectField,
-  .textAreaField {
-      font-size: 13px;
-      padding: 9px 10px;
-  }
-
-  .navigationButtons {
-      gap: 8px; /* Reduce gap slightly */
-      /* Let buttons potentially wrap if needed, though flex-end push might handle it */
-  }
-
-  .btn {
-      padding: 8px 15px; /* Smaller padding */
-      font-size: 13px;
-  }
+  .createQuizContainer { padding: 1rem; }
+  .modalFormTitle { font-size: 1.5rem; }
+  .step { gap: 1rem; }
+  .formGroup label, .inputLabel { font-size: 0.85rem; }
+  .inputField, .selectField, .textAreaField { font-size: 0.95rem; padding: 0.6rem 0.75rem; }
+  .fileLabel { font-size: 0.8rem; padding: 0.4rem 0.7rem; }
+  .navigationButtons { flex-wrap: wrap; justify-content: center; } /* Allow wrapping */
+  .btn { font-size: 0.9rem; padding: 0.6rem 1.2rem; }
+  .questionBlock { padding: 0.75rem; }
+  .questionBlock h4 { font-size: 1rem; }
+  .removeQuestionButton { top: 0.5rem; right: 0.5rem; }
 }
 
-@media (max-width: 450px) {
-   .navigationButtons {
-      /* Stack buttons for very small screens */
-      flex-direction: column;
-      gap: 10px;
-      align-items: stretch; /* Make buttons full width */
-   }
-   .navigationButtons > button:not(:first-child) {
-       margin-left: 0; /* Remove any auto margins */
-   }
-    /* Ensure cancel stays first visually if using flex-direction: column */
-   .btnSecondary { order: 1; }
-   .btnBack { order: 2; }
-   .btnNext { order: 3; }
-   .btnSubmit { order: 3; } /* Next and Submit share order */
-
-}
