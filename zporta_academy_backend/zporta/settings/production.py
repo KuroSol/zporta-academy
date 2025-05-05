@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
 # --- STEP 2: Update CSRF_TRUSTED_ORIGINS ---
 # Trust requests coming from your domain via HTTPS (Cloudflare handles the HTTPS)
 CSRF_TRUSTED_ORIGINS = [
-    'http://18.176.206.74', # Keep IP if needed (use http if accessing directly without SSL)
+    'https://18.176.206.74', # Keep IP if needed (use http if accessing directly without SSL)
     'http://127.0.0.1',      # Keep localhost
     'https://zportaacademy.com',    # Trust your domain with HTTPS
     'https://www.zportaacademy.com', # Trust www subdomain with HTTPS
