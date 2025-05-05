@@ -16,9 +16,20 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const [title       , setTitle       ] = useState('');
   const [quizType    , setQuizType    ] = useState('free');
   const [subjectOption, setSubjectOption] = useState(null);
-  const [questions   , setQuestions   ] = useState([
-    { question_text: '', option1:'', option2:'', option3:'', option4:'', correct_option:1, hint1:'', hint2:'' }
+  const [questions, setQuestions] = useState([
+    {
+      question_text: '',
+      question_image: null,
+      question_audio: null,
+      option1: '', option1_image: null, option1_audio: null,
+      option2: '', option2_image: null, option2_audio: null,
+      option3: '', option3_image: null, option3_audio: null,
+      option4: '', option4_image: null, option4_audio: null,
+      correct_option: 1,
+      hint1: '', hint2: ''
+    }
   ]);
+  
   const [hint1       , setHint1       ] = useState('');
   const [hint2       , setHint2       ] = useState('');
   const [tags        , setTags        ] = useState('');
@@ -103,32 +114,107 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       setSubmitting(false);
       return;
     }
-
-    // --- Build payload ---
-    const tagsArray = tags
-      ? tags.split(',').map(t => t.trim()).filter(t => t)
-      : [];
-    const payload = {
-      title,
-      quiz_type: quizType,
-      content,
-      subject: subjectOption.isNew ? subjectOption.label : subjectOption.value,
-      questions,
-      tags: tagsArray,
-    };
-
-    try {
-      const res = quizId
-      ? await apiClient.patch(
-          `/quizzes/${quizId}/edit/`,         // ← correct endpoint
-          payload,
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-        )
-      : await apiClient.post(
-          '/quizzes/',
-          payload,
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        // Build multipart form data:
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('quiz_type', quizType);
+        formData.append('content', content);
+        formData.append(
+          'subject',
+          subjectOption.isNew ? subjectOption.label : subjectOption.value
         );
+
+        // tags as an array field:
+        tags
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean)
+          .forEach((tag, idx) => {
+            formData.append(`tags[${idx}]`, tag);
+          });
+
+        // questions (including files):
+        questions.forEach((q, qi) => {
+
+
+          if (q.question_image)
+            formData.append(
+              `questions[${qi}][question_image]`,
+              q.question_image
+            );
+          if (q.question_audio)
+            formData.append(
+              `questions[${qi}][question_audio]`,
+              q.question_audio
+            );
+
+          [1, 2, 3, 4].forEach(n => {
+            formData.append(
+              `questions[${qi}][option${n}]`,
+              q[`option${n}`] || ''
+            );
+            if (q[`option${n}_image`])
+              formData.append(
+                `questions[${qi}][option${n}_image]`,
+                q[`option${n}_image`]
+              );
+            if (q[`option${n}_audio`])
+              formData.append(
+                `questions[${qi}][option${n}_audio]`,
+                q[`option${n}_audio`]
+              );
+          });
+        });
+
+        questions.forEach((q, qi) => {
+          formData.append(`questions[${qi}]question_text`, q.question_text);
+          formData.append(`questions[${qi}]option1`, q.option1);
+          formData.append(`questions[${qi}]option2`, q.option2);
+          formData.append(`questions[${qi}]option3`, q.option3 || '');
+          formData.append(`questions[${qi}]option4`, q.option4 || '');
+          formData.append(`questions[${qi}]correct_option`, q.correct_option);
+          formData.append(`questions[${qi}]hint1`, q.hint1 || '');
+          formData.append(`questions[${qi}]hint2`, q.hint2 || '');
+        
+          if (q.question_image) {
+            formData.append(`questions[${qi}]question_image`, q.question_image);
+          }
+        
+          if (q.question_audio) {
+            formData.append(`questions[${qi}]question_audio`, q.question_audio);
+          }
+        
+          [1, 2, 3, 4].forEach(opt => {
+            if (q[`option${opt}_image`]) {
+              formData.append(`questions[${qi}]option${opt}_image`, q[`option${opt}_image`]);
+            }
+            if (q[`option${opt}_audio`]) {
+              formData.append(`questions[${qi}]option${opt}_audio`, q[`option${opt}_audio`]);
+            }
+          });
+        });
+        
+            try {
+                // 1) Prepare headers for multipart/form-data:
+                const config = {
+                  headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'multipart/form-data'
+                  }
+                };
+          
+                // 2) Use formData (not payload) when sending:
+                const res = quizId
+                ? await apiClient.patch(
+                    `/quizzes/${quizId}/edit/`,
+                    formData,
+                    config
+                  )
+                : await apiClient.post(
+                    '/quizzes/',
+                    formData,
+                    config
+                  );
     
 
       const newQuiz = res.data;
@@ -237,12 +323,14 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
           </div>
         )}
 
-        {/* --- STEP 2: Questions --- */}
+        {/* --- STEP 2: Questions (with image/audio) --- */}
         {currentStep === 2 && (
           <div className={`${styles.step} ${styles.step2}`}>
             {questions.map((q, i) => (
               <div key={i} className={styles.formGroup}>
                 <h4>Question {i + 1}</h4>
+
+                {/* Question Text */}
                 <textarea
                   className={styles.textAreaField}
                   placeholder="Question text"
@@ -251,34 +339,66 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                   required
                   disabled={submitting}
                 />
-                <input
-                  className={styles.inputField}
-                  placeholder="Option 1"
-                  value={q.option1}
-                  onChange={e => updateQuestion(i, 'option1', e.target.value)}
-                  required disabled={submitting}
-                />
-                <input
-                  className={styles.inputField}
-                  placeholder="Option 2"
-                  value={q.option2}
-                  onChange={e => updateQuestion(i, 'option2', e.target.value)}
-                  required disabled={submitting}
-                />
-                <input
-                  className={styles.inputField}
-                  placeholder="Option 3 (optional)"
-                  value={q.option3}
-                  onChange={e => updateQuestion(i, 'option3', e.target.value)}
-                  disabled={submitting}
-                />
-                <input
-                  className={styles.inputField}
-                  placeholder="Option 4 (optional)"
-                  value={q.option4}
-                  onChange={e => updateQuestion(i, 'option4', e.target.value)}
-                  disabled={submitting}
-                />
+
+                {/* Question Image Upload */}
+                <label className={styles.fileLabel}>
+                  📷 Question Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => updateQuestion(i, 'question_image', e.target.files[0])}
+                    disabled={submitting}
+                  />
+                </label>
+
+                {/* Question Audio Upload */}
+                <label className={styles.fileLabel}>
+                  🔊 Question Audio
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={e => updateQuestion(i, 'question_audio', e.target.files[0])}
+                    disabled={submitting}
+                  />
+                </label>
+
+                {/* Options 1–4 */}
+                {[1,2,3,4].map(n => (
+                  <div key={n} className={styles.optionGroup}>
+                    <input
+                      className={styles.inputField}
+                      placeholder={`Option ${n}${n<=2 ? '' : ' (optional)'}`}
+                      value={q[`option${n}`]}
+                      onChange={e => updateQuestion(i, `option${n}`, e.target.value)}
+                      required={n<=2}
+                      disabled={submitting}
+                    />
+
+                    {/* Option Image */}
+                    <label className={styles.fileLabel}>
+                      📷 Option {n} Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => updateQuestion(i, `option${n}_image`, e.target.files[0])}
+                        disabled={submitting}
+                      />
+                    </label>
+
+                    {/* Option Audio */}
+                    <label className={styles.fileLabel}>
+                      🔊 Option {n} Audio
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={e => updateQuestion(i, `option${n}_audio`, e.target.files[0])}
+                        disabled={submitting}
+                      />
+                    </label>
+                  </div>
+                ))}
+
+                {/* Correct answer selector */}
                 <select
                   className={styles.selectField}
                   value={q.correct_option}
@@ -290,6 +410,8 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                   <option value={3}>Option 3</option>
                   <option value={4}>Option 4</option>
                 </select>
+
+                {/* Hints */}
                 <textarea
                   className={styles.textAreaField}
                   placeholder="Hint 1 (optional)"
@@ -304,6 +426,8 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                   onChange={e => updateQuestion(i, 'hint2', e.target.value)}
                   disabled={submitting}
                 />
+
+                {/* Remove this question */}
                 <button
                   type="button"
                   onClick={() => removeQuestion(i)}
@@ -314,6 +438,8 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                 </button>
               </div>
             ))}
+
+            {/* Add another question */}
             <button
               type="button"
               onClick={addNewQuestion}
@@ -324,6 +450,7 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
             </button>
           </div>
         )}
+
 
         {/* --- STEP 3: Hints, Tags & Explanation --- */}
         {currentStep === 3 && (

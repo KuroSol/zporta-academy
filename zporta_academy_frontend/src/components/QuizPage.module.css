@@ -106,7 +106,15 @@
   gap: 0.75rem; /* Space between options */
   margin-bottom: 1.5rem;
 }
-
+/* Media inside option buttons */
+.optionMedia {
+  width: 100%;
+  max-height: 150px;        /* smaller frame for options */
+  object-fit: contain;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0.75rem;
+}
 /* --- Option Button Styling --- */
 .optionButton {
   display: flex; /* Use flex for alignment if needed */
@@ -207,6 +215,21 @@
 
 .feedbackIcon {
   flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* Question media in the flash-card */
+.mediaImage {
+  width: 100%;
+  max-height: 300px;        /* limit height */
+  object-fit: contain;      /* preserve ratio, letterbox if needed */
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.mediaAudio {
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .correctAnswerText {
@@ -362,6 +385,45 @@
 }
 
 /* --- Responsive Design (Mobile First Approach) --- */
+
+
+/* Flash-card wrapper and faces */
+.flashCard {
+  perspective: 1000px;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.cardFront,
+.cardBack {
+  width: 100%;
+  backface-visibility: hidden;
+  transition: transform var(--transition-speed);
+  transform-style: preserve-3d;
+  border-radius: var(--border-radius);
+  position: absolute;
+  top: 0; left: 0;
+}
+
+.cardFront {
+  transform: rotateY(0deg);
+}
+
+.cardBack {
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-subtle);
+}
+
+/* When flipped, show back & hide front */
+.flipped .cardFront {
+  transform: rotateY(-180deg);
+}
+.flipped .cardBack {
+  transform: rotateY(0deg);
+}
 
 /* Base styles are mobile */
 
