@@ -2,53 +2,45 @@
 
 import React from 'react';
 import {
-  PieChart,
-  Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
   Cell,
-  Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LabelList
 } from 'recharts';
 import './ScoreChart.css';
 
-// COLORS: index 0 = filled score, index 1 = remaining
-const COLORS = ['#ffc107', '#e0e0e0'];
-
 export default function ScoreChart({ score }) {
-  // Clamp score between 0 and 100
-  const percent = Math.max(0, Math.min(100, score));
+  const clampedScore = Math.max(0, Math.min(100, score));
+
   const data = [
-    { name: 'Score',     value: percent },
-    { name: 'Remaining', value: 100 - percent }
+    { name: 'Score', value: clampedScore },
   ];
 
+  const getBarColor = (score) => {
+    if (score >= 80) return '#27ae60'; // green
+    if (score >= 50) return '#e67e22'; // orange
+    return '#c0392b'; // red
+  };
+
   return (
-    <ResponsiveContainer width={120} height={120}>
-      <PieChart>
-        <Pie
+    <div className="user-score-container">
+      <ResponsiveContainer width={120} height={60}>
+        <BarChart
           data={data}
-          dataKey="value"
-          startAngle={90}
-          endAngle={-270}
-          innerRadius={40}
-          outerRadius={55}
-          paddingAngle={0}
-          isAnimationActive={false}
+          layout="vertical"
+          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
         >
-          {data.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={COLORS[index]}
-              stroke="none"
-            />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value, name) => [`${value}%`, name]}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+          <XAxis type="number" hide domain={[0, 100]} />
+          <YAxis type="category" dataKey="name" hide />
+          <Bar dataKey="value" radius={[5, 5, 5, 5]}>
+            <Cell fill={getBarColor(clampedScore)} />
+            <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
-
-
-

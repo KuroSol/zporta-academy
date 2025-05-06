@@ -51,6 +51,7 @@ const QuizAttempts = () => {
   // --- State Variables ---
   const [aggregatedAttempts, setAggregatedAttempts] = useState([]);
   const [userScoresBySubject, setUserScoresBySubject] = useState({});
+  const [retentionInsights, setRetentionInsights] = useState({}); 
   const [loadingAttempts, setLoadingAttempts] = useState(true); // Specific loading state
   const [loadingScores, setLoadingScores] = useState(true); // Specific loading state
   const [attemptsError, setAttemptsError] = useState("");
@@ -144,11 +145,26 @@ const QuizAttempts = () => {
     }
   }, [token]);
 
+  const fetchRetention = useCallback(async () => {
+        try {
+          const { data } = await apiClient.get('/quiz-retention-insights/',
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          // convert list to map by quiz_id for quick lookup
+          const map = {};
+          data.forEach(item => { map[item.quiz_id] = item; });
+          setRetentionInsights(map);
+        } catch (err) {
+          console.error('Failed to fetch retention insights:', err);
+        }
+      }, [token]);
+
   // --- Effect to Fetch Data ---
   useEffect(() => {
     if (token) {
       fetchAttempts();
       fetchUserScore();
+      fetchRetention();
     } else {
       setLoadingAttempts(false);
       setLoadingScores(false);
@@ -249,6 +265,46 @@ const QuizAttempts = () => {
                         <p><span>Correct:</span> <span className={styles.statCorrect}>{attempt.correct}</span></p>
                         <p><span>Wrong:</span> <span className={styles.statWrong}>{attempt.wrong}</span></p>
                      </div>
+                    {/* retention message below stats */}
+                    {retentionInsights[attempt.quizId] && (
+                        <div className={styles.retentionBlock}>
+                          <p className={styles.lastAttempt}>
+                            Last attempt: {formatDate(retentionInsights[attempt.quizId].last_attempt)}
+                          </p>
+                          <p className={styles.correctWrong}>
+                            ✅ {retentionInsights[attempt.quizId].correct} correct | ❌ {retentionInsights[attempt.quizId].wrong} wrong
+                          </p>
+                          <div className={styles.retentionMeterRow}>
+                            <span className={styles.retentionLabel}>Memory Strength:</span>
+                            <div className={styles.retentionMeter}>
+                              <div
+                                className={styles.retentionMeterFill}
+                                style={{
+                                  width: `${Math.min(100, (retentionInsights[attempt.quizId].retention_days / 30) * 100)}%`,
+                                  backgroundColor:
+                                    retentionInsights[attempt.quizId].retention_days >= 21
+                                      ? 'var(--success-color)'
+                                      : retentionInsights[attempt.quizId].retention_days >= 7
+                                      ? 'var(--secondary-color)'
+                                      : 'var(--error-color)',
+                                }}
+                              />
+                            </div>
+                            <span className={styles.retentionDays}>
+                              {retentionInsights[attempt.quizId].retention_days} day{retentionInsights[attempt.quizId].retention_days !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                            <p className={styles.retentionMessage}>
+                              {retentionInsights[attempt.quizId].retention_days >= 30
+                                ? "🧠 "
+                                : retentionInsights[attempt.quizId].retention_days >= 7
+                                ? "📚 "
+                                : "⚠️ "}
+                              {retentionInsights[attempt.quizId].message}
+                            </p>
+                        </div>
+                      )}
+
                    </div>
                    <div className={styles.cardFooter}>
                      {attempt.quiz_permalink ? (

@@ -1,11 +1,13 @@
 /* src/components/ScoreChart.css */
 
 .user-score-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
   
   .score-description {
     font-size: 0.9rem;
