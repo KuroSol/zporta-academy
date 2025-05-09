@@ -10,6 +10,7 @@ class QuestionInline(admin.StackedInline):
 
     # Show all new media fields alongside existing ones
     fields = [
+        'question_type',
         'question_text',
         'question_image',
         'question_image_alt',
@@ -31,6 +32,8 @@ class QuestionInline(admin.StackedInline):
         'option4_image_alt',
         'option4_audio',
         'correct_option',
+        'correct_options',
+        'question_data',
         'hint1',
         'hint2',
     ]

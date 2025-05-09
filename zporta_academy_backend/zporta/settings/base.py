@@ -88,10 +88,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'email-smtp.ap-northeast-1.amazonaws.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'AKIAVWABJTZQAEPJTKCH'
-EMAIL_HOST_PASSWORD = 'BOpN9hWAWh4R5vfcZdll3eloe9bU2Sia0arrGaIdctxK'
+EMAIL_HOST_USER = 'AKIAVWABJTZQJOGKRXFZ'  # ✅ new SMTP Access Key
+EMAIL_HOST_PASSWORD = 'BFzrQMiFT3koFHOKhRNGm7TKpLkg2bJT8f39dHsciKbP'  # ✅ new SMTP password
 DEFAULT_FROM_EMAIL = 'info@zportaacademy.com'
 STATIC_URL = '/django-static/'
+
 
 
 AUTH_PASSWORD_VALIDATORS = [
