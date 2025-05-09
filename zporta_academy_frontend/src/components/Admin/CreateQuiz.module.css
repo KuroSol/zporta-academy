@@ -1,6 +1,8 @@
 /* CreateQuiz.module.css */
 
-/* --- Base Variables (Copied from QuizPage for consistency) --- */
+/* ==========================================================================
+   Base Variables (Consistent with QuizPage)
+   ========================================================================== */
 :root {
   --primary-color: #4f46e5; /* indigo-600 */
   --primary-color-hover: #4338ca; /* indigo-700 */
@@ -11,14 +13,14 @@
   --incorrect-color: #dc2626; /* red-600 */
   --incorrect-bg: #fee2e2; /* red-100 */
   --incorrect-border: #fca5a5; /* red-300 */
-  --error-color-dark: #b91c1c; /* red-700 */ /* Added for consistency */
+  --error-color-dark: #b91c1c; /* red-700 */
   --text-primary: #1f2937; /* gray-800 */
   --text-secondary: #4b5563; /* gray-600 */
   --text-light: #6b7280; /* gray-500 */
   --text-disabled: #9ca3af; /* gray-400 */
   --bg-light: #ffffff;
   --bg-subtle: #f9fafb; /* gray-50 */
-  --bg-page: #f3f4f6; /* gray-100 */ /* Background for page */
+  --bg-page: #f3f4f6; /* gray-100 */
   --border-color: #e5e7eb; /* gray-200 */
   --border-color-medium: #d1d5db; /* gray-300 */
   --border-radius: 0.75rem; /* 12px */
@@ -29,71 +31,189 @@
   --transition-speed: 0.2s;
   --transition-speed-fast: 0.15s;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --required-color: var(--incorrect-color); /* Use theme color */
+  --required-color: var(--incorrect-color);
 }
 
-/* --- Container Styling --- */
-/* Assuming this is used as a page, center it */
+/* ==========================================================================
+   Page and Container Layout
+   ========================================================================== */
 .pageWrapper {
   font-family: var(--font-sans);
   background-color: var(--bg-page);
-  padding: 1rem;
+  padding: 1rem; /* Default padding for mobile */
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: flex-start; /* Align to top for long forms */
 }
 
 .createQuizContainer {
   font-family: var(--font-sans);
   background-color: var(--bg-light);
   width: 100%;
-  max-width: 800px; /* Slightly wider for form */
-  margin: 2rem 0;
+  max-width: 800px; /* Max width for the form container */
+  margin: 2rem auto; /* Centering with auto margins */
   padding: 1.5rem;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
 }
 
-@media (min-width: 640px) {
+/* Responsive adjustments for container padding */
+@media (min-width: 640px) { /* sm */
   .pageWrapper { padding: 2rem; }
   .createQuizContainer { padding: 2rem; }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1024px) { /* lg */
   .createQuizContainer { padding: 2.5rem; }
 }
 
-/* --- Modal Form Title --- */
-.modalFormTitle { /* Renamed from createQuizTitle for clarity */
-  font-size: 1.75rem;
+/* ==========================================================================
+   General Button Styles (Primary, Secondary, Micro)
+   Moved UP to be available for 'composes'
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent; /* Add base border for consistency */
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease, border-color var(--transition-speed-fast) ease;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  text-align: center; /* Ensure text is centered */
+}
+
+.btn:disabled {
+  background-color: var(--border-color-medium) !important; /* Use important to override specifics if needed */
+  color: var(--text-disabled) !important;
+  border-color: var(--border-color-medium) !important;
+  opacity: 0.6; /* Slightly less opaque */
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btnNext,
+.btnSubmit {
+  composes: btn; /* Compose from base btn */
+  background-color: var(--primary-color);
+  color: var(--bg-light);
+  border-color: var(--primary-color); /* Ensure border matches */
+}
+.btnNext:hover:not(:disabled),
+.btnSubmit:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+  border-color: var(--primary-color-hover);
+}
+
+.btnBack,
+.btnSecondary {
+  composes: btn; /* Compose from base btn */
+  background-color: var(--bg-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color-medium);
+}
+.btnBack:hover:not(:disabled),
+.btnSecondary:hover:not(:disabled) {
+  background-color: var(--bg-subtle);
+  border-color: var(--text-primary); /* Darker border on hover */
+  color: var(--text-primary);
+}
+
+/* Micro buttons for list item actions etc. */
+.btnMicro, .btnMicroDelete {
+  background: transparent;
+  border: 1px solid var(--border-color-medium);
+  color: var(--text-secondary);
+  padding: 0.3rem; /* Slightly adjusted padding */
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-speed-fast);
+  line-height: 1; /* Ensure icon is centered */
+}
+.btnMicro:hover:not(:disabled) {
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.btnMicroDelete { /* Specific hover for delete */
+  composes: btnMicro; /* Inherit base micro style */
+}
+.btnMicroDelete:hover:not(:disabled) {
+  background-color: var(--incorrect-bg);
+  border-color: var(--incorrect-color);
+  color: var(--incorrect-color);
+}
+.btnMicro:disabled, .btnMicroDelete:disabled { /* Combined disabled state */
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Buttons for adding items/questions */
+.btnAddItem {
+  composes: btn btnSecondary; /* Now btn and btnSecondary are defined above */
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  align-self: flex-start;
+  margin-top: 0.75rem;
+}
+
+.btnAddQuestion {
+  composes: btn btnSecondary; /* Now btn and btnSecondary are defined above */
+  align-self: flex-start;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+}
+
+
+/* ==========================================================================
+   Typography & Common Elements
+   ========================================================================== */
+.modalFormTitle {
+  font-size: 1.75rem; /* Mobile first */
   font-weight: 700;
   color: var(--text-primary);
   text-align: center;
-  margin: 0 0 1.5rem 0; /* Consistent margin */
+  margin: 0 0 1.5rem 0;
 }
-@media (min-width: 640px) {
-  .modalFormTitle { font-size: 2.25rem; margin-bottom: 2rem;}
+@media (min-width: 640px) { /* sm */
+  .modalFormTitle { font-size: 2rem; margin-bottom: 2rem;}
 }
 
-/* --- Progress Bar --- */
 .progressContainer {
   width: 100%;
   height: 10px;
   background: var(--border-color);
-  border-radius: 99px;
+  border-radius: 99px; /* Pill shape */
   overflow: hidden;
-  margin-bottom: 1.5rem; /* Consistent spacing */
+  margin-bottom: 1.5rem;
 }
 
 .progressBar {
   height: 100%;
-  background: linear-gradient(to right, var(--primary-color), #a78bfa); /* Gradient like QuizPage */
+  background: linear-gradient(to right, var(--primary-color), #a78bfa);
   transition: width 0.4s ease;
   border-radius: 99px;
 }
 
-/* --- Message Styling --- */
 .message {
   padding: 0.75rem 1rem;
   margin-bottom: 1.5rem;
@@ -116,20 +236,36 @@
   border-color: var(--correct-border);
 }
 
-/* --- Form & Step Structure --- */
+.infoText {
+  background-color: #fffbeb; /* yellow-50 */
+  color: #b45309; /* yellow-700 */
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #facc15; /* yellow-400 */
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.infoText code {
+  background-color: rgba(250, 204, 21, 0.2); /* yellow-400 with alpha */
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* ==========================================================================
+   Form Structure & Steps
+   ========================================================================== */
 .quizForm {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Spacing between steps/navigation */
+  gap: 1.5rem; /* Overall spacing for form elements */
 }
 
 .step {
-  /* Remove border/background from step container itself */
-  /* padding: 20px; */ /* Remove padding here, handled by form groups */
   display: flex;
   flex-direction: column;
-  gap: 1.25rem; /* Space between form groups within a step */
-  animation: stepFadeIn 0.5s ease-out; /* Add animation */
+  gap: 1.5rem; /* Increased gap for better separation of groups within a step */
+  animation: stepFadeIn 0.5s ease-out;
 }
 
 @keyframes stepFadeIn {
@@ -137,69 +273,32 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Form Elements --- */
+/* ==========================================================================
+   Form Groups & Input Elements
+   ========================================================================== */
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Space between label and input */
-}
-/* Style for individual question blocks */
-.questionBlock {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    background-color: var(--bg-subtle);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem; /* Space within a question block */
-    position: relative; /* For remove button */
-}
-.questionBlock h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color-medium);
-    padding-bottom: 0.5rem;
-}
-.removeQuestionButton {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: transparent;
-    border: none;
-    color: var(--incorrect-color);
-    padding: 0.25rem;
-    cursor: pointer;
-    border-radius: 50%;
-    transition: background-color var(--transition-speed-fast);
-}
-.removeQuestionButton:hover:not(:disabled) {
-    background-color: var(--incorrect-bg);
-}
-.removeQuestionButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  gap: 0.5rem; /* Space between label and its input/control */
 }
 
-
-.formGroup label,
-.inputLabel { /* Added class for consistency */
+.inputLabel {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-secondary);
+  display: block; /* Ensure label takes full width if needed */
 }
 
 .required {
   color: var(--required-color);
   margin-left: 2px;
+  font-weight: 600; /* Make asterisk slightly bolder */
 }
 
-/* Input, Select, Textarea Styling */
 .inputField,
 .selectField,
 .textAreaField {
-  padding: 0.65rem 0.85rem; /* Consistent padding */
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border-color-medium);
   border-radius: var(--border-radius-sm);
   font-size: 1rem;
@@ -215,199 +314,258 @@
 .selectField:focus,
 .textAreaField:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--primary-color-light);
+  box-shadow: 0 0 0 3px var(--primary-color-light);
   outline: none;
 }
+
 .inputField::placeholder,
 .textAreaField::placeholder {
-  color: var(--text-disabled);
-  opacity: 0.8;
+  color: var(--text-light);
+  opacity: 0.7;
 }
+
 .inputField:disabled,
 .selectField:disabled,
 .textAreaField:disabled {
-    background-color: var(--bg-subtle);
-    cursor: not-allowed;
-    opacity: 0.7;
+  background-color: var(--bg-subtle);
+  color: var(--text-disabled);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .textAreaField {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
 }
 
-/* File Input Styling */
+/* --- Checkbox Specific Styling --- */
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  margin-right: 0.25rem;
+}
+
+/* ==========================================================================
+   File Input Styling
+   ========================================================================== */
 .fileInputGroup {
-    display: flex;
-    gap: 0.75rem; /* Space between text input and file labels */
-    flex-wrap: wrap; /* Allow wrapping */
-    align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
 .fileInputGroup > .inputField {
-    flex-grow: 1; /* Allow text input to grow */
+  flex-grow: 1;
+  min-width: 150px;
 }
 
 .fileLabel {
-  display: inline-flex; /* Align icon and text */
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.8rem;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
   background-color: var(--bg-subtle);
   color: var(--text-secondary);
   border: 1px solid var(--border-color-medium);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: background-color var(--transition-speed-fast), border-color var(--transition-speed-fast), color var(--transition-speed-fast);
   white-space: nowrap;
 }
 .fileLabel:hover {
   background-color: var(--border-color);
-  border-color: var(--border-color-medium);
-  color: var(--text-primary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
-/* Hide the actual file input */
 .fileLabel input[type="file"] {
   display: none;
 }
 
-/* Option Group Styling */
+.existingFile {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-left: 0.5rem;
+  padding: 0.25rem 0;
+}
+.existingFile a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+.existingFile a:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Question Block & Option Group Styling
+   ========================================================================== */
+.questionBlock {
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  background-color: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.questionBlock h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.removeQuestionButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--incorrect-color);
+  padding: 0.35rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color var(--transition-speed-fast), transform var(--transition-speed-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.removeQuestionButton:hover:not(:disabled) {
+  background-color: var(--incorrect-bg);
+  transform: scale(1.1);
+}
+.removeQuestionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .optionGroup {
-    padding: 0.75rem;
-    border: 1px dashed var(--border-color);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--bg-light);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Space within option group */
+  padding: 1rem;
+  border: 1px dashed var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-light);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
-.optionGroup .inputLabel { /* Specific label style for options if needed */
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-light);
+.optionGroup .inputLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
+/* --- Media Upload Specific --- */
+.mediaUploadRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.mediaUploadRow .formGroup {
+  flex: 1;
+  min-width: 220px;
+}
 
-/* --- Editor Styling --- */
+/* ==========================================================================
+   Complex Question Type Items (EditableListItem, Word Sort, Drag & Drop)
+   ========================================================================== */
+.questionDataItemList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-left: 0;
+  margin-top: 0.5rem;
+}
+.questionDataItemList .inputField {
+  font-size: 0.95rem;
+  padding: 0.6rem 0.8rem;
+}
+
+/* ==========================================================================
+   Rich Text Editor Styling
+   ========================================================================== */
 .editorContainer {
-  margin-top: 0.5rem; /* Space above editor */
+  margin-top: 0.5rem;
   border: 1px solid var(--border-color-medium);
   border-radius: var(--border-radius-sm);
-  padding: 5px;
-  min-height: 200px; /* Adjust height */
+  padding: 0.5rem;
+  min-height: 200px;
   background-color: var(--bg-light);
+  box-shadow: var(--shadow-sm);
 }
 
-/* --- Navigation Buttons --- */
+/* ==========================================================================
+   Navigation Buttons (Container)
+   ========================================================================== */
 .navigationButtons {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   padding-top: 1.5rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
-/* General Button Styles - Reuse from QuizPage */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-sm);
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease;
-  box-shadow: var(--shadow-sm);
-  white-space: nowrap;
+/* ==========================================================================
+   Responsive Adjustments
+   ========================================================================== */
+@media (max-width: 768px) { /* md breakpoint */
+  .createQuizContainer {
+    margin: 1rem auto;
+  }
+  .navigationButtons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .navigationButtons > div[style*="flex-grow: 1"] {
+    display: none;
+  }
+  .fileInputGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fileInputGroup > .inputField {
+    min-width: 0;
+  }
 }
 
-.btn:disabled {
-  background-color: var(--border-color-medium) !important;
-  color: var(--text-disabled) !important;
-  border-color: var(--border-color-medium) !important;
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.btn:active:not(:disabled) {
-  transform: translateY(0px);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Specific Button Styles */
-.btnNext,
-.btnSubmit {
-  background-color: var(--primary-color);
-  color: var(--bg-light);
-}
-.btnNext:hover:not(:disabled),
-.btnSubmit:hover:not(:disabled) {
-  background-color: var(--primary-color-hover);
-}
-
-.btnBack,
-.btnSecondary { /* Use btnSecondary for Cancel */
-  background-color: var(--bg-light);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color-medium);
-}
-.btnBack:hover:not(:disabled),
-.btnSecondary:hover:not(:disabled) {
-  background-color: var(--bg-subtle);
-  border-color: var(--text-secondary);
-  color: var(--text-primary);
-}
-
-/* Add Question / Remove Question Buttons */
-.btnAddQuestion {
-    composes: btn btnSecondary; /* Inherit secondary style */
-    align-self: flex-start; /* Align to left */
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-}
-
-/* --- Info Text --- */
-.infoText {
-  background-color: #fffbeb; /* yellow-50 */
-  color: #b45309; /* yellow-700 */
-  padding: 0.75rem 1rem;
-  border-left: 4px solid #facc15; /* yellow-400 */
-  border-radius: var(--border-radius-sm);
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-.infoText code { /* Style code inside info text */
-    background-color: rgba(250, 204, 21, 0.2); /* yellow-400 with alpha */
-    padding: 0.1em 0.3em;
-    border-radius: 3px;
-    font-family: monospace;
-}
-
-
-/* --- Responsive Adjustments --- */
-@media (max-width: 600px) {
+@media (max-width: 600px) { /* sm breakpoint */
   .createQuizContainer { padding: 1rem; }
   .modalFormTitle { font-size: 1.5rem; }
   .step { gap: 1rem; }
-  .formGroup label, .inputLabel { font-size: 0.85rem; }
-  .inputField, .selectField, .textAreaField { font-size: 0.95rem; padding: 0.6rem 0.75rem; }
-  .fileLabel { font-size: 0.8rem; padding: 0.4rem 0.7rem; }
-  .navigationButtons { flex-wrap: wrap; justify-content: center; } /* Allow wrapping */
-  .btn { font-size: 0.9rem; padding: 0.6rem 1.2rem; }
-  .questionBlock { padding: 0.75rem; }
-  .questionBlock h4 { font-size: 1rem; }
-  .removeQuestionButton { top: 0.5rem; right: 0.5rem; }
+  .inputLabel { font-size: 0.85rem; }
+  .inputField, .selectField, .textAreaField { font-size: 0.95rem; padding: 0.65rem 0.85rem; }
+  .fileLabel { font-size: 0.85rem; padding: 0.6rem 0.8rem; }
+  .btn { font-size: 0.95rem; padding: 0.7rem 1.3rem; }
+  .questionBlock { padding: 1rem; gap: 1rem; }
+  .questionBlock h4 { font-size: 1.1rem; }
+  .removeQuestionButton { top: 0.75rem; right: 0.75rem; padding: 0.3rem; }
+  .optionGroup { padding: 0.75rem; gap: 0.75rem; }
 }
-

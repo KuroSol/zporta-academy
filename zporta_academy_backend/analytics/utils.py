@@ -85,17 +85,26 @@ def predict_retention_days(user, quiz):
 
     for event in all_answer_events:
         qid = event.metadata.get('question_id')
+        qtype = event.metadata.get('question_type', 'unknown')
+        is_correct = event.metadata.get('is_correct', False)
+
         if not qid or qid in processed_questions:
             continue
+
         processed_questions.add(qid)
         total_attempts += 1
-        if event.metadata.get('is_correct', False):
+
+        print(f"[DEBUG] Q{qid} ({qtype}) → {'✔' if is_correct else '✘'} at {event.timestamp}")
+
+        if is_correct:
             correct_attempts += 1
             streak_correct += 1
         else:
             streak_correct = 0  # reset streak
+
         if not last_answer_time:
             last_answer_time = event.timestamp
+
 
     if total_attempts == 0:
         print("[DEBUG] No valid quiz attempts found. Returning 0 days.")
