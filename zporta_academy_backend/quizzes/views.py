@@ -13,6 +13,8 @@ from django.contrib.contenttypes.models import ContentType
 from .models import Quiz, Question # Import Question model
 from .serializers import QuizSerializer
 from analytics.utils import log_event # Assuming log_event is correctly imported
+from django.db.models import Prefetch
+
 
 class QuizSubmitView(APIView):
     """
@@ -153,7 +155,14 @@ class QuizListCreateView(generics.ListCreateAPIView):
     POST: Create a new quiz (requires authentication)
     """
     serializer_class = QuizSerializer
-    queryset = Quiz.objects.select_related('created_by', 'subject', 'course').prefetch_related('questions').all() # Optimization
+    queryset = Quiz.objects \
+        .select_related('created_by', 'subject', 'course') \
+        .prefetch_related(
+            'questions',
+            Prefetch('questions__fill_blank'),
+            Prefetch('questions__fill_blank__words'),
+            Prefetch('questions__fill_blank__solutions'),
+        )
 
     def get_queryset(self):
         # Start with the base optimized queryset
@@ -182,8 +191,16 @@ class QuizRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     Retrieve, update, or delete a quiz by its primary key (pk).
     Only the quiz creator may update or delete.
     """
-    queryset = Quiz.objects.select_related('created_by', 'subject', 'course').prefetch_related('questions').all()
+
     serializer_class = QuizSerializer
+    queryset = Quiz.objects \
+        .select_related('created_by', 'subject', 'course') \
+        .prefetch_related(
+            'questions',
+            Prefetch('questions__fill_blank'),
+            Prefetch('questions__fill_blank__words'),
+            Prefetch('questions__fill_blank__solutions'),
+        )
     permission_classes = [IsAuthenticated]
     lookup_field = 'pk' # Explicitly state lookup field
 
@@ -215,8 +232,14 @@ class DynamicQuizView(APIView):
     def get(self, request, permalink):
         # Optimize query by prefetching related questions
         quiz = get_object_or_404(
-            Quiz.objects.select_related('created_by', 'subject', 'course')
-                        .prefetch_related('questions'),
+            Quiz.objects
+                .select_related('created_by', 'subject', 'course')
+                .prefetch_related(
+                    'questions',
+                    Prefetch('questions__fill_blank'),
+                    Prefetch('questions__fill_blank__words'),
+                    Prefetch('questions__fill_blank__solutions'),
+                ),
             permalink=permalink
         )
         serializer = QuizSerializer(quiz, context={"request": request})
@@ -381,4 +404,3 @@ class MyQuizzesView(generics.ListAPIView):
     def get_queryset(self):
         # Optimize query
         return Quiz.objects.filter(created_by=self.request.user).select_related('subject', 'course')
-

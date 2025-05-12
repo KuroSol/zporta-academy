@@ -130,4 +130,3 @@ def predict_retention_days(user, quiz):
     else:
         return 1  # Needs review ASAP
 
-
