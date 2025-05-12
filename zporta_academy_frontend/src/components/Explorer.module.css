@@ -361,6 +361,20 @@
   100% { background-position: -200% 0; }
 }
 
+/* --- NEW: Quiz Layout Override --- */
+/* Apply this class to .gridContainer when the quiz tab is active */
+.quizLayout {
+  /* Force single column */
+  grid-template-columns: 1fr;
+  /* Optional: Add a max-width to prevent quizzes becoming too wide on large screens */
+  max-width: 768px; /* Adjust as needed */
+  margin-left: auto; /* Center the column */
+  margin-right: auto; /* Center the column */
+}
+
+/* Ensure the override applies on larger screens too */
+/* We define it outside media queries, but double-check overrides below */
+
 
 /* --- Responsive Adjustments --- */
 
@@ -369,7 +383,7 @@
   .explorerContainer {
     padding: 1.5rem; /* Increase padding */
   }
-  .gridContainer {
+  .gridContainer:not(.quizLayout) { /* Apply multi-column only if NOT quiz layout */
      /* 3 columns */
      grid-template-columns: repeat(3, 1fr);
      gap: 1rem; /* 16px */
@@ -402,11 +416,12 @@
 
 /* ~Standard Tablets & Small Laptops */
 @media (min-width: 768px) {
-    .gridContainer {
+    .gridContainer:not(.quizLayout) { /* Apply multi-column only if NOT quiz layout */
         /* Adjust minmax for auto-fill */
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 1.25rem; /* 20px */
     }
+    /* Quiz layout remains single column, but we already centered it */
 }
 
 
@@ -415,7 +430,7 @@
   .explorerContainer {
     padding: 2rem;
   }
-    .gridContainer {
+    .gridContainer:not(.quizLayout) { /* Apply multi-column only if NOT quiz layout */
      /* Increase min item width */
      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
      gap: 1.5rem; /* 24px */
@@ -430,7 +445,7 @@
 
 /* ~Large Laptops & Desktops */
 @media (min-width: 1280px) {
-    .gridContainer {
+    .gridContainer:not(.quizLayout) { /* Apply multi-column only if NOT quiz layout */
      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
      gap: 1.75rem; /* 28px */
   }
@@ -438,7 +453,7 @@
 
 /* ~Extra Large Desktops */
 @media (min-width: 1536px) {
-    .gridContainer {
+    .gridContainer:not(.quizLayout) { /* Apply multi-column only if NOT quiz layout */
      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
      gap: 2rem; /* 32px */
   }

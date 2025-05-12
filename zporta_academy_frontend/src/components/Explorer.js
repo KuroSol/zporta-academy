@@ -6,7 +6,6 @@ import QuizCard from './QuizCard'; // Assuming this component exists
 import styles from './Explorer.module.css'; // Import NEW CSS Module styles
 
 // --- Helper Functions (Keep as is) ---
-// (No changes needed here)
 const stripHTML = (html) => {
   if (!html) return '';
   // Basic check if running in a browser environment
@@ -35,6 +34,7 @@ const stripHTML = (html) => {
 // --- Skeleton Loader Component ---
 // Uses updated CSS classes for styling
 const SkeletonCard = () => (
+  // Apply quiz-specific class here too if needed for skeleton layout
   <div className={styles.gridItem}> {/* Use gridItem directly */}
     <div className={`${styles.gridItemCard} ${styles.skeleton}`}>
       <div className={styles.skeletonImage}></div>
@@ -114,6 +114,7 @@ const ItemCard = ({ item, activeTab }) => {
   );
 
   return (
+    // Apply quiz-specific class here too if needed for item layout
     <div className={styles.gridItem}>
       {/* Link wraps the entire card content for better click/tap target */}
       <Link to={linkUrl} className={styles.gridItemLink} aria-label={`View ${title}`}>
@@ -219,10 +220,14 @@ const Explorer = () => {
 
   // --- Render Content ---
   const renderContent = () => {
+    // Determine if the quiz layout should be applied
+    const isQuizLayout = activeTab === 'quizzes';
+
     // Show loading skeletons
     if (loading) {
       return (
-        <div className={styles.gridContainer}>
+        // Add quizLayout class to skeleton container if quiz tab is loading
+        <div className={`${styles.gridContainer} ${isQuizLayout ? styles.quizLayout : ''}`}>
           {/* Render a good number of skeletons for visual feedback */}
           {Array.from({ length: 12 }).map((_, index) => (
             <SkeletonCard key={`skeleton-${index}`} />
@@ -252,8 +257,9 @@ const Explorer = () => {
 
 
     // Render Items using the new grid structure
+    // Conditionally add the quizLayout class
     return (
-      <div className={styles.gridContainer}>
+      <div className={`${styles.gridContainer} ${isQuizLayout ? styles.quizLayout : ''}`}>
         {items.map((item) => {
           // Handle invalid items defensively
           if (!item || !item.id) {
@@ -264,6 +270,7 @@ const Explorer = () => {
           if (activeTab === 'quizzes') {
              // Wrap QuizCard in gridItem for layout consistency
              // Ensure QuizCard itself is styled appropriately or adapt here
+             // The gridItem will now be full width due to the quizLayout class on the parent
              return (
                  <div className={styles.gridItem} key={`quiz-wrapper-${item.id}`}>
                      <QuizCard quiz={item} />
