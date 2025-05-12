@@ -957,7 +957,7 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                       <option value="mcq">Multiple Choice (Single Correct)</option>
                       <option value="multi">Multiple Select (Multiple Correct)</option>
                       <option value="short">Short Answer</option>
-                      <option value="sort">Word Sort</option>
+                      {/*<option value="sort">Word Sort</option>} Will Add this latter*/}
                       <option value="dragdrop">Fill in the Blanks (Drag & Drop)</option>
                       {/* <option value="speech_input">Speech Input</option> */}
                     </select>
