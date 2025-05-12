@@ -28,8 +28,7 @@ import math
 from subjects.models import Subject
 from quizzes.models import Quiz
 from django.contrib.contenttypes.models import ContentType
-
-
+from django.db.models import Q # Ensure Q is imported
 
 # ... (Keep other views like UserLearningScoreView, ChangePasswordView, LoginView, etc.)
 class UserLearningScoreView(APIView):
@@ -132,11 +131,31 @@ class LoginView(APIView):
         return Response({'error': 'Invalid credentials'}, status=HTTP_400_BAD_REQUEST)
 
 
+
+
 class GuideProfileListView(generics.ListAPIView):
     serializer_class = PublicProfileSerializer
-    permission_classes = [AllowAny] # Allow public access
-    queryset = Profile.objects.filter(role__in=['guide', 'both']).order_by('-created_at')
+    permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        # Start with the base queryset: profiles that are guides or both
+        queryset = Profile.objects.filter(role__in=['guide', 'both'])
+
+        # Get the search term from the query parameters
+        search_term = self.request.query_params.get('search', None)
+
+        if search_term:
+            # If there's a search term, filter by username
+            queryset = queryset.filter(
+                Q(user__username__istartswith=search_term) |
+                Q(user__username__icontains=search_term)
+            ).distinct()
+            # Order search results by username
+            return queryset.order_by('user__username')
+        else:
+            # If no search term, it's for the general list of guides
+            # Order by newest first (original behavior)
+            return queryset.order_by('-created_at')
 
 
 
