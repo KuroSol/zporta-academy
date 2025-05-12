@@ -1,5 +1,4 @@
 # quizzes/models.py
-
 import os
 import random
 from django.db import models
@@ -8,7 +7,9 @@ from django.utils.text import slugify
 from django.utils import timezone
 from bs4 import BeautifulSoup
 from pykakasi import kakasi
-
+from subjects.models import Subject
+from subjects.models import Subject
+from tags.models    import Tag
 # --- japanese_to_romaji function ---
 def japanese_to_romaji(text):
     kks = kakasi()
@@ -74,6 +75,28 @@ class Quiz(models.Model):
     og_title        = models.CharField(max_length=100, blank=True)
     og_description  = models.TextField(max_length=200, blank=True)
     og_image        = models.URLField(blank=True)
+    difficulty_level = models.CharField(
+        max_length=10,
+        choices=[
+            ('easy', 'Easy'),
+            ('medium', 'Medium'),
+            ('hard', 'Hard'),
+            ('expert', 'Expert')
+        ],
+        default='medium',
+        blank=True,
+        null=True,
+        help_text="Difficulty level of the quiz."
+    )
+
+    # ─── Tagging: many quizzes ↔ many tags ───────────────────────────────
+    tags = models.ManyToManyField(
+        Tag,
+        blank=True,
+        related_name='quizzes',
+        help_text="Attach zero or more tags (auto-created if they don't exist)."
+    )
+
 
     def save(self, *args, **kwargs):
         if not self.permalink:
@@ -83,14 +106,41 @@ class Quiz(models.Model):
             subject_slug = slugify(self.subject.name) if self.subject else 'no-subject'
             self.permalink = f"{user_slug}/{subject_slug}/{date_str}/{title_slug}"
 
-        # --- Auto-fill SEO/OG fields ---
-        if not self.seo_title: self.seo_title = self.title
-        if not self.og_title: self.og_title = self.title
-        if self.content:
-            text = BeautifulSoup(self.content, "html.parser").get_text()
-            if not self.seo_description: self.seo_description = text[:160]
-            if not self.og_description: self.og_description = text[:200]
-        if not self.og_image: self.og_image = "https://www.zportaacademy.com/static/default_quiz_image.png" # Replace with your actual default
+        # --- Auto-fill SEO title & OG title from quiz title ---
+        if not self.seo_title:
+            self.seo_title = self.title
+        if not self.og_title:
+            self.og_title = self.title
+
+        # --- SEO description: use title (plus subject if you like) ---
+        if not self.seo_description:
+            if self.title:
+                if self.subject:
+                    # e.g. “Photosynthesis Quiz | Biology”
+                    self.seo_description = f"{self.title} Quiz on {self.subject.name}"
+                else:
+                    self.seo_description = self.title
+            else:
+                # fallback to first 160 chars of content
+                text = BeautifulSoup(self.content or "", "html.parser").get_text()
+                self.seo_description = text[:160]
+
+        # --- OG description: mirror SEO description ---
+        if not self.og_description:
+            self.og_description = self.seo_description
+
+        # --- Focus keyword: slugified title romaji ---
+        if not self.focus_keyword and self.title:
+            self.focus_keyword = slugify(japanese_to_romaji(self.title))
+
+        # --- Canonical URL: point to your quiz’s public URL ---
+        if not self.canonical_url and self.permalink:
+            self.canonical_url = f"https://www.zportaacademy.com/quizzes/{self.permalink}/"
+
+        # --- Default OG image (unchanged) ---
+        if not self.og_image:
+            self.og_image = "https://www.zportaacademy.com/static/default_quiz_image.png"
+ 
 
         super().save(*args, **kwargs)
 
@@ -175,3 +225,63 @@ class Question(models.Model):
         # Truncate question text for display if it's too long
         q_text = self.question_text[:50] + '...' if len(self.question_text) > 50 else self.question_text
         return f"Q ({self.question_type}) for {self.quiz.title}: {q_text}"
+    
+
+class FillBlankQuestion(models.Model):
+    """
+    Extension of Question for ‘dragdrop’-style fill-in-the-blank quizzes.
+    Stores the sentence with ‘*’ placeholders.
+    """
+    question = models.OneToOneField(
+        Question,
+        related_name='fill_blank',
+        on_delete=models.CASCADE
+    )
+    sentence = models.TextField(
+        help_text="Sentence with '*' as blank placeholders, e.g. 'The quick * fox jumps *.'"
+    )
+
+    def __str__(self):
+        return f"FillBlank for Q#{self.question.id}"
+
+
+class BlankWord(models.Model):
+    """
+    A single word in the bank for a FillBlankQuestion.
+    """
+    fill_blank = models.ForeignKey(
+        FillBlankQuestion,
+        related_name='words',
+        on_delete=models.CASCADE
+    )
+    text = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.text
+
+
+class BlankSolution(models.Model):
+    """
+    Which word goes into which blank slot.
+    slot_index matches the Nth '*' in sentence (0-based).
+    """
+    fill_blank   = models.ForeignKey(
+        FillBlankQuestion,
+        related_name='solutions',
+        on_delete=models.CASCADE
+    )
+    slot_index   = models.PositiveSmallIntegerField(
+        help_text="Zero-based index of the blank in the sentence"
+    )
+    correct_word = models.ForeignKey(
+        BlankWord,
+        on_delete=models.SET_NULL,
+        null=True,
+        help_text="Which word from the bank fills this slot"
+    )
+
+    class Meta:
+        unique_together = ('fill_blank', 'slot_index')
+
+    def __str__(self):
+        return f"Blank #{self.slot_index} → {self.correct_word}"

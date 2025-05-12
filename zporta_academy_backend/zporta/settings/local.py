@@ -3,6 +3,8 @@ from .base import *
 from decouple import config, Csv
 import os
 from pathlib import Path
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # Explicitly specify the path to your .env file:
 from pathlib import Path
@@ -16,11 +18,19 @@ config = Config(RepositoryEnv(env_path))
 # DEV: Use SQLite locally for simplicity
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        # now points to <...>\zporta_academy_backend\zporta\db.sqlite3
-        'NAME': str(PROJECT_ROOT / 'zporta' / 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'zporta_academy',
+        'USER': 'root',
+        'PASSWORD': 'rootpass',
+        'HOST': '127.0.0.1',
+        'PORT': '3307',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
     }
 }
+
+
 
 DEBUG = True
 ALLOWED_HOSTS = ['*']

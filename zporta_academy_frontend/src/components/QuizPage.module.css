@@ -726,4 +726,401 @@
   @keyframes fadeInScale { /* Keep existing */ }
   .visuallyHidden { /* Keep existing */ }
   
-  
+  /* QuizPage.module.css (EXISTING STYLES ABOVE) */
+
+/* ==========================================================================
+   Fill in the Blanks Question Type
+   ========================================================================== */
+.fillInTheBlanksContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-subtle);
+}
+
+.sentenceContainer {
+  font-size: 1.15rem; /* Slightly larger for readability */
+  line-height: 2.2; /* Increased line-height for drop zones */
+  color: var(--text-primary);
+  text-align: left; /* Align text to the left for natural reading */
+  padding: 1rem;
+  background-color: var(--bg-light);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color-medium);
+}
+
+.fillBlankDropZone {
+  display: inline-block; /* Allows padding and border */
+  min-width: 100px; /* Minimum width for a blank */
+  padding: 0.3rem 0.6rem;
+  margin: 0 0.25rem; /* Space around the blank */
+  border: 1px dashed var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-light);
+  color: var(--text-light); /* Placeholder text color */
+  font-style: italic;
+  cursor: pointer; /* Indicates it's a drop target */
+  transition: background-color var(--transition-speed-fast), border-color var(--transition-speed-fast);
+  vertical-align: baseline; /* Align with surrounding text */
+  text-align: center;
+}
+
+.fillBlankDropZone:hover:not(.filledBlank):not(.correctBlank):not(.incorrectBlank) {
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color);
+}
+
+.filledBlank { /* When a word is dropped in */
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-style: normal;
+  font-weight: 500;
+  cursor: grab; /* Indicates it can be dragged out */
+}
+
+/* Feedback styles for blanks */
+.correctBlank {
+  background-color: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct-color);
+  font-style: normal;
+  font-weight: 500;
+}
+.incorrectBlank {
+  background-color: var(--incorrect-bg);
+  border: 1px solid var(--incorrect-border);
+  color: var(--incorrect-color);
+  font-style: normal;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+.correctBlankSolution { /* For showing the correct word in the solution sentence */
+  display: inline-block;
+  min-width: 100px;
+  padding: 0.3rem 0.6rem;
+  margin: 0 0.25rem;
+  border-radius: var(--border-radius-sm);
+  vertical-align: baseline;
+  text-align: center;
+  background-color: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct-color);
+  font-style: normal;
+  font-weight: 500;
+}
+
+
+.wordBank {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-light);
+  min-height: 80px; /* Ensure it has some height for dropping back */
+}
+
+.wordBankTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.wordBankItems {
+  display: flex;
+  flex-wrap: wrap; /* Allow words to wrap */
+  gap: 0.75rem; /* Space between words */
+  justify-content: center; /* Center words in the bank */
+}
+
+.draggableWord {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  cursor: grab;
+  transition: background-color var(--transition-speed-fast), box-shadow var(--transition-speed-fast);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.draggableWord:hover {
+  background-color: #c7d2fe; /* Slightly darker indigo for hover */
+  box-shadow: var(--shadow-md);
+}
+
+.draggableWord.usedWord { /* Style for words already placed in a blank, if still shown in bank */
+  /* opacity: 0.6; */
+  /* background-color: var(--border-color); */
+  /* color: var(--text-disabled); */
+  /* border-color: var(--border-color-medium); */
+  /* cursor: default; */
+  /* For now, we allow re-dragging, so no specific styling for "used" in the bank itself unless dragged out */
+}
+
+.submitFillBlank { /* Specific submit button for this type if needed */
+  margin-top: 1rem;
+  align-self: center;
+}
+
+.correctSolutionSentence {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: var(--correct-bg);
+    border: 1px solid var(--correct-border);
+    border-radius: var(--border-radius-sm);
+}
+.correctSolutionSentence strong {
+    color: var(--correct-color);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Ensure dragDropArea (old one) doesn't conflict if still present in CSS */
+.dragDropArea .itemsContainer { /* from original QuizPage.js for DragDropInline */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  justify-content: center;
+}
+
+.dragDropArea .draggableItem { /* from original QuizPage.js for DragDropInline */
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color-light);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  cursor: grab;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.dragDropArea .zonesContainer { /* from original QuizPage.js for DragDropInline */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dragDropArea .dropZone { /* from original QuizPage.js for DragDropInline */
+  border: 2px dashed var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--bg-light);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.dragDropArea .dropZone:hover {
+    border-color: var(--primary-color);
+}
+
+.dragDropArea .zoneLabel { /* from original QuizPage.js for DragDropInline */
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.dragDropArea .zoneItem { /* from original QuizPage.js for DragDropInline */
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--primary-color-light);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  min-width: 80px;
+  min-height: 1.5rem; /* Ensure it has some height */
+}
+/* (EXISTING STYLES BELOW) */
+/* QuizPage.module.css (EXISTING STYLES ABOVE) */
+
+/* ==========================================================================
+   Fill in the Blanks Question Type
+   ========================================================================== */
+.fillInTheBlanksContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Space between sentence, word bank, and button */
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-subtle); /* Light background for the whole component */
+}
+
+.sentenceContainer {
+  font-size: 1.15rem; /* Slightly larger for readability */
+  line-height: 2.5; /* Increased line-height to accommodate drop zones comfortably */
+  color: var(--text-primary);
+  text-align: left; /* Align text to the left for natural reading flow */
+  padding: 1rem;
+  background-color: var(--bg-light); /* White background for the sentence itself */
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color-medium);
+}
+
+.fillBlankDropZone {
+  display: inline-block; /* Allows padding and border, and flows with text */
+  min-width: 120px; /* Minimum width for a blank to be easily droppable */
+  padding: 0.4rem 0.8rem; /* Padding inside the blank */
+  margin: 0 0.3rem; /* Space around the blank */
+  border: 2px dashed var(--border-color-medium); /* Dashed border for drop target */
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-light);
+  color: var(--text-light); /* Placeholder text color */
+  font-style: italic;
+  cursor: pointer; /* Indicates it's a drop target */
+  transition: background-color var(--transition-speed-fast), border-color var(--transition-speed-fast);
+  vertical-align: baseline; /* Align with surrounding text */
+  text-align: center;
+  user-select: none; /* Prevent text selection inside dropzone */
+}
+
+.fillBlankDropZone:hover:not(.filledBlank):not(.correctBlank):not(.incorrectBlank) {
+  background-color: var(--primary-color-light); /* Highlight on hover */
+  border-color: var(--primary-color);
+}
+
+.filledBlank { /* When a word is dropped in */
+  background-color: #eef2ff; /* Lighter indigo for filled blanks */
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-style: normal;
+  font-weight: 500;
+  cursor: grab; /* Indicates it can be dragged out */
+}
+
+/* Feedback styles for blanks after submission */
+.correctBlank {
+  background-color: var(--correct-bg);
+  border: 2px solid var(--correct-border);
+  color: var(--correct-color);
+  font-style: normal;
+  font-weight: 500;
+}
+.incorrectBlank {
+  background-color: var(--incorrect-bg);
+  border: 2px solid var(--incorrect-border);
+  color: var(--incorrect-color);
+  font-style: normal;
+  font-weight: 500;
+  text-decoration: line-through; /* Optional: strike-through incorrect words */
+}
+
+/* Style for displaying the correct word in the solution sentence after incorrect attempt */
+.correctBlankSolution {
+  display: inline-block;
+  min-width: 120px;
+  padding: 0.4rem 0.8rem;
+  margin: 0 0.3rem;
+  border-radius: var(--border-radius-sm);
+  vertical-align: baseline;
+  text-align: center;
+  background-color: var(--correct-bg);
+  border: 1px solid var(--correct-border); /* Can be solid */
+  color: var(--correct-color);
+  font-style: normal;
+  font-weight: 500;
+}
+
+
+.wordBank {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-light); /* White background for the word bank */
+  min-height: 80px; /* Ensure it has some height for dropping words back */
+  display: flex; /* Added for better centering of title and items */
+  flex-direction: column;
+  align-items: center; /* Center title and items container */
+}
+
+.wordBankTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 1rem; /* Increased space below title */
+  text-align: center;
+}
+
+.wordBankItems {
+  display: flex;
+  flex-wrap: wrap; /* Allow words to wrap to the next line */
+  gap: 0.75rem; /* Space between draggable words */
+  justify-content: center; /* Center words within the bank */
+  width: 100%; /* Take full width to allow centering */
+}
+
+.draggableWord {
+  padding: 0.6rem 1.2rem; /* Slightly larger padding for better touch targets */
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  cursor: grab; /* Indicate draggable */
+  transition: background-color var(--transition-speed-fast), box-shadow var(--transition-speed-fast), transform var(--transition-speed-fast);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  user-select: none; /* Prevent text selection when dragging */
+}
+
+.draggableWord:hover {
+  background-color: #c7d2fe; /* Slightly darker indigo for hover */
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px); /* Slight lift on hover */
+}
+
+.draggableWord:active {
+    cursor: grabbing; /* Change cursor while actively dragging */
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.95); /* Slightly shrink when grabbed */
+}
+
+.draggableWord.usedWord { 
+  /* Style for words that have been placed in a blank, if they are still shown in the bank.
+     Currently, words are removed from the bank when placed. If this changes, this style can be used. */
+  /* Example:
+  opacity: 0.5;
+  background-color: var(--border-color);
+  color: var(--text-disabled);
+  border-color: var(--border-color-medium);
+  cursor: default;
+  */
+}
+
+.submitFillBlank { /* Specific submit button for this question type */
+  margin-top: 1rem;
+  align-self: center; /* Center the button if its parent is a flex container */
+}
+
+/* Displaying the correct solution sentence after an incorrect attempt */
+.correctSolutionSentence {
+    margin-top: 1.5rem; /* More space above the solution */
+    padding: 1rem;
+    background-color: var(--correct-bg);
+    border: 1px solid var(--correct-border);
+    border-radius: var(--border-radius-sm);
+    font-size: 1.1rem; /* Match sentence container size */
+    line-height: 2.5; /* Match sentence container line height */
+}
+.correctSolutionSentence strong {
+    color: var(--correct-color);
+    display: block;
+    margin-bottom: 0.75rem; /* Space below "Correct Solution:" */
+    font-weight: 600;
+}
+
+/* (EXISTING STYLES BELOW) */

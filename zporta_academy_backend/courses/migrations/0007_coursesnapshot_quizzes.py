@@ -7,13 +7,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('courses', '0006_alter_coursesnapshot_lessons'),
-        ('quizzes', '0002_quizsnapshot'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='coursesnapshot',
-            name='quizzes',
-            field=models.ManyToManyField(blank=True, to='quizzes.quizsnapshot'),
-        ),
-    ]
+
