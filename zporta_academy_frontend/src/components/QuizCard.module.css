@@ -1,6 +1,6 @@
 /* QuizCard.module.css */
 
-/* --- Base Variables --- */
+/* --- Base Variables (Keep existing or sync with QuizPage.module.css) --- */
 :root {
   --primary-color: #4f46e5; /* indigo-600 */
   --primary-color-hover: #4338ca; /* indigo-700 */
@@ -41,9 +41,8 @@
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column; /* Stack elements vertically */
-  gap: 0.75rem; /* Space between sections */
+  gap: 1rem; /* Increased gap between sections */
   transition: box-shadow var(--transition-speed) ease, border-color var(--transition-speed) ease;
-  /* max-width: 450px; /* REMOVED from base rule */
   width: 100%; /* Take full width of container */
   /* Center itself within the wrapper if needed (e.g., if wrapper is wider) */
   margin-left: auto;
@@ -57,7 +56,6 @@
   }
 }
 
-
 .quizCard:hover {
     box-shadow: var(--shadow-lg);
 }
@@ -69,7 +67,6 @@
     padding: 1.5rem 1rem;
     background-color: var(--bg-subtle);
     gap: 0.5rem; /* Smaller gap for error/empty */
-    /* Ensure centering applies here too if needed */
     margin-left: auto;
     margin-right: auto;
 }
@@ -100,9 +97,9 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline; /* Align title and progress text */
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.75rem; /* Increased padding */
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 0.25rem; /* Space below header */
+    /* Removed margin-bottom, gap on parent handles spacing */
 }
 
 .cardTitle {
@@ -131,34 +128,34 @@
   margin-left: 0.5rem; /* Space from title */
 }
 
-/* --- Question Display Area --- */
+/* --- Question Display Area (NEW - similar to QuizPage) --- */
 .questionDisplayArea {
   background-color: var(--bg-light); /* Can be subtle or same as card */
   /* border: 1px solid var(--border-color); */ /* Optional border */
   border-radius: var(--border-radius-sm);
-  padding: 1rem; /* Padding inside question area */
+  padding: 0.75rem; /* Reduced padding for card */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem; /* Space between media and text */
-  min-height: 100px; /* Smaller min height for card */
+  min-height: 80px; /* Smaller min height for card */
 }
 
-/* --- Media inside Question Area --- */
-.mediaImage {
+/* --- Media inside Question/Options (NEW - adapted from QuizPage) --- */
+.cardMediaImage { /* Renamed from mediaImage */
   display: block;
   width: 100%;
-  max-width: 300px; /* Smaller max width for card */
-  max-height: 180px; /* Smaller max height for card */
-  object-fit: contain;
+  max-width: 250px; /* Smaller max width for card */
+  max-height: 150px; /* Smaller max height for card */
+  object-fit: contain; /* Use contain to show whole image */
   border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-sm);
+  /* box-shadow: var(--shadow-sm); */ /* Optional shadow */
 }
 
-.mediaAudio {
+.cardMediaAudio { /* Renamed from mediaAudio */
   display: block;
   width: 100%;
-  max-width: 300px; /* Smaller max width */
+  max-width: 250px; /* Smaller max width */
   height: 40px; /* Consistent height */
 }
 
@@ -185,28 +182,28 @@
 .optionsList {
   display: grid;
   grid-template-columns: 1fr; /* Single column layout */
-  gap: 0.5rem; /* Smaller gap for card */
+  gap: 0.65rem; /* Adjusted gap */
 }
 
-/* --- Option Button Styling (Compact version) --- */
+/* --- Option Button Styling (Updated for media) --- */
 .optionButton {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Stack content vertically (text/image first, then audio) */
   width: 100%;
-  padding: 0.65rem 0.85rem; /* Smaller padding */
+  padding: 0.75rem 1rem; /* Adjusted padding */
   font-family: inherit;
   font-size: 0.95rem; /* Slightly smaller font */
   text-align: left;
   color: var(--text-primary);
   background-color: var(--bg-light);
   border: 1px solid var(--border-color-medium); /* Use medium border */
-  border-radius: 6px; /* Slightly smaller radius */
+  border-radius: var(--border-radius-sm); /* Adjusted radius */
   cursor: pointer;
   transition: all var(--transition-speed-fast) ease-in-out;
   position: relative;
   overflow: hidden;
-  min-height: 48px; /* Adjust min height */
-  gap: 0.4rem; /* Smaller gap */
+  min-height: 52px; /* Adjusted min height */
+  gap: 0.5rem; /* Gap between content and audio */
 }
 
 .optionButton.interactive:hover {
@@ -215,31 +212,34 @@
   box-shadow: var(--shadow-sm); /* Subtle shadow */
 }
 .optionButton.interactive:focus-visible {
-  outline: 1px solid var(--primary-color); /* Use outline for focus */
+  outline: 2px solid var(--primary-color); /* Use outline for focus */
   outline-offset: 1px;
   border-color: var(--primary-color);
 }
 
+/* Container for Image/Text within the option */
 .optionContent {
     display: flex;
-    align-items: center;
-    gap: 0.5rem; /* Smaller gap */
+    align-items: center; /* Align image and text */
+    gap: 0.75rem; /* Gap between image and text */
     width: 100%;
 }
 
-.optionMediaImage {
-    width: 40px; /* Smaller image */
-    height: 40px;
+/* Option Image Styling */
+.optionMediaImage { /* NEW class specifically for option images */
+    width: 45px; /* Slightly larger option image */
+    height: 45px;
     object-fit: cover;
     border-radius: 4px;
     flex-shrink: 0;
-    background-color: var(--border-color);
+    background-color: var(--border-color); /* Placeholder bg */
 }
 
-.optionAudioControl {
+/* Option Audio Control Styling */
+.optionAudioControl { /* NEW class specifically for option audio */
     display: block;
     width: 100%;
-    margin-top: 0.4rem;
+    margin-top: 0.5rem; /* Space above audio if present */
     height: 35px; /* Smaller height */
 }
 .optionAudioControl::-webkit-media-controls-panel {
@@ -247,8 +247,9 @@
   border-radius: 4px;
 }
 
+/* Option Text Styling */
 .optionText {
-    flex-grow: 1;
+    flex-grow: 1; /* Allow text to take remaining space */
     line-height: 1.4; /* Tighter line height */
 }
 .optionText p { margin: 0; }
@@ -260,14 +261,20 @@
     font-size: 0.9em;
 }
 
+/* Feedback Icon Styling */
 .optionFeedbackIcon {
     position: absolute;
-    top: 0.4rem; /* Adjust position */
-    right: 0.5rem;
+    top: 0.5rem; /* Adjust position */
+    right: 0.6rem;
     opacity: 0;
     transform: scale(0.8);
     transition: opacity var(--transition-speed-fast), transform var(--transition-speed-fast);
     pointer-events: none;
+    /* Add background for better visibility over images */
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    padding: 2px;
+    line-height: 0; /* Prevent extra space */
 }
 .optionButton.correct .optionFeedbackIcon,
 .optionButton.selectedIncorrect .optionFeedbackIcon {
@@ -277,70 +284,85 @@
 .optionButton.correct .optionFeedbackIcon { color: var(--correct-color); }
 .optionButton.selectedIncorrect .optionFeedbackIcon { color: var(--incorrect-color); }
 
+/* Option State Styling */
 .optionButton.disabled {
-  opacity: 0.6;
+  opacity: 0.65; /* Slightly less opaque */
   cursor: not-allowed;
   background-color: var(--bg-subtle);
   border-color: var(--border-color);
   box-shadow: none;
   pointer-events: none;
 }
-.optionButton:disabled {
+.optionButton:disabled { /* Ensure disabled state is applied */
     cursor: not-allowed;
     pointer-events: none;
 }
 
 .optionButton.correct {
-  border-color: var(--correct-color);
+  border-color: var(--correct-border); /* Use lighter border */
   background-color: var(--correct-bg);
-  color: var(--correct-color);
-  font-weight: 500; /* Slightly less bold */
+  /* color: var(--correct-color); */ /* Keep text color default unless selected */
+  /* font-weight: 500; */
 }
 .optionButton.selectedCorrect {
-   border-color: var(--correct-color);
+   border-color: var(--correct-color); /* Stronger border */
    background-color: var(--correct-bg);
    box-shadow: 0 0 0 1px var(--correct-color); /* Subtle ring */
+   color: var(--correct-color); /* Change text color when selected correct */
+   font-weight: 500;
 }
 .optionButton.selectedIncorrect {
-  border-color: var(--incorrect-color);
+  border-color: var(--incorrect-color); /* Stronger border */
   background-color: var(--incorrect-bg);
-  color: var(--incorrect-color);
+  /* color: var(--incorrect-color); */ /* Keep text color default */
   font-weight: 500;
   box-shadow: 0 0 0 1px var(--incorrect-color); /* Subtle ring */
 }
+/* Style the text specifically for incorrect selection */
+.optionButton.selectedIncorrect .optionText {
+    color: var(--incorrect-color);
+}
 
 
-/* --- Feedback Area --- */
+/* --- Feedback Area Container (NEW) --- */
+.feedbackContainer {
+    min-height: 38px; /* Reserve space for feedback to prevent layout shifts */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem; /* Consistent space */
+}
+
+/* --- Feedback Area Styling --- */
 .feedbackArea {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
-  margin-top: 0.5rem; /* Space above feedback */
-  border-radius: 6px;
-  font-size: 0.85rem;
+  width: 100%; /* Take full width of container */
+  border-radius: var(--border-radius-sm); /* Match option radius */
+  font-size: 0.9rem; /* Adjusted size */
   font-weight: 500;
   text-align: center;
   animation: fadeInScale 0.3s ease-out;
+  border: 1px solid transparent; /* Base border */
 }
-/* Added specific error feedback style */
+
 .feedbackError {
     background-color: var(--incorrect-bg);
     color: var(--error-color-dark);
-    border: 1px solid var(--incorrect-border);
+    border-color: var(--incorrect-border);
 }
-
 .feedbackCorrect {
   background-color: var(--correct-bg);
   color: var(--correct-color);
-  border: 1px solid var(--correct-border);
+  border-color: var(--correct-border);
 }
-
 .feedbackIncorrect {
   background-color: var(--incorrect-bg);
   color: var(--incorrect-color);
-  border: 1px solid var(--incorrect-border);
+  border-color: var(--incorrect-border);
 }
 
 .feedbackIcon {
@@ -349,21 +371,14 @@
   flex-shrink: 0;
 }
 
-.explanation {
-    font-size: 0.8rem;
-    font-weight: 400;
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
-    line-height: 1.4;
-}
-
 /* --- Navigation --- */
 .navigation {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 0.5rem; /* Space above nav */
+  padding-top: 0.75rem; /* Space above nav */
   border-top: 1px solid var(--border-color); /* Separator */
+  margin-top: 0.5rem; /* Space below feedback */
 }
 
 .navButton {
@@ -421,4 +436,3 @@
   white-space: nowrap;
   border-width: 0;
 }
-
