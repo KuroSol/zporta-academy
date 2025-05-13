@@ -30,6 +30,13 @@ class SimpleLessonCompletionSerializer(serializers.ModelSerializer):
 
 class LessonSerializer(serializers.ModelSerializer):
     is_locked = serializers.BooleanField(read_only=True)
+
+    content_type = serializers.ChoiceField(
+    choices=Lesson.CONTENT_TYPE_CHOICES,
+    default='text',
+    help_text="Type of this lesson: text or video."
+
+    )
     # Input field for tags (list of strings)
     tags = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False,
@@ -55,7 +62,7 @@ class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = [
-            'id', 'title', 'content', 'video_url',
+            'id', 'title', 'content', 'video_url', 'content_type',
             'subject',         # Expects/returns Subject ID
             'subject_name',    # Read-only Subject Name
             'course', 'course_data',        # Course ID (read-only by default unless in writable fields)

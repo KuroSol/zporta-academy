@@ -15,7 +15,7 @@ module.exports = {
       },
       minWidth: {
         '120': '120px', // Setting a minimum width for elements
-      }
+      },
     },
   },
   variants: {

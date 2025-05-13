@@ -92,13 +92,19 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                     logger.error(f"Error serializing lessons for course {course_obj.id}: {e}")
 
 
-            serialized_quizzes = []
-            if hasattr(course_obj, 'quizzes'):
-                 try:
-                     quizzes = course_obj.quizzes.all()
-                     serialized_quizzes = QuizSerializer(quizzes, many=True, context={'request': request}).data
-                 except Exception as e:
-                     logger.error(f"Error serializing quizzes for course {course_obj.id}: {e}")
+       
+            serialized_quizzes = []             
+            if hasattr(course_obj, 'quizzes'):  
+                try:                            
+                    quizzes_qs = course_obj.quizzes.all()  
+                    serialized_quizzes = QuizSerializer(
+                        quizzes_qs, many=True,
+                        context={'request': request}
+                    ).data
+                except Exception as e:         
+                    logger.error(f"Error serializing quizzes for course {course_obj.id}: {e}")
+            
+
 
 
             return {
