@@ -41,6 +41,18 @@ class Lesson(models.Model):
     og_description = models.TextField(max_length=200, blank=True)
     og_image = models.URLField(blank=True)
 
+    CONTENT_TYPE_CHOICES = [
+        ('text', 'Text'),
+        ('video', 'Video'),
+        ('quiz', 'Quiz'),
+    ]
+
+    content_type = models.CharField(
+        max_length=20,
+        choices=CONTENT_TYPE_CHOICES,
+        default='text'
+    )
+    
     def save(self, *args, **kwargs):
         # --- Generate permalink only on initial save ---
         if not self.permalink:

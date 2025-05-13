@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react"; // <-- ADD useContext
 import { useParams, useNavigate } from "react-router-dom";
 import { FaBook } from "react-icons/fa";
-import "./CourseDetail.css"; // Assuming CSS is shared or correct
+import "./CourseDetail.module.css"; // Assuming CSS is shared or correct
 import { loadStripe } from '@stripe/stripe-js';
 import apiClient from '../api'; // <-- ADD apiClient (Adjust path if needed)
 import { AuthContext } from '../context/AuthContext'; // <-- ADD AuthContext
@@ -241,7 +241,7 @@ const handleEnroll = async () => {
         ))}
       </ul>
 
-      {/* Show the enrollment/payment option if the user is not the course creator */}
+      {/* Show the enrollment/payment option if the user is not the course creator 
       {!isCreator && (
         <div className="enroll-section">
           {enrolled ? (
@@ -255,7 +255,7 @@ const handleEnroll = async () => {
           )}
           {enrollMessage && <p className="message">{enrollMessage}</p>}
         </div>
-      )}
+      )}*/}
     </div>
   );
 };
