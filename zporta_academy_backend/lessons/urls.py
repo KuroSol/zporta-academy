@@ -5,7 +5,9 @@ from .views import (
     LessonRetrieveUpdateDestroyView,
     DynamicLessonView,
     MarkLessonCompleteView,
+    EnrollmentLessonCompletionsView,
     LessonEnrollmentCompletionStatusView, 
+    MarkLessonCompleteView,
     AddQuizToLessonView,
     DetachQuizFromLessonView,
     RecentLessonCompletionsView,
@@ -15,6 +17,9 @@ urlpatterns = [
     path('my/', UserLessonsView.as_view(), name='user-lessons'),
     path('', LessonListCreateView.as_view(), name='lesson-list-create'),
 
+
+    path('enrollments/<int:enrollment_id>/completions/',EnrollmentLessonCompletionsView.as_view(),name='enrollment-lesson-completions'),
+    
     # ✅ Place more specific routes first
     path('<path:permalink>/update/', LessonRetrieveUpdateDestroyView.as_view(), name='lesson-update'),
     path('<path:permalink>/delete/', LessonRetrieveUpdateDestroyView.as_view(), name='lesson-delete'),
