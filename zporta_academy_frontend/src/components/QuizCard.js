@@ -67,6 +67,8 @@ const QuizCard = ({ quiz }) => {
     return <CardErrorDisplay message="Invalid quiz data provided." />;
   }
 
+  // Add a temporary unique ID to each question for the card context
+  // This helps ensure keys are unique if multiple cards are on a page or for child components.
   const questions = quiz.questions.map((q, index) => ({ ...q, temp_id: `card_q_${quiz.id}_${index}`}));
   const totalQuestions = questions.length;
 
@@ -84,7 +86,8 @@ const QuizCard = ({ quiz }) => {
 
   const safeCurrentIndex = Math.min(Math.max(0, currentIndex), totalQuestions - 1);
   const currentQuestion = questions[safeCurrentIndex] ?? {};
-  const currentQuestionId = currentQuestion.id; // Use this consistently
+  // Use currentQuestion.id (original DB ID) for backend communication and state keys related to specific questions.
+  const currentQuestionId = currentQuestion.id; // This should be the persistent ID from the database
   const isAnswerSubmittedForCurrent = !!submittedAnswers[currentQuestionId];
   const currentFeedback = feedback[currentQuestionId];
 
@@ -98,86 +101,159 @@ const QuizCard = ({ quiz }) => {
   const handleAnswerChange = (questionIdToUpdate, answer) => { // Renamed first param for clarity
     if (submittedAnswers[questionIdToUpdate]) return;
     setUserAnswers(prev => ({ ...prev, [questionIdToUpdate]: answer }));
-    setCardError(null);
+    setCardError(null); // Clear general card error when user interacts
   };
 
-  const handleSubmitAnswerForCurrentQuestion = async () => {
-    if (isAnswerSubmittedForCurrent || isLoadingSubmission) return;
+const handleSubmitAnswerForCurrentQuestion = async (submittedAnswerFromInteraction) => {
+  // Ensure we're using the correct question ID (persistent ID)
+  const questionToSubmitId = currentQuestion.id;
+  if (!questionToSubmitId || submittedAnswers[questionToSubmitId] || isLoadingSubmission) return;
 
-    const answer = userAnswers[currentQuestionId]; // Use currentQuestionId
-    const question = currentQuestion;
+  const answer = submittedAnswerFromInteraction !== undefined // Check for undefined specifically
+    ? submittedAnswerFromInteraction
+    : userAnswers[questionToSubmitId];
+  const question = currentQuestion; // currentQuestion should be the one with questionToSubmitId
 
-    if (answer === undefined || answer === null ||
-        (typeof answer === 'string' && answer.trim() === '' && question.question_type !== 'dragdrop') ||
-        (Array.isArray(answer) && answer.length === 0 && question.question_type !== 'dragdrop' && question.question_type !== 'sort') ) {
-        setCardError("Please provide an answer before submitting.");
-        return;
+  // Validation for empty answers (especially for types that require input)
+  if (['dragdrop','sort', 'short', 'multi'].includes(question.question_type)) {
+    const isEmpty =
+      answer === null ||
+      answer === undefined ||
+      (typeof answer === 'string' && answer.trim() === '') ||
+      (Array.isArray(answer) && answer.length === 0) ||
+      (typeof answer === 'object' && Object.keys(answer).length === 0 && question.question_type === 'dragdrop'); // For dragdrop, an empty object means no items placed
+
+    // For dragdrop, if there are no solutions expected, an empty answer is correct.
+    let allowEmptySubmit = false;
+    if (question.question_type === 'dragdrop') {
+        const solutions = question._fill_blank?.solutions || [];
+        if (solutions.length === 0 && (answer === null || answer === undefined || Object.keys(answer || {}).length === 0)) {
+            allowEmptySubmit = true;
+        }
     }
-    setCardError(null);
-    setIsLoadingSubmission(true);
 
-    let isCorrect = false;
-    let correctValueForFeedback = null;
 
-    try {
-        if (question.question_type === 'mcq') {
-            isCorrect = (answer === question.correct_option);
-            correctValueForFeedback = question.correct_option;
-        } else if (question.question_type === 'multi') {
-            const correctSet = new Set(Array.isArray(question.correct_options) ? question.correct_options : []);
-            const answerSet = new Set(Array.isArray(answer) ? answer : []);
-            isCorrect = correctSet.size === answerSet.size && [...correctSet].every(val => answerSet.has(val));
-            correctValueForFeedback = [...correctSet].sort((a, b) => a - b);
-        } else if (question.question_type === 'short') {
-            isCorrect = answer?.toString().trim().toLowerCase() === question.correct_answer?.trim().toLowerCase();
-            correctValueForFeedback = question.correct_answer;
-        } else if (question.question_type === 'sort') {
-            const correctAnswerArray = Array.isArray(question.correct_options) ? question.correct_options : [];
-            const userAnswerArray = Array.isArray(answer) ? answer : [];
-            isCorrect = JSON.stringify(userAnswerArray) === JSON.stringify(correctAnswerArray);
-            correctValueForFeedback = correctAnswerArray;
-        } else if (question.question_type === 'dragdrop') {
-            const studentMap = answer || {};
-            const backendSolutions = question._fill_blank?.solutions || [];
-            if (backendSolutions.length === 0 && Object.keys(studentMap).length === 0) {
-                isCorrect = true;
-            } else if (backendSolutions.length !== Object.keys(studentMap).length && backendSolutions.length > 0) {
-                isCorrect = false;
-            } else {
-                 isCorrect = backendSolutions.every(sol => {
-                    const blankKey = `zone_${question.temp_id}_${sol.slot_index}`;
-                    const correctWordData = (question._fill_blank.words || []).find(w => w.id === sol.correct_word);
-                    const correctWordFrontendTempId = correctWordData ? `item_${question.temp_id}_${(question._fill_blank.words || []).indexOf(correctWordData)}` : null;
-                    return studentMap[blankKey] === correctWordFrontendTempId;
-                });
+    if (isEmpty && !allowEmptySubmit) {
+      setCardError("Please provide an answer before submitting.");
+      return;
+    }
+  }
+
+  setCardError(null);
+  setIsLoadingSubmission(true);
+
+  let isCorrect = false;
+  let correctValueForFeedback = null;
+
+  try {
+    switch (question.question_type) {
+      case 'mcq':
+        isCorrect = answer === question.correct_option;
+        correctValueForFeedback = question.correct_option;
+        break;
+
+      case 'multi': {
+        const correctSet = new Set(question.correct_options || []);
+        const answerSet  = new Set(answer || []);
+        isCorrect = correctSet.size === answerSet.size &&
+                      [...correctSet].every(v => answerSet.has(v));
+        correctValueForFeedback = [...correctSet].sort((a,b)=>a-b);
+        break;
+      }
+
+      case 'short':
+        isCorrect = answer?.toString().trim().toLowerCase() ===
+                      question.correct_answer?.trim().toLowerCase();
+        correctValueForFeedback = question.correct_answer;
+        break;
+
+      case 'sort': {
+        const correctArr = question.correct_options || [];
+        isCorrect = JSON.stringify(answer || []) === JSON.stringify(correctArr);
+        correctValueForFeedback = correctArr;
+        break;
+      }
+
+      case 'dragdrop': {
+        const studentMap = answer || {}; // This is the 'filledMap' from FillInTheBlanksQuestion
+        const fillBlankData = question._fill_blank;
+        const solutions = Array.isArray(fillBlankData?.solutions) ? fillBlankData.solutions : [];
+        const words = Array.isArray(fillBlankData?.words) ? fillBlankData.words : [];
+        
+        // CRITICAL CHANGE: Use question.id as the base for key construction
+        // This aligns with the HTML evidence (e.g., zone_99_0) suggesting FillInTheBlanksQuestion
+        // uses the persistent question.id for the keys in the studentMap it returns.
+        const baseId = question.id; 
+
+        if (!baseId) {
+            console.error("[QuizCard] DragDrop Check: question.id is missing, cannot reliably check answer.", question);
+            isCorrect = false; // Cannot determine correctness without a baseId
+        } else if (solutions.length === 0 && Object.keys(studentMap).length === 0) {
+          isCorrect = true; // No solutions expected, no answer given = correct
+        } else if (solutions.length !== Object.keys(studentMap).length) {
+          isCorrect = false; // Number of dropped items doesn't match number of solutions
+        } else {
+          isCorrect = solutions.every(sol => {
+            // Construct the zone key based on the solution's slot index using question.id
+            const zoneKeyForSolution = `zone_${baseId}_${sol.slot_index}`;
+            // Get the student's placed item ID for this zone from the studentMap
+            const studentPlacedItemKey = studentMap[zoneKeyForSolution];
+
+            // Find the index of the correct word (by its backend ID) in the word bank
+            const wordBankIndex = words.findIndex(w => String(w.id) === String(sol.correct_word));
+
+            if (wordBankIndex < 0) {
+              console.error(`[QuizCard] DragDrop Check: Correct word (Backend ID: ${sol.correct_word}) for slot ${sol.slot_index} not found in word bank. Word bank:`, words);
+              return false; // This specific solution cannot be satisfied correctly
             }
-            correctValueForFeedback = question._fill_blank;
+            
+            // Construct the expected item key that should be in this zone, using question.id
+            const expectedItemKey = `item_${baseId}_${wordBankIndex}`;
+            
+            // console.log(`[QuizCard] Slot ${sol.slot_index} (Zone: ${zoneKeyForSolution}): Expected Item Key: ${expectedItemKey}, Student Placed Item Key: ${studentPlacedItemKey}, Match: ${studentPlacedItemKey === expectedItemKey}`);
+            return studentPlacedItemKey === expectedItemKey;
+          });
         }
+        correctValueForFeedback = question._fill_blank; // For showing detailed feedback if needed
+        break;
+      }
 
-        setFeedback(prev => ({ ...prev, [currentQuestionId]: { isCorrect, correctValue: correctValueForFeedback } }));
-        setSubmittedAnswers(prev => ({ ...prev, [currentQuestionId]: true }));
-
-        if (token) {
-            await apiClient.post(`/quizzes/${quiz.id}/record-answer/`, {
-                question_id: currentQuestionId, // Use currentQuestionId
-                selected_option: answer
-            });
-        }
-    } catch (err) {
-        console.error("Error submitting answer in card:", err);
-        setCardError("Failed to submit answer. Please try again.");
-        setFeedback(prev => { const newState = {...prev}; delete newState[currentQuestionId]; return newState;}); // Use currentQuestionId
-        setSubmittedAnswers(prev => { const newState = {...prev}; delete newState[currentQuestionId]; return newState;}); // Use currentQuestionId
-        if (err.response?.status === 401 && typeof logout === 'function') logout();
-    } finally {
-        setIsLoadingSubmission(false);
+      default:
+        console.warn(`Unsupported question type in QuizCard: ${question.question_type}`);
+        break;
     }
-  };
+
+    setFeedback(prev => ({
+      ...prev,
+      [questionToSubmitId]: { isCorrect, correctValue: correctValueForFeedback }
+    }));
+    setSubmittedAnswers(prev => ({
+      ...prev,
+      [questionToSubmitId]: true
+    }));
+
+    if (token) {
+      await apiClient.post(
+        `/quizzes/${quiz.id}/record-answer/`,
+        { question_id: questionToSubmitId, selected_option: answer } 
+      );
+    }
+  } catch (err) {
+    console.error("Error submitting answer in card:", err);
+    setCardError("Failed to submit answer. Please try again.");
+    setFeedback(prev => { const newState = {...prev}; delete newState[questionToSubmitId]; return newState; });
+    setSubmittedAnswers(prev => { const newState = {...prev}; delete newState[questionToSubmitId]; return newState; });
+    if (err.response?.status === 401 && logout) logout();
+  } finally {
+    setIsLoadingSubmission(false);
+  }
+};
+
 
   const goToQuestion = (index) => {
     if (index >= 0 && index < totalQuestions) {
       setCurrentIndex(index);
-      setCardError(null);
+      setCardError(null); 
     }
   };
   const goPrev = () => goToQuestion(safeCurrentIndex - 1);
@@ -187,31 +263,33 @@ const QuizCard = ({ quiz }) => {
   const getOptionClassName = (optionIndex) => {
     let classNames = [styles.optionButton];
     const currentSelection = userAnswers[currentQuestionId] || (currentQuestion.question_type === 'multi' ? [] : null);
+    const feedbackForThisOption = feedback[currentQuestionId]; 
 
     if (currentQuestion.question_type === 'mcq') {
-        if (isAnswerSubmittedForCurrent) {
-            if (currentFeedback?.correctValue === (optionIndex + 1)) classNames.push(styles.correct);
-            if (currentSelection === (optionIndex + 1) && !currentFeedback?.isCorrect) classNames.push(styles.selectedIncorrect);
-            if (currentFeedback?.correctValue !== (optionIndex + 1) && currentSelection !== (optionIndex + 1)) classNames.push(styles.disabled);
-             if (currentSelection === (optionIndex + 1) && currentFeedback?.isCorrect) classNames.push(styles.selectedCorrect);
+        if (submittedAnswers[currentQuestionId]) { 
+            if (feedbackForThisOption?.correctValue === (optionIndex + 1)) classNames.push(styles.correct);
+            if (currentSelection === (optionIndex + 1) && !feedbackForThisOption?.isCorrect) classNames.push(styles.selectedIncorrect);
+            if (feedbackForThisOption?.correctValue !== (optionIndex + 1) && currentSelection !== (optionIndex + 1)) classNames.push(styles.disabled);
+            if (currentSelection === (optionIndex + 1) && feedbackForThisOption?.isCorrect) classNames.push(styles.selectedCorrect); 
         } else {
             if (currentSelection === (optionIndex + 1)) classNames.push(styles.selected);
         }
     } else if (currentQuestion.question_type === 'multi') {
         const selectionsArray = Array.isArray(currentSelection) ? currentSelection : [];
-        if (isAnswerSubmittedForCurrent) {
-            const correctOptionsArray = Array.isArray(currentFeedback?.correctValue) ? currentFeedback.correctValue : [];
-            if (correctOptionsArray.includes(optionIndex + 1)) classNames.push(styles.correct);
-            if (selectionsArray.includes(optionIndex + 1)) {
+        if (submittedAnswers[currentQuestionId]) { 
+            const correctOptionsArray = Array.isArray(feedbackForThisOption?.correctValue) ? feedbackForThisOption.correctValue : [];
+            if (correctOptionsArray.includes(optionIndex + 1)) classNames.push(styles.correct); 
+            
+            if (selectionsArray.includes(optionIndex + 1)) { 
                  classNames.push(correctOptionsArray.includes(optionIndex + 1) ? styles.selectedCorrect : styles.selectedIncorrect);
-            } else if (!correctOptionsArray.includes(optionIndex + 1)) {
-                 classNames.push(styles.disabled);
+            } else if (!correctOptionsArray.includes(optionIndex + 1)) { 
+                 classNames.push(styles.disabled); 
             }
         } else {
             if (selectionsArray.includes(optionIndex + 1)) classNames.push(styles.selected);
         }
     }
-     if(!isAnswerSubmittedForCurrent) classNames.push(styles.interactive);
+    if (!submittedAnswers[currentQuestionId]) classNames.push(styles.interactive);
     return classNames.join(' ');
   };
 
@@ -229,12 +307,13 @@ const QuizCard = ({ quiz }) => {
                             aria-checked={currentQUserAnswer === (opt.index + 1)}
                             className={getOptionClassName(opt.index)}
                             onClick={() => {
-                                handleAnswerChange(currentQuestionId, opt.index + 1);
-                                setTimeout(() => handleSubmitAnswerForCurrentQuestion(), 100);
+                                const nextAnswer = opt.index + 1;
+                                setUserAnswers(prev => ({ ...prev, [currentQuestionId]: nextAnswer }));
+                                handleSubmitAnswerForCurrentQuestion(nextAnswer);
                             }}
                             disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
                         >
-                             <div className={styles.optionMediaContainer}>
+                            <div className={styles.optionMediaContainer}>
                                 {opt.img && <RenderCardMedia url={opt.img} type="image" alt={`Option ${opt.index + 1}`} className={styles.optionMediaImage_Small} />}
                             </div>
                             <div className={styles.optionTextContainer}>
@@ -270,7 +349,7 @@ const QuizCard = ({ quiz }) => {
                                 disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
                             >
                                 <div className={styles.optionMediaContainer}>
-                                  {opt.img && <RenderCardMedia url={opt.img} type="image" alt={`Option ${opt.index + 1}`} className={styles.optionMediaImage_Small} />}
+                                    {opt.img && <RenderCardMedia url={opt.img} type="image" alt={`Option ${opt.index + 1}`} className={styles.optionMediaImage_Small} />}
                                 </div>
                                 <div className={styles.optionTextContainer}>
                                     {opt.text && <span className={styles.optionText} dangerouslySetInnerHTML={{ __html: opt.text }} />}
@@ -286,7 +365,10 @@ const QuizCard = ({ quiz }) => {
                         ))}
                     </div>
                     {!isAnswerSubmittedForCurrent && (
-                        <button onClick={handleSubmitAnswerForCurrentQuestion} className={`${styles.submitButton} ${styles.cardSubmitButton}`} disabled={currentSelections.length === 0 || isLoadingSubmission}>
+                        <button 
+                            onClick={() => handleSubmitAnswerForCurrentQuestion(currentSelections)} 
+                            className={`${styles.submitButton} ${styles.cardSubmitButton}`} 
+                            disabled={currentSelections.length === 0 || isLoadingSubmission}>
                             {isLoadingSubmission ? <Loader2 size={18} className="animate-spin" /> : <Send size={18}/>} Submit Multi-Select
                         </button>
                     )}
@@ -309,13 +391,16 @@ const QuizCard = ({ quiz }) => {
                            <SpeechToTextInput
                                 onTranscriptReady={(transcript) => handleAnswerChange(currentQuestionId, transcript)}
                                 disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
-                                buttonClassName={styles.micButtonCard}
+                                buttonClassName={styles.micButtonCard} 
                             />
                         )}
                     </div>
                     {!isAnswerSubmittedForCurrent && (
-                        <button onClick={handleSubmitAnswerForCurrentQuestion} className={`${styles.submitButton} ${styles.cardSubmitButton}`} disabled={!currentQUserAnswer?.trim() || isLoadingSubmission}>
-                           {isLoadingSubmission ? <Loader2 size={18} className="animate-spin" /> : <Send size={18}/>} Submit Answer
+                        <button 
+                            onClick={() => handleSubmitAnswerForCurrentQuestion(currentQUserAnswer)} 
+                            className={`${styles.submitButton} ${styles.cardSubmitButton}`}
+                            disabled={!currentQUserAnswer?.trim() || isLoadingSubmission}>
+                            {isLoadingSubmission ? <Loader2 size={18} className="animate-spin" /> : <Send size={18}/>} Submit Answer
                         </button>
                     )}
                 </div>
@@ -324,14 +409,13 @@ const QuizCard = ({ quiz }) => {
             if (!currentQuestion._fill_blank) return <p className={styles.errorText}>Loading fill-in-the-blanks data...</p>;
             return (
                 <FillInTheBlanksQuestion
-                    question={currentQuestion}
+                    question={currentQuestion} 
                     disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
                     onSubmit={(filledMap) => {
-                        handleAnswerChange(currentQuestionId, filledMap);
-                        setTimeout(() => handleSubmitAnswerForCurrentQuestion(), 100);
+                        handleSubmitAnswerForCurrentQuestion(filledMap);
                     }}
-                    submittedAnswer={currentQUserAnswer}
-                    feedback={currentFeedback}
+                    submittedAnswer={currentQUserAnswer} 
+                    feedback={currentFeedback} 
                 />
             );
         case 'sort':
@@ -340,9 +424,9 @@ const QuizCard = ({ quiz }) => {
                  <SortQuestion
                     question={currentQuestion}
                     submitted={isAnswerSubmittedForCurrent}
-                    userAnswer={currentQUserAnswer}
+                    userAnswer={currentQUserAnswer} 
                     onChange={(order) => handleAnswerChange(currentQuestionId, order)}
-                    onSubmit={() => handleSubmitAnswerForCurrentQuestion()}
+                    onSubmit={() => handleSubmitAnswerForCurrentQuestion(currentQUserAnswer)}
                     feedback={currentFeedback}
                     disabled={isLoadingSubmission}
                   />
@@ -363,14 +447,14 @@ const QuizCard = ({ quiz }) => {
           )}
         </div>
 
-        {currentQuestion.id && (
+        {currentQuestion.id && ( 
             <div className={styles.questionDisplayArea}>
                 <RenderCardMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || 'Question image'} className={styles.questionMediaItem}/>
                 <RenderCardMedia url={currentQuestion.question_audio} type="audio" className={styles.questionMediaItem}/>
                 <div
                     className={styles.questionText}
                     dangerouslySetInnerHTML={{ __html: currentQuestion.question_text || 'Loading question...' }}
-                    id={`question-text-${currentQuestion.id}`}
+                    id={`question-text-${currentQuestion.id}`} 
                 />
             </div>
         )}
@@ -399,7 +483,13 @@ const QuizCard = ({ quiz }) => {
                 <button type="button" className={styles.navButton} onClick={goPrev} disabled={safeCurrentIndex === 0 || isLoadingSubmission} aria-label="Previous Question">
                     <ChevronLeft size={20} /> <span className={styles.navButtonText}>Prev</span>
                 </button>
-                <button type="button" className={styles.navButton} onClick={goNext} disabled={safeCurrentIndex === totalQuestions - 1 || isLoadingSubmission || !isAnswerSubmittedForCurrent} aria-label="Next Question">
+                <button 
+                    type="button" 
+                    className={styles.navButton} 
+                    onClick={goNext} 
+                    disabled={safeCurrentIndex === totalQuestions - 1 || isLoadingSubmission || !isAnswerSubmittedForCurrent} 
+                    aria-label="Next Question"
+                >
                     <span className={styles.navButtonText}>Next</span> <ChevronRight size={20} />
                 </button>
             </div>
