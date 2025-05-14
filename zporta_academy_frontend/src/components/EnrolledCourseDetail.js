@@ -186,21 +186,40 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
     >
       {/* Lesson Header */}
       <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
-        <h3 id={`lesson-title-${lesson.id}`} className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100 flex items-center mr-2"> {/* Added margin right */}
+        <h3
+          id={`lesson-title-${lesson.id}`}
+          className="
+            flex items-center mr-2
+
+            /* 1) clamp font size: min 0.875rem, scales up to 1.5rem at large screens */
+            text-[clamp(0.875rem,6vw,1.5rem)]
+
+            /* 2) never break inside a CJK “word” */
+            word-break-[keep-all]
+            overflow-wrap-normal
+
+            /* 3) only wrap at real whitespace if absolutely needed */
+            whitespace-nowrap
+
+            font-semibold text-gray-800 dark:text-gray-100
+          "
+        > {/* Added margin right */}
           {lesson.content_type === 'video' && <Video className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />}
           {lesson.content_type === 'text' && <FileText className="w-5 h-5 mr-2 text-green-500 flex-shrink-0" />}
           {/* Render highlighted title */}
-          <span className="flex-grow" dangerouslySetInnerHTML={{ __html: highlightedTitle }} /> {/* Allow title to grow */}
+              <span className="flex-grow" dangerouslySetInnerHTML={{ __html: highlightedTitle }} /> {/* Allow title to grow */}
         </h3>
         <div className="flex items-center space-x-3 flex-shrink-0">
           {isCompleted && (
-            <span className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center whitespace-nowrap"> {/* Prevent wrap */}
-              <CheckCircle className="w-4 h-4 mr-1" /> Completed
-            </span>
-          )}
-          {isCompleted && completedAt && (
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Completed on {new Date(completedAt).toLocaleString()}
+            <div className="flex flex-col items-start space-y-1">
+              <span className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center">
+                <CheckCircle className="w-4 h-4 mr-1" /> Completed
+              </span>
+              {completedAt && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(completedAt).toLocaleString()}
+                </span>
+              )}
             </div>
           )}
           {associatedQuiz && (
@@ -242,8 +261,7 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
 
           {/* Text Content */}
           {lesson.content_type === 'text' && lesson.content && (
-            <div
-              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 mb-4" // Added margin bottom
+            <div className="prose dark:prose-invert max-w-none break-words whitespace-normal text-gray-700 dark:text-gray-300 mb-4" // Added margin bottom
               dangerouslySetInnerHTML={{ __html: highlightedContent }}
             />
           )}
@@ -872,7 +890,7 @@ console.log('fetched quizzes:', quizzes)
 
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
         {/* Increased padding-bottom to avoid overlap with floating button */}
-        <div className="container mx-auto px-4 pt-8 pb-32 md:pb-32 max-w-4xl"> {/* Adjusted pb for mobile */}
+        <div className="w-full mx-auto px-4 pt-8 pb-32 max-w-full md:max-w-4xl">{/* Adjusted pb for mobile */}
 
           {/* Header */}
           <header className="mb-8 flex flex-col sm:flex-row justify-between items-start"> {/* Stack on small screens */}
@@ -885,7 +903,7 @@ console.log('fetched quizzes:', quizzes)
                </button>
                <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100">{courseData.title}</h1>
                {courseData.description && (
-                 <div className="mt-2 text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(courseData.description)}}></div>
+                 <div className="mt-2 text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none break-words whitespace-normal" dangerouslySetInnerHTML={{ __html: sanitizeHtml(courseData.description)}}></div>
                )}
              </div>
              <div className="flex-shrink-0 self-start sm:self-center"> {/* Align self start on small */}
