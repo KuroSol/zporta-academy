@@ -1,10 +1,11 @@
 /* QuizCard.module.css */
 
-/* --- Base Variables (Keep existing or sync with QuizPage.module.css) --- */
+/* --- Base Variables (sync with QuizPage.module.css or define locally) --- */
 :root {
   --primary-color: #4f46e5; /* indigo-600 */
   --primary-color-hover: #4338ca; /* indigo-700 */
-  --primary-color-light: #e0e7ff; /* indigo-100 */
+  --primary-color-light: #eef2ff; /* indigo-50, lighter for backgrounds */
+  --primary-color-dark: #3730a3; /* indigo-800 */
   --correct-color: #16a34a; /* green-600 */
   --correct-bg: #f0fdf4; /* green-50 */
   --correct-border: #86efac; /* green-300 */
@@ -15,17 +16,17 @@
   --text-primary: #1f2937; /* gray-800 */
   --text-secondary: #4b5563; /* gray-600 */
   --text-light: #6b7280; /* gray-500 */
-  --text-disabled: #9ca3af; /* gray-400 */
+  --text-on-primary: #ffffff;
   --bg-light: #ffffff;
   --bg-subtle: #f9fafb; /* gray-50 */
-  --bg-page: #f3f4f6; /* gray-100 */
   --border-color: #e5e7eb; /* gray-200 */
   --border-color-medium: #d1d5db; /* gray-300 */
   --border-radius: 0.75rem; /* 12px */
-  --border-radius-sm: 0.375rem; /* 6px */
+  --border-radius-sm: 0.5rem; /* 8px */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --transition-speed: 0.2s;
   --transition-speed-fast: 0.15s;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -34,405 +35,216 @@
 /* --- Card Container --- */
 .quizCard {
   font-family: var(--font-sans);
-  background-color: var(--bg-light);
-  padding: 1rem 1.25rem; /* Default padding */
+  background: linear-gradient(145deg, var(--bg-light) 0%, var(--bg-subtle) 100%);
+  padding: 1.25rem;
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   display: flex;
-  flex-direction: column; /* Stack elements vertically */
-  gap: 1rem; /* Increased gap between sections */
-  transition: box-shadow var(--transition-speed) ease, border-color var(--transition-speed) ease;
-  width: 100%; /* Take full width of container */
-  /* Center itself within the wrapper if needed (e.g., if wrapper is wider) */
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Apply max-width only on smaller screens (e.g., up to medium breakpoint) */
-@media (max-width: 768px) { /* Adjust breakpoint as needed (768px is md) */
-  .quizCard {
-    max-width: 450px; /* Limit width on smaller screens */
-  }
+  flex-direction: column;
+  gap: 1rem; /* Reduced gap slightly */
+  transition: box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
+  width: 100%;
+  max-width: 550px; /* Slightly wider for more complex content */
+  margin: 1rem auto;
 }
 
 .quizCard:hover {
-    box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-3px);
 }
 
-/* Styles for invalid/empty states */
 .errorCard, .emptyCard {
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 1.5rem 1rem;
-    background-color: var(--bg-subtle);
-    gap: 0.5rem; /* Smaller gap for error/empty */
-    margin-left: auto;
-    margin-right: auto;
-}
-.errorMessage {
-    color: var(--error-color-dark);
-    font-weight: 500;
-    font-size: 0.9rem;
-    margin: 0;
-}
-.errorIcon {
-    color: var(--incorrect-color);
-    width: 1.5rem;
-    height: 1.5rem;
-    margin: 0 auto 0.25rem;
-}
-.noQuestions {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-align: center;
-    padding: 1rem 0;
-    font-style: italic;
-    margin: 0;
-}
-
-
-/* --- Card Header (Title + Progress) --- */
-.cardHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline; /* Align title and progress text */
-    padding-bottom: 0.75rem; /* Increased padding */
-    border-bottom: 1px solid var(--border-color);
-    /* Removed margin-bottom, gap on parent handles spacing */
-}
-
-.cardTitle {
-  font-size: 1.1rem; /* Slightly smaller than page title */
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  /* Allow title to wrap if needed */
-  white-space: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Limit to 2 lines */
-  -webkit-box-orient: vertical;
-}
-
-.progressText {
-  font-size: 0.8rem;
-  font-weight: 500;
+  text-align: center;
   color: var(--text-secondary);
-  background-color: var(--bg-subtle);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  white-space: nowrap; /* Prevent wrapping */
-  flex-shrink: 0; /* Don't shrink */
-  margin-left: 0.5rem; /* Space from title */
+  padding: 1.5rem;
+  background: var(--bg-subtle);
+  gap: 0.75rem;
+  box-shadow: var(--shadow-md);
 }
+.errorMessage { color: var(--error-color-dark); font-weight: 500; }
+.errorIcon { color: var(--incorrect-color); width: 1.75rem; height: 1.75rem; margin-bottom: 0.5rem; }
+.noQuestions { font-size: 1rem; color: var(--text-light); padding: 1rem 0; }
 
-/* --- Question Display Area (NEW - similar to QuizPage) --- */
-.questionDisplayArea {
-  background-color: var(--bg-light); /* Can be subtle or same as card */
-  /* border: 1px solid var(--border-color); */ /* Optional border */
-  border-radius: var(--border-radius-sm);
-  padding: 0.75rem; /* Reduced padding for card */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem; /* Space between media and text */
-  min-height: 80px; /* Smaller min height for card */
-}
-
-/* --- Media inside Question/Options (NEW - adapted from QuizPage) --- */
-.cardMediaImage { /* Renamed from mediaImage */
-  display: block;
-  width: 100%;
-  max-width: 250px; /* Smaller max width for card */
-  max-height: 150px; /* Smaller max height for card */
-  object-fit: contain; /* Use contain to show whole image */
-  border-radius: var(--border-radius-sm);
-  /* box-shadow: var(--shadow-sm); */ /* Optional shadow */
-}
-
-.cardMediaAudio { /* Renamed from mediaAudio */
-  display: block;
-  width: 100%;
-  max-width: 250px; /* Smaller max width */
-  height: 40px; /* Consistent height */
-}
-
-/* --- Question Text inside Question Area --- */
-.questionText {
-  font-size: 1rem; /* Standard text size for card */
-  line-height: 1.5;
-  color: var(--text-primary);
-  font-weight: 500;
-  text-align: center;
-  width: 100%;
-}
-.questionText p { margin-bottom: 0.5em; }
-.questionText strong { font-weight: 600; }
-.questionText code {
-  background-color: var(--border-color);
-  padding: 0.1em 0.4em;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
-
-/* --- Options List --- */
-.optionsList {
-  display: grid;
-  grid-template-columns: 1fr; /* Single column layout */
-  gap: 0.65rem; /* Adjusted gap */
-}
-
-/* --- Option Button Styling (Updated for media) --- */
-.optionButton {
-  display: flex;
-  flex-direction: column; /* Stack content vertically (text/image first, then audio) */
-  width: 100%;
-  padding: 0.75rem 1rem; /* Adjusted padding */
-  font-family: inherit;
-  font-size: 0.95rem; /* Slightly smaller font */
-  text-align: left;
-  color: var(--text-primary);
-  background-color: var(--bg-light);
-  border: 1px solid var(--border-color-medium); /* Use medium border */
-  border-radius: var(--border-radius-sm); /* Adjusted radius */
-  cursor: pointer;
-  transition: all var(--transition-speed-fast) ease-in-out;
-  position: relative;
-  overflow: hidden;
-  min-height: 52px; /* Adjusted min height */
-  gap: 0.5rem; /* Gap between content and audio */
-}
-
-.optionButton.interactive:hover {
-  border-color: var(--primary-color);
-  background-color: var(--primary-color-light);
-  box-shadow: var(--shadow-sm); /* Subtle shadow */
-}
-.optionButton.interactive:focus-visible {
-  outline: 2px solid var(--primary-color); /* Use outline for focus */
-  outline-offset: 1px;
-  border-color: var(--primary-color);
-}
-
-/* Container for Image/Text within the option */
-.optionContent {
-    display: flex;
-    align-items: center; /* Align image and text */
-    gap: 0.75rem; /* Gap between image and text */
-    width: 100%;
-}
-
-/* Option Image Styling */
-.optionMediaImage { /* NEW class specifically for option images */
-    width: 45px; /* Slightly larger option image */
-    height: 45px;
-    object-fit: cover;
-    border-radius: 4px;
-    flex-shrink: 0;
-    background-color: var(--border-color); /* Placeholder bg */
-}
-
-/* Option Audio Control Styling */
-.optionAudioControl { /* NEW class specifically for option audio */
-    display: block;
-    width: 100%;
-    margin-top: 0.5rem; /* Space above audio if present */
-    height: 35px; /* Smaller height */
-}
-.optionAudioControl::-webkit-media-controls-panel {
-  background-color: var(--bg-subtle);
-  border-radius: 4px;
-}
-
-/* Option Text Styling */
-.optionText {
-    flex-grow: 1; /* Allow text to take remaining space */
-    line-height: 1.4; /* Tighter line height */
-}
-.optionText p { margin: 0; }
-.optionText strong { font-weight: 600; }
-.optionText code {
-    background-color: var(--border-color);
-    padding: 0.1em 0.4em;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
-
-/* Feedback Icon Styling */
-.optionFeedbackIcon {
-    position: absolute;
-    top: 0.5rem; /* Adjust position */
-    right: 0.6rem;
-    opacity: 0;
-    transform: scale(0.8);
-    transition: opacity var(--transition-speed-fast), transform var(--transition-speed-fast);
-    pointer-events: none;
-    /* Add background for better visibility over images */
-    background-color: rgba(255, 255, 255, 0.6);
-    border-radius: 50%;
-    padding: 2px;
-    line-height: 0; /* Prevent extra space */
-}
-.optionButton.correct .optionFeedbackIcon,
-.optionButton.selectedIncorrect .optionFeedbackIcon {
-    opacity: 1;
-    transform: scale(1);
-}
-.optionButton.correct .optionFeedbackIcon { color: var(--correct-color); }
-.optionButton.selectedIncorrect .optionFeedbackIcon { color: var(--incorrect-color); }
-
-/* Option State Styling */
-.optionButton.disabled {
-  opacity: 0.65; /* Slightly less opaque */
-  cursor: not-allowed;
-  background-color: var(--bg-subtle);
-  border-color: var(--border-color);
-  box-shadow: none;
-  pointer-events: none;
-}
-.optionButton:disabled { /* Ensure disabled state is applied */
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.optionButton.correct {
-  border-color: var(--correct-border); /* Use lighter border */
-  background-color: var(--correct-bg);
-  /* color: var(--correct-color); */ /* Keep text color default unless selected */
-  /* font-weight: 500; */
-}
-.optionButton.selectedCorrect {
-   border-color: var(--correct-color); /* Stronger border */
-   background-color: var(--correct-bg);
-   box-shadow: 0 0 0 1px var(--correct-color); /* Subtle ring */
-   color: var(--correct-color); /* Change text color when selected correct */
-   font-weight: 500;
-}
-.optionButton.selectedIncorrect {
-  border-color: var(--incorrect-color); /* Stronger border */
-  background-color: var(--incorrect-bg);
-  /* color: var(--incorrect-color); */ /* Keep text color default */
-  font-weight: 500;
-  box-shadow: 0 0 0 1px var(--incorrect-color); /* Subtle ring */
-}
-/* Style the text specifically for incorrect selection */
-.optionButton.selectedIncorrect .optionText {
-    color: var(--incorrect-color);
-}
-
-
-/* --- Feedback Area Container (NEW) --- */
-.feedbackContainer {
-    min-height: 38px; /* Reserve space for feedback to prevent layout shifts */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.5rem; /* Consistent space */
-}
-
-/* --- Feedback Area Styling --- */
-.feedbackArea {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem;
-  width: 100%; /* Take full width of container */
-  border-radius: var(--border-radius-sm); /* Match option radius */
-  font-size: 0.9rem; /* Adjusted size */
-  font-weight: 500;
-  text-align: center;
-  animation: fadeInScale 0.3s ease-out;
-  border: 1px solid transparent; /* Base border */
-}
-
-.feedbackError {
-    background-color: var(--incorrect-bg);
-    color: var(--error-color-dark);
-    border-color: var(--incorrect-border);
-}
-.feedbackCorrect {
-  background-color: var(--correct-bg);
-  color: var(--correct-color);
-  border-color: var(--correct-border);
-}
-.feedbackIncorrect {
-  background-color: var(--incorrect-bg);
-  color: var(--incorrect-color);
-  border-color: var(--incorrect-border);
-}
-
-.feedbackIcon {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex-shrink: 0;
-}
-
-/* --- Navigation --- */
-.navigation {
+/* --- Card Header --- */
+.cardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 0.75rem; /* Space above nav */
-  border-top: 1px solid var(--border-color); /* Separator */
-  margin-top: 0.5rem; /* Space below feedback */
+  padding-bottom: 0.75rem; /* Reduced padding */
+  border-bottom: 1px solid var(--border-color-medium);
 }
+.cardTitle { font-size: 1.25rem; font-weight: 700; color: var(--primary-color-dark); margin: 0; line-height: 1.3; }
+.progressText { font-size: 0.75rem; font-weight: 600; color: var(--primary-color); background-color: var(--primary-color-light); padding: 0.25rem 0.6rem; border-radius: var(--border-radius-sm); white-space: nowrap; }
 
-.navButton {
-  display: inline-flex;
+/* --- Question Display Area --- */
+.questionDisplayArea {
+  background-color: var(--bg-light);
+  border-radius: var(--border-radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center; /* Center icon */
-  background-color: transparent;
-  color: var(--primary-color);
+  gap: 0.75rem; /* Reduced gap */
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+.questionMediaItem { width: 100%; max-width: 280px; border-radius: var(--border-radius-sm); }
+.cardMediaImage.questionMediaItem { max-height: 180px; object-fit: contain; }
+.cardMediaAudio.questionMediaItem { height: 40px; }
+.questionText { font-size: 1.05rem; line-height: 1.6; color: var(--text-primary); font-weight: 400; text-align: center; width: 100%; }
+.questionText p { margin-bottom: 0.5em; }
+.questionText strong { font-weight: 600; color: var(--primary-color-dark); }
+
+/* --- Answer Area Container --- */
+.answerAreaContainer { padding-top: 0.5rem; }
+.noOptionsText { text-align: center; color: var(--text-light); font-style: italic; padding: 1rem 0; }
+
+/* --- Options List (MCQ/Multi) --- */
+.optionsList { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+/* Consider 2 columns for options if space allows and options are short */
+/* @media (min-width: 480px) { .optionsList { grid-template-columns: repeat(2, 1fr); } } */
+
+.optionButton {
+  display: flex; align-items: center; width: 100%; padding: 0.7rem 0.9rem;
+  font-family: inherit; font-size: 0.9rem; text-align: left; color: var(--text-primary);
+  background-color: var(--bg-light); border: 2px solid var(--border-color-medium);
+  border-radius: var(--border-radius-sm); cursor: pointer;
+  transition: all var(--transition-speed-fast) ease-in-out; position: relative;
+  min-height: 50px; gap: 0.6rem; overflow: hidden;
+}
+.optionMediaContainer { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.optionMediaImage_Small { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background-color: var(--border-color); }
+.optionTextContainer { flex-grow: 1; display: flex; flex-direction: column; gap: 0.25rem; overflow: hidden; }
+.optionText { line-height: 1.45; font-weight: 500; }
+.optionText p { margin: 0; }
+.optionAudioControl_Small { width: 100%; height: 30px; max-width: 180px; }
+.optionAudioControl_Small::-webkit-media-controls-panel { background-color: var(--bg-subtle); border-radius: 4px; }
+
+.optionButton.interactive:hover { border-color: var(--primary-color); background-color: var(--primary-color-light); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.optionButton.selected { border-color: var(--primary-color); background-color: var(--primary-color-light); }
+.optionButton.disabled { opacity: 0.5; cursor: not-allowed; background-color: var(--bg-subtle); border-color: var(--border-color); box-shadow: none; transform: none; }
+.optionButton.correct { border-color: var(--correct-border) !important; background-color: var(--correct-bg) !important; }
+.optionButton.selectedCorrect { border-color: var(--correct-color) !important; background-color: var(--correct-bg) !important; color: var(--correct-color) !important; font-weight: 600; }
+.optionButton.selectedIncorrect { border-color: var(--incorrect-color) !important; background-color: var(--incorrect-bg) !important; color: var(--incorrect-color) !important; font-weight: 600; }
+.optionButton.selectedIncorrect .optionText { color: var(--incorrect-color); }
+
+.optionFeedbackIcon { position: absolute; top: 50%; right: 0.6rem; transform: translateY(-50%); opacity: 0; }
+.optionButton.correct .optionFeedbackIcon, .optionButton.selectedCorrect .optionFeedbackIcon, .optionButton.selectedIncorrect .optionFeedbackIcon { opacity: 1; }
+.optionButton.correct .optionFeedbackIcon, .optionButton.selectedCorrect .optionFeedbackIcon { color: var(--correct-color); }
+.optionButton.selectedIncorrect .optionFeedbackIcon { color: var(--incorrect-color); }
+
+
+/* --- Interactive Short Answer Area --- */
+.shortAnswerInteractiveArea { display: flex; flex-direction: column; gap: 0.75rem; }
+.inputAndMicWrapper { display: flex; align-items: center; gap: 0.5rem; position: relative; }
+.inputIconDecorator { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-light); pointer-events: none; }
+.shortAnswerInputCard {
+  flex-grow: 1; padding: 0.75rem 0.75rem 0.75rem 2.5rem; /* Padding for icon */
+  border: 1px solid var(--border-color-medium); border-radius: var(--border-radius-sm);
+  font-size: 1rem; color: var(--text-primary); background-color: var(--bg-light);
+  transition: border-color var(--transition-speed-fast), box-shadow var(--transition-speed-fast);
+}
+.shortAnswerInputCard:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color-light); outline: none; }
+.micButtonCard { /* For SpeechToTextInput button if it's separate */
+  padding: 0.5rem; background-color: var(--primary-color-light); color: var(--primary-color);
+  border: 1px solid var(--primary-color); border-radius: var(--border-radius-sm); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.micButtonCard:hover { background-color: #c7d2fe; }
+
+
+/* --- Submit Button for Card --- */
+.submitButton.cardSubmitButton {
+  background-color: var(--primary-color); color: var(--text-on-primary);
+  border: none; padding: 0.7rem 1.2rem; border-radius: var(--border-radius-sm);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: background-color var(--transition-speed), transform var(--transition-speed);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  align-self: center; /* Center if in a flex column */
+  margin-top: 0.5rem;
+}
+.submitButton.cardSubmitButton:hover:not(:disabled) { background-color: var(--primary-color-hover); transform: translateY(-1px); }
+.submitButton.cardSubmitButton:disabled { background-color: var(--border-color-medium); color: var(--text-disabled); cursor: not-allowed; transform: none; }
+
+/* Styles for FillInTheBlanksQuestion and SortQuestion when embedded in card */
+/* These components might need their own internal styles adjusted for card context, */
+/* or you can add overrides here. Example: */
+.answerAreaContainer :global(.fillInTheBlanksContainer),
+.answerAreaContainer :global(.sortQuestionContainer) {
+  padding: 0.5rem;
   border: none;
-  padding: 0.35rem; /* Smaller padding for icon-only */
-  border-radius: 50%; /* Circular buttons */
-  width: 32px; /* Fixed size */
-  height: 32px; /* Fixed size */
-  cursor: pointer;
-  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease, opacity var(--transition-speed) ease;
-}
-
-.navButton:hover:not(:disabled) {
-  background-color: var(--primary-color-light); /* Subtle hover */
-}
-
-.navButton:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 1px;
-    background-color: var(--primary-color-light);
-}
-
-.navButton:disabled {
-  color: var(--text-disabled);
-  opacity: 0.5;
-  cursor: not-allowed;
   background-color: transparent;
 }
+.answerAreaContainer :global(.sentenceContainer) { font-size: 1rem; line-height: 2; }
+.answerAreaContainer :global(.fillBlankDropZone) { min-width: 90px; padding: 0.25rem 0.5rem; }
+.answerAreaContainer :global(.draggableWord) { padding: 0.4rem 0.8rem; }
+.answerAreaContainer :global(.wordBank) { padding: 0.5rem; min-height: 60px; }
 
+/*
+  The following rule was removed because `composes` cannot be used with :global or complex selectors.
+  The SortQuestion and FillInTheBlanksQuestion components should ideally handle their own submit button styling,
+  possibly by accepting a className prop or by importing this CSS module and using styles.cardSubmitButton.
+*/
+/*
+.answerAreaContainer :global(.btnSubmitAnswer) {
+    composes: submitButton cardSubmitButton;
+    margin-top: 0.75rem;
+}
+*/
+
+
+/* --- Feedback Area --- */
+.feedbackContainer { min-height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 0.25rem; }
+.feedbackArea {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.5rem 0.8rem; width: 100%; border-radius: var(--border-radius-sm);
+  font-size: 0.9rem; font-weight: 600; text-align: center;
+  animation: fadeInScale 0.3s ease-out; border: 1px solid transparent;
+}
+.feedbackError { background-color: var(--incorrect-bg); color: var(--error-color-dark); border-color: var(--incorrect-border); }
+.feedbackCorrect { background-color: var(--correct-bg); color: var(--correct-color); border-color: var(--correct-border); }
+.feedbackIncorrect { background-color: var(--incorrect-bg); color: var(--incorrect-color); border-color: var(--incorrect-border); }
+.feedbackIcon { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+.correctAnswerTextCard { font-weight: 400; font-size: 0.85em; margin-left: 0.5rem; color: var(--text-secondary); font-style: italic; }
+
+
+/* --- Navigation --- */
+.navigation {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 0.75rem; border-top: 1px solid var(--border-color-medium); margin-top: 0.5rem;
+}
+.navButton {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background-color: var(--primary-color); color: var(--text-on-primary); border: none;
+  padding: 0.5rem 1rem; border-radius: var(--border-radius-sm);
+  font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
+  box-shadow: var(--shadow-sm);
+}
+.navButton:first-child { background-color: var(--bg-light); color: var(--primary-color); border: 1px solid var(--primary-color); }
+.navButton:hover:not(:disabled) { background-color: var(--primary-color-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.navButton:first-child:hover:not(:disabled) { background-color: var(--primary-color-light); }
+.navButton:disabled { background-color: var(--border-color-medium); color: var(--text-disabled); cursor: not-allowed; transform: none; box-shadow: none; border-color: var(--border-color-medium); }
+
+.quizCompletedCard {
+    text-align: center;
+    font-weight: 600;
+    color: var(--correct-color);
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background-color: var(--correct-bg);
+    border-radius: var(--border-radius-sm);
+}
 
 /* --- Animations --- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
+@keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-/* Utility for visually hidden elements */
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+/* Add animate-spin for loader if not globally available */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

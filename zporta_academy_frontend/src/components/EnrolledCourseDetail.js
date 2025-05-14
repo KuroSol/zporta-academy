@@ -139,7 +139,7 @@ const QuizSection = React.memo(({ quiz, searchTerm, onOpenQuiz }) => {
 
 
 // Represents a single lesson section, potentially including a quiz
-const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, onMarkComplete, onOpenQuiz, searchTerm }) => {
+const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, completedAt, onMarkComplete, onOpenQuiz, searchTerm }) => {
   const [isExpanded, setIsExpanded] = useState(!isCompleted); // Start expanded unless already complete
   const contentRef = useRef(null);
 
@@ -197,6 +197,11 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, onMarkC
             <span className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center whitespace-nowrap"> {/* Prevent wrap */}
               <CheckCircle className="w-4 h-4 mr-1" /> Completed
             </span>
+          )}
+          {isCompleted && completedAt && (
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Completed on {new Date(completedAt).toLocaleString()}
+            </div>
           )}
           {associatedQuiz && (
             <HelpCircle className="w-4 h-4 text-purple-500 dark:text-purple-400" title="Quiz available for this lesson" />
@@ -479,6 +484,8 @@ const ThemeToggle = ({ theme, onToggle }) => {
 
 const EnrolledCourseStudyPage = () => {
   const [modalQuiz, setModalQuiz] = useState(null);
+
+  const [completionTimestamps, setCompletionTimestamps] = useState({});
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
   const openQuizModal = useCallback((quiz) => {
@@ -494,6 +501,7 @@ const EnrolledCourseStudyPage = () => {
   const navigate = useNavigate();
   const { token, logout } = useContext(AuthContext);
 
+  
   // --- State ---
   const [courseData, setCourseData] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -591,7 +599,6 @@ const EnrolledCourseStudyPage = () => {
         // Fetch or determine Completion Status
         // Example: Assuming completion status comes with lesson details
         const initialCompleted = new Set(
-            detailedLessons.filter(l => l.is_completed_by_user /* Adjust field name */).map(l => l.id)
         );
         // Or fetch separately if needed:
         // const completionRes = await apiClient.get(`/enrollments/${enrollmentId}/completion/`);
@@ -599,6 +606,19 @@ const EnrolledCourseStudyPage = () => {
         setCompletedLessons(initialCompleted);
 
 
+        const { data: completions } = await apiClient.get(
+          `/lessons/enrollments/${enrollmentId}/completions/`
+        );
+        const tsMap = {};
+        
+        completions.forEach(c => {
+          // c.lesson.id comes from SimpleLessonCompletionSerializer
+          tsMap[c.lesson.id] = c.completed_at;
+        });
+        setCompletionTimestamps(tsMap);
+
+        // build your completedLessons set from the same data:
+        setCompletedLessons(new Set(Object.keys(tsMap).map(idStr => parseInt(idStr, 10))));
       } catch (err) {
         console.error("Error fetching course study data:", err);
         if (isMounted) {
@@ -675,7 +695,17 @@ const EnrolledCourseStudyPage = () => {
     setCompletedLessons(prev => new Set(prev).add(lessonId)); // Optimistic update
 
     try {
-      await apiClient.post(`/lessons/${lessonIdentifier}/complete/`, {});
+      const res = await apiClient.post(
+        `/lessons/${lessonIdentifier}/complete/`, 
+        {}
+      );
+
+      if (res.status === 201 && res.data.completed_at) {
+        setCompletionTimestamps(prev => ({
+          ...prev,
+          [lessonId]: res.data.completed_at
+        }));
+      }
       // Success - state already updated
     } catch (err) {
       console.error("Error marking lesson complete:", err);
@@ -888,8 +918,9 @@ console.log('fetched quizzes:', quizzes)
                 lesson={lesson}
                 associatedQuiz={lesson.associatedQuiz}
                 isCompleted={completedLessons.has(lesson.id)}
+                completedAt={completionTimestamps[lesson.id]}
                 onMarkComplete={handleMarkComplete}
-                onOpenQuiz={openQuizModal}           // ← NEW
+                onOpenQuiz={openQuizModal}
                 searchTerm={searchTerm}
               />
             ))}
@@ -923,7 +954,7 @@ console.log('fetched quizzes:', quizzes)
           </div>
         )}
        {/* Add some basic styles for the active search highlight */}
-       <style jsx global>{`
+       <style>{`
         .search-match-highlight {
           transition: background-color 0.3s ease-in-out;
           border-radius: 3px; /* Slightly more rounding */

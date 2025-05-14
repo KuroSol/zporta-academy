@@ -13,6 +13,24 @@ from .serializers import SimpleLessonCompletionSerializer
 from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
 
+class EnrollmentLessonCompletionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, enrollment_id):
+        # 1) verify that this enrollment belongs to the user
+        enrollment = get_object_or_404(
+            Enrollment, id=enrollment_id, user=request.user
+        )
+        # 2) pull all completions for lessons in that course
+        completions = LessonCompletion.objects.filter(
+            user=request.user,
+            lesson__course=enrollment.content_object  # or lesson__course_id=enrollment.object_id
+        )
+        serializer = SimpleLessonCompletionSerializer(
+            completions, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
 class RecentLessonCompletionsView(generics.ListAPIView):
     """
     Returns the 3 most recent lessons completed by the authenticated user.
@@ -27,28 +45,6 @@ class RecentLessonCompletionsView(generics.ListAPIView):
             'lesson', 'lesson__course' # Preload lesson and course data
         ).order_by('-completed_at')[:3] # Order by most recent, limit to 3
     
-class MarkLessonCompleteView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, permalink):
-        lesson = get_object_or_404(Lesson, permalink=permalink)
-
-        completion, created = LessonCompletion.objects.get_or_create(
-            user=request.user,
-            lesson=lesson
-        )
-
-        if created:
-            return Response({
-                "message": "Lesson marked as complete.",
-                "lesson_id": lesson.id
-            }, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                "message": "Lesson already completed.",
-                "lesson_id": lesson.id
-            }, status=status.HTTP_200_OK)
-
 
 class LessonEnrollmentCompletionStatusView(APIView):
     permission_classes = [IsAuthenticated]
@@ -196,45 +192,47 @@ class UserLessonsView(APIView):
 class MarkLessonCompleteView(APIView):
     """
     Marks a specific lesson as completed by the authenticated user.
+    If the lesson belongs to a premium course, user must be enrolled first.
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, permalink):
         lesson = get_object_or_404(Lesson, permalink=permalink)
 
-        # If lesson belongs to a premium course, verify user is enrolled
+        # Premium-course guard
         if lesson.course and lesson.course.course_type == "premium":
             course_ct = ContentType.objects.get_for_model(Course)
-            is_enrolled = Enrollment.objects.filter(
+            enrolled = Enrollment.objects.filter(
                 user=request.user,
                 content_type=course_ct,
                 object_id=lesson.course.id,
                 enrollment_type="course"
             ).exists()
-            if not is_enrolled:
+            if not enrolled:
                 return Response(
                     {"error": "You must be enrolled in the premium course to complete this lesson."},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-        # Create or get an existing completion record
+        # Create or fetch completion
         completion, created = LessonCompletion.objects.get_or_create(
             user=request.user,
             lesson=lesson
         )
+
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        message     = "Lesson marked as complete." if created else "Lesson already completed."
+
+        # Include the timestamp in the response if newly created
+        payload = {
+            "message":    message,
+            "lesson_id":  lesson.id,
+        }
         if created:
-            return Response(
-                {"message": "Lesson marked as complete.", "lesson_id": lesson.id},
-                status=status.HTTP_201_CREATED
-            )
-        else:
-            return Response(
-                {"message": "Lesson already completed.", "lesson_id": lesson.id},
-                status=status.HTTP_200_OK
-            )
-        
+            # completed_at is auto-set by your model's auto_now_add
+            payload["completed_at"] = completion.completed_at
 
-
+        return Response(payload, status=status_code)
 class AddQuizToLessonView(APIView):
     permission_classes = [IsAuthenticated]
 

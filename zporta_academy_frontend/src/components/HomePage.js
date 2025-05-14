@@ -164,7 +164,7 @@ const HomePage = () => {
             const withPermalinks = await Promise.all(
               aggregated.map(async item => {
                 try {
-                  const quizRes = await apiClient.get(`/quizzes/detail/${item.quizId}/`);
+                  const quizRes = await apiClient.get(`/quizzes/${item.quizId}/`);
                   return { ...item, permalink: quizRes.data.permalink };
                 } catch {
                   return { ...item, permalink: null };

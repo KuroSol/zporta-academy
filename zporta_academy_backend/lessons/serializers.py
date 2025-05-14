@@ -24,9 +24,12 @@ class SimpleLessonSerializerForCompletion(serializers.ModelSerializer):
 class SimpleLessonCompletionSerializer(serializers.ModelSerializer):
     """ Serializer for the recent completions list """
     lesson = SimpleLessonSerializerForCompletion(read_only=True)
+    lesson_title    = serializers.CharField(source="lesson.title")
+    lesson_permalink = serializers.CharField(source="lesson.permalink")
+    completed_at = serializers.DateTimeField(read_only=True)
     class Meta:
         model = LessonCompletion
-        fields = ['id', 'lesson', 'completed_at'] # Include fields needed by frontend
+        fields = ['id', 'lesson', 'completed_at', 'lesson_title', 'lesson_permalink'] # Include fields needed by frontend
 
 class LessonSerializer(serializers.ModelSerializer):
     is_locked = serializers.BooleanField(read_only=True)
