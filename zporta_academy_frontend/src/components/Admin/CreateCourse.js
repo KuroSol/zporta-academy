@@ -39,59 +39,60 @@ const CreateCourse = () => {
     const fileInputRef = useRef(null); // Ref for file input
 
     // --- Data Fetching Logic ---
-    // Wrap fetch logic in useCallback to avoid re-creating it on every render
     const fetchCourseData = useCallback(async (showLoading = true) => {
-      // Keep only lesson/quiz fetching logic here for refreshing lists
-      setMessage(''); // Clear previous messages
+      if (showLoading) setLoadingInitial(true);
+      setMessage('');
       try {
-          // Fetch only lessons and quizzes as other course data is already in state
-          const [lessonsRes, quizzesRes] = await Promise.all([
-              apiClient.get('/lessons/my/'),
-              apiClient.get('/quizzes/my/')
+          const [subjectsRes, lessonsRes, quizzesRes] = await Promise.all([
+              apiClient.get('/subjects/'),
+              apiClient.get('/lessons/my/'), // Assuming endpoint for lessons available to be added
+              apiClient.get('/quizzes/my/')  // Assuming endpoint for quizzes available to be added
           ]);
-          // Update only lessons and quizzes state
-          const availableLessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
-          setLessons(availableLessons);
-          const availableQuizzes = Array.isArray(quizzesRes.data) ? quizzesRes.data : [];
-          setQuizzes(availableQuizzes);
+
+          setSubjects(Array.isArray(subjectsRes.data) ? subjectsRes.data : []);
+          setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
+          setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
 
       } catch (error) {
-          console.error("Error fetching course lists:", error.response?.data || error.message);
-          setMessage('Failed to refresh lessons/quizzes. Please try again.');
+          console.error("Error fetching initial data:", error.response?.data || error.message);
+          setMessage('Failed to load required data. Please try refreshing.');
           setMessageType('error');
-          if (error.response?.status === 401) logout();
+          if (error.response?.status === 401 || error.response?.status === 403) logout();
       } finally {
-          // Only set loading if it was explicitly requested (for initial load)
-          // This prevents the whole page showing 'loading' when just refreshing lists
           if (showLoading) setLoadingInitial(false);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [logout]); // Add other stable dependencies if needed, like logout
+    }, [logout]);
 
     // Fetch subjects, lessons, and quizzes on mount
     useEffect(() => {
-      // Initial fetch on mount
       if (localStorage.getItem('token')) {
-          setLoadingInitial(true); // Set loading true for initial fetch
-          // Fetch subjects separately only on the first load
-          apiClient.get('/subjects/')
-              .then(res => setSubjects(res.data || []))
-              .catch(err => {
-                   console.error("Failed to load subjects", err);
-                   setMessage('Failed to load subject list.');
-                   setMessageType('error');
-               })
-              .finally(() => {
-                  // Fetch lessons/quizzes after subjects (or concurrently if independent)
-                  // Pass true to show the loading indicator on initial load
-                  fetchCourseData(true);
-               });
+          fetchCourseData(true);
       } else {
           setMessage("Please log in to create a course.");
           setMessageType('error');
           setLoadingInitial(false);
+          navigate('/login');
       }
-    }, [fetchCourseData]); // Depend on the memoized fetch function
+    }, [fetchCourseData, navigate]);
+
+    // Refresh lists (lessons/quizzes) without full page loading
+    const refreshContentLists = useCallback(async () => {
+        setMessage('');
+        try {
+            const [lessonsRes, quizzesRes] = await Promise.all([
+                apiClient.get('/lessons/my/'),
+                apiClient.get('/quizzes/my/')
+            ]);
+            setLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
+            setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
+        } catch (error) {
+            console.error("Error refreshing content lists:", error.response?.data || error.message);
+            setMessage('Failed to refresh lesson/quiz lists.');
+            setMessageType('error');
+            if (error.response?.status === 401 || error.response?.status === 403) logout();
+        }
+    }, [logout]);
+
 
     // Toggle lesson selection
     const handleLessonToggle = (lessonId) => {
@@ -111,6 +112,11 @@ const CreateCourse = () => {
     const handleCoverImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                setMessage('Cover image cannot exceed 5MB.');
+                setMessageType('error');
+                return;
+            }
             setCoverImage(file);
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -132,37 +138,33 @@ const CreateCourse = () => {
         }
     };
 
-    // *** ADD Modal Handlers ***
     const handleLessonCreated = (newLesson) => {
-      setIsLessonModalOpen(false); // Close modal
-      setMessage(`Lesson "${newLesson?.title || 'New Lesson'}" created successfully!`); // Optional feedback
+      setIsLessonModalOpen(false);
+      setMessage(`Lesson "${newLesson?.title || 'New Lesson'}" created successfully!`);
       setMessageType('success');
-      fetchCourseData(false); // Re-fetch lessons/quizzes WITHOUT full page loading indicator
-      // Optional: auto-select the new lesson
-      // if (newLesson?.id) {
-      //    setSelectedLessons(prev => [...prev, newLesson.id]);
-      // }
-      setTimeout(() => setMessage(''), 3000); // Clear message after a delay
+      refreshContentLists(); // Refresh lists
+      if (newLesson?.id) { // Optionally auto-select
+         setSelectedLessons(prev => [...prev, newLesson.id]);
+      }
+      setTimeout(() => setMessage(''), 3000);
     };
 
     const handleQuizCreated = (newQuiz) => {
-      setIsQuizModalOpen(false); // Close modal
+      setIsQuizModalOpen(false);
       setMessage(`Quiz "${newQuiz?.title || 'New Quiz'}" created successfully!`);
       setMessageType('success');
-      fetchCourseData(false); // Re-fetch lessons/quizzes WITHOUT full page loading indicator
-      // Optional: auto-select the new quiz
-      // if (newQuiz?.id) {
-      //    setSelectedQuizzes(prev => [...prev, newQuiz.id]);
-      // }
-      setTimeout(() => setMessage(''), 3000); // Clear message
+      refreshContentLists(); // Refresh lists
+      if (newQuiz?.id) { // Optionally auto-select
+          setSelectedQuizzes(prev => [...prev, newQuiz.id]);
+      }
+      setTimeout(() => setMessage(''), 3000);
     };
 
     // Save Course Handler
     const handleSaveCourse = async () => {
         setMessage('');
-        setMessageType('error'); // Default to error
+        setMessageType('error');
 
-        // --- Basic Validation ---
         if (!localStorage.getItem('token')) {
             setMessage('Authentication error. Please log in again.'); navigate('/login'); return;
         }
@@ -171,14 +173,12 @@ const CreateCourse = () => {
         if (!subject) { setMessage('Please select a Subject.'); return; }
         if (!editorContent || !editorContent.trim()) { setMessage('Course Description cannot be empty.'); return; }
         if (courseType === 'premium' && (!price || parseFloat(price) <= 0)) { setMessage('Valid Price is required for Premium courses.'); return; }
-        // Add validation for tester format if needed (e.g., check for valid usernames/emails)
-        const testerList = testers.split(',').map(t => t.trim()).filter(Boolean); // Get valid testers
+        
+        const testerList = testers.split(',').map(t => t.trim()).filter(Boolean);
         if (testerList.length > 3) { setMessage('You can only assign a maximum of 3 testers.'); return; }
 
+        setSubmitting(true);
 
-        setSubmitting(true); // Start submission state
-
-        // --- Prepare FormData ---
         const formData = new FormData();
         formData.append('title', title.trim());
         formData.append('description', editorContent);
@@ -192,21 +192,19 @@ const CreateCourse = () => {
         let attachmentErrors = [];
 
         try {
-            // 1. Create the Course
             setMessage('Creating course...');
             const response = await apiClient.post('/courses/', formData);
             courseData = response.data;
-            setMessage('Course created! Attaching items...'); // Intermediate success message
-
             const coursePermalink = courseData?.permalink;
+
             if (!coursePermalink) {
                 throw new Error("Failed to get course identifier after creation.");
             }
+            
+            setMessage('Course base created! Attaching items...');
 
-            // Use Promise.allSettled for better error handling of attachments
             const attachmentPromises = [];
 
-            // 2. Attach Lessons
             if (selectedLessons.length > 0) {
                  selectedLessons.forEach(lessonId => {
                     attachmentPromises.push(
@@ -216,7 +214,6 @@ const CreateCourse = () => {
                 });
             }
 
-            // 3. Attach Quizzes
             if (selectedQuizzes.length > 0) {
                  selectedQuizzes.forEach(quizId => {
                     attachmentPromises.push(
@@ -226,7 +223,6 @@ const CreateCourse = () => {
                 });
             }
 
-            // 4. Assign Testers (only if publishing and testers exist)
             if (testerList.length > 0 && !isDraft) {
                  attachmentPromises.push(
                     apiClient.post(`/courses/${coursePermalink}/assign-testers/`, { testers: testerList })
@@ -234,26 +230,22 @@ const CreateCourse = () => {
                  );
             }
 
-            // Wait for all attachments/assignments to settle
             if (attachmentPromises.length > 0) {
                 setMessage('Attaching Lessons/Quizzes/Testers...');
                 const results = await Promise.allSettled(attachmentPromises);
                 results.forEach(result => {
                     if (result.status === 'rejected') {
-                        const failedItem = result.reason; // The object we created in .catch()
+                        const failedItem = result.reason;
                         console.error(`Error attaching ${failedItem.type} ${failedItem.id}:`, failedItem.error?.response?.data || failedItem.error?.message);
-                        attachmentErrors.push(`${failedItem.type} (${failedItem.id})`);
+                        attachmentErrors.push(`${failedItem.type} (${failedItem.id || 'item'})`);
                     }
                 });
             }
 
-
-            // 5. Final Feedback and Navigation
             if (attachmentErrors.length > 0) {
-                setMessage(`Course ${isDraft ? 'saved as draft' : 'published'}, but failed to attach/assign: ${attachmentErrors.join(', ')}.`);
-                setMessageType('error'); // Indicate partial failure
-                 // Navigate to edit page might be better UX here
-                setTimeout(() => navigate(`/admin/courses/edit/${coursePermalink}`), 3000); // Redirect after delay
+                setMessage(`Course ${isDraft ? 'saved as draft' : 'published'}, but failed to attach/assign: ${attachmentErrors.join(', ')}. You can edit the course to try again.`);
+                setMessageType('error'); 
+                setTimeout(() => navigate(`/admin/courses/edit/${coursePermalink}`), 4000);
             } else {
                 setMessage(`Course ${isDraft ? 'saved as draft' : 'published'} successfully!`);
                 setMessageType('success');
@@ -261,32 +253,30 @@ const CreateCourse = () => {
                     if (isDraft) {
                         navigate(`/admin/courses/edit/${coursePermalink}`);
                     } else {
-                         navigate(`/courses/${coursePermalink}`); // Go to the published course page
+                         navigate(`/courses/${coursePermalink}`);
                     }
-                }, 2000); // Redirect after delay
+                }, 2000);
             }
 
         } catch (error) {
-            // Handle error during initial course creation or major failure
             console.error('Error during course save process:', error.response ? error.response.data : error.message);
             let errorMsg = 'Failed to create course.';
             if (error.response?.data) {
-                // Try to extract specific field errors from backend response
                  if (typeof error.response.data === 'object' && error.response.data !== null) {
                     errorMsg = Object.entries(error.response.data)
-                                     .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`)
+                                     .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : String(messages)}`)
                                      .join(' | ');
                  } else if (typeof error.response.data === 'string') {
                     errorMsg = error.response.data;
                  }
             } else if (error.message) {
-                 errorMsg = error.message; // Use error message if no response data
+                 errorMsg = error.message;
             }
             setMessage(errorMsg);
             setMessageType('error');
             if (error.response?.status === 401 || error.response?.status === 403) logout();
         } finally {
-            setSubmitting(false); // Re-enable button etc.
+            setSubmitting(false);
         }
     };
 
@@ -304,12 +294,12 @@ const CreateCourse = () => {
                 </p>
             )}
 
-            <form className={styles.courseForm} onSubmit={(e) => e.preventDefault()}> {/* Prevent default form submission */}
+            <form className={styles.courseForm} onSubmit={(e) => e.preventDefault()}>
 
                 {/* Section 1: Course Details */}
                 <fieldset className={styles.formSection}>
                     <legend>Course Details</legend>
-                    <div className={styles.formGrid}> {/* Use grid for alignment */}
+                    <div className={styles.formGrid}>
                         <div className={styles.formGroup}>
                             <label htmlFor="courseTitle">Title <span className={styles.required}>*</span></label>
                             <input
@@ -319,6 +309,7 @@ const CreateCourse = () => {
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 disabled={submitting}
+                                placeholder="e.g., Introduction to Web Development"
                             />
                         </div>
 
@@ -363,7 +354,7 @@ const CreateCourse = () => {
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     step="0.01"
-                                    min="0.01" // Premium should cost something
+                                    min="0.01"
                                     required
                                     disabled={submitting}
                                     placeholder="e.g., 19.99"
@@ -372,17 +363,16 @@ const CreateCourse = () => {
                         )}
 
                          <div className={styles.formGroup}>
-                             <label htmlFor="coverImage">Cover Image (Optional)</label>
+                             <label htmlFor="coverImage">Cover Image (Optional, max 5MB)</label>
                              <input
                                  id="coverImage"
                                  type="file"
                                  ref={fileInputRef}
-                                 accept="image/jpeg, image/png, image/webp" // Be specific
+                                 accept="image/jpeg, image/png, image/webp"
                                  onChange={handleCoverImageChange}
                                  disabled={submitting}
-                                 style={{ display: 'none' }} // Hide default input
+                                 style={{ display: 'none' }}
                              />
-                             {/* Custom styled button */}
                              <button
                                  type="button"
                                  className={styles.fileInputButton}
@@ -394,8 +384,8 @@ const CreateCourse = () => {
                              {coverImagePreview && (
                                 <div className={styles.imagePreviewContainer}>
                                     <img src={coverImagePreview} alt="Cover preview" className={styles.imagePreview} />
-                                    <button type="button" onClick={clearCoverImage} className={styles.clearImageButton} disabled={submitting}>
-                                        &times; {/* Clear icon */}
+                                    <button type="button" onClick={clearCoverImage} className={styles.clearImageButton} disabled={submitting} title="Remove image">
+                                        &times;
                                     </button>
                                     <span className={styles.fileName}>{coverImage?.name}</span>
                                 </div>
@@ -411,9 +401,8 @@ const CreateCourse = () => {
                 <fieldset className={styles.formSection}>
                     <legend>Course Description <span className={styles.required}>*</span></legend>
                     <div className={styles.editorContainer}>
-                        {/* Render editor only when not submitting to prevent issues */}
-                         {!submitting && <CustomEditor ref={editorRef} />}
-                         {submitting && <p>Editor disabled during submission.</p>}
+                         {!submitting && <CustomEditor ref={editorRef} mediaCategory="course" />}
+                         {submitting && <div className={styles.editorPlaceholder}>Editor disabled during submission.</div>}
                     </div>
                 </fieldset>
 
@@ -422,65 +411,20 @@ const CreateCourse = () => {
                 <fieldset className={styles.formSection}>
                      <legend>Attach Content</legend>
                      <div className={styles.contentSelectionGrid}>
-                              {/* ======== START: Quizzes Section Replacement ======== */}
-                              {/* Quizzes Selection */}
-                              <div className={styles.addContentSection}>
-                                  {/* Header containing Title and Create Button */}
-                                  <div className={styles.contentSectionHeader}>
-                                      <h3>Available Quizzes</h3>
-                                      <button
-                                          type="button"
-                                          onClick={() => setIsQuizModalOpen(true)}
-                                          className={styles.createContentBtn} // Reuse existing button style
-                                          disabled={submitting}
-                                      >
-                                          + Create New Quiz
-                                      </button>
-                                  </div>
-
-                                  {/* List Area: Scrollable box or 'No items' message */}
-                                  <div className={styles.contentListArea}> {/* New wrapper */}
-                                      {quizzes.length > 0 ? (
-                                          <div className={styles.scrollableBox}>
-                                              {quizzes.map((quiz) => (
-                                                  <div key={quiz.id} className={styles.contentItem}>
-                                                      <input
-                                                          type="checkbox"
-                                                          id={`quiz-${quiz.id}`}
-                                                          checked={selectedQuizzes.includes(quiz.id)}
-                                                          onChange={() => handleQuizToggle(quiz.id)}
-                                                          disabled={submitting || !!quiz.course}
-                                                      />
-                                                      <label htmlFor={`quiz-${quiz.id}`}>
-                                                          {quiz.title}
-                                                          {quiz.course ? <span className={styles.alreadyAttached}> (Attached)</span> : ""}
-                                                      </label>
-                                                  </div>
-                                              ))}
-                                          </div>
-                                      ) : (
-                                          <p className={styles.noContentMessage}>No quizzes created yet.</p> // Simple message inside list area
-                                      )}
-                                  </div>
-                              </div>
-                              {/* ======== END: Quizzes Section Replacement ======== */}
                               {/* Lessons Selection */}
                               <div className={styles.addContentSection}>
-                                  {/* Header containing Title and Create Button */}
                                   <div className={styles.contentSectionHeader}>
                                       <h3>Available Lessons</h3>
                                       <button
                                           type="button"
                                           onClick={() => setIsLessonModalOpen(true)}
-                                          className={styles.createContentBtn} // Reuse existing button style
+                                          className={styles.createContentBtn}
                                           disabled={submitting}
                                       >
                                           + Create New Lesson
                                       </button>
                                   </div>
-
-                                  {/* List Area: Scrollable box or 'No items' message */}
-                                  <div className={styles.contentListArea}> {/* New wrapper */}
+                                  <div className={styles.contentListArea}>
                                       {lessons.length > 0 ? (
                                           <div className={styles.scrollableBox}>
                                               {lessons.map((lesson) => (
@@ -490,21 +434,58 @@ const CreateCourse = () => {
                                                           id={`lesson-${lesson.id}`}
                                                           checked={selectedLessons.includes(lesson.id)}
                                                           onChange={() => handleLessonToggle(lesson.id)}
-                                                          disabled={submitting || !!lesson.course}
+                                                          disabled={submitting || !!lesson.course} // Disable if part of ANY course
                                                       />
                                                       <label htmlFor={`lesson-${lesson.id}`}>
                                                           {lesson.title}
-                                                          {lesson.course ? <span className={styles.alreadyAttached}> (Attached)</span> : ""}
+                                                          {lesson.course ? <span className={styles.alreadyAttached}> (In another course)</span> : ""}
                                                       </label>
                                                   </div>
                                               ))}
                                           </div>
                                       ) : (
-                                          <p className={styles.noContentMessage}>No lessons created yet.</p> // Simple message inside list area
+                                          <p className={styles.noContentMessage}>No lessons available or created yet.</p>
                                       )}
                                   </div>
                               </div>
-                              {/* ======== END: Lessons Section Replacement ======== */}
+                              
+                              {/* Quizzes Selection */}
+                              <div className={styles.addContentSection}>
+                                  <div className={styles.contentSectionHeader}>
+                                      <h3>Available Quizzes</h3>
+                                      <button
+                                          type="button"
+                                          onClick={() => setIsQuizModalOpen(true)}
+                                          className={styles.createContentBtn}
+                                          disabled={submitting}
+                                      >
+                                          + Create New Quiz
+                                      </button>
+                                  </div>
+                                  <div className={styles.contentListArea}>
+                                      {quizzes.length > 0 ? (
+                                          <div className={styles.scrollableBox}>
+                                              {quizzes.map((quiz) => (
+                                                  <div key={quiz.id} className={styles.contentItem}>
+                                                      <input
+                                                          type="checkbox"
+                                                          id={`quiz-${quiz.id}`}
+                                                          checked={selectedQuizzes.includes(quiz.id)}
+                                                          onChange={() => handleQuizToggle(quiz.id)}
+                                                          disabled={submitting || !!quiz.course || !!quiz.lesson} // Disable if part of ANY course or lesson
+                                                      />
+                                                      <label htmlFor={`quiz-${quiz.id}`}>
+                                                          {quiz.title}
+                                                          {(quiz.course || quiz.lesson) ? <span className={styles.alreadyAttached}> (In use)</span> : ""}
+                                                      </label>
+                                                  </div>
+                                              ))}
+                                          </div>
+                                      ) : (
+                                          <p className={styles.noContentMessage}>No quizzes available or created yet.</p>
+                                      )}
+                                  </div>
+                              </div>
                      </div>
                 </fieldset>
 
@@ -518,12 +499,12 @@ const CreateCourse = () => {
                              <input
                                  id="testers"
                                  type="text"
-                                 placeholder="Enter usernames separated by commas (e.g., user1, test_user2)"
+                                 placeholder="Usernames, comma-separated (e.g., user1, test_user2)"
                                  value={testers}
                                  onChange={(e) => setTesters(e.target.value)}
-                                 disabled={submitting || isDraft} // Disable if draft or submitting
+                                 disabled={submitting || isDraft}
                              />
-                              {isDraft && <small className={styles.fieldNote}>Testers can only be assigned when publishing.</small>}
+                              {isDraft && <small className={styles.fieldNote}>Testers can only be assigned when publishing the course.</small>}
                          </div>
 
                          <div className={styles.formGroup}>
@@ -533,11 +514,23 @@ const CreateCourse = () => {
                                      <input
                                          type="radio"
                                          name="courseStatus"
+                                         value="draft"
                                          checked={isDraft === true}
                                          onChange={() => setIsDraft(true)}
                                          disabled={submitting}
                                      />
                                      Save as Draft
+                                 </label>
+                                 <label className={styles.radioLabel}>
+                                     <input
+                                         type="radio"
+                                         name="courseStatus"
+                                         value="published"
+                                         checked={isDraft === false}
+                                         onChange={() => setIsDraft(false)}
+                                         disabled={submitting}
+                                     />
+                                     Publish Course
                                  </label>
                              </div>
                          </div>
@@ -545,11 +538,11 @@ const CreateCourse = () => {
                 </fieldset>
 
                 {/* Save Button Area */}
-                <div className={styles.courseSaveButtonArea}>
+                <div className={styles.formActions}>
                     <button
-                        type="button" // Important: Change type to button to prevent implicit form submission
-                        className={`${styles.zportaBtn} ${submitting ? styles.disabledBtn : ''}`}
-                        onClick={handleSaveCourse} // Trigger save manually
+                        type="button"
+                        className={`${styles.zportaBtn} ${styles.zportaBtnPrimary} ${submitting ? styles.disabledBtn : ''}`}
+                        onClick={handleSaveCourse}
                         disabled={submitting}
                     >
                         {submitting ? 'Saving...' : (isDraft ? 'Save Draft' : 'Publish Course')}
@@ -557,22 +550,19 @@ const CreateCourse = () => {
                 </div>
             </form>
 
-            {/* *** ADD Modals Rendering *** */}
-            <Modal isOpen={isLessonModalOpen} onClose={() => setIsLessonModalOpen(false)}>
+            <Modal isOpen={isLessonModalOpen} onClose={() => setIsLessonModalOpen(false)} title="Create New Lesson">
                 <CreateLesson
-                    // Pass necessary props to CreateLesson
-                    onSuccess={handleLessonCreated} // Callback on successful creation
-                    onClose={() => setIsLessonModalOpen(false)} // Function to close modal
-                    isModalMode={true} // Flag indicating it's running in a modal
+                    onSuccess={handleLessonCreated}
+                    onClose={() => setIsLessonModalOpen(false)}
+                    isModalMode={true}
                 />
             </Modal>
 
-            <Modal isOpen={isQuizModalOpen} onClose={() => setIsQuizModalOpen(false)}>
+            <Modal isOpen={isQuizModalOpen} onClose={() => setIsQuizModalOpen(false)} title="Create New Quiz">
                 <CreateQuiz
-                    // Pass necessary props to CreateQuiz
-                    onSuccess={handleQuizCreated} // Callback on successful creation
-                    onClose={() => setIsQuizModalOpen(false)} // Function to close modal
-                    isModalMode={true} // Flag indicating it's running in a modal
+                    onSuccess={handleQuizCreated}
+                    onClose={() => setIsQuizModalOpen(false)}
+                    isModalMode={true}
                 />
             </Modal>
 

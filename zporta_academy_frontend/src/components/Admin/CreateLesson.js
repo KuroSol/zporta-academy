@@ -1,311 +1,401 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+// CreateLesson.js
+// Based on your uploaded file, updated to consistently use CSS modules.
+// Video URL input type changed to "text" to make it more leniently optional on the client-side.
+
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomEditor from '../Editor/CustomEditor'; // Assuming path is correct
 import apiClient from '../../api'; // <-- apiClient import (Adjust path)
 import { AuthContext } from '../../context/AuthContext'; // <-- AuthContext import (Adjust path)
 
-import Modal from '../Modal/Modal';
-import styles from './CreateLesson.module.css'
-import CreateQuiz from './CreateQuiz';
+import Modal from '../Modal/Modal'; // For quiz creation modal
+import CreateQuiz from './CreateQuiz';   // Assumes CreateQuiz.js is in the same folder
+import styles from './CreateLesson.module.css'; // <-- Using dedicated CSS module
 
-const CreateLesson = ({ onSuccess, onClose, isModalMode = false }) => {
+const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectId = null }) => {
     const [title, setTitle] = useState('');
-    const [subject, setSubject] = useState(''); // Holds the selected subject ID
-    // REMOVED: const [newSubject, setNewSubject] = useState('');
+    const [subject, setSubject] = useState(initialSubjectId || ''); // Holds the selected subject ID
     const [videoUrl, setVideoUrl] = useState('');
     const [tags, setTags] = useState('');
     const [subjects, setSubjects] = useState([]); // State for fetched subjects
-    const [quizzes, setQuizzes]               = useState([]);
+    const [quizzes, setQuizzes] = useState([]);
     const [selectedQuizzes, setSelectedQuizzes] = useState([]);
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+    
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false); // To track save operation
-    const [messageType, setMessageType] = useState('error'); // To style messages
+    const [messageType, setMessageType] = useState('error'); // To style messages: 'error', 'success', 'warning'
+    const [loading, setLoading] = useState(true); // For initial data load for subjects/quizzes
+
     const navigate = useNavigate();
     const editorRef = useRef(null); // Ref for CustomEditor
     const { logout } = useContext(AuthContext); // Get logout from context
 
-    // Fetch subjects when the component mounts
-    useEffect(() => {
-        const fetchSubjects = async () => {
-            setMessage('');
-            try {
-                const response = await apiClient.get('/subjects/');
-                if (Array.isArray(response.data)) {
-                   setSubjects(response.data);
-                } else {
-                   console.error("Invalid data format for subjects:", response.data);
-                   setMessage('Received invalid subject data.');
-                   setSubjects([]);
-                }
-            } catch (error) {
-                console.error("Error fetching subjects:", error.response ? error.response.data : error.message);
-                setMessage('Failed to load subjects.');
-                if (error.response?.status === 401 || error.response?.status === 403) {
-                    logout();
-                }
-            }
-        };
-        if (localStorage.getItem('token')) {
-            fetchSubjects();
-            apiClient.get('/quizzes/my/')
-                .then(res => setQuizzes(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Failed to load quizzes', err));
-        } else {
-             setMessage("Please log in to load subjects.");
-        }
-    }, [logout]);
+    // Fetch initial data (subjects and quizzes)
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setMessage('');
+        try {
+            // Parallel fetch for subjects and quizzes
+            const [subjectsRes, quizzesRes] = await Promise.all([
+                apiClient.get('/subjects/'),
+                apiClient.get('/quizzes/my/') // Assuming this fetches quizzes available to the user
+            ]);
 
-    // Content state and handler (Keep original)
-    const [content, setContent] = useState('');
-    const handleSaveContent = (editorContent) => {
-        setContent(editorContent);
+            if (Array.isArray(subjectsRes.data)) {
+                setSubjects(subjectsRes.data);
+                // If an initialSubjectId is provided and exists in the fetched subjects, set it
+                if (initialSubjectId && subjectsRes.data.find(s => String(s.id) === String(initialSubjectId))) {
+                    setSubject(String(initialSubjectId));
+                } else if (subjectsRes.data.length > 0 && !initialSubjectId) {
+                    // Optionally, select the first subject if none is provided, or leave blank
+                    // setSubject(String(subjectsRes.data[0].id)); 
+                }
+            } else {
+                console.error("Invalid data format for subjects:", subjectsRes.data);
+                setMessage('Received invalid subject data.');
+                setSubjects([]);
+            }
+
+            if (Array.isArray(quizzesRes.data)) {
+                setQuizzes(quizzesRes.data);
+            } else {
+                console.error("Invalid data format for quizzes:", quizzesRes.data);
+                setQuizzes([]);
+            }
+
+        } catch (error) {
+            console.error("Error fetching initial data for lesson:", error.response ? error.response.data : error.message);
+            setMessage('Failed to load necessary data (subjects/quizzes). Please try again.');
+            setMessageType('error');
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                logout(); // Logout if unauthorized
+                if (!isModalMode) navigate('/login'); // Redirect if not in modal
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [logout, initialSubjectId, isModalMode, navigate]); // Added dependencies
+
+    useEffect(() => {
+        if (localStorage.getItem('token')) {
+            fetchData();
+        } else {
+            setMessage("Please log in to create a lesson.");
+            setMessageType('error');
+            setLoading(false);
+            if (!isModalMode) {
+                navigate('/login');
+            }
+        }
+    }, [fetchData, isModalMode, navigate]); // fetchData is now a dependency
+
+    // Refresh just the quizzes list (e.g., after creating a new one)
+    const refreshQuizzes = useCallback(async () => {
+        try {
+            const quizzesRes = await apiClient.get('/quizzes/my/');
+            setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
+        } catch (error) {
+            console.error("Error refreshing quizzes:", error.response?.data || error.message);
+            setMessage('Failed to refresh quiz list.');
+            setMessageType('warning');
+        }
+    }, []);
+
+
+    // Handler for editor content (if needed, though direct ref access is primary)
+    const handleEditorChange = (editorContent) => {
+        // This function can be used if CustomEditor has an onChange prop
+        // For now, we rely on editorRef.current.getContent() at submission
     };
 
-    // Simplified subject change handler
     const handleSubjectChange = (e) => {
         setSubject(e.target.value);
     };
 
     const handleQuizToggle = (quizId) => {
         setSelectedQuizzes(prev =>
-          prev.includes(quizId)
-            ? prev.filter(id => id !== quizId)
-            : [...prev, quizId]
+            prev.includes(quizId)
+                ? prev.filter(id => id !== quizId)
+                : [...new Set([...prev, quizId])] // Ensure unique IDs
         );
-      };
+    };
     
     const handleQuizCreated = (newQuiz) => {
         setIsQuizModalOpen(false);
-        setQuizzes(prev => [newQuiz, ...prev]);
-        setSelectedQuizzes(prev => [...prev, newQuiz.id]);
-      };
+        refreshQuizzes(); // Refresh the list to include the new quiz
+        if (newQuiz?.id) {
+            // Auto-select the newly created quiz
+            setSelectedQuizzes(prev => [...new Set([...prev, newQuiz.id])]);
+        }
+        setMessage(`Quiz "${newQuiz?.title || 'New Quiz'}" created successfully and is selected!`);
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000); // Clear message after a delay
+    };
     
-
-    // External save handler (Keep original)
-    const handleExternalSave = () => {
-        console.log("--- handleExternalSave triggered ---"); // Log: Button clicked
-        console.log("Editor Ref:", editorRef.current); // Log: Check if ref exists
+    // Main save handler for the lesson
+    const handleSaveLesson = async () => {
+        setMessage(''); // Clear previous messages
+        setMessageType('error'); // Default to error
 
         if (!editorRef.current) {
-            setMessage('Editor not loaded.');
-            console.log("Error: Editor ref not found."); // Log: Error if no ref
+            setMessage('Editor is not available. Please wait or refresh.');
             return;
         }
+        const editorContent = editorRef.current.getContent();
 
-        let editorContent = null;
-        try {
-             // Make sure 'getContent' is the correct method name for your CustomEditor
-            editorContent = editorRef.current.getContent();
-            console.log("Content from ref:", editorContent); // Log: See the retrieved content
-        } catch (e) {
-             console.error("Error calling editorRef.current.getContent():", e);
-             setMessage("Error retrieving content from editor.");
-             return;
+        // Validations
+        if (!localStorage.getItem('token')) { 
+            setMessage('Authentication error. Please log in again.'); 
+            if (!isModalMode) navigate('/login'); 
+            return; 
         }
+        if (!title.trim()) { setMessage('Lesson Title is required.'); return; }
+        if (!subject) { setMessage('Please select a Subject for the lesson.'); return; }
+        if (!editorContent || !editorContent.trim()) { setMessage('Lesson Content cannot be empty.'); return; }
 
-
-        // Check if content is empty AFTER trying to get it
-        if (!editorContent || !editorContent.trim()) {
-            setMessage('Editor content is empty. Please write something.'); // More specific message
-            console.log("Validation Failed: Content is empty or whitespace."); // Log: Validation failure reason
-            return;
-        }
-
-        console.log("Validation Passed. Calling handleSave..."); // Log: If validation passes
-        handleSave(editorContent); // Pass the content retrieved from the ref
-    };
-
-    // Save function (Refactored API call, simplified subject logic)
-    const handleSave = async (editorContent) => {
-        setMessage('');
         setSubmitting(true); // Indicate saving has started
-        if (!localStorage.getItem('token')) { setMessage('You must be logged in.'); navigate('/login'); return; }
-        if (!title.trim()) { setMessage('Title is required.'); return; }
-        if (!subject) { setMessage('Please select a subject.'); return; } // Ensure subject ID is selected
-        if (!editorContent || !editorContent.trim()) { setMessage('Editor content cannot be empty.'); return; }
 
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
-        // Use selected subject ID directly
-        const payload = {
-            title,
-            content: editorContent,
-            video_url: videoUrl,
-            subject: subject || null, // Send selected ID
-            tags: tagsArray,
-        };
+      // Build payload without video_url by default
+       const payload = {
+           title: title.trim(),
+           content: editorContent,
+           subject: subject,
+           tags: tagsArray,
+       };
+       // Only include video_url if user actually typed one
+       if (videoUrl.trim()) {
+           payload.video_url = videoUrl.trim();
+       }
 
         try {
             const response = await apiClient.post('/lessons/', payload);
-            // *** START REPLACEMENT ***
-            const newLessonData = response.data; // Get the created lesson data
-            // Attach any selected quizzes
-            const lessonPermalink = newLessonData.permalink;
-            if (selectedQuizzes.length) {
-            await Promise.allSettled(
-                selectedQuizzes.map(id =>
-                apiClient.post(`/lessons/${lessonPermalink}/add-quiz/`, { quiz_id: id })
-                )
-            );
+            const newLessonData = response.data;
+            const lessonPermalink = newLessonData.permalink; // Assuming permalink is returned
+
+            let overallMessage = `Lesson "${newLessonData.title}" saved successfully!`;
+            let overallMessageType = 'success';
+
+            // Attach selected quizzes if any
+            if (selectedQuizzes.length > 0 && lessonPermalink) {
+                setMessage('Lesson saved. Attaching selected quizzes...'); // Intermediate message
+                const quizAttachmentPromises = selectedQuizzes.map(quizId =>
+                    apiClient.post(`/lessons/${lessonPermalink}/add-quiz/`, { quiz_id: quizId })
+                        .catch(err => ({ // Catch individual errors to not fail all
+                            type: 'QuizAttachment', 
+                            id: quizId, 
+                            error: err.response?.data?.detail || err.message || 'Unknown error'
+                        }))
+                );
+                
+                const results = await Promise.allSettled(quizAttachmentPromises);
+                const failedAttachments = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && result.value.error));
+
+                if (failedAttachments.length > 0) {
+                    const failedQuizTitles = failedAttachments.map(f => quizzes.find(q => q.id === f.reason?.id)?.title || f.reason?.id || 'Unknown Quiz').join(', ');
+                    overallMessage = `Lesson "${newLessonData.title}" saved, but failed to attach quiz(zes): ${failedQuizTitles}. You may need to edit the lesson to try again.`;
+                    overallMessageType = 'warning';
+                    console.error('Failed quiz attachments:', failedAttachments);
+                } else {
+                    overallMessage = `Lesson "${newLessonData.title}" and all selected quizzes attached successfully!`;
+                }
             }
+            
+            setMessage(overallMessage);
+            setMessageType(overallMessageType);
+            
             if (isModalMode && onSuccess) {
-                // --- Modal Mode ---
-                // We are in a modal - call the callback from CreateCourse
-                setMessage('Lesson saved!'); // Optional: Show temporary success in modal
-                setMessageType('success');
-                onSuccess(newLessonData); // Pass data back to parent (which handles closing)
+                onSuccess(newLessonData); // Pass the new lesson data to the parent (CreateCourse)
             } else {
-                // --- Standalone Mode ---
-                // Keep the original behavior for the standalone page
-                setMessage('Lesson created successfully!');
-                setMessageType('success'); // Set message type for styling
-                console.log('Lesson created:', newLessonData);
-                // Keep your original navigation for standalone mode
-                navigate('/admin/lessons'); // Or navigate to the new lesson detail page, etc.
+                // Standalone mode: navigate after a short delay
+                setTimeout(() => {
+                    navigate('/admin/lessons'); // Or to the new lesson's page: `/lessons/${lessonPermalink}`
+                }, overallMessageType === 'success' ? 2000 : 4000);
             }
-            // *** END REPLACEMENT ***
         } catch (error) {
             console.error('Error creating lesson:', error.response ? error.response.data : error.message);
             let errorMsg = 'Failed to create lesson.';
-            if (error.response && error.response.data) {
-                if (typeof error.response.data === 'object') {
-                    errorMsg = Object.entries(error.response.data).map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`).join(' | ');
-                } else { errorMsg = error.response.data.error || error.response.data.detail || errorMsg; }
-            } else if (error.request) { errorMsg = 'Network error.'; }
-            else { errorMsg = 'An unexpected error occurred.'; }
-            setMessageType('error'); // Ensure message type is set correctly on error
+            if (error.response?.data) {
+                if (typeof error.response.data === 'object' && error.response.data !== null) {
+                    // Attempt to parse DRF error object
+                    errorMsg = Object.entries(error.response.data)
+                                     .map(([field, messages]) => `${field.replace("_", " ")}: ${Array.isArray(messages) ? messages.join(' ') : String(messages)}`)
+                                     .join(' | ');
+                } else if (typeof error.response.data === 'string' && error.response.data.length < 200) {
+                     errorMsg = error.response.data; // Use short string errors directly
+                } else if (error.response.data?.error) { // Check for common error keys
+                    errorMsg = error.response.data.error;
+                } else if (error.response.data?.detail) {
+                    errorMsg = error.response.data.detail;
+                }
+            } else if (error.message) { // Fallback to generic error message
+                 errorMsg = error.message;
+            }
             setMessage(errorMsg);
-            if (error.response?.status === 401 || error.response?.status === 403) logout();
-        } // closing brace of catch
-        finally { // Add this finally block
+            setMessageType('error');
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                logout();
+                if(!isModalMode) navigate('/login');
+            }
+        } finally {
             setSubmitting(false); // Indicate saving has finished
         }
     };
 
-    // --- JSX (Simplified Subject Section) ---
+    // Determine container class based on modal mode for slight style variations if needed
+    const containerClass = isModalMode ? styles.createLessonModalContainer : styles.pageContainer;
+
+    if (loading && !isModalMode) { // Show full page loading only for standalone page
+        return <div className={styles.loading}>Loading lesson creation tools...</div>;
+    }
+    
     return (
-        <div className={styles.createLessonContainer}>
-            <h2>Create New Lesson</h2>
-            {/* Updated Message Display */}
+        <div className={containerClass}>
+            {/* Title for the page or modal */}
+            <h2 className={styles.pageTitle}>{isModalMode ? 'Create New Lesson' : 'Create Lesson Page'}</h2>
+            
+            {/* Display success/error messages */}
             {message && (
-                <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`}>
+                <p className={`${styles.message} ${styles[messageType] || styles.error}`}>
                     {message}
                 </p>
             )}
+
+            {/* Lesson creation form */}
             <form className={styles.lessonForm} onSubmit={(e) => e.preventDefault()}>
-                <div className="form-group">
-                <label htmlFor="lessonTitle">Title: <span className={styles.required}>*</span></label>
-                <input id="lessonTitle" className={styles.inputField} type="text" value={title} onChange={(e) => setTitle(e.target.value)} required disabled={submitting} />
-                </div>
-
-                <div className="form-group">
-                <label htmlFor="lessonSubject">Subject: <span className={styles.required}>*</span></label>
-                    {/* Simplified Select - No "Create New" option */}
-                    <select id="lessonSubject" className={styles.selectField} value={subject} onChange={handleSubjectChange} required disabled={submitting}>
-                        <option value="">Select a Subject</option>
-                        {subjects.map((subj) => (
-                            <option key={subj.id} value={subj.id}>{subj.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* REMOVED conditional input for new subject name */}
-
-                <div className="form-group">
-                <label htmlFor="lessonVideoUrl">Video URL:</label>
-                <input id="lessonVideoUrl" className={styles.inputField} type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Optional video URL" disabled={submitting} />
-                </div>
-
-                <div className="form-group">
-                <label htmlFor="lessonTags">Tags (comma separated):</label>
-                <input id="lessonTags" className={styles.inputField} type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. javascript, react" disabled={submitting} />
-                </div>
-
-                {/* ===== Attach Quizzes Section ===== */}
+                {/* Section for Lesson Details */}
                 <fieldset className={styles.formSection}>
-                    <legend>Attach Quiz (Optional)</legend>
+                    <legend>Lesson Details</legend>
+                     <div className={styles.formGrid}> {/* Using formGrid for consistency if desired */}
+                        <div className={styles.formGroup}> {/* Changed from "form-group" to styles.formGroup */}
+                            <label htmlFor="lessonTitle">Title <span className={styles.required}>*</span></label>
+                            <input id="lessonTitle" className={styles.inputField} type="text" value={title} onChange={(e) => setTitle(e.target.value)} required disabled={submitting || loading} placeholder="e.g., Introduction to JavaScript"/>
+                        </div>
 
-                    {/* Header containing Title and Create Button */}
-                    <div className={styles.contentSectionHeader}>
-                        <h3>Available Quizzes</h3>
-                        <button
-                            type="button"
-                            onClick={() => setIsQuizModalOpen(true)} // Opens the CreateQuiz modal
-                            className={styles.createContentBtn}    // Style for the button itself
-                            disabled={submitting}                   // Disable if lesson form is saving
-                        >
-                            + Create New Quiz
-                        </button>
-                    </div>
-
-                    {/* List Area: Scrollable box or 'No items' message */}
-                    <div className={styles.contentListArea}>
-                        {quizzes.length > 0 ? (
-                            <div className={styles.scrollableBox}> {/* Scrollable container for list */}
-                                {quizzes.map(q => (
-                                    <div key={q.id} className={styles.contentItem}> {/* Individual list item */}
-                                        <input
-                                            type="checkbox"
-                                            id={`lesson-quiz-${q.id}`} // Unique ID for this checkbox
-                                            checked={selectedQuizzes.includes(q.id)} // Check if selected
-                                            onChange={() => handleQuizToggle(q.id)} // Handle selection change
-                                            disabled={submitting || !!q.lesson || !!q.course} // Disable if saving or quiz already in use
-                                        />
-                                        <label htmlFor={`lesson-quiz-${q.id}`}>
-                                            {q.title}
-                                            {/* Show if quiz is already part of a lesson or course */}
-                                            {(q.lesson || q.course) ? <span className={styles.alreadyAttached}> (In use)</span> : ''}
-                                        </label>
-                                    </div>
+                        <div className={styles.formGroup}>
+                            <label htmlFor="lessonSubject">Subject <span className={styles.required}>*</span></label>
+                            <select id="lessonSubject" className={styles.selectField} value={subject} onChange={handleSubjectChange} required disabled={submitting || loading || subjects.length === 0}>
+                                <option value="">{loading && subjects.length === 0 ? "Loading subjects..." : (subjects.length === 0 ? "No subjects available" : "Select a Subject")}</option>
+                                {subjects.map((subj) => (
+                                    <option key={subj.id} value={subj.id}>{subj.name}</option>
                                 ))}
-                            </div>
+                            </select>
+                        </div>
+                    
+                        <div className={styles.formGroup}>
+                            <label htmlFor="lessonVideoUrl">Video URL (Optional)</label>
+                            {/* Changed type to "text" to avoid strict browser URL validation for an optional field */}
+                            <input id="lessonVideoUrl" className={styles.inputField} type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="e.g., https://www.youtube.com/watch?v=..." disabled={submitting || loading} />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                            <label htmlFor="lessonTags">Tags (Optional, comma-separated)</label>
+                            <input id="lessonTags" className={styles.inputField} type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., javascript, web development, basics" disabled={submitting || loading} />
+                        </div>
+                     </div>
+                </fieldset>
+
+                {/* Section for Attaching Quizzes */}
+                <fieldset className={styles.formSection}>
+                    <legend>Attach Quizzes (Optional)</legend>
+                    <div className={styles.addContentSection}> 
+                        <div className={styles.contentSectionHeader}>
+                            <h3>Available Quizzes</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsQuizModalOpen(true)}
+                                className={styles.createContentBtn}
+                                disabled={submitting || loading}
+                            >
+                                + Create New Quiz
+                            </button>
+                        </div>
+                        <div className={styles.contentListArea}>
+                            {loading && quizzes.length === 0 ? ( // Show loading specifically for quizzes if subjects are loaded but quizzes are not
+                                <p className={styles.noContentMessage}>Loading quizzes...</p>
+                            ) : quizzes.length > 0 ? (
+                                <div className={styles.scrollableBox}>
+                                    {quizzes.map(q => (
+                                        <div key={q.id} className={styles.contentItem}>
+                                            <input
+                                                type="checkbox"
+                                                id={`lesson-quiz-${q.id}`}
+                                                checked={selectedQuizzes.includes(q.id)}
+                                                onChange={() => handleQuizToggle(q.id)}
+                                                // Disable if lesson form is submitting, or if quiz is already part of any lesson or course
+                                                disabled={submitting || loading || !!q.lesson || !!q.course} 
+                                            />
+                                            <label htmlFor={`lesson-quiz-${q.id}`}>
+                                                {q.title}
+                                                {/* Indicate if quiz is already in use */}
+                                                {(q.lesson || q.course) ? <span className={styles.alreadyAttached}> (In use)</span> : ''}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className={styles.noContentMessage}>
+                                    No quizzes available. You can create one by clicking the button above.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </fieldset>
+
+                {/* Section for Lesson Content Editor */}
+                <fieldset className={styles.formSection}>
+                    <legend>Lesson Content <span className={styles.required}>*</span></legend>
+                    <div className={styles.editorContainer}>
+                        {/* Render editor only when not submitting/loading to prevent issues */}
+                        {!(submitting || loading) ? (
+                            <CustomEditor 
+                                ref={editorRef} 
+                                onSave={handleEditorChange} /* Or onChange if CustomEditor supports it for live updates */
+                                mediaCategory="lesson"
+                            />
                         ) : (
-                            // Message shown only if the quizzes array is empty
-                            <p className={styles.noContentMessage}>No quizzes created yet.</p>
+                            <div className={styles.editorPlaceholder}>Editor is currently disabled or loading content...</div>
                         )}
                     </div>
                 </fieldset>
-                {/* ===== End Attach Quizzes ===== */}
-
-
-                <div className={styles.editorContainer}>
-                    <label>Content:</label>
-                    <CustomEditor ref={editorRef} onSave={handleSaveContent} mediaCategory="lesson"/>
-                </div>
 
                 {/* Action Buttons: Save and Cancel (for modal) */}
-                <div className={styles.modalActions}>
-                    {/* Only show Cancel button when in modal mode */}
-                    {isModalMode && (
+                <div className={styles.formActions}>
+                    {isModalMode && ( // Only show Cancel button when in modal mode
                         <button
                             type="button"
-                            onClick={onClose} // Call the onClose prop passed from CreateCourse
-                            className={`${styles.btn} ${styles.btnSecondary}`} // Use button styles
-                            disabled={submitting} // Disable if submitting
+                            onClick={onClose} // Call the onClose prop passed from parent (CreateCourse)
+                            className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                            disabled={submitting}
                         >
                             Cancel
                         </button>
                     )}
                     <button
                         type="button"
-                        onClick={handleExternalSave} // Still triggers the external save
-                        className={`${styles.btn} ${styles.btnPrimary}`} // Use button styles
-                        disabled={submitting} // Disable buttons while submitting
+                        onClick={handleSaveLesson} // Calls the main save handler
+                        className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}
+                        disabled={submitting || loading} // Disable if submitting or initial data is loading
                     >
-                        {submitting ? 'Saving...' : 'Save Lesson'}
+                        {submitting ? 'Saving...' : (isModalMode ? 'Create Lesson' : 'Save Lesson')}
                     </button>
                 </div>
             </form>
-            {/* Quiz creation modal */}
-            <Modal
-              isOpen={isQuizModalOpen}
+
+            {/* Modal for Creating a New Quiz */}
+            <Modal 
+              isOpen={isQuizModalOpen} 
               onClose={() => setIsQuizModalOpen(false)}
+              title="Create New Quiz" // Pass title to Modal component if it supports it
             >
               <CreateQuiz
                 onSuccess={handleQuizCreated}
                 onClose={() => setIsQuizModalOpen(false)}
-                isModalMode={true}
+                isModalMode={true} // Indicate CreateQuiz is in modal mode
+                // Pass the current lesson's subject as initial subject for the quiz, if available
+                initialSubjectId={subject || (subjects.length > 0 ? String(subjects[0].id) : null)} 
               />
             </Modal>
         </div>
