@@ -9,7 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('administration-zporta-repersentiivie/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/pages/', include('pages.urls')),
     path('api/posts/', include('posts.urls')),
