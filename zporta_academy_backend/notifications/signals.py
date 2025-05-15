@@ -27,6 +27,21 @@ def create_comment_notification(sender, instance, created, **kwargs):
     note      = comment.note
     from_user = comment.user
 
+    # 1) Notify the diary’s author if someone (other than them) comments:
+    if note.user != from_user:
+        Notification.objects.create(
+            user    = note.user,
+            message = f"{from_user.username} commented on your diary entry.",
+            link    = f"/diary/{note.id}"
+        )
+
+    for mentioned_user in note.mentions.exclude(pk=from_user.pk):
+        Notification.objects.create(
+            user    = mentioned_user,
+            message = f"{from_user.username} replied to a diary entry where you were mentioned.",
+            link    = f"/diary/{note.id}"
+        )
+
     # Notify every mentioned user (except the replier)
     for mentioned_user in note.mentions.exclude(pk=from_user.pk):
         Notification.objects.create(
