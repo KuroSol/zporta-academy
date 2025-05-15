@@ -71,6 +71,7 @@ SECURE_SSL_REDIRECT = True
 # Tell Django to trust the X-Forwarded-Proto header from Cloudflare/Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
+FORCE_MEDIA_PROTOCOL = "https"
 # Set cookies to only be sent over HTTPS
 SESSION_COOKIE_SECURE = True # CHANGE TO TRUE
 CSRF_COOKIE_SECURE = True    # CHANGE TO TRUE
