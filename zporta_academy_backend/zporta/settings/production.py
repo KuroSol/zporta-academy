@@ -66,7 +66,7 @@ DATABASES = {
         },
     }
 }
-
+SECURE_SSL_REDIRECT = True
 # --- STEP 4: Update Security Settings for HTTPS via Proxy (Cloudflare) ---
 # Tell Django to trust the X-Forwarded-Proto header from Cloudflare/Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

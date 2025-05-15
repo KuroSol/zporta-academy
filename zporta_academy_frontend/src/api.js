@@ -9,11 +9,7 @@ const getToken = () => localStorage.getItem('token');
 
 // Create a new Axios instance with custom configuration.
 const apiClient = axios.create({
-  // Set the base URL using the environment variable.
-  // This automatically switches between local dev URL and production URL.
-  baseURL: process.env.REACT_APP_API_BASE_URL,
-
-  // Optional: Set a timeout for requests (in milliseconds).
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://zportaacademy.com/api/',
   timeout: 10000,
 });
 
