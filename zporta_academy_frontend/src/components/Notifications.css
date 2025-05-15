@@ -35,4 +35,12 @@
   .notifications-container li a:hover {
     text-decoration: underline;
   }
-  
+  .view-link {
+  color: #007bff;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}

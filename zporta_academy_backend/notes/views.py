@@ -1,3 +1,5 @@
+from notifications.models import Notification
+from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework import status, generics, permissions
 from .models import Note, Comment
@@ -6,6 +8,9 @@ from mentions.models import Mention
 from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
+
+
+
 
 class CommentUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -50,6 +55,7 @@ class NoteListCreateView(generics.ListCreateAPIView):
             note.mentions.add(user)
             # Create a notification entry for the mention
             Mention.objects.create(user=user, note=note)
+
 
     def get_serializer_context(self):
         # This method adds the current request to the serializer context.

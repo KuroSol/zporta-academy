@@ -1,88 +1,289 @@
-/* Container for the diary editor */
+/* DiaryEditor.css (Redesigned) */
+
+/* --- Inherit Color Palette & Theme Variables from DiaryManagement.css --- */
+/* For a truly modular system without CSS imports, you might redefine necessary variables here or use direct values. */
+/* Assuming variables from :root in DiaryManagement.css are available or redefine key ones: */
+:root {
+  /* Re-define if not globally available or for overrides */
+  --zporta-bronze: #B08D57;
+  --zporta-gold: #FFD700;
+  --zporta-dark-blue: #0A2342;
+  --zporta-olive: #556B2F;
+  --zporta-black: #121212;
+  --zporta-bg-light: #F0F2F5;
+  --zporta-bg-medium: #EAECEF;
+  --zporta-text-primary: var(--zporta-black);
+  --zporta-text-secondary: #555555;
+  --zporta-text-on-dark: #FFFFFF;
+  --zporta-border-color: #D1D5DB;
+  --zporta-error: #D32F2F;
+
+  --zporta-radius-sm: 4px;
+  --zporta-radius-md: 8px;
+  --zporta-radius-lg: 12px;
+  --zporta-spacing-sm: 8px;
+  --zporta-spacing-md: 16px;
+  --zporta-spacing-lg: 24px;
+
+  --zporta-font-family: 'Inter', sans-serif;
+}
+
+/* --- Editor Container --- */
 .diary-editor-container {
-    padding: 20px;
-    margin: 0 auto;
-    max-width: 800px;
-    box-sizing: border-box;
+  padding: var(--zporta-spacing-lg);
+  margin: 0 auto;
+  max-width: 800px; /* Consistent max-width */
+  background-color: var(--zporta-bg-light); /* Or #FFFFFF for a card effect */
+  border-radius: var(--zporta-radius-lg);
+  /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); Optional: subtle shadow */
+  box-sizing: border-box;
+}
+
+/* --- Heading Style --- */
+.diary-editor-container h1 {
+  color: var(--zporta-dark-blue); /* Using dark blue for heading */
+  text-align: center;
+  font-size: 2rem; /* Clean, modern size */
+  font-weight: 700;
+  margin-bottom: var(--zporta-spacing-lg);
+}
+
+/* --- Error Message Style --- */
+.diary-editor-container .error { /* Specific to this container */
+  color: var(--zporta-error);
+  background-color: rgba(var(--zporta-error), 0.1);
+  border: 1px solid rgba(var(--zporta-error), 0.3);
+  padding: var(--zporta-spacing-md);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* --- Custom Editor Placeholder (Styling for CustomEditor component itself) --- */
+/* Assuming CustomEditor has an outer wrapper or can be targeted */
+.custom-editor-wrapper { /* Replace with actual class if CustomEditor has one */
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-lg);
+  background-color: #FFFFFF; /* White background for editor area */
+}
+/* Styles for the actual text area within CustomEditor would be more complex and depend on its structure (e.g., Quill, Tiptap) */
+/* Basic placeholder for readability */
+.custom-editor-wrapper .ql-editor { /* Example for Quill */
+  min-height: 200px;
+  padding: var(--zporta-spacing-md);
+  font-family: var(--zporta-font-family);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--zporta-text-primary);
+}
+.custom-editor-wrapper .ql-editor.ql-blank::before {
+  color: var(--zporta-text-secondary);
+  font-style: normal;
+}
+
+/* --- Mention Container Styling --- */
+.mention-container {
+  margin-top: var(--zporta-spacing-lg); /* Increased top margin */
+  margin-bottom: var(--zporta-spacing-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.mention-container label {
+  margin-bottom: var(--zporta-spacing-sm);
+  font-weight: 600;
+  color: var(--zporta-dark-blue); /* Label color */
+  font-size: 0.95rem;
+}
+
+/* Styling for react-select AsyncSelect component */
+.mention-container .react-select__control {
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-md);
+  padding: var(--zporta-spacing-xs);
+  background-color: #FFFFFF;
+  box-shadow: none; /* Remove default react-select shadow */
+  transition: border-color 0.2s ease;
+}
+.mention-container .react-select__control--is-focused {
+  border-color: var(--zporta-gold); /* Gold border on focus */
+  box-shadow: 0 0 0 2px rgba(var(--zporta-gold), 0.2);
+}
+.mention-container .react-select__placeholder {
+  color: var(--zporta-text-secondary);
+}
+.mention-container .react-select__menu {
+  border-radius: var(--zporta-radius-md);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  z-index: 10; /* Ensure dropdown is above other elements */
+}
+.mention-container .react-select__option {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.mention-container .react-select__option--is-focused {
+  background-color: var(--zporta-gold-lighter); /* Lighter gold for focused option */
+  color: var(--zporta-dark-blue);
+}
+.mention-container .react-select__option--is-selected {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-dark-blue);
+}
+.mention-container .react-select__multi-value {
+  background-color: var(--zporta-olive-lighter); /* Olive for selected mention tags */
+  color: var(--zporta-text-on-dark);
+  border-radius: var(--zporta-radius-sm);
+}
+.mention-container .react-select__multi-value__label {
+  color: var(--zporta-text-on-dark);
+  font-size: 0.9em;
+}
+.mention-container .react-select__multi-value__remove {
+  color: var(--zporta-text-on-dark);
+}
+.mention-container .react-select__multi-value__remove:hover {
+  background-color: var(--zporta-olive);
+  color: var(--zporta-text-on-dark);
+}
+
+
+/* --- Button Group Styling --- */
+.button-group {
+  margin-top: var(--zporta-spacing-lg);
+  display: flex;
+  justify-content: flex-end; /* Align buttons to the right */
+  gap: var(--zporta-spacing-md);
+}
+
+/* --- Base Button Style (zporta-btn) --- */
+.zporta-btn {
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-lg); /* Balanced padding */
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--zporta-radius-md);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  min-width: 120px; /* Minimum width for buttons */
+  text-align: center;
+}
+
+.zporta-btn:active {
+  transform: scale(0.97);
+}
+
+.zporta-btn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 2px;
+}
+
+/* Save Button (Primary Action) */
+.zporta-btn.save-btn, /* Add .save-btn class to the save button in JS if not already there */
+.button-group button:first-of-type { /* Fallback if class not added */
+  background-color: var(--zporta-gold); /* Gold */
+  color: var(--zporta-dark-blue); /* Dark blue text for contrast */
+}
+
+.zporta-btn.save-btn:hover,
+.button-group button:first-of-type:hover {
+  background-color: #E6C200; /* Darker gold */
+  box-shadow: 0 2px 8px rgba(var(--zporta-gold), 0.3);
+}
+
+/* Cancel Button (Secondary Action) */
+.zporta-btn.cancel-btn {
+  background-color: var(--zporta-bg-medium); /* Light grey */
+  color: var(--zporta-text-secondary);
+  border: 1px solid var(--zporta-border-color);
+}
+
+.zporta-btn.cancel-btn:hover {
+  background-color: var(--zporta-border-color);
+  color: var(--zporta-text-primary);
+}
+
+/* --- Floating Save Button on Mobile --- */
+.floating-save-btn-container {
+  display: none; /* Hidden by default */
+  position: fixed;
+  bottom: var(--zporta-spacing-lg);
+  right: var(--zporta-spacing-lg);
+  z-index: 999;
+}
+
+.floating-save-btn {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-dark-blue);
+  padding: var(--zporta-spacing-md); /* Larger tap target */
+  border-radius: 50%; /* Circular button */
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: none;
+  font-size: 1.5rem; /* For icon if used, or text */
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.floating-save-btn:hover {
+  background-color: #E6C200;
+  transform: scale(1.05);
+}
+.floating-save-btn:active {
+  transform: scale(0.95);
+}
+.floating-save-btn svg { /* If using SVG icon */
+  width: 24px;
+  height: 24px;
+}
+
+
+/* --- Responsive Design Adjustments --- */
+@media (max-width: 768px) {
+  .diary-editor-container {
+    padding: var(--zporta-spacing-md);
   }
-  
-  /* Heading style */
   .diary-editor-container h1 {
-    color: #ffb606;
-    text-align: center;
-    font-size: 2.5em;
-    margin-bottom: 20px;
+    font-size: 1.8rem;
   }
-  
-  /* Error message style */
-  .error {
-    color: red;
-    margin-bottom: 10px;
-    text-align: center;
-  }
-  
-  /* Mention container styling */
-  .mention-container {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .mention-container label {
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  
-  /* Button group styling */
-  .button-group {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  /* Base button style */
   .zporta-btn {
-    padding: 10px 20px;
-    border: none;
-    background-color: #ffb606;
-    color: #fff;
-    font-size: 1em;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
+    font-size: 0.95rem;
+    padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
   }
-  
-  /* Hover state for base button */
-  .zporta-btn:hover {
-    background-color: #e0a800;
+}
+
+@media (max-width: 480px) {
+  .diary-editor-container {
+    padding: var(--zporta-spacing-md);
+    border-radius: 0; /* Full width on small mobile */
+    box-shadow: none;
   }
-  
-  /* Specific styling for cancel button */
-  .cancel-btn {
-    background-color: #ccc;
-    color: #333;
+  .diary-editor-container h1 {
+    font-size: 1.6rem;
   }
-  
-  .cancel-btn:hover {
-    background-color: #b3b3b3;
+
+  /* Hide normal buttons and show floating save button */
+  .button-group {
+    /* display: none; */ /* Option 1: Hide desktop buttons entirely */
+    /* Option 2: Stack them if still needed */
+    flex-direction: column;
+    gap: var(--zporta-spacing-sm);
   }
-  
-  /* Responsive design adjustments */
-  @media (max-width: 768px) {
-    .diary-editor-container {
-      padding: 15px;
-      max-width: 100%;
-    }
-    
-    .zporta-btn {
-      width: 100%;
-      font-size: 1em;
-    }
-  
-    .button-group {
-      flex-direction: column;
-      gap: 10px;
-    }
+  .button-group .zporta-btn {
+     width: 100%; /* Make stacked buttons full width */
+     padding: var(--zporta-spacing-md); /* Larger tap targets */
   }
-  
+
+  .floating-save-btn-container {
+    display: block; /* Show floating button */
+  }
+  /* Adjust main button group if floating button is primary */
+  .button-group {
+      /* If floating button is the ONLY save, then normal save can be hidden or repurposed */
+      /* For now, let's assume the floating button is an *additional* quick save */
+      /* If it REPLACES the main save, then the .save-btn in .button-group should be display:none */
+      margin-bottom: calc(var(--zporta-spacing-lg) + 70px); /* Add space at bottom so content isn't hidden by floating btn */
+  }
+}

@@ -294,17 +294,22 @@ const Profile = () => {
       <aside className="profile-sidebar">
         <div className="sidebar-card">
           <div className="sidebar-image-container">
-            <img
-              src={
-                previewUrl
-                  ? previewUrl
-                  : profile?.profile_image_url?.trim()
-                  ? profile.profile_image_url
-                  : "https://via.placeholder.com/150"
-              }
-              alt={profile.username}
-              className="hexagon"
-            />
+              <img
+                src={
+                  previewUrl
+                    ? previewUrl
+                    : profile?.profile_image_url?.trim()
+                      ? profile.profile_image_url.trim()
+                      : "https://zportaacademy.com/media/managed_images/zpacademy.png"
+                }
+                onError={(e) => {
+                  e.target.onerror = null; // prevent infinite loop
+                  e.target.src = "https://zportaacademy.com/media/managed_images/zpacademy.png";
+                }}
+                alt={profile.username || "Zporta User"}
+                className="hexagon"
+              />
+
             <button className="profile-edit-btn" onClick={handleProfileImageClick}>
               <FaEdit />
             </button>

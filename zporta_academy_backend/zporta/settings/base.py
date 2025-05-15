@@ -34,7 +34,17 @@ INSTALLED_APPS = [
     'notifications',
     'mentions',
     'learning.apps.LearningConfig',
+    'channels',
 ]
+
+ASGI_APPLICATION = 'zporta.asgi.application'
+
+ # For dev you can use the in-memory layer; swap in Redis for production
+CHANNEL_LAYERS = {
+     "default": {
+         "BACKEND": "channels.layers.InMemoryChannelLayer"
+     }
+ }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
