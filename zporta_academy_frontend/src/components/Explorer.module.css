@@ -121,12 +121,26 @@
 }
 
 /* --- Grid Container (Pinterest-like Masonry via Grid) --- */
-.gridContainer {
+ /* --- Grid Container: only for courses/lessons/posts/etc. (NOT quizzes) --- */
+.gridContainer:not(.quizLayout) {
   display: grid;
-  /* MOBILE FIRST: Start with 2 columns, minimal gap */
+  /* MOBILE FIRST: 2 columns for non-quiz tabs */
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem; /* 12px */
-  align-items: start; /* Align items to the top of their grid cell */
+  gap: 0.75rem;
+  align-items: start;
+}
+
+/* --- Quiz Container: single-column, no grid --- */
+.gridContainer.quizLayout {
+  display: block;            /* stack quiz cards vertically */
+  grid-template-columns: none;
+  gap: 0;
+
+  /* keep your centering + padding */
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 /* --- Grid Item Wrapper --- */
@@ -363,15 +377,16 @@
 
 /* --- NEW: Quiz Layout Override --- */
 /* Apply this class to .gridContainer when the quiz tab is active */
-.quizLayout {
-  /* Force single column */
+.gridContainer.quizLayout {
+  /* Single-column quiz layout */
   grid-template-columns: 1fr;
-  /* Optional: Add a max-width to prevent quizzes becoming too wide on large screens */
-  max-width: 768px; /* Adjust as needed */
-  margin-left: auto; /* Center the column */
-  margin-right: auto; /* Center the column */
+  max-width: 768px;
+  margin: 0 auto;
+  /* inset the quiz cards so they never hit the screen edges */
+  padding: 0 1rem;
+  /* include padding in width calculations */
+  box-sizing: border-box;
 }
-
 /* Ensure the override applies on larger screens too */
 /* We define it outside media queries, but double-check overrides below */
 

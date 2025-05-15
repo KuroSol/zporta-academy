@@ -11,6 +11,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'user_username', 'text', 'created_at']
 
 class NoteSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
     mentions = serializers.PrimaryKeyRelatedField(
     queryset=User.objects.all(),
     many=True,
@@ -20,7 +21,7 @@ class NoteSerializer(serializers.ModelSerializer):
     my_comments = serializers.SerializerMethodField()
     class Meta:
         model = Note
-        fields = ['id', 'user', 'text', 'image', 'privacy', 'mentions', 'created_at', 'updated_at', 'comments', 'my_comments']
+        fields = ['id', 'user', 'user_username',  'text', 'image', 'privacy', 'mentions', 'created_at', 'updated_at', 'comments', 'my_comments']
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
     def get_my_comments(self, obj):
