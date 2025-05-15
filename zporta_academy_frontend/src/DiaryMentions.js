@@ -331,10 +331,11 @@ const DiaryMentions = () => {
             <table className="diary-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Text</th>
-                  <th>Created At</th>
-                  <th>Actions</th>
+                <th>#</th>
+                <th>Author</th>     {/* NEW */}
+                <th>Text</th>
+                <th>Created At</th>
+                <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -359,6 +360,7 @@ const DiaryMentions = () => {
                   return (
                     <tr key={mention.id}>
                       <td>{indexOfFirstMention + index + 1}</td>
+                      <td>{mention.note_author}</td>  {/* NEW: show diary writer */}
                       <td>
                         <div
                           className="note-text"
