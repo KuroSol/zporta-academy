@@ -37,5 +37,7 @@ class FileUploadView(APIView):
             uploaded_by=request.user
         )
         
-        file_url = request.build_absolute_uri(user_media.file.url)
+        
+        file_url = request.build_absolute_uri(user_media.file.url).replace("http://", "https://")
+
         return Response({"url": file_url, "media_type": media_type}, status=status.HTTP_201_CREATED)
