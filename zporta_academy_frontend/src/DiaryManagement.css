@@ -1,257 +1,371 @@
-/* DiaryManagement.css */
+/* DiaryManagement.css (Z-Index Update) */
 
 /* --- Color Palette & Theme Variables --- */
 :root {
-  /* Primary Palette (Based on existing usage) */
-  --zporta-gold: #ffb606;
-  --zporta-gold-darker: #e0a005; /* For hover */
+  /* Zporta Theme Colors (Bronze, Gold, Dark Blue, Black, Olive) */
+  --zporta-bronze: #B08D57; 
+  --zporta-bronze-darker: #8C7045; 
+  --zporta-gold: #FFD700; 
+  --zporta-gold-lighter: #FFEB80; 
+  --zporta-gold-accent: #E6C200; 
+  --zporta-dark-blue: #0A2342; 
+  --zporta-dark-blue-lighter: #1E3A5F; 
+  --zporta-olive: #556B2F; 
+  --zporta-olive-lighter: #6B8E23; 
+  --zporta-black: #121212; 
+  --zporta-near-black: #222222; 
 
-  /* Secondary & Neutrals (Example - Adjust to match Zporta branding) */
-  --zporta-navy: #1B2735;     /* Dark blue for contrast, headings */
-  --zporta-light-bg: #f8f9fa; /* Very light grey background */
-  --zporta-text-dark: #212529;  /* Primary text */
-  --zporta-text-medium: #6c757d; /* Secondary text, inactive tabs */
-  --zporta-text-light: #ffffff;   /* Text on dark/gold backgrounds */
-  --zporta-border-light: #dee2e6;/* Subtle borders */
-  --zporta-danger: #dc3545;       /* Delete button */
-  --zporta-danger-darker: #c82333;
+  /* Neutral & Utility Colors */
+  --zporta-bg-light: #F0F2F5; 
+  --zporta-bg-medium: #EAECEF; 
+  --zporta-text-primary: var(--zporta-black);
+  --zporta-text-secondary: #555555; 
+  --zporta-text-on-dark: #FFFFFF;
+  --zporta-text-on-gold: var(--zporta-dark-blue);
+  --zporta-text-on-bronze: var(--zporta-text-on-dark);
+  --zporta-border-color: #D1D5DB; 
+  --zporta-border-strong: #A0A7B0;
+  --zporta-error: #D32F2F;
+  --zporta-success: #388E3C;
+
+  /* Spacing & Radius */
+  --zporta-radius-sm: 4px;
+  --zporta-radius-md: 8px;
+  --zporta-radius-lg: 12px;
+  --zporta-spacing-xs: 4px;
+  --zporta-spacing-sm: 8px;
+  --zporta-spacing-md: 16px;
+  --zporta-spacing-lg: 24px;
+  --zporta-spacing-xl: 32px;
+
+  /* Typography */
+  --zporta-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --zporta-font-size-base: 16px;
+  --zporta-line-height-base: 1.6;
+
+  /* Z-Indexes */
+  --zindex-header: 1010;
+  --zindex-sidebar: 1030;
+  --zindex-modal-backdrop: 1050;
+  --zindex-modal-content: 1051;
+
+
+  /* Fixed Header Height (adjust if necessary) */
+  --header-height: 120px; /* Approximate height for tabs + title */
+}
+
+/* --- Base Body Styles (for readability) --- */
+body {
+  font-family: var(--zporta-font-family);
+  font-size: var(--zporta-font-size-base);
+  line-height: var(--zporta-line-height-base);
+  color: var(--zporta-text-primary);
+  background-color: var(--zporta-bg-light);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- Main Page Layout --- */
 .diary-management-container {
-  background-color: var(--zporta-light-bg);
-  padding: 25px; /* Consistent padding */
-  min-height: calc(100vh - 50px); /* Adjust if you have a global header/footer */
+  background-color: var(--zporta-bg-light);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--header-height); /* Space for fixed header */
 }
 
-/* --- Header Area --- */
+/* --- Fixed Header Area --- */
 .diary-header {
-  margin-bottom: 35px; /* More space below header */
-  text-align: center;
+  background-color: var(--zporta-dark-blue);
+  color: var(--zporta-text-on-dark);
+  padding: var(--zporta-spacing-md) var(--zporta-spacing-lg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--zindex-header); /* UPDATED Z-INDEX */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .diary-title {
-  color: var(--zporta-navy); /* Use navy for title */
-  font-size: 2rem; /* Slightly larger title */
-  font-weight: 600;
-  margin-bottom: 30px; /* Space below title */
+  color: var(--zporta-gold);
+  font-size: 1.8rem; 
+  font-weight: 700;
+  margin: 0 0 var(--zporta-spacing-md) 0;
+  text-align: center;
 }
 
 /* --- Tab Navigation --- */
 .diary-tabs {
   display: flex;
   justify-content: center;
-  border-bottom: 2px solid var(--zporta-border-light); /* Line below tabs */
-  margin-bottom: 30px; /* Space below tabs before content */
+  width: 100%;
+  border-bottom: 1px solid var(--zporta-dark-blue-lighter); 
 }
 
 .diary-tab-btn {
-  padding: 12px 25px;
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-lg);
   background-color: transparent;
   border: none;
-  border-bottom: 3px solid transparent; /* Invisible border for spacing */
-  color: var(--zporta-text-medium); /* Inactive color */
-  font-size: 1.05rem; /* Slightly larger tab text */
+  border-bottom: 3px solid transparent;
+  color: var(--zporta-text-on-dark);
+  opacity: 0.8;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
-  margin-bottom: -2px; /* Overlap container border */
-  position: relative;
-  white-space: nowrap; /* Prevent wrapping */
+  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+  margin: 0 var(--zporta-spacing-xs);
+  border-radius: var(--zporta-radius-sm) var(--zporta-radius-sm) 0 0; 
+  white-space: nowrap;
 }
 
 .diary-tab-btn:hover {
-  color: var(--zporta-navy); /* Darken text on hover */
+  color: var(--zporta-gold-lighter);
+  opacity: 1;
+  background-color: var(--zporta-dark-blue-lighter); 
 }
 
 .diary-tab-btn.active {
-  color: var(--zporta-gold); /* Gold color for active text */
-  font-weight: 600;
-  border-bottom-color: var(--zporta-gold); /* Gold underline */
+  color: var(--zporta-gold);
+  font-weight: 700;
+  border-bottom-color: var(--zporta-gold);
+  opacity: 1;
+  background-color: var(--zporta-dark-blue-lighter); 
+}
+
+.diary-tab-btn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 2px;
 }
 
 /* --- Main Content Area --- */
 .diary-content {
-  flex-grow: 1; /* Takes up remaining vertical space */
-  /* Let the specific component (Editor, List, Mentions) handle its own internal layout */
+  flex-grow: 1;
+  padding: var(--zporta-spacing-lg);
+  overflow-y: auto; 
+  -webkit-overflow-scrolling: touch; 
 }
 
 /* --- Footer --- */
 .diary-footer {
   text-align: center;
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--zporta-border-light);
-  color: var(--zporta-text-medium);
+  padding: var(--zporta-spacing-md);
+  background-color: var(--zporta-bg-medium);
+  border-top: 1px solid var(--zporta-border-color);
+  color: var(--zporta-text-secondary);
   font-size: 0.9rem;
+  margin-top: auto; 
 }
 
-/* --- Theming Existing Modal & Button Styles --- */
-/* Apply Zporta theme to modals and buttons used within diary components */
-
+/* --- General Modal Styling (to be refined in specific component CSS) --- */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(var(--zporta-black), 0.7); 
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: var(--zindex-modal-backdrop); /* UPDATED Z-INDEX */
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--zporta-spacing-md);
+  box-sizing: border-box;
 }
 
 .modal-content {
-  background: #fff;
-  padding: 25px; /* Slightly more padding */
-  border-radius: 8px;
-  width: 90%; /* More responsive width */
-  max-width: 700px; /* Adjust max-width */
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  z-index: 1001;
+  background: var(--zporta-bg-light);
+  padding: var(--zporta-spacing-lg);
+  border-radius: var(--zporta-radius-lg);
+  width: 90%;
+  max-width: 700px; 
+  max-height: 90vh; 
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  z-index: var(--zindex-modal-content); /* UPDATED Z-INDEX */
   position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  resize: both; 
+  min-width: 300px; 
+  min-height: 200px;
+}
+
+.modal-content h2, .modal-content h3 {
+  color: var(--zporta-dark-blue);
+  margin-top: 0;
+}
+
+.modal-header { 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--zporta-spacing-md);
+  border-bottom: 1px solid var(--zporta-border-color);
+  margin-bottom: var(--zporta-spacing-md);
+}
+
+.modal-header h2 {
+  margin-bottom: 0;
 }
 
 .modal-body {
-  margin-top: 15px;
-  max-height: 60vh; /* Limit height based on viewport */
-  overflow-y: auto;
+  flex-grow: 1;
+  overflow-y: auto; 
+  padding-right: var(--zporta-spacing-sm); 
+  margin-right: calc(-1 * var(--zporta-spacing-sm)); 
 }
 
 .modal-actions {
-  margin-top: 20px;
+  margin-top: var(--zporta-spacing-lg);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--zporta-spacing-md);
+  padding-top: var(--zporta-spacing-md);
+  border-top: 1px solid var(--zporta-border-color);
 }
 
+/* Base button styling for modals - can be overridden */
 .modal-actions button {
-  padding: 10px 22px; /* Consistent padding */
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-lg);
   border: none;
-  border-radius: 5px; /* Slightly more rounded */
+  border-radius: var(--zporta-radius-md);
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  font-weight: 600;
   font-size: 0.95rem;
+  min-width: 100px; 
+  text-align: center;
 }
+
 .modal-actions button:active {
-    transform: scale(0.98); /* Click effect */
+  transform: scale(0.97);
 }
 
-/* Add specific classes to buttons in your modal component JSX if possible */
-/* Example: <button className="modal-btn-primary">Save</button> */
-/* <button className="modal-btn-secondary">Cancel</button> */
+.modal-actions button:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 2px;
+}
 
-/* Primary Modal Button (Save/Confirm) */
-.modal-actions button.modal-btn-primary {
+/* Primary Modal Button (Save/Confirm) - Example */
+.modal-btn-primary {
+  background-color: var(--zporta-gold-accent);
+  color: var(--zporta-text-on-gold);
+}
+.modal-btn-primary:hover {
   background-color: var(--zporta-gold);
-  color: var(--zporta-navy); /* Dark text on gold */
-}
-.modal-actions button.modal-btn-primary:hover {
-  background-color: var(--zporta-gold-darker);
+  box-shadow: 0 2px 8px rgba(var(--zporta-gold), 0.3);
 }
 
-/* Secondary Modal Button (Cancel/Close) */
-.modal-actions button.modal-btn-secondary {
-  background-color: var(--zporta-text-medium);
-  color: var(--zporta-text-light);
+/* Secondary Modal Button (Cancel/Close) - Example */
+.modal-btn-secondary {
+  background-color: var(--zporta-bg-medium);
+  color: var(--zporta-text-secondary);
+  border: 1px solid var(--zporta-border-color);
 }
-.modal-actions button.modal-btn-secondary:hover {
-  background-color: #5a6268;
+.modal-btn-secondary:hover {
+  background-color: var(--zporta-border-color);
+  color: var(--zporta-text-primary);
 }
 
-/* Fallback if specific classes aren't added */
-.modal-actions button:first-of-type { /* Assumes save is usually first */
-   background-color: var(--zporta-gold);
-   color: var(--zporta-navy);
+/* Close button for modals (often an icon button) */
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--zporta-text-secondary);
+  font-size: 1.5rem; 
+  padding: var(--zporta-spacing-xs);
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
-.modal-actions button:first-of-type:hover {
-  background-color: var(--zporta-gold-darker);
-}
-.modal-actions button:last-of-type { /* Assumes cancel/close is last */
-   background-color: var(--zporta-text-medium);
-   color: var(--zporta-text-light);
-}
-.modal-actions button:last-of-type:hover {
-   background-color: #5a6268;
+.modal-close-btn:hover {
+  color: var(--zporta-text-primary);
 }
 
 
-/* Diary List Buttons */
-.diary-edit-btn, .diary-delete-btn {
-   border: none;
-   padding: 6px 12px; /* Adjust padding */
-   border-radius: 5px;
-   cursor: pointer;
-   font-weight: 500; /* Slightly less bold */
-   font-size: 0.85rem; /* Smaller font */
-   transition: background-color 0.2s ease, transform 0.1s ease;
-}
-.diary-edit-btn:active, .diary-delete-btn:active {
-    transform: scale(0.98);
-}
-
-.diary-edit-btn {
-   background: var(--zporta-gold);
-   color: var(--zporta-navy);
-}
-.diary-edit-btn:hover {
-   background: var(--zporta-gold-darker);
-}
-
-.diary-delete-btn {
-   background: var(--zporta-danger);
-   color: var(--zporta-text-light);
-}
-.diary-delete-btn:hover {
-   background: var(--zporta-danger-darker);
-}
-
-/* Other styles like .highlight, body.modal-open remain the same */
+/* Highlight style (from DiaryList.js, good to have globally) */
 .highlight {
-  background-color: yellow;
+  background-color: var(--zporta-gold-lighter);
+  color: var(--zporta-dark-blue);
+  padding: 0.1em 0.2em;
+  border-radius: var(--zporta-radius-sm);
   font-weight: bold;
 }
+
+/* Prevent body scroll when modal is open */
 body.modal-open {
   overflow: hidden;
 }
 
-
 /* --- Mobile Adjustments --- */
 @media (max-width: 768px) {
-  .diary-management-container {
-     padding: 15px;
+  :root {
+    --header-height: 110px; 
   }
   .diary-title {
-     font-size: 1.6rem; /* Adjust title size */
-  }
-  .diary-tabs {
-     margin-bottom: 20px;
+    font-size: 1.6rem;
   }
   .diary-tab-btn {
-     padding: 10px 12px; /* Adjust tab padding */
-     font-size: 0.95rem;
+    padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
+    font-size: 0.95rem;
+  }
+  .diary-content {
+    padding: var(--zporta-spacing-md);
   }
   .modal-content {
-     width: 95%; /* Allow modal to be wider on mobile */
+    width: 95%;
+    max-height: 90vh;
   }
 }
 
 @media (max-width: 480px) {
-    /* Further adjustments for very small screens */
-    .diary-tabs {
-        /* Allow tabs to wrap if needed, or adjust padding further */
-        /* flex-wrap: wrap; */ /* Uncomment if wrapping is desired */
-    }
-     .diary-tab-btn {
-        padding: 8px 10px;
-        font-size: 0.9rem;
-    }
-     .modal-actions {
-        flex-direction: column; /* Stack buttons vertically */
-        gap: 8px;
-    }
-     .modal-actions button {
-        width: 100%; /* Make buttons full width */
-    }
+  :root {
+    --header-height: 100px; 
+  }
+  .diary-header {
+    padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
+  }
+  .diary-title {
+    font-size: 1.4rem;
+    margin-bottom: var(--zporta-spacing-sm);
+  }
+  .diary-tabs {
+    overflow-x: auto;
+    justify-content: flex-start; 
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+  }
+  .diary-tabs::-webkit-scrollbar { 
+    display: none;
+  }
+  .diary-tab-btn {
+    padding: var(--zporta-spacing-sm); 
+    font-size: 0.9rem;
+    flex-shrink: 0; 
+  }
+  .diary-content {
+    padding: var(--zporta-spacing-sm);
+  }
+  .modal-content {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: var(--zporta-spacing-md);
+    resize: none; 
+  }
+  .modal-actions {
+    flex-direction: column; 
+    gap: var(--zporta-spacing-sm);
+  }
+  .modal-actions button {
+    width: 100%; 
+    padding: var(--zporta-spacing-md); 
+  }
 }

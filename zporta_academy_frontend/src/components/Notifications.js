@@ -1,44 +1,57 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext'; // Assuming context path is correct
-import apiClient from '../api'; // <--- Import apiClient (Adjust path if needed)
-import './Notifications.css'; // Assuming CSS path is correct
-
+import { AuthContext } from '../context/AuthContext';
+import apiClient from '../api';
+import './Notifications.css';
 
 const Notifications = () => {
-  const { token, logout } = useContext(AuthContext); // Added logout for potential use on auth error
+  const { token, logout } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Added error state
+  const [error, setError] = useState(null);
 
+  // 1) initial HTTP fetch
   useEffect(() => {
     const fetchNotifications = async () => {
-      setLoading(true); // Ensure loading is true at the start
-      setError(null); // Clear previous errors
+      setLoading(true);
+      setError(null);
       try {
-        // Use apiClient.get with relative path; Auth header added by interceptor
         const response = await apiClient.get('/notifications/');
-        setNotifications(response.data); // Data is in response.data
-      } catch (error) {
-        console.error("Error fetching notifications:", error.response ? error.response.data : error.message);
-        setError("Failed to load notifications."); // Set error message for UI
-        if (error.response?.status === 401) { // Example: Logout if unauthorized
-          logout();
-        }
+        setNotifications(response.data);
+      } catch (err) {
+        setError('Failed to load notifications.');
+        if (err.response?.status === 401) logout();
       } finally {
         setLoading(false);
       }
     };
+    if (token) fetchNotifications();
+    else setLoading(false);
+  }, [token, logout]);
 
-    if (token) { // Only fetch if token exists
-      fetchNotifications();
-    } else {
-      setLoading(false); // No token, not loading
-      // Optionally navigate away or show message if token is required
-    }
-  }, [token, logout]); // Added logout to dependencies
+  // 2) WebSocket for real‐time updates
+  useEffect(() => {
+    if (!token) return;  // only connect if logged in
+
+    // choose ws or wss depending on page protocol
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(
+      `${protocol}://${window.location.host}/ws/notifications/`
+    );
+
+    socket.onopen = () => console.log('Notifications socket connected');
+    socket.onmessage = (e) => {
+      const newNotif = JSON.parse(e.data);
+      // prepend to list
+      setNotifications((prev) => [newNotif, ...prev]);
+    };
+    socket.onclose = () => console.log('Notifications socket closed');
+    socket.onerror = (e) => console.error('Socket error', e);
+
+    return () => socket.close();
+  }, [token]);
 
   if (loading) return <p>Loading notifications...</p>;
-  if (error) return <p className="error">{error}</p>; // Display error message
+  if (error)   return <p className="error">{error}</p>;
   if (!notifications.length) return <p>No notifications.</p>;
 
   return (
@@ -47,9 +60,29 @@ const Notifications = () => {
       <ul>
         {notifications.map(n => (
           <li key={n.id} className={n.is_read ? 'read' : 'unread'}>
-            {/* Consider making link handling more robust */}
-            {n.message} {n.link && <a href={n.link} target="_blank" rel="noopener noreferrer">View</a>}
-            {/* Add timestamp? Mark as read functionality? */}
+            {n.message}
+              {n.link && (
+                <a
+                  href="/diary"
+                  className="view-link"
+                  onClick={async (e) => {
+                    e.preventDefault(); // stop the default navigation
+                    try {
+                      // mark it read on the server
+                      await apiClient.patch(`/notifications/${n.id}/`, { is_read: true });
+                    } catch (err) {
+                      console.error('Failed to mark read', err);
+                    }
+                    // then go to the diary overview
+                    window.location.href = '/diary';
+                  }}
+                >
+                  View
+                </a>
+              )}
+            <span className="timestamp">
+              {new Date(n.created_at).toLocaleString()}
+            </span>
           </li>
         ))}
       </ul>

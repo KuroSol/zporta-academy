@@ -1,170 +1,345 @@
-/* SidebarMenu.css */
+/* SidebarMenu.css (Mobile Refinements) */
+
+:root {
+  /* Z-Indexes */
+  --zindex-main-header: 1010;         /* Example for your main page header */
+  --zindex-sidebar: 1030;              /* Sidebar panel */
+  --zindex-sidebar-handle: 1031;       /* Sidebar toggle handle */
+
+  /* Sidebar Dimensions */
+  --sidebar-width-desktop-collapsed: 60px; /* "Tiny bar" width for PC/Tablet */
+  --sidebar-width-expanded: 250px;         /* Full width when expanded */
+  --sidebar-transition-duration: 0.3s;
+  --sidebar-transition-timing: ease; 
+
+  /* Unified Handle Toggle Dimensions & Style */
+  --sidebar-handle-width: 28px;          /* Width of the handle's touch area */
+  --sidebar-handle-visual-width: 20px;   /* Visual width of the colored part */
+  --sidebar-handle-height: 60px;         /* Height of the handle */
+  --sidebar-handle-bg-closed: #ffc107;   /* Gold when sidebar is closed */
+  --sidebar-handle-icon-closed: #1B2735; /* Dark blue icon */
+  --sidebar-handle-bg-open: #2c3e50;   /* Darker blue when sidebar is open, for contrast */
+  --sidebar-handle-icon-open: #ffc107;   /* Gold icon */
+  
+  /* Colors & Base Styles */
+  --sidebar-bg-color: rgba(27, 39, 53, 0.97); /* Dark blue with slight transparency */
+  --sidebar-text-color: #ffc107;
+  --sidebar-accent-color: #ffc107;       /* For borders, highlights */
+  --main-header-height: 60px;            /* << IMPORTANT: Approx. height of your main page header */
+  --zporta-radius-md: 8px;               /* Assuming from global styles */
+}
 
 /* -----------------------------------------------------------------------------
-   Sidebar Container: Fixed at left, full height; collapsed by default.
+   Sidebar Container
 ----------------------------------------------------------------------------- */
 .sidebar-menu {
   position: fixed;
-  top: 0;
-  right: 0;
-  left: auto;
+  /* Default top:0 for desktop, will be overridden for mobile */
+  top: 0; 
+  right: 0; /* Sidebar is on the right */
   bottom: 0;
-  width: 60px; /* Collapsed width (will expand to 250px) */
-  background-color: #1b2735f3;
-  color: #ffc107;
-  z-index: 1000;
+  background-color: var(--sidebar-bg-color);
+  color: var(--sidebar-text-color);
+  z-index: var(--zindex-sidebar);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   box-sizing: border-box;
-  padding: 20px 10px;
-  transition: width 0.3s ease;
-  overflow: hidden;
+  padding: 20px 10px; /* Default padding */
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.25);
+
+  /* Default: Desktop/Tablet collapsed state */
+  width: var(--sidebar-width-desktop-collapsed);
+  transform: translateX(0); /* On screen by default for desktop */
+  opacity: 1;
+  transition: width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              transform var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Added top transition */
 }
 
-/* Expanded state: Increase width */
 .sidebar-menu.expanded {
-  width: 250px;
+  width: var(--sidebar-width-expanded);
 }
 
-/* -----------------------------------------------------------------------------
-   Sidebar Header: Title display.
------------------------------------------------------------------------------ */
-.sidebar-header {
-  text-align: center;
-  margin-bottom: 5px;
+/* Content visibility for desktop/tablet collapsed state */
+.sidebar-menu.collapsed .sidebar-header .sidebar-title {
+  font-size: 1.1em; 
+  line-height: 1.1;
+  margin-top: 3px;
+  padding-bottom: 3px;
 }
-
-.sidebar-title {
-  font-size: 22px;
-  margin: 0;
-  color: #ffc107;
-  line-height: 1.2;
+.sidebar-menu.collapsed .profile-info,
+.sidebar-menu.collapsed nav ul li a span {
+  display: none;
 }
-
-/* -----------------------------------------------------------------------------
-   Profile Section: Contains profile image and user info.
------------------------------------------------------------------------------ */
-.profile-section {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-/* Hexagon shape for profile image */
-.profile-hexagon {
-  width: 80px;
-  height: 80px;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  margin: 0 auto;
-  overflow: hidden;
-  transition: width 0.3s ease, height 0.3s ease;
-}
-
-.profile-hexagon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* When sidebar is collapsed: shrink profile hexagon */
 .sidebar-menu.collapsed .profile-hexagon {
-  width: 40px;
-  height: 40px;
+  width: 36px; 
+  height: 36px;
+  margin-bottom: 8px;
+  border-width: 1px;
 }
-
-/* Profile info: username styling */
-.profile-info {
-  margin-top: 5px;
-  text-align: center;
-  flex: none;
-  min-width: auto;
-}
-
-.profile-info h3 {
-  margin: 0 auto;
-  text-align: center;
-  font-size: 18px;
-  color: #fff;
-  border-bottom: 2px solid #ffc107; /* Golden underline */
-  padding-bottom: 5px;
-  margin-bottom: 10px;
-}
-
-/* -----------------------------------------------------------------------------
-   Navigation Items: List and link styling.
------------------------------------------------------------------------------ */
-.sidebar-menu nav ul {
-  list-style: none; /* Removes default bullets */
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar-menu nav ul li {
-  margin-bottom: 20px;
-}
-
-.sidebar-menu nav ul li a {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: #ffc107;
-  font-size: 16px;
-  transition: color 0.3s ease;
-}
-
-.sidebar-menu nav ul li a:hover {
-  color: #fff;
-}
-
-/* Icon styling */
-.icon {
-  font-size: 24px;
-  margin-right: 10px;
-}
-
-/* When sidebar is collapsed: center icons */
 .sidebar-menu.collapsed .icon {
   margin-right: 0;
   display: block;
   text-align: center;
   width: 100%;
+  font-size: 18px; 
+}
+.sidebar-menu.collapsed nav ul li a {
+  padding: 8px 0; 
+  justify-content: center;
+  margin: 2px 0;
+}
+.sidebar-menu.collapsed .notification-link .notification-badge {
+    top: -3px;
+    right: 5px; 
+    width: 15px;
+    height: 15px;
+    font-size: 9px;
+    line-height: 15px;
 }
 
+
 /* -----------------------------------------------------------------------------
-   Toggle Button: Positioned at the bottom of the sidebar.
+   Unified Sidebar Toggle Handle (for all screen sizes)
 ----------------------------------------------------------------------------- */
-.toggle-sidebar-desktop {
-  /* Keep all existing styles inside */
-  display: block; /* Ensure visible by default */
-  margin-top: auto;
-  margin-bottom: 50px;
-  background-color: #ffc107;
+.sidebar-unified-handle {
+  position: fixed;
+  top: 50%; /* Vertically center on screen */
+  transform: translateY(-50%);
+  width: var(--sidebar-handle-width); 
+  height: var(--sidebar-handle-height);
+  background-color: transparent; 
   border: none;
-  color: #1B2735;
-  padding: 10px;
-  width: 100%;
+  padding: 0;
   cursor: pointer;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: background 0.3s ease;
+  z-index: var(--zindex-sidebar-handle);
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+  transition: right var(--sidebar-transition-duration) var(--sidebar-transition-timing);
 }
 
-.toggle-sidebar-desktop:hover {
-   /* Keep existing hover styles inside */
-   background-color: #ffb600;
+/* Visual part of the handle */
+.sidebar-unified-handle::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--sidebar-handle-width) - var(--sidebar-handle-visual-width)); 
+  top: 0;
+  width: var(--sidebar-handle-visual-width);
+  height: 100%;
+  border-top-left-radius: var(--zporta-radius-md);
+  border-bottom-left-radius: var(--zporta-radius-md);
+  box-shadow: -2px 0px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
 }
 
-.toggle-sidebar-mobile {
-  display: none;
+.sidebar-unified-handle .handle-icon {
+  font-size: 16px; 
+  position: relative; 
+  z-index: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
+
+.sidebar-unified-handle:hover::before {
+  filter: brightness(1.1);
+}
+.sidebar-unified-handle:active .handle-icon {
+  transform: scale(0.9);
+}
+
+/* Default (Desktop/Tablet) Handle Positioning & Style */
+.sidebar-unified-handle.is-closed {
+  right: var(--sidebar-width-desktop-collapsed); 
+}
+.sidebar-unified-handle.is-closed::before {
+  background-color: var(--sidebar-handle-bg-closed);
+}
+.sidebar-unified-handle.is-closed .handle-icon {
+  color: var(--sidebar-handle-icon-closed);
+}
+
+.sidebar-unified-handle.is-open {
+  right: var(--sidebar-width-expanded); 
+}
+.sidebar-unified-handle.is-open::before {
+  background-color: var(--sidebar-handle-bg-open);
+}
+.sidebar-unified-handle.is-open .handle-icon {
+  color: var(--sidebar-handle-icon-open);
+}
+
+
 /* -----------------------------------------------------------------------------
-   Notification Badge: For numeric count and optional dot.
+   Mobile Specific Adjustments (max-width: 768px)
 ----------------------------------------------------------------------------- */
+@media only screen and (max-width: 768px) {
+  .sidebar-menu {
+    /* On mobile, sidebar starts below the main header */
+    top: var(--main-header-height); 
+    bottom: 0; /* Ensure it doesn't go beyond the bottom of viewport */
+    height: calc(100vh - var(--main-header-height)); /* Adjust height */
+    
+    width: var(--sidebar-width-expanded); 
+    transform: translateX(100%); 
+    opacity: 0; 
+    background-color: var(--sidebar-bg-color); /* Already slightly transparent */
+    /* Padding for content inside the sidebar, top padding is now more critical */
+    padding: 15px 10px; /* Adjusted top padding as sidebar itself starts lower */
+  }
+
+  .sidebar-menu.expanded {
+    transform: translateX(0%); 
+    opacity: 1; 
+  }
+
+  /* Ensure content is correctly displayed when expanded on mobile */
+  .sidebar-menu.expanded .sidebar-header .sidebar-title {
+    font-size: 20px; /* Slightly smaller if header area is more compact */
+  }
+  .sidebar-menu.expanded .profile-info,
+  .sidebar-menu.expanded nav ul li a span {
+    display: inline;
+  }
+  .sidebar-menu.expanded .profile-hexagon {
+    width: 60px; /* Adjust if needed for new layout */
+    height: 60px;
+    border-width: 2px;
+  }
+  .sidebar-menu.expanded .icon {
+    margin-right: 10px; /* Adjusted margin */
+    font-size: 18px;  /* Adjusted icon size */
+  }
+  .sidebar-menu.expanded nav ul li a {
+    padding: 8px 10px; /* Adjusted padding */
+    justify-content: flex-start;
+  }
+  .sidebar-menu.expanded .notification-link .notification-badge {
+    top: -4px; 
+    right: -4px;
+    width: 16px; /* Slightly smaller badge */
+    height: 16px;
+    font-size: 10px;
+    line-height: 16px;
+  }
+
+  /* Mobile Handle Positioning */
+  /* The handle is still vertically centered on the viewport (top: 50%; transform: translateY(-50%))
+     This should make it appear centered against the visible portion of the sidebar panel.
+     If the sidebar panel is shorter (due to starting below the main header), the handle will
+     still be at 50% of the viewport height.
+  */
+  .sidebar-unified-handle.is-closed {
+    right: 0px; /* Flush to screen edge when sidebar is hidden */
+  }
+  /* .is-open styles for handle are the same as desktop: right: var(--sidebar-width-expanded); */
+}
+
+/* -----------------------------------------------------------------------------
+   Sidebar Header, Profile, Navigation (Base styles from your provided CSS)
+----------------------------------------------------------------------------- */
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 5px;
+  padding: 10px 0;
+}
+.sidebar-title {
+  font-size: 22px;
+  margin: 0;
+  color: var(--sidebar-text-color);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.profile-section {
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 10px 0;
+}
+.profile-hexagon {
+  width: 70px;
+  height: 70px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  margin: 0 auto 10px auto;
+  overflow: hidden;
+  transition: width 0.3s ease, height 0.3s ease, border-width 0.3s ease;
+  background-color: #334E68; /* Placeholder */
+  border: 2px solid var(--sidebar-accent-color);
+}
+.profile-hexagon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-info {
+  margin-top: 5px;
+  text-align: center;
+}
+.profile-info h3 {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 16px;
+  color: #fff;
+  border-bottom: 1px solid var(--sidebar-accent-color);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.sidebar-menu nav {
+  flex-grow: 1;
+}
+.sidebar-menu nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sidebar-menu nav ul li {
+  margin-bottom: 0;
+}
+.sidebar-menu nav ul li a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--sidebar-text-color);
+  font-size: 15px;
+  padding: 10px 10px;
+  border-radius: 6px;
+  margin: 3px 0;
+  transition: color 0.2s ease, background-color 0.2s ease, padding-left 0.2s ease;
+  white-space: nowrap;
+}
+.sidebar-menu nav ul li a:hover {
+  color: var(--sidebar-bg-color); /* Text becomes dark */
+  background-color: var(--sidebar-accent-color); /* BG becomes gold */
+  padding-left: 15px; /* Slight indent on hover */
+}
+.sidebar-menu nav ul li a:hover .icon {
+  color: var(--sidebar-bg-color); /* Icon becomes dark */
+}
+.sidebar-menu nav ul li a.active {
+  color: var(--sidebar-bg-color);
+  background-color: var(--sidebar-accent-color);
+  font-weight: 600;
+}
+.sidebar-menu nav ul li a.active .icon {
+  color: var(--sidebar-bg-color);
+}
+.icon {
+  font-size: 20px;
+  margin-right: 12px;
+  min-width: 20px;
+  text-align: center;
+  transition: margin-right 0.3s ease, color 0.2s ease;
+}
+
 .notification-link {
   position: relative;
-  display: inline-block; /* Allows absolute positioning of badge */
 }
-
 .notification-badge {
   position: absolute;
   top: -5px;
@@ -177,97 +352,12 @@
   font-size: 12px;
   text-align: center;
   line-height: 18px;
+  font-weight: bold;
+  padding: 0 3px;
 }
 
-/* Alternative small red dot for notifications */
-.notification-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 8px;
-  height: 8px;
-  background-color: red;
-  border-radius: 50%;
-}
-
-/* -----------------------------------------------------------------------------
-   End of computer  file: SidebarMenu.css
------------------------------------------------------------------------------ */
-
-/* ---------------------------------------------------------------------------
-   Mobile Styles: Adjust sidebar appearance exclusively for mobile view.
---------------------------------------------------------------------------- */
-@media only screen and (max-width: 768px) {
-  /* Position sidebar on the left for mobile */
-  .sidebar-menu {
-    right: 0;
-    left: auto;
-    /* Set collapsed width to ZERO to hide the background */
-    width: 0; /* CHANGE: Was 50px */
-    padding: 0; /* CHANGE: No padding needed when width is 0 */
-    overflow: hidden; /* Keep this to prevent content overflow during transition */
-    /* Keep existing transition: width 0.3s ease; */
-    transition: width 0.3s ease;
-  }
-  
-  /* When expanded, restore full width */
-  .sidebar-menu.expanded {
-    width: 250px; /* Restore full width when expanded */
-    padding: 20px 10px; /* Restore padding */
-  }
-
-  /* Hide the toggle button if you want the swipe gesture to be the only control */
-
-  .toggle-sidebar-desktop {
-    display: none;
-  }
-    /* Mobile Handle: A small vertical slider */
-
-    
-.sidebar-menu.collapsed .sidebar-header,
-.sidebar-menu.collapsed .profile-section,
-.sidebar-menu.collapsed nav {
-  display: none; /* Hide content when collapsed */
-}
-.sidebar-menu.expanded .sidebar-header,
-.sidebar-menu.expanded .profile-section,
-.sidebar-menu.expanded nav {
-  display: block; /* Show content when expanded */
-}
-
-/* --- STYLING THE MOBILE TOGGLE BUTTON ("BUMP") --- */
+/* Ensure old toggle buttons are definitely gone */
+.toggle-sidebar-desktop,
 .toggle-sidebar-mobile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* CHANGE THIS LINE: */
-  position: fixed; /* Was: absolute. Now relative to viewport */
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 100px;
-  background-color: #ffc107;
-  color: #1B2735;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  z-index: 1001;
-  /* ... keep other styles ... */
-  border-top-left-radius: 40px;
-  border-bottom-left-radius: 40px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  box-shadow: -2px 0px 6px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.toggle-sidebar-mobile:hover {
-  background-color: #ffb600; /* Slightly darker on hover */
-}
-
-.mobile-toggle-icon {
-    font-size: 22px; /* Adjust icon size */
-}
-    
+    display: none !important;
 }
