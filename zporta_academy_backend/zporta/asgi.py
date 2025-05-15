@@ -6,7 +6,8 @@ from channels.auth import AuthMiddlewareStack
 
 import notifications.routing  # your WS URLConf
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'zporta.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'zporta.settings.production')
+
 
 django_asgi_app = get_asgi_application()
 
