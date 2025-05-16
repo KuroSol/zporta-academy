@@ -91,7 +91,7 @@ const CourseDetail = () => {
   const [enrolled, setEnrolled] = useState(false); // User enrollment status
   const [enrollMessage, setEnrollMessage] = useState(""); // Message after enroll attempt
   const [addLessonError, setAddLessonError] = useState(""); // Error adding lesson
-
+  const [enrollmentId, setEnrollmentId] = useState(null);
   // Quiz state
   const [quizzes, setQuizzes] = useState([]); // Quizzes currently attached to THIS course
   const [availableQuizzesForDropdown, setAvailableQuizzesForDropdown] = useState([]); // Filtered quizzes for the 'Add' dropdown // Quizzes owned by user NOT attached to ANY course (for dropdown)
@@ -301,39 +301,50 @@ const CourseDetail = () => {
   }, [editMode, course?.description]); // Dependencies
 
 
+
   // Enrollment Status Fetch Effect
   useEffect(() => {
-    if (course?.id && token) { // Only run if course and token exist
+    if (course?.id && token) {
       const fetchEnrollmentStatus = async () => {
         try {
           const response = await apiClient.get("/enrollments/user/");
           if (response.data && Array.isArray(response.data)) {
-            const enrollments = response.data;
-            // Check if there's an enrollment matching this course ID
-            const isEnrolled = enrollments.some(
-                (e) => e.enrollment_type === "course" && e.object_id === course.id
-            );
-            setEnrolled(isEnrolled);
+           // find the actual enrollment record
+           const match = response.data.find(
+             e => e.enrollment_type === "course" && e.object_id === course.id
+           );
+           if (match) {
+             setEnrollmentId(match.id);
+             setEnrolled(true);
+           } else {
+             setEnrollmentId(null);
+             setEnrolled(false);
+           }
           } else {
             console.warn("Enrollment data received but not in expected format:", response.data);
+            setEnrollmentId(null);
             setEnrolled(false);
           }
         } catch (err) {
-          console.error("Error fetching enrollment status:", err.response ? err.response.data : err.message);
+          console.error("Error fetching enrollment status:", err);
+          setEnrollmentId(null);
           setEnrolled(false);
-          if (err.response?.status === 401 || err.response?.status === 403) {
-            // Handle unauthorized access, maybe logout or show message
-             // logout(); // Example action
-          }
         }
       };
       fetchEnrollmentStatus();
     } else {
-      // If no course ID or token, assume not enrolled
+      setEnrollmentId(null);
       setEnrolled(false);
     }
-  }, [course, token]); // Dependencies: course object and token
+  }, [course, token]);
 
+
+    // ➡️ Redirect to enrolled‐course page as soon as we have an enrollmentId
+  useEffect(() => {
+    if (enrolled && enrollmentId) {
+      navigate(`/courses/enrolled/${enrollmentId}`, { replace: true });
+    }
+  }, [enrolled, enrollmentId, navigate]);
 
   // --- Handlers ---
 
@@ -385,9 +396,15 @@ const CourseDetail = () => {
           object_id: course.id,
           enrollment_type: "course",
         };
-        await apiClient.post("/enrollments/", enrollmentData);
-        setEnrolled(true); // Update state immediately
-        setEnrollMessage("Enrollment successful!");
+     const response = await apiClient.post("/enrollments/", enrollmentData);
+     const newEnrollment = response.data;
+     //setEnrolled(true);
+     setEnrollMessage("Enrollment successful!");
+     // 🚀 redirect right away to the enrolled‐course page
+     //navigate(`/enrolled-course/${newEnrollment.id}`, { replace: true });
+     setEnrollmentId(newEnrollment.id);
+     setEnrolled(true);
+     navigate(`/courses/enrolled/${newEnrollment.id}`, { replace: true });
       } catch (err) {
         console.error("Free enrollment error:", err.response ? err.response.data : err.message);
         const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
