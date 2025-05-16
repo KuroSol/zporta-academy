@@ -405,14 +405,15 @@ const CustomEditor = forwardRef(({
                 if (data.url) {
                     const imgElementToReplace = currentElementToReplace?.querySelector('img');
                     if (imgElementToReplace && editorRef.current?.contains(imgElementToReplace)) {
-                        imgElementToReplace.src = data.url;
+                        imgElementToReplace.src = data.url.replace("http://", "https://");
                         if (!currentElementToReplace.classList.contains('editor-element-selected')) {
                              clearSelection();
                              currentElementToReplace.classList.add('editor-element-selected');
                              setSelectedElement(currentElementToReplace);
                         }
                     } else {
-                        const imgWrapper = createResizableImage(data.url);
+                        const imgWrapper = createResizableImage(data.url.replace("http://", "https://"));
+
                         insertElementAndFocus(imgWrapper);
                     }
                     updateContentFromEditor();
@@ -509,7 +510,7 @@ const CustomEditor = forwardRef(({
                   const audioElementToReplace = currentElementToReplaceWrapper?.querySelector('audio');
  
                   if (audioElementToReplace && editorRef.current?.contains(audioElementToReplace)) {
-                       audioElementToReplace.src = data.url; // Update the src of the AUDIO tag
+                       audioElementToReplace.src = data.url.replace("http://", "https://");// Update the src of the AUDIO tag
                        audioElementToReplace.load();
                        // Keep the WRAPPER selected
                        if (!currentElementToReplaceWrapper.classList.contains('editor-element-selected')) {
@@ -519,7 +520,7 @@ const CustomEditor = forwardRef(({
                        }
                    } else {
                        // Insert new if not replacing
-                       const audioWrapper = createEditableAudio(data.url); // create function returns wrapper
+                       const audioWrapper = createEditableAudio(data.url.replace("http://", "https://")); // create function returns wrapper
                        insertElementAndFocus(audioWrapper);
                    }
                    updateContentFromEditor();
