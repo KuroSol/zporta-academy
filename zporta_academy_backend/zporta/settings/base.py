@@ -1,6 +1,8 @@
 from pathlib import Path
 from decouple import config
 
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 INSTALLED_APPS = [
@@ -102,6 +104,8 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.com')
+
+
 
 
 

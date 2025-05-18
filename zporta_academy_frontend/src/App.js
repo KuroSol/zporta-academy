@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect} from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 import Login from './Login';
@@ -35,6 +35,9 @@ import GuideRequestsPage from './components/GuideRequestsPage';
 import EnrolledCourses from './components/EnrolledCourses';
 import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
+import { messaging } from './firebase';
+import { getToken } from 'firebase/messaging'; 
+
 // Helper function to get permissions safely
 const getPermissionsFromStorage = () => {
   const stored = localStorage.getItem('permissions');
@@ -42,7 +45,7 @@ const getPermissionsFromStorage = () => {
 };
 
 const App = () => {
-  const { token, logout } = useContext(AuthContext);
+  const { token, logout } = useContext(AuthContext); 
   const isLoggedIn = !!token;
   const [permissions] = useState(getPermissionsFromStorage());
   const [isExpanded, setIsExpanded] = useState(false);
@@ -54,6 +57,48 @@ const App = () => {
   const location = useLocation(); // Get current location object
   // Check if the current path starts with '/lessons/'
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
+
+  useEffect(() => {
+    if (!token) return;
+
+    if ('Notification' in window && navigator.serviceWorker) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          getToken(messaging, {
+            vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M'
+          })
+            .then((fcmToken) => {
+              if (fcmToken) {
+                console.log('✅ FCM Token:', fcmToken);
+                fetch('/api/save-fcm-token/', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Token ${token}`, // ✅ using token now
+                  },
+                  body: JSON.stringify({ token: fcmToken }),
+                })
+                  .then((res) => res.json())
+                  .then((data) => {
+                    console.log('✅ FCM token saved:', data);
+                  })
+                  .catch((error) => {
+                    console.error('❌ Error saving FCM token:', error);
+                  });
+              } else {
+                console.warn('⚠️ No FCM token received');
+              }
+            })
+            .catch((err) => {
+              console.error('❌ FCM getToken error:', err);
+            });
+        } else {
+          console.warn('🔕 Notification permission denied');
+        }
+      });
+    }
+  }, [token]);
+
 
   return (
     <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
