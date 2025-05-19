@@ -1,23 +1,39 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# In zporta_academy_frontend/.gitignore
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Dependencies
+node_modules/
 
-# testing
-/coverage
+# Production build output
+build/
+dist/  # If your frontend uses a 'dist' folder for builds
+.next/ # If using Next.js
+.cache/
 
-# production
-/build
-
-# misc
-.DS_Store
+# Env files (if they contain secrets)
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# PNP files if using Yarn PnP
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# OS / Editor specific (can be here or in a root .gitignore)
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# IMPORTANT: DO NOT ignore your lock file!
+# Ensure package-lock.json or yarn.lock is NOT listed here.
+# It should be committed to your repository.

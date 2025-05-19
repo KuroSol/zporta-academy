@@ -7,7 +7,6 @@ import Register from './Register';
 import PasswordReset from './PasswordReset';
 import PasswordResetConfirm from './PasswordResetConfirm';
 import BottomMenu from './BottomMenu';
-// import DiaryEditor from './DiaryEditor'; // Consider removing if unused
 import CreateCourse from './components/Admin/CreateCourse';
 import CreateLesson from './components/Admin/CreateLesson';
 import CourseDetail from './components/CourseDetail';
