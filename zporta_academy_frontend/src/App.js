@@ -57,57 +57,57 @@ const App = () => {
   // Check if the current path starts with '/lessons/'
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
-  useEffect(() => {
-    if (!token) return;
+useEffect(() => {
+  if (!token) return;
 
-    if ('Notification' in window && navigator.serviceWorker) {
-      navigator.serviceWorker
-        .register('/firebase-messaging-sw.js')
-        .then((registration) => {
-          // ✅ Attach the service worker to Firebase
-          messaging.useServiceWorker(registration);
+  if ('Notification' in window && navigator.serviceWorker) {
+    navigator.serviceWorker
+      .register('/firebase-messaging-sw.js')
+      .then((registration) => {
+        // ✅ Attach the service worker to Firebase
+        messaging.useServiceWorker(registration);
 
-          Notification.requestPermission().then((permission) => {
-            if (permission === 'granted') {
-              getToken(messaging, {
-                vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
-                serviceWorkerRegistration: registration, // ✅ Needed for mobile!
-              })
-                .then((fcmToken) => {
-                  if (fcmToken) {
-                    console.log('✅ FCM Token:', fcmToken);
-                    fetch('/api/save-fcm-token/', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Token ${token}`,
-                      },
-                      body: JSON.stringify({ token: fcmToken }),
+        Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            getToken(messaging, {
+              vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
+              serviceWorkerRegistration: registration, // ✅ Needed for mobile!
+            })
+              .then((fcmToken) => {
+                if (fcmToken) {
+                  console.log('✅ FCM Token:', fcmToken);
+                  fetch('/api/save-fcm-token/', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Token ${token}`,
+                    },
+                    body: JSON.stringify({ token: fcmToken }),
+                  })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      console.log('✅ FCM token saved:', data);
                     })
-                      .then((res) => res.json())
-                      .then((data) => {
-                        console.log('✅ FCM token saved:', data);
-                      })
-                      .catch((error) => {
-                        console.error('❌ Error saving FCM token:', error);
-                      });
-                  } else {
-                    console.warn('⚠️ No FCM token received');
-                  }
-                })
-                .catch((err) => {
-                  console.error('❌ FCM getToken error:', err);
-                });
-            } else {
-              console.warn('🔕 Notification permission denied');
-            }
-          });
-        })
-        .catch((err) => {
-          console.error('❌ Service worker registration failed:', err);
+                    .catch((error) => {
+                      console.error('❌ Error saving FCM token:', error);
+                    });
+                } else {
+                  console.warn('⚠️ No FCM token received');
+                }
+              })
+              .catch((err) => {
+                console.error('❌ FCM getToken error:', err);
+              });
+          } else {
+            console.warn('🔕 Notification permission denied');
+          }
         });
-    }
-  }, [token]);
+      })
+      .catch((err) => {
+        console.error('❌ Service worker registration failed:', err);
+      });
+  }
+}, [token]);
 
 
 
