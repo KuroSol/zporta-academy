@@ -15,7 +15,7 @@ from rest_framework.decorators import permission_classes,api_view
 from rest_framework.permissions import IsAdminUser
 from .utils import send_push_notification
 from rest_framework import status
-
+from .utils import send_push_notification 
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
@@ -68,22 +68,24 @@ def send_notification_to_user(request):
 
     return Response({"message": "Notification sent and saved."}, status=200)
 
-@staff_member_required
+@staff_member_required  # ✅ Only admin users can use
 def send_notification_now(request, pk):
-    note = get_object_or_404(Notification, pk=pk)
-    print(f"📬 Attempting to send push to {note.user.username}")
-    sent = send_push_notification(note.user, note.title, note.message, note.link)
+    try:
+        notification = Notification.objects.get(pk=pk)
+        if not notification.is_sent:
+            result = send_push_notification(notification.user, notification.title, notification.message, notification.link)
+            if result:
+                notification.is_sent = True
+                notification.save()
+                messages.success(request, f"✅ Sent push to {notification.user.username}")
+            else:
+                messages.error(request, "❌ Failed to send notification.")
+        else:
+            messages.warning(request, "⚠️ Notification already sent.")
+    except Notification.DoesNotExist:
+        messages.error(request, "❌ Notification not found.")
 
-    if sent:
-        print("✅ Push sent!")
-        note.is_sent = True
-        note.save()
-        messages.success(request, "✅ Push sent successfully.")
-    else:
-        print("❌ Push failed! Maybe no token?")
-        messages.error(request, "❌ Push failed.")
-
-    return redirect(request.META.get('HTTP_REFERER', '/admin/notifications/notification/'))
+    return redirect('/admin/notifications/notification/')
 
 
 @api_view(['POST'])
