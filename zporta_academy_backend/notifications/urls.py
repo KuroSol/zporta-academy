@@ -11,8 +11,9 @@ router = DefaultRouter()
 router.register(r'', NotificationViewSet, basename='notification')
 
 urlpatterns = [
-    path('', include(router.urls)),                         # /api/notifications/
+    
     path('save-fcm-token/', save_fcm_token),               # ✅ fixed
     path('send-to-user/', send_notification_to_user),      # /api/notifications/send-to-user/
     path('send-now/<int:pk>/', send_notification_now, name='send_notification_now'),
+    path('', include(router.urls)),                         # /api/notifications/
 ]
