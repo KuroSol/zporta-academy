@@ -79,7 +79,7 @@ const App = () => {
                 console.log('✅ FCM Token retrieved:', currentToken);
                 console.log('Attempting to send FCM token to backend. Auth token:', token); // Log your auth token
 
-                fetch('/api/save-fcm-token/', { // Make sure this URL is correct
+                fetch('/api/notifications/save-fcm-token/', { // Make sure this URL is correct
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
