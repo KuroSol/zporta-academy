@@ -1,169 +1,135 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaEdit, FaUser, FaRegClock, FaEye } from "react-icons/fa"; // Kept all original icons
+import { FaEdit, FaChevronDown, FaSpinner, FaBookOpen, FaQuestionCircle, FaChalkboardTeacher, FaUserGraduate, FaCamera } from "react-icons/fa";
 import { AuthContext } from "../context/AuthContext";
-import apiClient from "../api"; // <--- Import apiClient (Ensure path is correct, likely '../api' if Profile.js is in src/components/)
-import "./Profile.css";
+import apiClient from "../api";
+import styles from './Profile.module.css'; // Ensure this file is in the same directory
 
+const ITEMS_PER_LOAD = 6;
+
+// Zporta Academy Brand Colors
+const zportaMainColor = '#222E3A'; // Dark Blue/Slate
+const zportaSecondaryColor = '#FFC107'; // Vibrant Yellow/Gold
 
 const Profile = () => {
-  // --- Keep ALL original state variables ---
   const { user, token, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  // --- Profile State ---
   const [profile, setProfile] = useState(user || null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("courses");
+
+  // --- Image Upload State ---
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // --- Email Edit State ---
   const [editingEmail, setEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  // --- Password Change State ---
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [changePasswordMessage, setChangePasswordMessage] = useState("");
+  const [changePasswordMessage, setChangePasswordMessage] = useState({ text: "", type: "error" });
 
-  const [posts, setPosts] = useState([]);
-  const [postsLoading, setPostsLoading] = useState(false);
+  // --- Active Tab State ---
+  const [activeTab, setActiveTab] = useState("courses");
 
+  // --- Data Fetching & "Load More" State ---
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
-  const [currentCoursePage, setCurrentCoursePage] = useState(1);
-  const itemsPerCoursePage = 5;
-  const totalCoursePages = Math.ceil(courses.length / itemsPerCoursePage);
-  const paginatedCourses = courses.slice(
-    (currentCoursePage - 1) * itemsPerCoursePage,
-    currentCoursePage * itemsPerCoursePage
-  );
+  const [displayedCoursesCount, setDisplayedCoursesCount] = useState(ITEMS_PER_LOAD);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const [coursesError, setCoursesError] = useState("");
 
   const [lessons, setLessons] = useState([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
-  const [currentLessonPage, setCurrentLessonPage] = useState(1);
-  const itemsPerLessonPage = 5;
-  const totalLessonPages = Math.ceil(lessons.length / itemsPerLessonPage);
-  const paginatedLessons = lessons.slice(
-    (currentLessonPage - 1) * itemsPerLessonPage,
-    currentLessonPage * itemsPerLessonPage
-  );
+  const [displayedLessonsCount, setDisplayedLessonsCount] = useState(ITEMS_PER_LOAD);
+  const [totalLessons, setTotalLessons] = useState(0);
+  const [lessonsError, setLessonsError] = useState("");
 
   const [quizzes, setQuizzes] = useState([]);
   const [quizzesLoading, setQuizzesLoading] = useState(false);
-  const [currentQuizPage, setCurrentQuizPage] = useState(1);
-  const itemsPerQuizPage = 5;
-  const totalQuizPages = Math.ceil(quizzes.length / itemsPerQuizPage);
-  const paginatedQuizzes = quizzes.slice(
-    (currentQuizPage - 1) * itemsPerQuizPage,
-    currentQuizPage * itemsPerQuizPage
-  );
+  const [displayedQuizzesCount, setDisplayedQuizzesCount] = useState(ITEMS_PER_LOAD);
+  const [totalQuizzes, setTotalQuizzes] = useState(0);
+  const [quizzesError, setQuizzesError] = useState("");
 
-  const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-
-  // Helper to strip HTML tags (Keep original)
   const stripHTML = (html) => {
+    if (!html) return "";
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = html;
     return tempDiv.textContent || tempDiv.innerText || "";
   };
 
-  // --- useEffect Hooks (Keep original logic) ---
+  const fetchProfile = useCallback(async () => {
+    setIsLoadingProfile(true);
+    setError("");
+    try {
+      const response = await apiClient.get('/users/profile/');
+      setProfile(response.data);
+      setNewEmail(response.data.email);
+    } catch (err) {
+      console.error("Fetch profile error:", err.response ? err.response.data : err.message);
+      setError(err.response?.data?.detail || "Failed to fetch profile. Please try again.");
+      if (err.response?.status === 401) logout();
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [logout]);
+
+  const fetchDataForTab = useCallback(async (endpoint, setData, setLoading, setTotalCount, dataKey, setTabError) => {
+    setLoading(true);
+    setTabError("");
+    try {
+      const response = await apiClient.get(endpoint);
+      const sortedData = response.data.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.updated_at || 0);
+        const dateB = new Date(b.created_at || b.updated_at || 0);
+        return dateB - dateA;
+      });
+      setData(sortedData);
+      setTotalCount(sortedData.length);
+    } catch (err) {
+      console.error(`Error fetching ${dataKey}:`, err.response ? err.response.data : err.message);
+      setTabError(`Failed to load your ${dataKey}. Please try again.`);
+      if (err.response?.status === 401) logout();
+    } finally {
+      setLoading(false);
+    }
+  }, [logout]);
+
+  const fetchUserCourses = useCallback(() => fetchDataForTab('/courses/my/', setCourses, setCoursesLoading, setTotalCourses, 'courses', setCoursesError), [fetchDataForTab]);
+  const fetchUserLessons = useCallback(() => fetchDataForTab('/lessons/my/', setLessons, setLessonsLoading, setTotalLessons, 'lessons', setLessonsError), [fetchDataForTab]);
+  const fetchUserQuizzes = useCallback(() => fetchDataForTab('/quizzes/my/', setQuizzes, setQuizzesLoading, setTotalQuizzes, 'quizzes', setQuizzesError), [fetchDataForTab]);
+
   useEffect(() => {
     if (!token) {
       navigate("/login");
-      return; // Added return to prevent fetch if navigating away
+    } else {
+      fetchProfile();
     }
-    fetchProfile();
-  }, [token, navigate]); // Added navigate dependency
+  }, [token, navigate, fetchProfile]);
 
   useEffect(() => {
-    if (profile) { // Check if profile is loaded before fetching related data
-      //if (activeTab === "posts") fetchUserPosts();
+    if (profile) {
+      setDisplayedCoursesCount(ITEMS_PER_LOAD);
+      setCoursesError("");
+      setDisplayedLessonsCount(ITEMS_PER_LOAD);
+      setLessonsError("");
+      setDisplayedQuizzesCount(ITEMS_PER_LOAD);
+      setQuizzesError("");
+      setError("");
+
       if (activeTab === "courses") fetchUserCourses();
       if (activeTab === "lessons") fetchUserLessons();
       if (activeTab === "quizzes") fetchUserQuizzes();
     }
-  }, [activeTab, profile]); // Added profile dependency
-
-  // --- Refactored API Call Functions using apiClient ---
-
-  const fetchProfile = async () => {
-    setError("");
-    try {
-        const response = await apiClient.get('/users/profile/'); // ✅ Corrected here
-        setProfile(response.data);
-        setNewEmail(response.data.email);
-    } catch (err) {
-        console.error("Fetch profile error:", err.response ? err.response.data : err.message);
-        setError(err.response?.data?.detail || "Failed to fetch profile.");
-        if (err.response?.status === 401) logout();
-    }
-};
-
-  const fetchUserPosts = async () => {
-    // Assuming /api/posts/ is public or filtering happens client-side as before
-    setPostsLoading(true);
-    setError(""); // Clear error on new fetch
-    try {
-      // Replaced fetch with apiClient.get; Using relative URL
-      const response = await apiClient.get('/posts/'); // Correct relative path
-      const userPosts = response.data.filter((post) => post.created_by === profile?.username); // Filter client-side
-      setPosts(userPosts);
-    } catch (err) {
-      console.error("Error fetching posts:", err.response ? err.response.data : err.message);
-      setError("Failed to load posts.");
-    } finally {
-      setPostsLoading(false);
-    }
-  };
-
-  const fetchUserCourses = async () => {
-    setCoursesLoading(true);
-    setError("");
-    try {
-      // Replaced fetch with apiClient.get; Auth handled by interceptor
-      const response = await apiClient.get('/courses/my/'); // Correct relative path
-      setCourses(response.data);
-    } catch (err) {
-      console.error("Error fetching courses:", err.response ? err.response.data : err.message);
-      setError("Failed to load your courses.");
-      if (err.response?.status === 401) logout();
-    } finally {
-      setCoursesLoading(false);
-    }
-  };
-
-  const fetchUserLessons = async () => {
-    setLessonsLoading(true);
-    setError("");
-    try {
-      // Replaced fetch with apiClient.get; Auth handled by interceptor
-      const response = await apiClient.get('/lessons/my/'); // Correct relative path
-      setLessons(response.data);
-    } catch (err) {
-      console.error("Error fetching lessons:", err.response ? err.response.data : err.message);
-      setError("Failed to load your lessons.");
-      if (err.response?.status === 401) logout();
-    } finally {
-      setLessonsLoading(false);
-    }
-  };
-
-  const fetchUserQuizzes = async () => {
-    setQuizzesLoading(true);
-    setError("");
-    try {
-      // Replaced fetch with apiClient.get; Auth handled by interceptor
-      const response = await apiClient.get('/quizzes/my/'); // Correct relative path
-      setQuizzes(response.data);
-    } catch (err) {
-      console.error("Error fetching quizzes:", err.response ? err.response.data : err.message);
-      setError("Failed to load your quizzes.");
-      if (err.response?.status === 401) logout();
-    } finally {
-      setQuizzesLoading(false);
-    }
-  };
-
-  // --- Event Handlers (Keep original logic, refactor API calls within) ---
+  }, [activeTab, profile, fetchUserCourses, fetchUserLessons, fetchUserQuizzes]);
 
   const handleProfileImageClick = () => {
     if (fileInputRef.current) fileInputRef.current.click();
@@ -172,40 +138,36 @@ const Profile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Basic validation example (optional)
       if (!file.type.startsWith('image/')) {
-         setError("Please select an image file.");
-         return;
+        setError("Please select an image file (e.g., JPG, PNG).");
+        return;
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit example
-         setError("File size should not exceed 5MB.");
-         return;
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image file size should not exceed 5MB.");
+        return;
       }
-      setError(''); // Clear error if valid
+      setError('');
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleUpload = async () => {
+  const handleUploadImage = async () => {
     if (!selectedFile) {
-       setError("No file selected.");
-       return;
+      setError("No file selected for upload.");
+      return;
     }
-    // Removed redundant token check, interceptor handles auth failures
     setError('');
     const formData = new FormData();
     formData.append("profile_image", selectedFile);
     try {
-      // Replaced fetch with apiClient.put; Auth and Content-Type handled automatically
       await apiClient.put('/users/profile/', formData);
       setSelectedFile(null);
-      setPreviewUrl(null); // Clear preview
-      fetchProfile(); // Refresh profile data to show new image
+      setPreviewUrl(null);
+      fetchProfile();
     } catch (err) {
       console.error("Error uploading profile image:", err.response ? err.response.data : err.message);
-      // Try to get specific error detail from backend
-      setError(err.response?.data?.profile_image || err.response?.data?.detail || "Failed to update profile image.");
+      setError(err.response?.data?.profile_image?.[0] || err.response?.data?.detail || "Failed to update profile image.");
       if (err.response?.status === 401) logout();
     }
   };
@@ -213,411 +175,312 @@ const Profile = () => {
   const handleCancelUpload = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
-    if(fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setError('');
   };
 
-  const handleEmailEdit = () => {
-    setNewEmail(profile?.email || ''); // Ensure newEmail starts with current value
-    setEditingEmail(true);
-  };
-
-  const handleEmailChange = (e) => {
-    setNewEmail(e.target.value);
+  const handleEmailEditToggle = () => {
+    setEditingEmail(!editingEmail);
+    setNewEmail(profile?.email || '');
+    setEmailError('');
+    setError('');
   };
 
   const handleEmailSave = async () => {
-    setError('');
+    if (!newEmail.trim() || !/\S+@\S+\.\S+/.test(newEmail)) {
+        setEmailError("Please enter a valid email address.");
+        return;
+    }
+    setEmailError('');
     try {
-      // Replaced fetch with apiClient.put; Auth and Content-Type handled automatically
-      await apiClient.put('/api/users/profile/', { email: newEmail });
+      await apiClient.put('/users/profile/', { email: newEmail });
       setEditingEmail(false);
-      fetchProfile(); // Refresh profile data
+      fetchProfile();
     } catch (err) {
       console.error("Error updating email:", err.response ? err.response.data : err.message);
-      setError(err.response?.data?.email || err.response?.data?.detail || "Failed to update email.");
+      setEmailError(err.response?.data?.email?.[0] || err.response?.data?.detail || "Failed to update email.");
       if (err.response?.status === 401) logout();
     }
   };
 
-  const toggleChangePassword = () => {
+  const toggleChangePasswordForm = () => {
     setShowChangePassword(!showChangePassword);
-    // Reset fields and message when toggling
-    setChangePasswordMessage("");
+    setChangePasswordMessage({ text: "", type: "error" });
     setCurrentPassword("");
     setNewPassword("");
     setConfirmNewPassword("");
+    setError('');
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    setChangePasswordMessage("");
+    setChangePasswordMessage({ text: "", type: "error" });
     if (newPassword !== confirmNewPassword) {
-      setChangePasswordMessage("New passwords do not match.");
+      setChangePasswordMessage({ text: "New passwords do not match.", type: "error" });
       return;
     }
+    if (newPassword.length < 8) {
+        setChangePasswordMessage({ text: "New password must be at least 8 characters long.", type: "error" });
+        return;
+    }
     try {
-      // Replaced fetch with apiClient.post; Auth and Content-Type handled automatically
       await apiClient.post('/users/change-password/', {
         current_password: currentPassword,
         new_password: newPassword,
         confirm_new_password: confirmNewPassword,
       });
-      setChangePasswordMessage("Password changed successfully!");
-      // Reset fields and hide form on success
+      setChangePasswordMessage({ text: "Password changed successfully!", type: "success" });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-      setShowChangePassword(false);
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setChangePasswordMessage({ text: "", type: "error" });
+      }, 2000);
     } catch (err) {
       console.error("Change password error:", err.response ? err.response.data : err.message);
-      // Extract more specific error messages from backend if possible
-      const backendError = err.response?.data?.error ||
-                          err.response?.data?.detail ||
-                          (err.response?.data?.non_field_errors ? err.response.data.non_field_errors.join(' ') : null) ||
-                          (err.response?.data?.new_password ? `New Password: ${err.response.data.new_password.join(' ')}` : null) ||
-                          (err.response?.data?.current_password ? `Current Password: ${err.response.data.current_password.join(' ')}` : null) ||
-                          "Failed to change password.";
-      setChangePasswordMessage(backendError);
+      const backendError = err.response?.data?.error || err.response?.data?.detail || (err.response?.data?.non_field_errors ? err.response.data.non_field_errors.join(' ') : null) || (err.response?.data?.new_password ? `New Password: ${err.response.data.new_password.join(' ')}` : null) || (err.response?.data?.current_password ? `Current Password: ${err.response.data.current_password.join(' ')}` : null) || "Failed to change password.";
+      setChangePasswordMessage({ text: backendError, type: "error" });
       if (err.response?.status === 401) logout();
     }
   };
 
-  // --- JSX Rendering (Keeping entire original structure) ---
+  if (isLoadingProfile && !profile) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-slate-100">
+        <FaSpinner className={`animate-spin text-4xl text-[${zportaMainColor}]`} />
+        <p className="ml-3 text-lg text-slate-700">Loading Profile...</p>
+      </div>
+    );
+  }
 
-  // Keep original loading/error/redirect logic
-  if (!token && !profile) return <p>Redirecting to login...</p>;
-  if (error && !profile) return <p className="error">{error}</p>; // Show critical error if profile fails initial load
-  if (!profile) return <p>Loading profile...</p>;
+  if (!profile) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 text-center min-h-screen bg-slate-100">
+        <p className="text-red-600 text-xl bg-red-100 p-4 rounded-lg shadow-md">
+          {error || "Could not load profile data. Please try logging in again."}
+        </p>
+        <button onClick={() => navigate('/login')} 
+                style={{ backgroundColor: zportaMainColor }}
+                className={`mt-6 hover:opacity-90 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-150 ease-in-out`}>
+            Go to Login
+        </button>
+      </div>
+    );
+  }
+  
+  const handleLoadMore = (currentDisplayedCount, setDisplayedCount, totalItems) => {
+    if (currentDisplayedCount < totalItems) {
+      setDisplayedCount(Math.min(currentDisplayedCount + ITEMS_PER_LOAD, totalItems));
+    }
+  };
 
-  return (
-    <div className="profile-dashboard">
-      <aside className="profile-sidebar">
-        <div className="sidebar-card">
-          <div className="sidebar-image-container">
-              <img
-                src={
-                  previewUrl
-                    ? previewUrl
-                    : profile?.profile_image_url?.trim()
-                      ? profile.profile_image_url.trim()
-                      : "https://zportaacademy.com/media/managed_images/zpacademy.png"
-                }
-                onError={(e) => {
-                  e.target.onerror = null; // prevent infinite loop
-                  e.target.src = "https://zportaacademy.com/media/managed_images/zpacademy.png";
-                }}
-                alt={profile.username || "Zporta User"}
-                className="hexagon"
-              />
-
-            <button className="profile-edit-btn" onClick={handleProfileImageClick}>
-              <FaEdit />
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-            {previewUrl && (
-              <div className="upload-preview-controls">
-                <button className="upload-btn" onClick={handleUpload}>
-                  Upload
-                </button>
-                <button className="cancel-btn" onClick={handleCancelUpload}>
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="sidebar-info">
-            <h2 className="sidebar-username">{profile.username}</h2>
-            <p className="sidebar-joined">
-              Joined {new Date(profile.date_joined).toLocaleDateString()}
-            </p>
-            {/* Keep original Email editing UI */}
-            <div className="sidebar-email">
-               <span>Email: </span>
-               {editingEmail ? (
-                 <>
-                   <input type="email" value={newEmail} onChange={handleEmailChange} required />
-                   <button onClick={handleEmailSave} className="save-btn">Save</button>
-                   <button onClick={() => { setEditingEmail(false); setError(''); }} className="cancel-btn">Cancel</button> {/* Clear error on cancel */}
-                 </>
-               ) : (
-                 <>
-                   <span>{profile.email}</span>
-                   <button onClick={handleEmailEdit} className="edit-inline-btn"><FaEdit /></button>
-                 </>
-               )}
-            </div>
-            {/* Display email update errors here */}
-            {editingEmail && error && <p className="error" style={{fontSize: 'small'}}>{error}</p>}
-
-            <p className="sidebar-bio">{profile.bio || "No bio available."}</p>
-            <Link to={`/guide/${profile.username}`} className="public-profile-btn">
-              View Public Profile
-            </Link>
-            <button className="change-password-btn" onClick={toggleChangePassword}>
-              {/* Keep toggling text */}
-              {showChangePassword ? 'Cancel Change Password' : 'Change Password'}
-            </button>
-            {/* Keep Change Password Form */}
-            {showChangePassword && (
-              <div className="change-password-form">
-                <form onSubmit={handleChangePassword}>
-                  <label>Current Password:</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
-                  <label>New Password:</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <label>Confirm New Password:</label>
-                  <input
-                    type="password"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <button type="submit" className="save-btn">
-                    Update Password
-                  </button>
-                </form>
-                {changePasswordMessage && (
-                  <p className="change-password-message">{changePasswordMessage}</p>
-                )}
-              </div>
-            )}
-          </div>
-          <button onClick={logout} className="logout-btn">
-            Logout
+  const renderLoadMoreButton = (displayedCount, setDisplayedCount, totalItems, isLoadingMore) => {
+    if (isLoadingMore && displayedCount > 0 && displayedCount < totalItems) { 
+        return ( <div className="flex justify-center mt-8"> <FaSpinner className={`animate-spin text-3xl text-[${zportaMainColor}]`} /> </div> );
+    }
+    if (displayedCount < totalItems) {
+      return (
+        <div className="text-center mt-8">
+          <button onClick={() => handleLoadMore(displayedCount, setDisplayedCount, totalItems)} disabled={isLoadingMore} 
+                  style={{ backgroundColor: zportaMainColor }}
+                  className={`hover:opacity-90 disabled:bg-opacity-70 text-white font-semibold py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 ease-in-out flex items-center justify-center mx-auto`}>
+            Load More <FaChevronDown className="ml-2" />
           </button>
         </div>
-      </aside>
+      );
+    }
+    return null;
+  };
 
-      {/* Keep original Main Content structure */}
-      <main className="profile-main">
-        <div className="tab-navigation">
-          {[/*"posts",*/ "courses", "lessons", "quizzes"].map((tab) => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab(tab);
-                // Keep pagination reset
-                if (tab === "courses") setCurrentCoursePage(1);
-                if (tab === "lessons") setCurrentLessonPage(1);
-                if (tab === "quizzes") setCurrentQuizPage(1);
-              }}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
+  const sidebarActionError = error || emailError || (changePasswordMessage.text && changePasswordMessage.type === 'error' ? changePasswordMessage.text : '');
 
-        <div className="tab-content">
-           {/* Keep original Tab Panels and their content */}
-{/*          
-          {activeTab === "posts" && (
-            <div className="tab-panel">
-              <h2>Your Posts</h2>
-              {postsLoading ? (
-                <p className="loading">Loading posts...</p>
-              ) : posts.length > 0 ? (
-                <div className="cards-grid">
-                  {posts.map((post) => (
-                    <Link to={`/posts/${post.permalink}`} key={post.id} className="card">
-                      <div className="card-image">
-                        {post.og_image_url ? (
-                          <img src={post.og_image_url} alt={post.title} />
-                        ) : (
-                          <p>{stripHTML(post.content).substring(0, 100)}...</p>
-                        )}
-                      </div>
-                      <div className="card-info">
-                        <h3>{post.title}</h3>
-                        <p>
-                          {post.created_by} |{" "}
-                          {new Date(post.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans p-4 sm:p-6 lg:p-8">
+      <div className="container mx-auto max-w-7xl">
+        
+        {sidebarActionError && (previewUrl || selectedFile || editingEmail || showChangePassword) && (
+            <div className="mb-6 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg shadow-sm text-sm">
+                <p>{sidebarActionError}</p>
+            </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          <aside className="w-full lg:w-1/3 xl:w-1/4 bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+            <div className="text-center">
+              <div className={`relative w-40 h-40 mx-auto mb-6 group ${styles.hexagonContainer}`}>
+                <img
+                  src={previewUrl || profile.profile_image_url?.trim() || `https://placehold.co/160x160/${zportaSecondaryColor.substring(1)}/${zportaMainColor.substring(1)}?text=${profile.username[0].toUpperCase()}`}
+                  onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/160x160/D1D5DB/4B5563?text=Error"; }}
+                  alt={profile.username || "User"}
+                  style={{ borderColor: zportaSecondaryColor }}
+                  className={`w-full h-full object-cover ${styles.hexagonImage} border-4 transition-transform duration-300 group-hover:scale-105`}
+                />
+                <button onClick={handleProfileImageClick} title="Change profile picture" 
+                  style={{ backgroundColor: zportaMainColor }}
+                  className={`absolute bottom-2 right-2 hover:opacity-90 text-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 focus:opacity-100 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-[${zportaSecondaryColor}]`}>
+                  <FaCamera size={16}/>
+                </button>
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange}/>
+              </div>
+
+              {previewUrl && (
+                <div className="flex justify-center gap-3 mb-6">
+                  <button onClick={handleUploadImage} className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150"> Upload </button>
+                  <button onClick={handleCancelUpload} className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150"> Cancel </button>
                 </div>
-              ) : (
-                <p>You haven't created any posts yet.</p>
               )}
-               {/* Display general fetch errors for this tab }
-               {error && activeTab === 'posts' && <p className="error">{error}</p>}
-            </div>
-          )}
-*/}
-          {activeTab === "courses" && (
-            <div className="tab-panel">
-              <h2>Your Courses</h2>
-              {coursesLoading ? (
-                <p className="loading">Loading courses...</p>
-              ) : courses.length > 0 ? (
-                 <>
-                   <div className="cards-grid">
-                     {paginatedCourses.map((course) => (
-                       <div key={course.id} className="card">
-                         {course.cover_image ? (
-                           <img
-                             src={course.cover_image}
-                             alt={`${course.title} cover`}
-                             className="card-image"
-                           />
-                         ) : (
-                           <div className="grid-item-placeholder">
-                             <p>No Image</p>
-                           </div>
-                         )}
-                         <div className="card-info">
-                           <h3>{course.title}</h3>
-                           <p>{course.description ? stripHTML(course.description).substring(0, 100)+"..." : "No description"}</p>
-                           <button
-                             className="details-btn"
-                             onClick={() => navigate(`/courses/${course.permalink}`)}
-                           >
-                             View Details
-                           </button>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                   {/* Keep pagination controls */}
-                   {totalCoursePages > 1 && (
-                     <div className="pagination">
-                       {[...Array(totalCoursePages)].map((_, index) => (
-                         <button
-                           key={index}
-                           className={`page-btn ${
-                             currentCoursePage === index + 1 ? "active" : ""
-                           }`}
-                           onClick={() => setCurrentCoursePage(index + 1)}
-                         >
-                           {index + 1}
-                         </button>
-                       ))}
-                     </div>
-                   )}
-                 </>
-              ) : (
-                <p>You haven't created any courses yet.</p>
-              )}
-              {/* Display general fetch errors for this tab */}
-              {error && activeTab === 'courses' && <p className="error">{error}</p>}
-            </div>
-          )}
+              
+              <h1 className="text-3xl font-bold text-slate-800 mb-1.5">{profile.username}</h1>
+              <p className="text-sm text-slate-500 mb-6"> Joined: {new Date(profile.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} </p>
 
-          {activeTab === "lessons" && (
-            <div className="tab-panel">
-              <h2>Your Lessons</h2>
-              {lessonsLoading ? (
-                <p className="loading">Loading lessons...</p>
-              ) : lessons.length > 0 ? (
-                <>
-                  <ul className="list">
-                    {paginatedLessons.map((lesson) => (
-                      <li key={lesson.id} className="list-item">
-                        <h3>{lesson.title}</h3>
-                        <p>{stripHTML(lesson.content).substring(0, 100)}...</p>
-                        <button
-                          onClick={() => navigate(`/lessons/${lesson.permalink}`)}
-                          className="details-btn"
-                        >
-                          View Details
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  {/* Keep pagination controls */}
-                  {totalLessonPages > 1 && (
-                    <div className="pagination">
-                      {[...Array(totalLessonPages)].map((_, index) => (
-                        <button
-                          key={index}
-                          className={`page-btn ${
-                            currentLessonPage === index + 1 ? "active" : ""
-                          }`}
-                          onClick={() => setCurrentLessonPage(index + 1)}
-                        >
-                          {index + 1}
-                        </button>
+              <div className="mt-5 text-left space-y-5">
+                <div className="pb-4 border-b border-slate-200">
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-700 font-semibold text-sm">Email:</span>
+                        {!editingEmail && (
+                            <button onClick={handleEmailEditToggle} title={"Edit Email"} style={{ color: zportaMainColor }} className={`ml-2 hover:opacity-80 flex-shrink-0 p-1 rounded-md hover:bg-slate-100`}> <FaEdit size={16} /> </button>
+                        )}
+                    </div>
+                    {editingEmail ? (
+                        <div className="mt-1.5">
+                            <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="w-full bg-slate-50 text-slate-800 p-3 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-300 outline-none text-sm" style={{borderColor: editingEmail ? zportaMainColor : 'default', ringColor: zportaMainColor}}/>
+                             <div className="mt-3 flex justify-end gap-2.5">
+                                <button onClick={handleEmailSave} className="bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-2 px-4 rounded-md shadow-sm">Save</button>
+                                <button onClick={handleEmailEditToggle} className="bg-slate-500 hover:bg-slate-600 text-white text-xs font-semibold py-2 px-4 rounded-md shadow-sm">Cancel</button>
+                            </div>
+                        </div>
+                    ) : ( <span className="text-slate-700 text-sm mt-0.5 block truncate" title={profile.email}>{profile.email}</span> )}
+                     {emailError && editingEmail && <p className="text-red-600 text-xs mt-2 bg-red-50 p-2 rounded-md">{emailError}</p>}
+                </div>
+               
+                <div className="pb-4 border-b border-slate-200">
+                    <span className="text-slate-700 font-semibold text-sm">Bio:</span>
+                    <p className="text-slate-700 text-sm mt-1 break-words">{profile.bio || "No bio provided."}</p>
+                </div>
+              </div>
+
+              <Link to={`/guide/${profile.username}`} style={{ backgroundColor: zportaMainColor }} className={`mt-8 block w-full hover:opacity-90 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out text-center`}> View Public Profile </Link>
+              <button onClick={toggleChangePasswordForm} style={{ backgroundColor: zportaSecondaryColor }} className={`mt-3 block w-full hover:opacity-90 text-[${zportaMainColor}] font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out`}>
+                {showChangePassword ? 'Cancel Password Change' : 'Change Password'}
+              </button>
+
+              {showChangePassword && (
+                <form onSubmit={handleChangePassword} className="mt-5 p-5 bg-slate-50 rounded-xl space-y-4 text-left border border-slate-200 shadow-inner">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="currentPasswordProf">Current Password</label>
+                    <input type="password" id="currentPasswordProf" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required autoComplete="current-password" className="w-full bg-white text-slate-800 p-3 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-300 outline-none" style={{borderColor: showChangePassword ? zportaMainColor : 'default', ringColor: zportaMainColor}}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="newPasswordProf">New Password</label>
+                    <input type="password" id="newPasswordProf" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required autoComplete="new-password" className="w-full bg-white text-slate-800 p-3 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-300 outline-none" style={{borderColor: showChangePassword ? zportaMainColor : 'default', ringColor: zportaMainColor}}/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="confirmNewPasswordProf">Confirm New Password</label>
+                    <input type="password" id="confirmNewPasswordProf" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required autoComplete="new-password" className="w-full bg-white text-slate-800 p-3 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-300 outline-none" style={{borderColor: showChangePassword ? zportaMainColor : 'default', ringColor: zportaMainColor}}/>
+                  </div>
+                  {changePasswordMessage.text && ( <p className={`text-sm p-3 rounded-lg ${changePasswordMessage.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}> {changePasswordMessage.text} </p> )}
+                  <button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150"> Update Password </button>
+                </form>
+              )}
+            </div>
+            <button onClick={logout} className="mt-8 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"> Logout </button>
+          </aside>
+
+          <main className="w-full lg:w-2/3 xl:w-3/4 bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200">
+            <div className="mb-8 border-b border-slate-200">
+              <nav className="flex flex-wrap -mb-px sm:space-x-2 md:space-x-3 lg:space-x-5" aria-label="Tabs">
+                {["courses", "lessons", "quizzes"].map((tab) => (
+                  <button key={tab} onClick={() => { setActiveTab(tab); }}
+                    className={`whitespace-nowrap pb-3.5 pt-1.5 px-3 sm:px-4 md:px-5 border-b-2 font-semibold text-sm sm:text-base transition-colors duration-200
+                      ${activeTab === tab ? `border-[${zportaMainColor}] text-[${zportaMainColor}]` : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="mt-5">
+              {activeTab === "courses" && coursesError && <div className="mb-5 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">{coursesError}</div>}
+              {activeTab === "lessons" && lessonsError && <div className="mb-5 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">{lessonsError}</div>}
+              {activeTab === "quizzes" && quizzesError && <div className="mb-5 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">{quizzesError}</div>}
+              
+              {activeTab === "courses" && (
+                <div>
+                  <h2 className="text-2xl xl:text-3xl font-bold text-slate-800 mb-7">Your Enrolled Courses</h2>
+                  {coursesLoading && courses.length === 0 ? ( <div className="flex justify-center items-center h-52"><FaSpinner className={`animate-spin text-4xl text-[${zportaMainColor}]`} /></div>
+                  ) : courses.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+                      {courses.slice(0, displayedCoursesCount).map((course) => (
+                        <div key={course.id} className="bg-slate-50 rounded-xl shadow-lg overflow-hidden transform hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group border border-slate-200">
+                          <div className="w-full h-48 sm:h-52 overflow-hidden bg-slate-200">
+                            {course.cover_image ? ( <img src={course.cover_image} alt={course.title || "Course Image"} onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/600x400/E2E8F0/${zportaMainColor.substring(1)}?text=Course`; }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                            ) : ( <div className="w-full h-full flex items-center justify-center text-slate-400"> <FaChalkboardTeacher size={60} /> </div> )}
+                          </div>
+                          <div className="p-5 flex flex-col flex-grow">
+                            <h3 className={`text-xl font-semibold text-[${zportaMainColor}] mb-2 truncate`} title={course.title}>{course.title}</h3>
+                            <p className={`text-slate-600 text-sm mb-5 flex-grow ${styles.clampLines3}`}> {stripHTML(course.description) || "No description available."} </p>
+                            <button onClick={() => navigate(`/courses/${course.permalink}`)} style={{ backgroundColor: zportaMainColor }} className={`mt-auto w-full hover:opacity-90 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition duration-150 text-sm`}> View Course </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  )}
-                </>
-              ) : (
-                <p>You haven't created any lessons yet.</p>
+                  ) : ( !coursesLoading && !coursesError && <p className="text-slate-500 text-center py-12 text-lg">You haven't enrolled in any courses yet.</p> )}
+                  {renderLoadMoreButton(displayedCoursesCount, setDisplayedCoursesCount, totalCourses, coursesLoading)}
+                </div>
               )}
-              {/* Display general fetch errors for this tab */}
-              {error && activeTab === 'lessons' && <p className="error">{error}</p>}
-            </div>
-          )}
 
-          {activeTab === "quizzes" && (
-            <div className="tab-panel">
-              <h2>Your Quizzes</h2>
-              {quizzesLoading ? (
-                <p className="loading">Loading quizzes...</p>
-              ) : quizzes.length > 0 ? (
-                <>
-                  <ul className="list">
-                    {paginatedQuizzes.map((quiz) => (
-                      <li key={quiz.id} className="list-item">
-                        <h3>{quiz.title}</h3>
-                        <p>
-                          {quiz.question
-                            ? stripHTML(quiz.question).substring(0, 100) + "..."
-                            : "No question preview"}
-                        </p>
-                        <Link to={`/quizzes/${quiz.permalink}`} className="details-btn">
-                          View Details
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                   {/* Keep pagination controls */}
-                  {totalQuizPages > 1 && (
-                    <div className="pagination">
-                      {[...Array(totalQuizPages)].map((_, index) => (
-                        <button
-                          key={index}
-                          className={`page-btn ${
-                            currentQuizPage === index + 1 ? "active" : ""
-                          }`}
-                          onClick={() => setCurrentQuizPage(index + 1)}
-                        >
-                          {index + 1}
-                        </button>
+              {activeTab === "lessons" && (
+                <div>
+                  <h2 className="text-2xl xl:text-3xl font-bold text-slate-800 mb-7">Your Accessed Lessons</h2>
+                   {lessonsLoading && lessons.length === 0 ? ( <div className="flex justify-center items-center h-52"><FaSpinner className={`animate-spin text-4xl text-[${zportaMainColor}]`} /></div>
+                  ) : lessons.length > 0 ? (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+                      {lessons.slice(0, displayedLessonsCount).map((lesson) => (
+                        <div key={lesson.id} className="bg-slate-50 rounded-xl shadow-lg overflow-hidden transform hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group border border-slate-200">
+                           <div className="w-full h-48 sm:h-52 overflow-hidden bg-slate-200 flex items-center justify-center text-slate-400"> <FaBookOpen size={60} /> </div>
+                          <div className="p-5 flex flex-col flex-grow">
+                            <h3 className={`text-xl font-semibold text-[${zportaMainColor}] mb-2 truncate`} title={lesson.title}>{lesson.title}</h3>
+                            <div className="text-slate-600 text-sm mb-5 flex-grow prose prose-sm max-w-none overflow-y-auto h-32 sm:h-28">
+                                <div dangerouslySetInnerHTML={{ __html: lesson.content || "No content available." }} />
+                            </div>
+                            <button onClick={() => navigate(`/lessons/${lesson.permalink}`)} style={{ backgroundColor: zportaMainColor }} className={`mt-auto w-full hover:opacity-90 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition duration-150 text-sm`}> Read Full Lesson </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  )}
-                </>
-              ) : (
-                <p>You haven't created any quizzes yet.</p>
+                  ) : ( !lessonsLoading && !lessonsError && <p className="text-slate-500 text-center py-12 text-lg">You haven't accessed any lessons yet.</p> )}
+                  {renderLoadMoreButton(displayedLessonsCount, setDisplayedLessonsCount, totalLessons, lessonsLoading)}
+                </div>
               )}
-               {/* Display general fetch errors for this tab */}
-               {error && activeTab === 'quizzes' && <p className="error">{error}</p>}
+
+              {activeTab === "quizzes" && (
+                <div>
+                  <h2 className="text-2xl xl:text-3xl font-bold text-slate-800 mb-7">Your Attempted Quizzes</h2>
+                  {quizzesLoading && quizzes.length === 0 ? ( <div className="flex justify-center items-center h-52"><FaSpinner className={`animate-spin text-4xl text-[${zportaMainColor}]`} /></div>
+                  ) : quizzes.length > 0 ? (
+                    <ul className="space-y-6">
+                      {quizzes.slice(0, displayedQuizzesCount).map((quiz) => (
+                        <li key={quiz.id} className="bg-slate-50 p-6 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border border-slate-200 hover:shadow-xl transition-shadow duration-300">
+                           <div className="flex-grow min-w-0">
+                            <div className="flex items-center mb-1.5">
+                                <FaQuestionCircle className={`text-[${zportaMainColor}] mr-2.5 flex-shrink-0`} size={20}/>
+                                <h3 className={`text-xl font-semibold text-[${zportaMainColor}] truncate`} title={quiz.title}>{quiz.title}</h3>
+                            </div>
+                            <p className={`text-slate-600 text-sm ${styles.clampLines2}`}> {stripHTML(quiz.question) || "No question preview."} </p>
+                          </div>
+                          <Link to={`/quizzes/${quiz.permalink}`} style={{ backgroundColor: zportaMainColor }} className={`mt-4 sm:mt-0 flex-shrink-0 hover:opacity-90 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md transition duration-150 text-sm text-center`}> View Quiz </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : ( !quizzesLoading && !quizzesError && <p className="text-slate-500 text-center py-12 text-lg">You haven't attempted any quizzes yet.</p> )}
+                  {renderLoadMoreButton(displayedQuizzesCount, setDisplayedQuizzesCount, totalQuizzes, quizzesLoading)}
+                </div>
+              )}
             </div>
-          )}
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

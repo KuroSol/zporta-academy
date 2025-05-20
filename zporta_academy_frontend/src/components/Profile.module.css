@@ -1,0 +1,44 @@
+/* Profile.module.css */
+
+/* For the hexagon profile image */
+.hexagonContainer {
+  /* Ensures the button positioning is relative to this container */
+  position: relative; 
+}
+
+.hexagonImage {
+  clip-path: polygon(
+    50% 0%,
+    93.3% 25%,
+    93.3% 75%,
+    50% 100%,
+    6.7% 75%,
+    6.7% 25%
+  );
+  /* A slightly different hexagon shape that might look more modern */
+  /* Or use your original:
+  clip-path: polygon(
+    25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%
+  );
+  */
+}
+
+/* Utility for clamping text to a certain number of lines */
+.clamp-lines-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clamp-lines-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Add any other custom styles here that are difficult or verbose to achieve with Tailwind alone. */
+
