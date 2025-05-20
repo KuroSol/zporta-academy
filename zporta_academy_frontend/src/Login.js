@@ -8,7 +8,7 @@ import styles from './Login.module.css'; // <-- Import the CSS module
 // Ideally, host this image somewhere accessible (e.g., your public folder or a CDN)
 // For example purposes, using a placeholder service or a relative path if in public folder:
 // const aiImageUrl = '/images/login-visual.png'; // If image is in public/images
-const aiImageUrl = 'https://images.unsplash.com/photo-1580894742597-87bc8789db3d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8ZWR1Y2F0aW9uJTIwdGVjaG5vbG9neXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60'; // Example image (Replace with your actual AI-generated image URL)
+const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png'; // Example image (Replace with your actual AI-generated image URL)
 
 
 const Login = () => {
