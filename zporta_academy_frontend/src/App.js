@@ -58,41 +58,71 @@ const App = () => {
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) { // This is your auth token, not FCM token
+      console.log('User not logged in, not attempting to get FCM token.');
+      return;
+    }
 
     if ('Notification' in window && navigator.serviceWorker) {
+      console.log('Attempting to register service worker...');
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then((registration) => {
           console.log('✅ Service worker registered:', registration);
+          console.log('Attempting to get FCM token with VAPID key:', 'BBopJ...'); // Log your VAPID key to double check
 
           getToken(messaging, {
-            vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
+            vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M', // Ensure this is correct
             serviceWorkerRegistration: registration
           })
             .then((currentToken) => {
               if (currentToken) {
-                console.log('✅ FCM Token:', currentToken);
-                fetch('/api/save-fcm-token/', {
+                console.log('✅ FCM Token retrieved:', currentToken);
+                console.log('Attempting to send FCM token to backend. Auth token:', token); // Log your auth token
+
+                fetch('/api/save-fcm-token/', { // Make sure this URL is correct
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
+                    'Authorization': `Token ${token}`, // Ensure 'token' here is the auth token
                   },
-                  body: JSON.stringify({ token: currentToken }),
+                  body: JSON.stringify({ token: currentToken }), // 'token' here is the FCM token
+                })
+                .then(response => {
+                  console.log('Response status from /api/save-fcm-token/:', response.status);
+                  return response.json();
+                })
+                .then(data => {
+                  console.log('Response data from /api/save-fcm-token/:', data);
+                })
+                .catch(err => {
+                  console.error('❌ Error sending FCM token to backend:', err);
                 });
+
               } else {
-                console.warn('⚠️ No FCM token retrieved');
+                console.warn('⚠️ No FCM token retrieved. User might have denied permission or an error occurred.');
+                // Request permission if not already granted.
+                Notification.requestPermission().then((permission) => {
+                  if (permission === 'granted') {
+                    console.log('Notification permission granted. Try getting token again.');
+                    // Potentially try getToken again here, or instruct user to refresh.
+                  } else {
+                    console.log('Notification permission denied.');
+                  }
+                });
               }
             })
             .catch((err) => {
               console.error('❌ Error retrieving FCM token:', err);
+              // Common errors: Mismatch VAPID key, service worker scope issues, Firebase config errors.
             });
         })
         .catch((err) => {
           console.error('❌ Service Worker registration failed:', err);
         });
+    } else {
+      console.warn('Notifications or Service Workers not supported by this browser.');
     }
-  }, [token]);
+  }, [token]); // 'token' here is the auth token from AuthContext
 
 
 
