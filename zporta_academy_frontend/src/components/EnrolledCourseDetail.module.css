@@ -1,0 +1,133 @@
+/* EnrolledCourseDetail.module.css */
+
+:root {
+  /* this will be set via Helmet in the component */
+  --accent-color: #3498db;
+}
+
+/* wrapper for everything in this page */
+.lessonTemplate {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  padding: 10px;
+}
+
+/* headings use the accent color */
+.lessonTemplate h2,
+.lessonTemplate h3 {
+  color: var(--accent-color);
+  margin: 30px 0 15px;
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 5px;
+}
+
+/* bold text */
+.lessonTemplate strong {
+  color: var(--accent-color);
+}
+
+/* dialogue box */
+.lessonTemplate .dialogueSection {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+.lessonTemplate .dialogueSection p {
+  margin-bottom: 12px;
+  line-height: 1.7;
+}
+
+/* idioms table */
+.lessonTemplate .idiomsTableContainer {
+  overflow-x: auto;
+  margin-bottom: 25px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.lessonTemplate .idiomsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+.lessonTemplate .idiomsTable th,
+.lessonTemplate .idiomsTable td {
+  border: 1px solid #dfe6e9;
+  padding: 12px 15px;
+  text-align: left;
+  vertical-align: top;
+}
+.lessonTemplate .idiomsTable thead {
+  background: var(--accent-color);
+  color: #fff;
+}
+.lessonTemplate .idiomsTable tbody tr:nth-child(even) {
+  background: #f4f6f7;
+}
+.lessonTemplate .idiomsTable tbody tr:hover {
+  background: #e9ecef;
+}
+
+/* explanation */
+.lessonTemplate .explanationSection {
+  background: #eef7ff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  line-height: 1.75;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+.lessonTemplate .explanationSection .explanationText {
+  margin: 5px 0 15px;
+  padding-left: 15px;
+  border-left: 3px solid var(--accent-color);
+  color: #555;
+  font-size: 0.95em;
+}
+/* EnrolledCourseDetail.module.css */
+
+.lessonTemplate {
+  /* …your existing styles… */
+}
+
+/* Make ALL table headers use the accent as their background */
+.lessonTemplate table thead th {
+  background-color: var(--accent-color);
+  color: #fff;            /* ensure text is readable */
+  border-color: var(--accent-color); /* if you have borders */
+}
+
+/* If you need the whole thead (span-across) to pick up accent */
+.lessonTemplate table thead {
+  background-color: var(--accent-color);
+}
+
+/* If you want alternating row borders or highlights in accent */
+.lessonTemplate table tr:nth-child(even) {
+  border-left: 4px solid var(--accent-color);
+}
+
+/* Example: callout boxes also picking up accent border */
+.lessonTemplate .callout {
+  border-left: 4px solid var(--accent-color);
+  background: rgba(var(--accent-color-rgb), .1); /* if you compute an RGB var */
+}
+
+
+/* responsive tweaks */
+@media (max-width: 768px) {
+  .lessonTemplate h2,
+  .lessonTemplate h3 { font-size: 1.5em; }
+  .lessonTemplate .dialogueSection,
+  .lessonTemplate .explanationSection { padding: 15px; }
+  .lessonTemplate .explanationSection .explanationText {
+    margin-left: 15px; padding-left: 10px;
+  }
+  .lessonTemplate .idiomsTable th,
+  .lessonTemplate .idiomsTable td { padding: 10px; font-size: 0.9em; }
+}
+@media (max-width: 480px) {
+  .lessonTemplate { padding: 5px; }
+}

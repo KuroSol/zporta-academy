@@ -7,6 +7,7 @@ import {
   CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown
 } from 'lucide-react'; // Added HelpCircle, ArrowUp, ArrowDown
 import QuizCard from './QuizCard';
+import styles from './EnrolledCourseDetail.module.css';
 // --- Helper Functions ---
 
 // Basic HTML Sanitization
@@ -189,7 +190,7 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
         <h3
           id={`lesson-title-${lesson.id}`}
           className="
-            flex items-center mr-2
+            lesson-title flex items-center mr-2
 
             /* 1) clamp font size: min 0.875rem, scales up to 1.5rem at large screens */
             text-[clamp(0.875rem,6vw,1.5rem)]
@@ -261,9 +262,10 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
 
           {/* Text Content */}
           {lesson.content_type === 'text' && lesson.content && (
-            <div className="prose dark:prose-invert max-w-none break-words whitespace-normal text-gray-700 dark:text-gray-300 mb-4" // Added margin bottom
+          <div
+              className="content-text prose dark:prose-invert max-w-none break-words whitespace-normal mb-4"
               dangerouslySetInnerHTML={{ __html: highlightedContent }}
-            />
+          />
           )}
           {lesson.content_type === 'text' && !lesson.content && (
              <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">This text lesson has no content.</p>
@@ -850,6 +852,14 @@ const EnrolledCourseStudyPage = () => {
 
 console.log('fetched quizzes:', quizzes)
   // --- Render ---
+// 1) aggregate all custom CSS strings from each lesson
+const allCustomCss = lessons
+  .map(l => l.custom_css || '')
+  .filter(s => !!s)
+  .join('\n');
+
+// 2) pick a default accent color (falls back if none set)
+const defaultAccent = lessons[0]?.accent_color || '#3498db';
 
   if (loading) {
     return (
@@ -881,13 +891,22 @@ console.log('fetched quizzes:', quizzes)
 
   return (
     <>
-      <Helmet>
-        <title>Study: {courseData.title || 'Course'} | Zporta Academy</title>
-        <meta name="description" content={`Study materials for the course: ${courseData.title || 'Untitled Course'}`} />
-        {/* Add other meta tags as needed */}
-      </Helmet>
+    <Helmet>
+      <title>Study: {courseData.title || 'Course'} | Zporta Academy</title>
+      <meta
+        name="description"
+        content={`Study materials for the course: ${courseData.title || 'Untitled Course'}`}
+      />
+      {allCustomCss && (
+        <style type="text/css">{allCustomCss}</style>
+      )}
+      {/* this is the only bit you need to swap out: */}
+      <style type="text/css">{`
+        :root { --accent-color: ${defaultAccent}; }
+      `}</style>
+    </Helmet>
       <ScrollProgress />
-
+    <div className={styles.lessonTemplate}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
         {/* Increased padding-bottom to avoid overlap with floating button */}
         <div className="w-full mx-auto px-4 pt-8 pb-32 max-w-full md:max-w-4xl">{/* Adjusted pb for mobile */}
@@ -950,6 +969,7 @@ console.log('fetched quizzes:', quizzes)
 
         {/* Floating Navigation */}
         <FloatingNav lessons={lessons} quizzes={quizzes} onNavigate={handleNavigate} />
+      </div>
       </div>
         {isQuizModalOpen && modalQuiz && (
           <div

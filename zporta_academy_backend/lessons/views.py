@@ -12,6 +12,12 @@ from courses.models import Course
 from .serializers import SimpleLessonCompletionSerializer 
 from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
+from .models import LessonTemplate
+from .serializers import LessonTemplateSerializer
+from rest_framework import viewsets
+from rest_framework import viewsets
+
+
 
 class EnrollmentLessonCompletionsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -272,3 +278,7 @@ class DetachQuizFromLessonView(APIView):
         quiz.save()
         serializer = QuizSerializer(quiz, context={"request": request})
         return Response({"message": "Quiz detached successfully.", "quiz": serializer.data})
+    
+class LessonTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = LessonTemplate.objects.all()
+    serializer_class = LessonTemplateSerializer

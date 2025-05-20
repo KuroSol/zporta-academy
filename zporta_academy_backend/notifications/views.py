@@ -71,13 +71,16 @@ def send_notification_to_user(request):
 @staff_member_required
 def send_notification_now(request, pk):
     note = get_object_or_404(Notification, pk=pk)
+    print(f"📬 Attempting to send push to {note.user.username}")
     sent = send_push_notification(note.user, note.title, note.message, note.link)
 
     if sent:
+        print("✅ Push sent!")
         note.is_sent = True
         note.save()
         messages.success(request, "✅ Push sent successfully.")
     else:
+        print("❌ Push failed! Maybe no token?")
         messages.error(request, "❌ Push failed.")
 
     return redirect(request.META.get('HTTP_REFERER', '/admin/notifications/notification/'))

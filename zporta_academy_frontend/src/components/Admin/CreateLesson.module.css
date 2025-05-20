@@ -385,7 +385,82 @@
     transform: none;
 }
 
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+    gap: 1rem; /* Space between grid items */
+    align-items: start; /* Align items to the start of their grid cell */
+}
 
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0; /* Remove default margin if formGrid handles gap */
+}
+
+/* Modifier for form groups that should span multiple columns if your grid supports it,
+   or just take full width in a flex fallback */
+.formGroupSpan2 {
+    grid-column: span 2; /* Example: make it span 2 columns */
+}
+@media (max-width: 768px) { /* On smaller screens, make it span full width */
+    .formGroupSpan2 {
+        grid-column: span 1;
+    }
+}
+
+
+.fullWidth {
+    grid-column: 1 / -1; /* Make element span all columns */
+}
+
+
+.inputField,
+.selectField {
+    width: 100%;
+    padding: 0.65rem 0.75rem; /* Adjusted padding */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for width calculation */
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.inputField:focus,
+.selectField:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+/* Style for the color input to make it look more like other inputs */
+input[type="color"].inputField {
+    height: calc(0.65rem * 2 + 0.75rem * 2 + 2px); /* Match height of other inputs */
+    padding: 0.25rem; /* Minimal padding for color swatch */
+    cursor: pointer;
+}
+
+
+.fieldHelpText {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.templateDescription {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 0.3rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff; /* Use your accent color */
+    border-radius: 3px;
+}
+
+.createContentBtn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
 /* --- Responsive Design (Mirrors structure from your CreateCourse.module.css) --- */
 /* Tablet */
 @media (max-width: 900px) {

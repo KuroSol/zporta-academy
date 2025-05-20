@@ -11,6 +11,21 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from bs4 import BeautifulSoup
 
+class LessonTemplate(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    accent_color = models.CharField(max_length=7, default="#3498db")
+    predefined_css = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+    
+TEMPLATE_CHOICES = [
+    ("modern", "Modern"),
+    ("minimal", "Minimal"),
+    ("dark", "Dark"),
+]
+
 def japanese_to_romaji(text):
     kks = kakasi()
     kks.setMode("H", "a")  # Hiragana -> alphabet
@@ -27,6 +42,14 @@ class Lesson(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, related_name='lessons')
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons')
     tags = models.ManyToManyField(Tag, blank=True, related_name='lessons')
+    template_ref = models.ForeignKey(
+    'LessonTemplate',
+    null=True,
+    blank=True,
+    on_delete=models.SET_NULL,
+    related_name='lessons',
+    help_text="Optionally choose a pre-defined template"
+    )
     permalink = models.SlugField(max_length=255, unique=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -53,6 +76,22 @@ class Lesson(models.Model):
         default='text'
     )
     
+    # === NEW: Template and Style ===
+    template = models.CharField(
+        max_length=20,
+        choices=TEMPLATE_CHOICES,
+        default="modern"
+    )
+    accent_color = models.CharField(
+        max_length=7,
+        default="#3498db"
+    )
+    custom_css = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Optional user-defined custom CSS for this lesson."
+    )
+
     def save(self, *args, **kwargs):
         # --- Generate permalink only on initial save ---
         if not self.permalink:

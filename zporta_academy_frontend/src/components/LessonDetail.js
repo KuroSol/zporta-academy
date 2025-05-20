@@ -604,6 +604,9 @@ const LessonDetail = () => {
 
     // --- Prepare Data for Rendering ---
     const { lesson, seo } = lessonData; // Destructure lesson and SEO data
+    // pull out our styling hooks:
+    const accent = lesson.accent_color || '#3498db';
+    const extraCss = lesson.custom_css || '';
     // Determine if the logged-in user is the owner of the lesson
     const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
     const isLocked = lesson.is_locked; // Check if the lesson is locked (prevents editing/deleting)
@@ -617,6 +620,15 @@ const LessonDetail = () => {
             <Helmet>
                 <title>{seo?.title || lesson.title || 'Lesson Details'}</title>
                 <meta name="description" content={seo?.description || stripHTML(lesson.content || '').substring(0, 160)} />
+                 {/* inject per‐lesson CSS and accent color */}
+
+                <style type="text/css">{`
+                    .${styles.lessonDetailContainer} {
+                        --accent-color: ${accent};
+                    }
+                    ${extraCss}
+                `}</style>
+
                 <link rel="canonical" href={seo?.canonical_url || window.location.href} />
                 {/* Add other meta tags as needed (Open Graph, Twitter Cards) */}
             </Helmet>
@@ -955,10 +967,22 @@ const LessonDetail = () => {
                     {/* Owner Actions (Edit/Delete) */}
                     {isOwner && (
                         <div className={styles.lessonActions}>
-                            <button className={styles.editBtn} onClick={handleEditClick} disabled={isLocked} title="Edit Lesson">
+                            <button
+                                className={styles.editBtn}
+                                onClick={handleEditClick}
+                                style={{ color: accent }}       // example: text in accent color
+                                disabled={isLocked}
+                                title="Edit Lesson"
+                            >
                                 <Pencil size={18} /> <span>Edit</span>
                             </button>
-                            <button className={styles.deleteBtn} onClick={handleDeleteLesson} disabled={isLocked} title="Delete Lesson">
+                            <button
+                                className={styles.deleteBtn}
+                                onClick={handleDeleteLesson}
+                                style={{ backgroundColor: accent }} // example: bg in accent color
+                                disabled={isLocked}
+                                title="Delete Lesson"
+                            >
                                 <Trash2 size={18} /> <span>Delete</span>
                             </button>
                         </div>

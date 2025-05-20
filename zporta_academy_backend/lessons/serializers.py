@@ -1,7 +1,7 @@
 # lessons/serializers.py
 from django.conf import settings
 from rest_framework import serializers
-from .models import Lesson, LessonCompletion
+from .models import Lesson, LessonTemplate, LessonCompletion
 from tags.models import Tag
 from subjects.models import Subject
 from bs4 import BeautifulSoup
@@ -66,6 +66,8 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = [
             'id', 'title', 'content', 'video_url', 'content_type',
+            'template', 'accent_color', 'custom_css', 'template_ref',
+            'template_name', 
             'subject',         # Expects/returns Subject ID
             'subject_name',    # Read-only Subject Name
             'course', 'course_data',        # Course ID (read-only by default unless in writable fields)
@@ -84,6 +86,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'subject_name', 'course_title', 'tags_output'
          ]
         
+    template_name = serializers.CharField(source='template_ref.name', read_only=True)
 
     def get_user_quizzes(self, lesson):
         request = self.context.get('request')
@@ -214,3 +217,9 @@ class LessonSerializer(serializers.ModelSerializer):
         # No explicit instance.save() needed just for M2M
 
         return instance
+    
+
+class LessonTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonTemplate
+        fields = ['id', 'name', 'description', 'accent_color', 'predefined_css']
