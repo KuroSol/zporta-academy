@@ -44,6 +44,7 @@ const getPermissionsFromStorage = () => {
 };
 
 const App = () => {
+  const [fcmTokenForDebug, setFcmTokenForDebug] = useState('');
   const { token, logout } = useContext(AuthContext); 
   const isLoggedIn = !!token;
   const [permissions] = useState(getPermissionsFromStorage());
@@ -58,71 +59,63 @@ const App = () => {
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
   useEffect(() => {
-    if (!token) { // This is your auth token, not FCM token
-      console.log('User not logged in, not attempting to get FCM token.');
+    if (!token) {
+      console.log('[FCM] ❌ No auth token, skipping FCM.');
       return;
     }
 
-    if ('Notification' in window && navigator.serviceWorker) {
-      console.log('Attempting to register service worker...');
-      navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log('✅ Service worker registered:', registration);
-          console.log('Attempting to get FCM token with VAPID key:', 'BBopJ...'); // Log your VAPID key to double check
-
-          getToken(messaging, {
-            vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M', // Ensure this is correct
-            serviceWorkerRegistration: registration
-          })
-            .then((currentToken) => {
-              if (currentToken) {
-                console.log('✅ FCM Token retrieved:', currentToken);
-                console.log('Attempting to send FCM token to backend. Auth token:', token); // Log your auth token
-
-                fetch('/api/notifications/save-fcm-token/', { // Make sure this URL is correct
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Token ${token}`, // Ensure 'token' here is the auth token
-                  },
-                  body: JSON.stringify({ token: currentToken }), // 'token' here is the FCM token
-                })
-                .then(response => {
-                  console.log('Response status from /api/save-fcm-token/:', response.status);
-                  return response.json();
-                })
-                .then(data => {
-                  console.log('Response data from /api/save-fcm-token/:', data);
-                })
-                .catch(err => {
-                  console.error('❌ Error sending FCM token to backend:', err);
-                });
-
-              } else {
-                console.warn('⚠️ No FCM token retrieved. User might have denied permission or an error occurred.');
-                // Request permission if not already granted.
-                Notification.requestPermission().then((permission) => {
-                  if (permission === 'granted') {
-                    console.log('Notification permission granted. Try getting token again.');
-                    // Potentially try getToken again here, or instruct user to refresh.
-                  } else {
-                    console.log('Notification permission denied.');
-                  }
-                });
-              }
-            })
-            .catch((err) => {
-              console.error('❌ Error retrieving FCM token:', err);
-              // Common errors: Mismatch VAPID key, service worker scope issues, Firebase config errors.
-            });
-        })
-        .catch((err) => {
-          console.error('❌ Service Worker registration failed:', err);
-        });
-    } else {
-      console.warn('Notifications or Service Workers not supported by this browser.');
+    if (!('Notification' in window) || !navigator.serviceWorker) {
+      console.error('[FCM] ❌ Browser doesn’t support Notifications or Service Workers.');
+      return;
     }
-  }, [token]); // 'token' here is the auth token from AuthContext
+
+    console.log('[FCM] ▶️ Registering firebase-messaging-sw.js…');
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      .then((registration) => {
+        console.log('[FCM] ✅ SW registered with scope:', registration.scope);
+
+        console.log('[FCM] ▶️ Requesting Notification permission…');
+        return Notification.requestPermission()
+          .then(permission => {
+            console.log('[FCM] Permission status:', permission);
+            return { registration, permission };
+          });
+      })
+      .then(({ registration, permission }) => {
+        if (permission !== 'granted') {
+          throw new Error('Notifications permission not granted');
+        }
+
+        console.log('[FCM] ▶️ Calling getToken()…');
+        return getToken(messaging, {
+          vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
+          serviceWorkerRegistration: registration
+        });
+      })
+      .then((currentToken) => {
+        if (!currentToken) {
+          throw new Error('getToken() returned no token');
+        }
+        console.log('[FCM] ✅ FCM Token:', currentToken);
+        setFcmTokenForDebug(currentToken); // <--- ADD THIS LINE HERE
+
+        console.log('[FCM] ▶️ Sending to backend…');
+        return fetch('/api/notifications/save-fcm-token/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+          body: JSON.stringify({ token: currentToken }),
+        });
+      })
+      .then(res => {
+        console.log('[FCM] save-fcm-token response status:', res.status);
+        return res.json();
+      })
+      .then(json => console.log('[FCM] save-fcm-token response body:', json))
+      .catch(err => console.error('[FCM] ❌ Error that stopped FCM flow:', err));
+  }, [token]);
 
 
 
@@ -245,6 +238,28 @@ const App = () => {
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
+
+       {/* TEMPORARY: Display FCM Token for Debugging */}
+        {fcmTokenForDebug && (
+          <div style={{
+            position: 'fixed',
+            bottom: '70px', // Adjusted to be above a typical bottom menu
+            left: '10px',
+            right: '10px', // Allow it to take more width if needed
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            color: 'white',
+            padding: '10px',
+            zIndex: 9999,
+            fontSize: '11px', // Slightly larger for readability
+            overflowWrap: 'break-word', // Ensure long token wraps
+            textAlign: 'left',
+            borderRadius: '5px',
+            boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+          }}>
+            <strong style={{display: 'block', marginBottom: '5px'}}>FCM Token (for testing):</strong>
+            {fcmTokenForDebug}
+          </div>
+        )}
 
       {/* Bottom Menu */}
       {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={permissions} />}
