@@ -12,16 +12,13 @@ def send_push_notification(user, title, body, link=None):
             ),
             token=fcm.token,
             webpush=messaging.WebpushConfig(
-                headers={
-                    "Urgency": "high"
-                },
+                headers={"Urgency": "high"},
                 notification=messaging.WebpushNotification(
                     title=title,
                     body=body,
                     icon="https://zportaacademy.com/logo192.png",
                     badge="https://zportaacademy.com/badge-icon.png",
                     vibrate=[200, 100, 200],
-                    click_action=link or "https://zportaacademy.com",
                     actions=[
                         {
                             "action": "open",
@@ -34,6 +31,7 @@ def send_push_notification(user, title, body, link=None):
                     link=link or "https://zportaacademy.com"
                 )
             ),
+
             android=messaging.AndroidConfig(
                 priority="high",
                 notification=messaging.AndroidNotification(
