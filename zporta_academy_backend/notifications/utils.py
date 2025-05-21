@@ -1,5 +1,7 @@
 from firebase_admin import messaging
 from .models import FCMToken
+from firebase_admin.messaging import WebpushNotificationAction
+
 
 def send_push_notification(user, title, body, link=None):
     try:
@@ -20,12 +22,11 @@ def send_push_notification(user, title, body, link=None):
                     badge="https://zportaacademy.com/badge-icon.png",
                     vibrate=[200, 100, 200],
                     actions=[
-                        {
-                            "action": "open",
-                            "title": "Open App"
-                        }
-                    ],
-                    require_interaction=True
+                        WebpushNotificationAction(
+                            action="open",
+                            title="Open App"
+                        )
+                    ]
                 ),
                 fcm_options=messaging.WebpushFCMOptions(
                     link=link or "https://zportaacademy.com"
