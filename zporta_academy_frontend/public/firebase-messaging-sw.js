@@ -1,15 +1,15 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-firebase.initializeApp({
-  apiKey: "AIzaSyBJLv_ajyGfVC3OvcSGmLvk_5Cg0fU21A",
+const firebaseConfig = {
+  apiKey: "AIzaSyBJLv_ajyGFVC3OvceSGmlvk_5CgQfu21A",
   authDomain: "zporta-academy.firebaseapp.com",
   projectId: "zporta-academy",
-  storageBucket: "zporta-academy.appspot.com",
+  storageBucket: "zporta-academy.firebasestorage.app",
   messagingSenderId: "521005152211",
   appId: "1:521005152211:web:74ee4bb56d3415af366126",
   measurementId: "G-FHLP3HQ0EP"
-});
+};
 
 const messaging = firebase.messaging();
 
