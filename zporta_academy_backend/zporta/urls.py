@@ -29,7 +29,7 @@ urlpatterns = [
     path('api/payments/', include('payments.urls')),
     path('api/social/', include('social.urls')),
     path('api/notifications/', include('notifications.urls')),
-    path('admin/notifications/', include(('notifications.urls', 'notifications'), namespace='notifications')),
+    path('api/notifications/', include(('notifications.urls', 'notifications'), namespace='notifications')),
 
     path('api/user_media/', include('user_media.urls')),
     path('api/', include('analytics.urls')),

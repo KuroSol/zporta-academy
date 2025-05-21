@@ -20,6 +20,8 @@ from .utils import send_push_notification
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse
+
 
 User = get_user_model()
 
@@ -68,7 +70,7 @@ def send_notification_to_user(request):
 
     return Response({"message": "Notification sent and saved."}, status=200)
 
-@staff_member_required  # ✅ Only admin users can use
+@staff_member_required
 def send_notification_now(request, pk):
     try:
         notification = Notification.objects.get(pk=pk)
@@ -85,7 +87,7 @@ def send_notification_now(request, pk):
     except Notification.DoesNotExist:
         messages.error(request, "❌ Notification not found.")
 
-    return redirect('/admin/notifications/notification/')
+    return redirect(reverse('admin:notifications_notification_changelist'))
 
 
 @api_view(['POST'])
