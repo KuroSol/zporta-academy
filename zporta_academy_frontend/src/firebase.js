@@ -1,8 +1,7 @@
-// src/firebase.js
+// ✅ Only used in App.js
 import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 
-// ✅ Replace with your actual config
 const firebaseConfig = {
   apiKey: "AIzaSyBJLv_ajyGfVC3OvcSGmLvk_5Cg0fU21A",
   authDomain: "zporta-academy.firebaseapp.com",
