@@ -2,6 +2,7 @@ from firebase_admin import messaging
 from .models import FCMToken
 from firebase_admin.messaging import WebpushNotificationAction
 
+from firebase_admin.exceptions import InvalidArgumentError
 
 def send_push_notification(user, title, body, link=None):
     try:
@@ -32,7 +33,6 @@ def send_push_notification(user, title, body, link=None):
                     link=link or "https://zportaacademy.com"
                 )
             ),
-
             android=messaging.AndroidConfig(
                 priority="high",
                 notification=messaging.AndroidNotification(
@@ -48,6 +48,13 @@ def send_push_notification(user, title, body, link=None):
         response = messaging.send(message)
         print("✅ Push sent:", response)
         return True
+
     except FCMToken.DoesNotExist:
         print(f"❌ No token for {user.username}")
+        return False
+
+    except InvalidArgumentError as e:
+        print(f"❌ Invalid token for {user.username}: {fcm.token}")
+        # Optionally delete bad token
+        fcm.delete()
         return False
