@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
-
+import traceback
 
 User = get_user_model()
 
@@ -70,6 +70,8 @@ def send_notification_to_user(request):
 
     return Response({"message": "Notification sent and saved."}, status=200)
 
+
+
 @staff_member_required
 def send_notification_now(request, pk):
     try:
@@ -86,8 +88,12 @@ def send_notification_now(request, pk):
             messages.warning(request, "⚠️ Notification already sent.")
     except Notification.DoesNotExist:
         messages.error(request, "❌ Notification not found.")
+    except Exception as e:
+        print("🔥 ERROR in send_notification_now:")
+        traceback.print_exc()  # ✅ Full traceback
+        messages.error(request, f"❌ Internal server error.")
 
-    return redirect(reverse('admin:notifications_notification_changelist'))
+    return redirect('/administration-zporta-repersentiivie/notifications/notification/')
 
 
 @api_view(['POST'])
