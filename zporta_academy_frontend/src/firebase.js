@@ -2,14 +2,15 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDN8ndlbKavL7o827TMn7uiy0OUhxVrtIA",
-  authDomain: "zporta-academy.firebaseapp.com",
-  projectId: "zporta-academy",
-  storageBucket: "zporta-academy.firebasestorage.app",
-  messagingSenderId: "521005152211",
-  appId: "1:521005152211:web:55926c3d556c622d366126",
-  measurementId: "G-5RG79GDJC5"
+  apiKey: "AIzaSyDvly8G3XTRBUzdq-N8LaaOHDgPr2AnO2o",
+  authDomain: "zporta-academy-firebase.firebaseapp.com",
+  projectId: "zporta-academy-firebase",
+  storageBucket: "zporta-academy-firebase.firebasestorage.app",
+  messagingSenderId: "389677350718",
+  appId: "1:389677350718:web:33dce48c2a8e405416366f",
+  measurementId: "G-VP2BJCZK9S"
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
