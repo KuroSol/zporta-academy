@@ -26,10 +26,10 @@ class Notification(models.Model):
         return f"Notification for {self.user.username}: {self.title} - {self.message[:30]}"
 
 class FCMToken(models.Model):
-    user       = models.ForeignKey(settings.AUTH_USER_MODEL,
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                    on_delete=models.CASCADE,
                                    related_name='fcm_tokens')
-    token      = models.CharField(max_length=512, unique=True)
+    token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
