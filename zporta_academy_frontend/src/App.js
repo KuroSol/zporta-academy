@@ -59,63 +59,43 @@ const App = () => {
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
   useEffect(() => {
-    if (!token) {
-      console.log('[FCM] ❌ No auth token, skipping FCM.');
-      return;
-    }
+  if (!token) {
+    console.log('[FCM] ❌ No auth token, skipping FCM.');
+    return;
+  }
 
-    if (!('Notification' in window) || !navigator.serviceWorker) {
-      console.error('[FCM] ❌ Browser doesn’t support Notifications or Service Workers.');
-      return;
-    }
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then((registration) => {
+      console.log('[FCM] ✅ SW registered:', registration.scope);
+      return Notification.requestPermission().then(permission => {
+        if (permission !== 'granted') throw new Error('Permission not granted');
+        return { registration, permission };
+      });
+    })
+    .then(({ registration }) => {
+      return getToken(messaging, {
+        vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
+        serviceWorkerRegistration: registration,
+      });
+    })
+    .then(currentToken => {
+      if (!currentToken) throw new Error('getToken() returned null');
+      console.log('[FCM] ✅ Got token:', currentToken);
 
-    console.log('[FCM] ▶️ Registering firebase-messaging-sw.js…');
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      .then((registration) => {
-        console.log('[FCM] ✅ SW registered with scope:', registration.scope);
+      return fetch('/api/notifications/save-fcm-token/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`, // ✅ This must be valid
+        },
+        body: JSON.stringify({ token: currentToken }),
+      });
+    })
+    .then(res => res.json())
+    .then(json => console.log('[FCM] ✅ Token saved:', json))
+    .catch(err => console.error('[FCM] ❌ Error:', err));
+}, [token]);
 
-        console.log('[FCM] ▶️ Requesting Notification permission…');
-        return Notification.requestPermission()
-          .then(permission => {
-            console.log('[FCM] Permission status:', permission);
-            return { registration, permission };
-          });
-      })
-      .then(({ registration, permission }) => {
-        if (permission !== 'granted') {
-          throw new Error('Notifications permission not granted');
-        }
-
-        console.log('[FCM] ▶️ Calling getToken()…');
-        return getToken(messaging, {
-          vapidKey: 'BBopJEFP0-w6cVGLXByxRREZS-XqPDOhXXGd-HUeLRHLq9KsOxiBqFW51gd33RYb6gQQB_wJk9-BxlqwN4Qlq0M',
-          serviceWorkerRegistration: registration
-        });
-      })
-      .then((currentToken) => {
-        if (!currentToken) {
-          throw new Error('getToken() returned no token');
-        }
-        console.log('[FCM] ✅ FCM Token:', currentToken);
-        setFcmTokenForDebug(currentToken); // <--- ADD THIS LINE HERE
-
-        console.log('[FCM] ▶️ Sending to backend…');
-        return fetch('/api/notifications/save-fcm-token/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-          body: JSON.stringify({ token: currentToken }),
-        });
-      })
-      .then(res => {
-        console.log('[FCM] save-fcm-token response status:', res.status);
-        return res.json();
-      })
-      .then(json => console.log('[FCM] save-fcm-token response body:', json))
-      .catch(err => console.error('[FCM] ❌ Error that stopped FCM flow:', err));
-  }, [token]);
 
 
 
