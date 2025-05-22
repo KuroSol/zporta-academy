@@ -3,14 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDvly8G3XTRBUzdq-N8LaaOHDgPr2AnO2o",
-  authDomain: "zporta-academy-firebase.firebaseapp.com",
-  projectId: "zporta-academy-firebase",
-  storageBucket: "zporta-academy-firebase.firebasestorage.app",
-  messagingSenderId: "389677350718",
-  appId: "1:389677350718:web:33dce48c2a8e405416366f",
-  measurementId: "G-VP2BJCZK9S"
+  apiKey: "AIzaSyApf4q80uDu3A70eDf5khygnNgdELL0-u0",
+  authDomain: "zporta-academy-web.firebaseapp.com",
+  projectId: "zporta-academy-web",
+  storageBucket: "zporta-academy-web.firebasestorage.app",
+  messagingSenderId: "798909537942",
+  appId: "1:798909537942:web:e5e7d4b1f41c7c216a6cb7",
+  measurementId: "G-DZB2R5TFCE"
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);

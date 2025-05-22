@@ -74,7 +74,7 @@ const App = () => {
     })
     .then(({ registration }) => {
       return getToken(messaging, {
-        vapidKey: 'BDQEGDugPfamanCPiVvlbHKxcIad88iRjjiajygbhwjBtGKSAGOiG0CFo5AoJaxCJT2fy07AU_QprgGx7GZKa0E',
+        vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
         serviceWorkerRegistration: registration,
       });
     })
