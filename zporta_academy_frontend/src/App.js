@@ -221,7 +221,7 @@ const App = () => {
         </Routes>
       </div>
 
-       {/* TEMPORARY: Display FCM Token for Debugging */}
+       {/* TEMPORARY: Display FCM Token for Debugging 
         {fcmTokenForDebug && (
           <div style={{
             position: 'fixed',
@@ -242,7 +242,7 @@ const App = () => {
             {fcmTokenForDebug}
           </div>
         )}
-
+      */}
       {/* Bottom Menu */}
       {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={permissions} />}
     </div>
