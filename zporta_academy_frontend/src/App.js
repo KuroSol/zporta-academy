@@ -60,7 +60,7 @@ const App = () => {
 
   useEffect(() => {
   if (!token) {
-    console.log('[FCM] ❌ No auth token, skipping FCM.');
+    console.log('[FCM] ❌ No auth token—skipping registration until login.');
     return;
   }
 
@@ -81,6 +81,8 @@ const App = () => {
     .then(currentToken => {
       if (!currentToken) throw new Error('getToken() returned null');
       console.log('[FCM] ✅ Got token:', currentToken);
+      // <-- add this so you can see it on screen:
+      setFcmTokenForDebug(currentToken);
 
       return fetch('/api/notifications/save-fcm-token/', {
         method: 'POST',
