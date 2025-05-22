@@ -1,17 +1,20 @@
+// public/firebase-messaging-sw.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
+// THIS IS WHERE YOU PASTE THE NEW CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyBJLv_ajyGFVC3OvceSGmlvk_5CgQfu21A",
+  apiKey: "AIzaSyCGLsllyYug2cEDf_gLn1divUD8xCCg0O8", // NEW Key
   authDomain: "zporta-academy.firebaseapp.com",
   projectId: "zporta-academy",
   storageBucket: "zporta-academy.firebasestorage.app",
   messagingSenderId: "521005152211",
-  appId: "1:521005152211:web:74ee4bb56d3415af366126",
-  measurementId: "G-FHLP3HQ0EP"
+  appId: "1:521005152211:web:3f5d33753bb59628366126", // NEW App ID
+  measurementId: "G-LKF5HSHBHW"
 };
 
-const messaging = firebase.messaging();
+firebase.initializeApp(firebaseConfig); // Make sure this line is present
+const messaging = firebase.messaging(); // Make sure this line is present
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
