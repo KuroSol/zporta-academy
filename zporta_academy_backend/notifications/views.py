@@ -98,15 +98,17 @@ def send_notification_now(request, pk):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])        # <-- skip SessionAuth here
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def save_fcm_token(request):
     token = request.data.get('token')
     if not token:
         return Response({"detail": "No token provided"}, status=400)
-    FCMToken.objects.update_or_create(
-        user=request.user,
-        defaults={'token': token}
+
+    obj, created = FCMToken.objects.update_or_create(
+        token=token,
+        defaults={'user': request.user}
     )
-    return Response({"detail": "FCM token saved"})
+    return Response({"detail": "FCM token saved", "created": created})
 
