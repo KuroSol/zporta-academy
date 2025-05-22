@@ -14,9 +14,14 @@ const firebaseConfig = {
   measurementId: "G-DZB2R5TFCE"
 };
 
+// 2) **Initialize the default app** before anything else
+firebase.initializeApp(firebaseConfig);
+
+// 3) Now grab messaging
 const messaging = firebase.messaging();
 
+// 4) Handle background pushes
 messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification;
+  const { title, body, icon } = payload.notification || {};
   self.registration.showNotification(title, { body, icon });
 });
