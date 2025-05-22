@@ -97,7 +97,7 @@ def send_notification_now(request, pk):
     return redirect('/administration-zporta-repersentiivie/notifications/notification/')
 
 
-@api_view(['POST'])
+
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
