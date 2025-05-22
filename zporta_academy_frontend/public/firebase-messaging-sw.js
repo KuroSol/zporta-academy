@@ -4,13 +4,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-com
 
 // THIS IS WHERE YOU PASTE THE NEW CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyCGLsllyYug2cEDf_gLn1divUD8xCCg0O8", // NEW Key
+  apiKey: "AIzaSyDN8ndlbKavL7o827TMn7uiy0OUhxVrtIA",
   authDomain: "zporta-academy.firebaseapp.com",
   projectId: "zporta-academy",
   storageBucket: "zporta-academy.firebasestorage.app",
   messagingSenderId: "521005152211",
-  appId: "1:521005152211:web:3f5d33753bb59628366126", // NEW App ID
-  measurementId: "G-LKF5HSHBHW"
+  appId: "1:521005152211:web:55926c3d556c622d366126",
+  measurementId: "G-5RG79GDJC5"
 };
 
 firebase.initializeApp(firebaseConfig); // Make sure this line is present
