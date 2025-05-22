@@ -11,7 +11,8 @@ from .models import FCMToken
 
 
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import permission_classes,api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAdminUser
 from .utils import send_push_notification
 from rest_framework import status
@@ -97,27 +98,15 @@ def send_notification_now(request, pk):
 
 
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication])        # <-- skip SessionAuth here
 @permission_classes([IsAuthenticated])
 def save_fcm_token(request):
-    print(f"--- save_fcm_token endpoint hit by user: {request.user.username} ---") # Log who is calling
     token = request.data.get('token')
-    print(f"Received FCM token in request data: {token}")
-
-    if token:
-        try:
-            fcm_token_obj, created = FCMToken.objects.update_or_create(
-                user=request.user, 
-                defaults={'token': token}
-            )
-            if created:
-                print(f"✅ Successfully CREATED FCM token for user {request.user.username}")
-            else:
-                print(f"✅ Successfully UPDATED FCM token for user {request.user.username}")
-            return Response({'message': 'Token saved successfully'})
-        except Exception as e:
-            print(f"❌ Error saving FCM token for user {request.user.username}: {e}")
-            return Response({'error': 'Failed to save token due to server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        print("⚠️ Token missing in request data.")
-        return Response({'error': 'Token missing'}, status=status.HTTP_400_BAD_REQUEST)
+    if not token:
+        return Response({"detail": "No token provided"}, status=400)
+    FCMToken.objects.update_or_create(
+        user=request.user,
+        defaults={'token': token}
+    )
+    return Response({"detail": "FCM token saved"})
 
