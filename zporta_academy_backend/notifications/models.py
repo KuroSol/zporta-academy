@@ -35,4 +35,27 @@ class FCMToken(models.Model):
     def __str__(self):
         return f"FCM Token for {self.user.username}"
     class Meta:
-        unique_together = ('user', 'token')
+        unique_together = ('user', 'token') 
+
+
+class FCMLog(models.Model):
+    ACTION_CHOICES = [
+        ('register', 'Register Token'),
+        ('send',     'Send Attempt'),
+        ('prune',    'Prune Token'),
+    ]
+
+    user      = models.ForeignKey(
+                  settings.AUTH_USER_MODEL,
+                  on_delete=models.CASCADE,
+                  null=True, blank=True
+               )
+    token     = models.CharField(max_length=255, blank=True)
+    action    = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    success   = models.BooleanField()
+    detail    = models.TextField(blank=True)     # holds error message or “Created” flag
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = 'OK' if self.success else 'FAIL'
+        return f"[{self.timestamp:%Y-%m-%d %H:%M:%S}] {self.action} {status}: {self.token[:20]}"
