@@ -34,39 +34,47 @@ import GuideRequestsPage from './components/GuideRequestsPage';
 import EnrolledCourses from './components/EnrolledCourses';
 import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
-import { messaging } from './firebase';
-import { getToken } from 'firebase/messaging'; 
+import { messaging } from './firebase'; // Assuming firebase.js exports messaging
+import { getToken } from 'firebase/messaging';
 import { v4 as uuidv4 } from 'uuid';
 
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+
 // 0) Hook into the PWA install prompt
 function InstallGate({ isLoggedIn }) {
-  if (isIOS) return null;  
+  // Call hooks unconditionally at the top
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
+    // Conditionally run effect logic
+    if (isIOS) return;
+
     const handler = (e) => {
-      // Prevent Chrome’s default mini-infobar
       e.preventDefault();
-      // Save the event for later
       setDeferredPrompt(e);
       setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+  }, []); // Empty dependency array is correct here, effect runs once on mount
+
+  // Conditional rendering after hooks
+  if (isIOS) return null;
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    console.log('[PWA] userChoice:', choice);
+    // Wait for the user to respond to the prompt
+    // const choice = await deferredPrompt.userChoice; // ESLint might warn if choice is unused
+    await deferredPrompt.userChoice;
+    // console.log('[PWA] userChoice:', choice); // Log if needed
     setShowInstall(false);
     setDeferredPrompt(null);
   };
 
   if (!isLoggedIn || !showInstall) return null;
+
   return (
     <div style={{
       padding: 12,
@@ -93,22 +101,24 @@ function InstallGate({ isLoggedIn }) {
     </div>
   );
 }
+
 // 1) Banner component that asks the user for permission
 function NotificationGate({ isLoggedIn, onGrant }) {
   const [asked, setAsked] = useState(
-    Notification.permission !== 'default'
+    () => Notification.permission !== 'default' // Initialize from current permission state
   );
 
   const handleClick = async () => {
-    setAsked(true);
+    setAsked(true); // User has interacted
     const permission = await Notification.requestPermission();
     console.log('[FCM] Permission result:', permission);
     if (permission === 'granted') {
-      onGrant();
+      onGrant(); // Callback to trigger FCM registration
     }
   };
 
-  if (!isLoggedIn || asked) return null;
+  // Only show if logged in and permission hasn't been asked/granted/denied yet
+  if (!isLoggedIn || asked || Notification.permission !== 'default') return null;
 
   return (
     <div style={{
@@ -149,12 +159,13 @@ export function getDeviceId() {
 
 // 3) Your existing App component
 const App = () => {
-  const [fcmTokenForDebug, setFcmTokenForDebug] = useState('');
+  // const [fcmTokenForDebug, setFcmTokenForDebug] = useState(''); // Commented out as it was unused
   const { token, logout } = useContext(AuthContext);
   const isLoggedIn = !!token;
   const [permissions] = useState(() => {
     const stored = localStorage.getItem('permissions');
-    return stored && stored !== 'undefined' ? stored.split(',') : [];
+    // Ensure stored is not 'undefined' string before splitting
+    return stored && typeof stored === 'string' && stored !== 'undefined' ? stored.split(',') : [];
   });
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -165,70 +176,87 @@ const App = () => {
   const location = useLocation();
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
-  // 4) Define (but don’t auto-call) your FCM setup function
+  // 4) Define FCM setup function
   useEffect(() => {
     if (!token) {
       console.log('[FCM] ❌ No auth token—skipping registration until login.');
       return;
     }
 
-    const deviceId = getDeviceId();
-
-    // Expose the registration flow to a button click
+    // Expose the registration flow to a button click or onGrant callback
     window.registerFCM = async () => {
+      console.log('[FCM] Attempting to register FCM...');
       try {
-        // a) Ask permission if needed
+        // a) Ask permission if needed (though NotificationGate should handle initial prompt)
         if (Notification.permission === 'default') {
+          console.log('[FCM] Permission is default, requesting...');
           const permission = await Notification.requestPermission();
-          console.log('[FCM] Permission result:', permission);
+          console.log('[FCM] Permission result from registerFCM:', permission);
           if (permission !== 'granted') {
-            console.warn('[FCM] Notifications not granted');
+            console.warn('[FCM] Notifications not granted via registerFCM.');
             return;
           }
         } else if (Notification.permission === 'denied') {
-          console.warn('[FCM] Notifications blocked by user');
+          console.warn('[FCM] Notifications blocked by user.');
           return;
         }
+        console.log('[FCM] Notification permission is:', Notification.permission);
 
         // b) Register service worker
-        const registration = await navigator.serviceWorker.register(
-          '/firebase-messaging-sw.js'
-        );
-        console.log('[FCM] ✅ SW registered at', registration.scope);
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.register(
+            '/firebase-messaging-sw.js' // Ensure this path is correct from public root
+          );
+          console.log('[FCM] ✅ SW registered at', registration.scope);
 
-        // c) Get FCM token
-        const currentToken = await getToken(messaging, {
-          vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
-          serviceWorkerRegistration: registration,
-        });
-        if (!currentToken) {
-          throw new Error('FCM getToken returned null');
-        }
-        console.log('[FCM] ✅ Got token:', currentToken);
-        setFcmTokenForDebug(currentToken);
+          // c) Get FCM token
+          const currentToken = await getToken(messaging, {
+            vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw', // Replace with your actual VAPID key
+            serviceWorkerRegistration: registration,
+          });
 
-        // d) Send token to backend
-        const resp = await fetch('/api/notifications/save-fcm-token/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-          body: JSON.stringify({
-            token: currentToken,
-            device_id: deviceId
-          }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-          throw new Error(`save-fcm-token ${resp.status}: ${data.detail || JSON.stringify(data)}`);
+          if (!currentToken) {
+            throw new Error('FCM getToken returned null or empty. Ensure VAPID key is correct and SW is active.');
+          }
+          console.log('[FCM] ✅ Got token:', currentToken);
+          // setFcmTokenForDebug(currentToken); // Commented out
+
+          // d) Send token to backend
+          const deviceId = getDeviceId();
+          console.log('[FCM] Sending token with deviceId:', deviceId);
+          const resp = await fetch('/api/notifications/save-fcm-token/', { // Ensure this API endpoint is correct
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Token ${token}`, // Ensure token is the auth token
+            },
+            body: JSON.stringify({
+              token: currentToken,
+              device_id: deviceId
+            }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            throw new Error(`save-fcm-token ${resp.status}: ${data.detail || JSON.stringify(data)}`);
+          }
+          console.log('[FCM] ✅ Token saved:', data);
+        } else {
+          console.error('[FCM] Service workers are not supported in this browser.');
         }
-        console.log('[FCM] ✅ Token saved:', data);
       } catch (err) {
         console.error('[FCM] ❌ Error during FCM setup:', err);
+        // More detailed error logging
+        if (err.code) {
+          console.error('[FCM] Error code:', err.code);
+          console.error('[FCM] Error message:', err.message);
+        }
       }
     };
-  }, [token]);
+    // Clean up the global function when the component unmounts or token changes
+    return () => {
+      delete window.registerFCM;
+    };
+  }, [token]); // Rerun this effect if the auth token changes
 
 
   return (
@@ -237,7 +265,13 @@ const App = () => {
       <InstallGate isLoggedIn={isLoggedIn} />
       <NotificationGate
         isLoggedIn={isLoggedIn}
-        onGrant={() => window.registerFCM()}
+        onGrant={() => {
+            if (window.registerFCM) {
+                window.registerFCM();
+            } else {
+                console.error("[FCM] registerFCM function not available on window.")
+            }
+        }}
       />
 
       <div className="content-wrapper">
@@ -356,19 +390,19 @@ const App = () => {
         </Routes>
       </div>
 
-       {/* TEMPORARY: Display FCM Token for Debugging 
-        {fcmTokenForDebug && (
+       {/* TEMPORARY: Display FCM Token for Debugging
+        {fcmTokenForDebug && ( // If you bring back fcmTokenForDebug, ensure it's declared with useState
           <div style={{
             position: 'fixed',
-            bottom: '70px', // Adjusted to be above a typical bottom menu
+            bottom: '70px',
             left: '10px',
-            right: '10px', // Allow it to take more width if needed
+            right: '10px',
             backgroundColor: 'rgba(0,0,0,0.8)',
             color: 'white',
             padding: '10px',
             zIndex: 9999,
-            fontSize: '11px', // Slightly larger for readability
-            overflowWrap: 'break-word', // Ensure long token wraps
+            fontSize: '11px',
+            overflowWrap: 'break-word',
             textAlign: 'left',
             borderRadius: '5px',
             boxShadow: '0 0 10px rgba(0,0,0,0.5)'
