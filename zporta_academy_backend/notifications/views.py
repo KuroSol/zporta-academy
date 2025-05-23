@@ -72,27 +72,31 @@ def send_notification_to_user(request):
     return Response({"message": "Notification sent and saved."}, status=200)
 
 
-
 @staff_member_required
 def send_notification_now(request, pk):
+    notification = get_object_or_404(Notification, pk=pk)
+
+    if notification.is_sent:
+        messages.warning(request, "⚠️ Notification already sent.")
+        return redirect('/administration-zporta-repersentiivie/notifications/notification/')
+
     try:
-        notification = Notification.objects.get(pk=pk)
-        if not notification.is_sent:
-            result = send_push_notification(notification.user, notification.title, notification.message, notification.link)
-            if result:
-                notification.is_sent = True
-                notification.save()
-                messages.success(request, f"✅ Sent push to {notification.user.username}")
-            else:
-                messages.error(request, "❌ Failed to send notification.")
+        sent = send_push_notification(
+            notification.user,
+            notification.title,
+            notification.message,
+            notification.link
+        )
+
+        if sent:
+            notification.is_sent = True
+            notification.save()
+            messages.success(request, f"✅ Sent push to {notification.user.username}")
         else:
-            messages.warning(request, "⚠️ Notification already sent.")
-    except Notification.DoesNotExist:
-        messages.error(request, "❌ Notification not found.")
+            messages.error(request, "❌ Failed to send notification.")
     except Exception as e:
-        print("🔥 ERROR in send_notification_now:")
-        traceback.print_exc()  # ✅ Full traceback
-        messages.error(request, f"❌ Internal server error.")
+        # Let the util’s own logging and FCMLog entries record the details
+        messages.error(request, f"❌ Internal server error: {e}")
 
     return redirect('/administration-zporta-repersentiivie/notifications/notification/')
 
