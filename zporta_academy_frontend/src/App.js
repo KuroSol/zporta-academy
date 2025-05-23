@@ -64,39 +64,61 @@ const App = () => {
     return;
   }
 
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then((registration) => {
-      console.log('[FCM] ✅ SW registered:', registration.scope);
-      return Notification.requestPermission().then(permission => {
-        if (permission !== 'granted') throw new Error('Permission not granted');
-        return { registration, permission };
-      });
-    })
-    .then(({ registration }) => {
-      return getToken(messaging, {
-        vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
-        serviceWorkerRegistration: registration,
-      });
-    })
-    .then(currentToken => {
-      if (!currentToken) throw new Error('getToken() returned null');
-      console.log('[FCM] ✅ Got token:', currentToken);
-      // <-- add this so you can see it on screen:
-      setFcmTokenForDebug(currentToken);
+      // wrap the whole flow in an async fn for clarity
+    const registerFCM = async () => {
+      try {
+        // 1) Ask browser permission if needed
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission();
+          console.log('[FCM] Permission result:', permission);
+          if (permission !== 'granted') {
+            console.warn('[FCM] Notifications not granted');
+            return;
+          }
+        } else if (Notification.permission === 'denied') {
+          console.warn('[FCM] Notifications have been blocked by user');
+          return;
+        }
 
-      return fetch('/api/notifications/save-fcm-token/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`, // ✅ This must be valid
-        },
-        body: JSON.stringify({ token: currentToken }),
-      });
-    })
-    .then(res => res.json())
-    .then(json => console.log('[FCM] ✅ Token saved:', json))
-    .catch(err => console.error('[FCM] ❌ Error:', err));
-}, [token]);
+        // 2) Register the service worker
+        const registration = await navigator.serviceWorker.register(
+          '/firebase-messaging-sw.js'
+        );
+        console.log('[FCM] ✅ SW registered at', registration.scope);
+
+        // 3) Get the FCM token
+        const currentToken = await getToken(messaging, {
+          vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
+          serviceWorkerRegistration: registration,
+          // forceRefresh: true, // uncomment if you ever need a fresh token
+        });
+        if (!currentToken) {
+          throw new Error('FCM getToken returned null');
+        }
+        console.log('[FCM] ✅ Got token:', currentToken);
+        setFcmTokenForDebug(currentToken);
+
+        // 4) Send it to your backend
+        const resp = await fetch('/api/notifications/save-fcm-token/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+          body: JSON.stringify({ token: currentToken }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(`save-fcm-token ${resp.status}: ${data.detail||JSON.stringify(data)}`);
+        }
+        console.log('[FCM] ✅ Token saved:', data);
+      } catch (err) {
+        console.error('[FCM] ❌ Error during FCM setup:', err);
+      }
+    };
+
+    registerFCM();
+  }, [token]);
 
 
 
