@@ -37,7 +37,59 @@ import StudyDashboard from './components/StudyDashboard';
 import { messaging } from './firebase';
 import { getToken } from 'firebase/messaging'; 
 import { v4 as uuidv4 } from 'uuid';
+// 0) Hook into the PWA install prompt
+function InstallGate({ isLoggedIn }) {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
 
+  useEffect(() => {
+    const handler = (e) => {
+      // Prevent Chrome’s default mini-infobar
+      e.preventDefault();
+      // Save the event for later
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    console.log('[PWA] userChoice:', choice);
+    setShowInstall(false);
+    setDeferredPrompt(null);
+  };
+
+  if (!isLoggedIn || !showInstall) return null;
+  return (
+    <div style={{
+      padding: 12,
+      background: '#e6f7ff',
+      textAlign: 'center',
+      borderBottom: '1px solid #91d5ff',
+      fontSize: '14px'
+    }}>
+      📱 Install the Zporta Academy app?
+      <button
+        onClick={handleInstall}
+        style={{
+          marginLeft: 12,
+          padding: '6px 12px',
+          background: '#1890ff',
+          border: 'none',
+          borderRadius: 4,
+          color: '#fff',
+          cursor: 'pointer'
+        }}
+      >
+        Install
+      </button>
+    </div>
+  );
+}
 // 1) Banner component that asks the user for permission
 function NotificationGate({ isLoggedIn, onGrant }) {
   const [asked, setAsked] = useState(
@@ -179,7 +231,7 @@ const App = () => {
   return (
     <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
       <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
-
+      <InstallGate isLoggedIn={isLoggedIn} />
       <NotificationGate
         isLoggedIn={isLoggedIn}
         onGrant={() => window.registerFCM()}
