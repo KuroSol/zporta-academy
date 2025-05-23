@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from social.models import GuideRequest
 
+
+# add from here
 class Notification(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
