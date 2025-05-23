@@ -6,7 +6,6 @@ from .views import (
     send_notification_to_user,
     send_notification_now,
 )
-
 router = DefaultRouter()
 router.register(r'', NotificationViewSet, basename='notification')
 
