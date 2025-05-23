@@ -29,13 +29,13 @@ class FCMToken(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                    on_delete=models.CASCADE,
                                    related_name='fcm_tokens')
-    token = models.CharField(max_length=255, unique=True)
+    device_id  = models.CharField(max_length=255, null=True, blank=True)
+    token     = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"FCM Token for {self.user.username}"
-    class Meta:
-        unique_together = ('user', 'token') 
+        return f"{self.user.username} – {self.device_id}"
+
 
 
 class FCMLog(models.Model):

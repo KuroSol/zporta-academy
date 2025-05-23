@@ -106,13 +106,15 @@ def send_notification_now(request, pk):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def save_fcm_token(request):
-    token = request.data.get('token')
-    if not token:
-        return Response({"detail": "No token provided"}, status=400)
+    token     = request.data.get('token')
+    device_id = request.data.get('device_id')
+    if not token or not device_id:
+        return Response({"detail": "Missing token or device_id"}, status=400)
 
     obj, created = FCMToken.objects.update_or_create(
-        token=token,
-        defaults={'user': request.user}
+        user      = request.user,
+        device_id = device_id,
+        defaults  = {'token': token}
     )
     return Response({"detail": "FCM token saved", "created": created})
 

@@ -36,6 +36,18 @@ import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
 import { messaging } from './firebase';
 import { getToken } from 'firebase/messaging'; 
+import { v4 as uuidv4 } from 'uuid';
+
+
+export function getDeviceId() {
+  let id = localStorage.getItem('deviceId');
+  if (!id) {
+    id = uuidv4();
+    localStorage.setItem('deviceId', id);
+  }
+  return id;
+}
+
 
 // Helper function to get permissions safely
 const getPermissionsFromStorage = () => {
@@ -64,6 +76,7 @@ const App = () => {
     return;
   }
 
+    const deviceId = getDeviceId();
       // wrap the whole flow in an async fn for clarity
     const registerFCM = async () => {
       try {
@@ -105,7 +118,10 @@ const App = () => {
             'Content-Type': 'application/json',
             'Authorization': `Token ${token}`,
           },
-          body: JSON.stringify({ token: currentToken }),
+                   body: JSON.stringify({
+           token: currentToken,
+           device_id: deviceId
+         }),
         });
         const data = await resp.json();
         if (!resp.ok) {
