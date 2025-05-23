@@ -38,7 +38,51 @@ import { messaging } from './firebase';
 import { getToken } from 'firebase/messaging'; 
 import { v4 as uuidv4 } from 'uuid';
 
+// 1) Banner component that asks the user for permission
+function NotificationGate({ isLoggedIn, onGrant }) {
+  const [asked, setAsked] = useState(
+    Notification.permission !== 'default'
+  );
 
+  const handleClick = async () => {
+    setAsked(true);
+    const permission = await Notification.requestPermission();
+    console.log('[FCM] Permission result:', permission);
+    if (permission === 'granted') {
+      onGrant();
+    }
+  };
+
+  if (!isLoggedIn || asked) return null;
+
+  return (
+    <div style={{
+      padding: 12,
+      background: '#fffae6',
+      textAlign: 'center',
+      borderBottom: '1px solid #ffd54f',
+      fontSize: '14px'
+    }}>
+      🔔 Would you like to enable push notifications?
+      <button
+        onClick={handleClick}
+        style={{
+          marginLeft: 12,
+          padding: '6px 12px',
+          background: '#ffa000',
+          border: 'none',
+          borderRadius: 4,
+          color: '#fff',
+          cursor: 'pointer'
+        }}
+      >
+        Yes, enable
+      </button>
+    </div>
+  );
+}
+
+// 2) Generate or retrieve a stable device ID
 export function getDeviceId() {
   let id = localStorage.getItem('deviceId');
   if (!id) {
@@ -48,39 +92,37 @@ export function getDeviceId() {
   return id;
 }
 
-
-// Helper function to get permissions safely
-const getPermissionsFromStorage = () => {
-  const stored = localStorage.getItem('permissions');
-  return stored && stored !== 'undefined' ? stored.split(',') : [];
-};
-
+// 3) Your existing App component
 const App = () => {
   const [fcmTokenForDebug, setFcmTokenForDebug] = useState('');
-  const { token, logout } = useContext(AuthContext); 
+  const { token, logout } = useContext(AuthContext);
   const isLoggedIn = !!token;
-  const [permissions] = useState(getPermissionsFromStorage());
+  const [permissions] = useState(() => {
+    const stored = localStorage.getItem('permissions');
+    return stored && stored !== 'undefined' ? stored.split(',') : [];
+  });
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleLogout = () => {
     logout();
   };
 
-  const location = useLocation(); // Get current location object
-  // Check if the current path starts with '/lessons/'
+  const location = useLocation();
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
+  // 4) Define (but don’t auto-call) your FCM setup function
   useEffect(() => {
-  if (!token) {
-    console.log('[FCM] ❌ No auth token—skipping registration until login.');
-    return;
-  }
+    if (!token) {
+      console.log('[FCM] ❌ No auth token—skipping registration until login.');
+      return;
+    }
 
     const deviceId = getDeviceId();
-      // wrap the whole flow in an async fn for clarity
-    const registerFCM = async () => {
+
+    // Expose the registration flow to a button click
+    window.registerFCM = async () => {
       try {
-        // 1) Ask browser permission if needed
+        // a) Ask permission if needed
         if (Notification.permission === 'default') {
           const permission = await Notification.requestPermission();
           console.log('[FCM] Permission result:', permission);
@@ -89,21 +131,20 @@ const App = () => {
             return;
           }
         } else if (Notification.permission === 'denied') {
-          console.warn('[FCM] Notifications have been blocked by user');
+          console.warn('[FCM] Notifications blocked by user');
           return;
         }
 
-        // 2) Register the service worker
+        // b) Register service worker
         const registration = await navigator.serviceWorker.register(
           '/firebase-messaging-sw.js'
         );
         console.log('[FCM] ✅ SW registered at', registration.scope);
 
-        // 3) Get the FCM token
+        // c) Get FCM token
         const currentToken = await getToken(messaging, {
           vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
           serviceWorkerRegistration: registration,
-          // forceRefresh: true, // uncomment if you ever need a fresh token
         });
         if (!currentToken) {
           throw new Error('FCM getToken returned null');
@@ -111,37 +152,38 @@ const App = () => {
         console.log('[FCM] ✅ Got token:', currentToken);
         setFcmTokenForDebug(currentToken);
 
-        // 4) Send it to your backend
+        // d) Send token to backend
         const resp = await fetch('/api/notifications/save-fcm-token/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Token ${token}`,
           },
-                   body: JSON.stringify({
-           token: currentToken,
-           device_id: deviceId
-         }),
+          body: JSON.stringify({
+            token: currentToken,
+            device_id: deviceId
+          }),
         });
         const data = await resp.json();
         if (!resp.ok) {
-          throw new Error(`save-fcm-token ${resp.status}: ${data.detail||JSON.stringify(data)}`);
+          throw new Error(`save-fcm-token ${resp.status}: ${data.detail || JSON.stringify(data)}`);
         }
         console.log('[FCM] ✅ Token saved:', data);
       } catch (err) {
         console.error('[FCM] ❌ Error during FCM setup:', err);
       }
     };
-
-    registerFCM();
   }, [token]);
-
-
 
 
   return (
     <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
       <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+
+      <NotificationGate
+        isLoggedIn={isLoggedIn}
+        onGrant={() => window.registerFCM()}
+      />
 
       <div className="content-wrapper">
         <Routes>
