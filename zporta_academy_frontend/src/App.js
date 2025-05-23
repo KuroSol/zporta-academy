@@ -37,8 +37,11 @@ import StudyDashboard from './components/StudyDashboard';
 import { messaging } from './firebase';
 import { getToken } from 'firebase/messaging'; 
 import { v4 as uuidv4 } from 'uuid';
+
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 // 0) Hook into the PWA install prompt
 function InstallGate({ isLoggedIn }) {
+  if (isIOS) return null;  
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
 
