@@ -1,4 +1,3 @@
-// --------------- React Frontend: App.js ---------------
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
@@ -44,13 +43,13 @@ import StudyDashboard from './components/StudyDashboard';
 // --- Platform Detection ---
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 const isStandalonePWA = () => {
-    if (isIOS) return !!navigator.standalone;
+    if (isIOS) return !!navigator.standalone; // Reliable for iOS
     return window.matchMedia('(display-mode: standalone)').matches;
 };
 
 // --- Device ID Utility ---
 const getDeviceId = () => {
-  let id = localStorage.getItem('app_deviceId'); // Use a more specific key
+  let id = localStorage.getItem('app_deviceId');
   if (!id) {
     id = uuidv4();
     localStorage.setItem('app_deviceId', id);
@@ -58,34 +57,26 @@ const getDeviceId = () => {
   return id;
 };
 
-// --- Simple Toast Notification (Replace with a proper library if needed) ---
+// --- Simple Toast Notification ---
 const ToastContext = React.createContext();
 
 function ToastProvider({ children }) {
     const [toast, setToast] = useState(null);
-
     const showToast = (message, type = 'info', duration = 3000) => {
         setToast({ message, type });
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             setToast(null);
         }, duration);
+        return () => clearTimeout(timer);
     };
-
     return (
         <ToastContext.Provider value={showToast}>
             {children}
             {toast && (
                 <div style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    padding: '10px 20px',
-                    background: toast.type === 'error' ? '#f44336' : '#4CAF50',
-                    color: 'white',
-                    borderRadius: '5px',
-                    zIndex: 10000,
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                    position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+                    padding: '10px 20px', background: toast.type === 'error' ? '#f44336' : '#4CAF50',
+                    color: 'white', borderRadius: '5px', zIndex: 10000, boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
                 }}>
                     {toast.message}
                 </div>
@@ -97,33 +88,27 @@ function ToastProvider({ children }) {
 // --- FCM Service Hook ---
 function useFCM(isLoggedIn, authToken) {
     const showToast = useContext(ToastContext);
-    const [isFcmSubscribed, setIsFcmSubscribed] = useState(false); // Track if current token is subscribed
+    const [isFcmSubscribed, setIsFcmSubscribed] = useState(() => {
+        // Initialize based on known permission and if a token was previously sent
+        return Notification.permission === 'granted' && !!localStorage.getItem('lastFCMTokenSent');
+    });
     const [lastTokenSent, setLastTokenSent] = useState(localStorage.getItem('lastFCMTokenSent'));
 
     const sendTokenToServer = useCallback(async (currentToken) => {
-        if (!authToken) {
-            console.warn('[FCM] No auth token, cannot send FCM token to server.');
-            return false;
-        }
+        if (!authToken) return false;
         const deviceId = getDeviceId();
-        console.log('[FCM] Sending token to server:', currentToken, 'Device ID:', deviceId);
         try {
             const response = await fetch('/api/notifications/save-fcm-token/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Token ${authToken}`,
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${authToken}` },
                 body: JSON.stringify({ token: currentToken, device_id: deviceId }),
             });
             const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || `Server error: ${response.status}`);
-            }
-            console.log('[FCM] Token saved on server:', data);
-            localStorage.setItem('lastFCMTokenSent', currentToken); // Store successfully sent token
+            if (!response.ok) throw new Error(data.detail || `Server error: ${response.status}`);
+            localStorage.setItem('lastFCMTokenSent', currentToken);
             setLastTokenSent(currentToken);
             setIsFcmSubscribed(true);
+            console.log('[FCM] Token saved on server:', data);
             return true;
         } catch (error) {
             console.error('[FCM] Error sending token to server:', error);
@@ -135,57 +120,44 @@ function useFCM(isLoggedIn, authToken) {
 
     const requestPermissionAndToken = useCallback(async () => {
         if (!isLoggedIn || !('Notification' in window) || !('serviceWorker' in navigator) || !messaging) {
-            console.warn('[FCM] Prerequisites for FCM not met (login, browser support, messaging init).');
+            console.warn('[FCM] Prerequisites not met.');
+            return null;
+        }
+        // On iOS, only proceed if it's a Home Screen PWA for push notifications
+        if (isIOS && !isStandalonePWA()) {
+            showToast('For notifications, please add this app to your Home Screen first.', 'info');
             return null;
         }
 
         try {
-            // --- Permission ---
             let currentPermission = Notification.permission;
             if (currentPermission === 'default') {
-                console.log('[FCM] Requesting notification permission...');
                 currentPermission = await Notification.requestPermission();
             }
 
             if (currentPermission === 'denied') {
-                console.warn('[FCM] Notification permission denied by user.');
                 showToast('Notifications are disabled. Enable them in browser/OS settings.', 'info');
                 setIsFcmSubscribed(false);
                 return null;
             }
 
             if (currentPermission === 'granted') {
-                console.log('[FCM] Notification permission granted.');
-
-                // --- Service Worker ---
                 const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                console.log('[FCM] Service Worker registered:', swRegistration.scope);
-
-                // --- Get Token ---
-                console.log('[FCM] Attempting to get FCM token...');
                 const fcmToken = await getToken(messaging, {
-                    vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw', // YOUR_VAPID_KEY
+                    vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw',
                     serviceWorkerRegistration: swRegistration,
                 });
 
                 if (fcmToken) {
-                    console.log('[FCM] Token received:', fcmToken);
-                    // Only send to server if it's a new token or hasn't been confirmed sent
                     if (fcmToken !== lastTokenSent) {
                         await sendTokenToServer(fcmToken);
                     } else {
-                        console.log('[FCM] Token is the same as last sent. No need to resend.');
-                        setIsFcmSubscribed(true); // Assume still subscribed
+                        setIsFcmSubscribed(true); // Already subscribed with this token
                     }
                     return fcmToken;
                 } else {
-                    console.warn('[FCM] No FCM token received. User may need to grant permission or A2HS on iOS.');
                     setIsFcmSubscribed(false);
-                    if (isIOS && isStandalonePWA()) {
-                       showToast('Could not enable notifications. Try again or check iPhone Settings.', 'error');
-                    } else if (isIOS) {
-                        showToast('Add to Home Screen, then try enabling notifications.', 'info');
-                    }
+                    showToast('Could not get notification token. Try again or check settings.', 'error');
                     return null;
                 }
             }
@@ -197,21 +169,27 @@ function useFCM(isLoggedIn, authToken) {
         }
         return null;
     }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent]);
-
-    // Effect to check subscription status on load if logged in
+    
+    // Effect to update subscription status if permission changes externally
     useEffect(() => {
-        if (isLoggedIn && Notification.permission === 'granted' && lastTokenSent) {
-            // Optimistically set to true if permission is granted and a token was previously sent.
-            // Could add a check here to verify token with server if needed.
-            setIsFcmSubscribed(true);
-        } else if (Notification.permission !== 'granted') {
-            setIsFcmSubscribed(false);
-        }
-    }, [isLoggedIn, lastTokenSent]);
+        const updateSubscriptionStatus = () => {
+            if (Notification.permission === 'granted' && localStorage.getItem('lastFCMTokenSent')) {
+                setIsFcmSubscribed(true);
+            } else {
+                setIsFcmSubscribed(false);
+            }
+        };
+        // Check on mount
+        updateSubscriptionStatus();
+        // Optional: Listen for permission changes (more complex, might not be needed if UI drives re-check)
+        // navigator.permissions?.query({name:'notifications'}).then(status => {
+        // status.onchange = () => updateSubscriptionStatus();
+        // });
+    }, []);
+
 
     return { requestPermissionAndToken, isFcmSubscribed, setIsFcmSubscribed };
 }
-
 
 // --- PWA Install Prompt Gate (for non-iOS) ---
 function InstallGate({ isLoggedIn }) {
@@ -219,7 +197,9 @@ function InstallGate({ isLoggedIn }) {
   const showToast = useContext(ToastContext);
 
   useEffect(() => {
-    if (isIOS || isStandalonePWA()) return;
+    // This entire component is for non-iOS PWA install prompts.
+    // It will be conditionally rendered in App.
+    if (isIOS) return;
 
     const handler = (e) => {
       e.preventDefault();
@@ -229,7 +209,7 @@ function InstallGate({ isLoggedIn }) {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  if (isIOS || !isLoggedIn || !deferredPrompt) return null;
+  if (!isLoggedIn || !deferredPrompt) return null; // Only show if logged in and prompt is available
 
   const handleInstall = async () => {
     deferredPrompt.prompt();
@@ -255,82 +235,94 @@ function NotificationControls({ isLoggedIn }) {
     const { token: authToken } = useContext(AuthContext);
     const { requestPermissionAndToken, isFcmSubscribed, setIsFcmSubscribed } = useFCM(isLoggedIn, authToken);
     const showToast = useContext(ToastContext);
-    const [showIOSA2HSGuidance, setShowIOSA2HSGuidance] = useState(false);
+    const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
+
+    // Determine if any notification UI should be shown
+    const shouldShowControls = isLoggedIn && ('Notification' in window);
 
     useEffect(() => {
-        // If on iOS, not standalone, and permission is default, show A2HS guidance
-        if (isIOS && !isStandalonePWA() && Notification.permission === 'default' && isLoggedIn) {
-            setShowIOSA2HSGuidance(true);
+        if (isIOS && isLoggedIn && !isStandalonePWA() && Notification.permission === 'default' && !isFcmSubscribed) {
+            setShowA2HSGuidance(true);
         } else {
-            setShowIOSA2HSGuidance(false);
+            setShowA2HSGuidance(false);
         }
-    }, [isLoggedIn]);
+    }, [isLoggedIn, isFcmSubscribed]);
+
 
     const handleEnableNotifications = async () => {
         if (isIOS && !isStandalonePWA()) {
+            setShowA2HSGuidance(true); // Re-emphasize A2HS if they click enable in Safari
             showToast('Please add to Home Screen first to enable notifications.', 'info');
-            setShowIOSA2HSGuidance(true); // Ensure guidance is visible
             return;
         }
         const token = await requestPermissionAndToken();
         if (token) {
             showToast('Notifications enabled!', 'success');
+            // isFcmSubscribed is updated by useFCM
         }
-        // isFcmSubscribed state is updated within useFCM
     };
 
     const handleDisableNotifications = async () => {
-        // This is a client-side "unsubscribe".
-        // For a full unsubscribe, you'd also need to remove the token from your server.
-        // And potentially use `deleteToken` from Firebase SDK if you want to invalidate it.
-        // For simplicity here, we'll just update UI state and clear local storage.
+        // Client-side disable: update UI, clear local token.
+        // For full server-side removal, an API call to delete the token would be needed.
         localStorage.removeItem('lastFCMTokenSent');
-        setIsFcmSubscribed(false); // Update UI state
-        showToast('Notifications have been disabled on this device.', 'info');
-        // Note: This doesn't stop the server from *trying* to send if it still has the token.
-        // A robust solution would involve an API call to tell the server to delete this device's token.
-        console.warn('[FCM] User opted to disable. Consider server-side token removal for full effect.');
+        setIsFcmSubscribed(false);
+        showToast('Notifications disabled on this device.', 'info');
+        // Potentially: Tell user they might need to disable in OS settings too for full effect.
+        if (Notification.permission === 'granted' && isIOS) {
+             showToast('To fully stop notifications, also check iPhone Settings > Notifications > Zporta Academy.', 'info', 5000);
+        }
     };
 
+    if (!shouldShowControls) return null;
 
-    if (!isLoggedIn || !('Notification' in window)) return null;
-
-    if (showIOSA2HSGuidance) {
+    // If on iOS and not yet A2HS, show A2HS guidance and nothing else from this component.
+    if (showA2HSGuidance) {
         return (
             <div style={{ padding: '10px', background: '#fff9c4', textAlign: 'center', borderBottom: '1px solid #fff176', fontSize: '14px' }}>
                 To enable notifications on iOS, first add this app to your Home Screen (Tap Share icon, then 'Add to Home Screen').
-                <button onClick={() => setShowIOSA2HSGuidance(false)} style={{ marginLeft: 10, fontSize: '12px' }}>Dismiss</button>
+                <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10, fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' }}>Dismiss</button>
+            </div>
+        );
+    }
+
+    // If permission is denied, show message and hide controls.
+    if (Notification.permission === 'denied') {
+        return (
+            <div style={{ padding: '10px', background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2', fontSize: '14px' }}>
+                Notifications are blocked. Please enable them in your browser or OS settings.
+            </div>
+        );
+    }
+
+    // If already subscribed (or permission granted and token sent), don't show enable prompt.
+    // Show "Disable" option or nothing.
+    if (isFcmSubscribed) {
+         // You can choose to show nothing, or only the disable button if desired.
+         // For now, let's show the disable button if subscribed.
+        return (
+            <div style={{ padding: '10px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #c8e6c9', fontSize: '14px' }}>
+                <span>Push notifications are ON for this device.</span>
+                <button onClick={handleDisableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    Disable
+                </button>
             </div>
         );
     }
     
-    if (Notification.permission === 'denied') {
+    // If permission is 'default' (and not iOS non-A2HS), show "Enable" prompt.
+    if (Notification.permission === 'default') {
         return (
-            <div style={{ padding: '10px', background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2', fontSize: '14px' }}>
-                Notifications are blocked. Please enable them in your browser/OS settings.
+            <div style={{ padding: '10px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #c8e6c9', fontSize: '14px' }}>
+                <span>Enable push notifications for updates?</span>
+                <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    Enable
+                </button>
             </div>
         );
     }
-
-    return (
-        <div style={{ padding: '10px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #c8e6c9', fontSize: '14px' }}>
-            {isFcmSubscribed ? (
-                <>
-                    <span>Push notifications are ON for this device.</span>
-                    <button onClick={handleDisableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        Disable
-                    </button>
-                </>
-            ) : (
-                <>
-                    <span>Enable push notifications for updates?</span>
-                    <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        Enable
-                    </button>
-                </>
-            )}
-        </div>
-    );
+    
+    return null; // Fallback, should not be reached if logic is correct
 }
 
 
@@ -349,8 +341,7 @@ const App = () => {
   const handleLogout = () => { logout(); };
 
   useEffect(() => {
-    console.log('[App] Mount/Update. isIOS:', isIOS, 'isStandalone:', isStandalonePWA(), 'isLoggedIn:', isLoggedIn);
-    // Any app-wide initializations or checks can go here.
+    console.log('[App] Mount/Update. isIOS:', isIOS, 'isStandalonePWA:', isStandalonePWA(), 'isLoggedIn:', isLoggedIn);
   }, [isLoggedIn]);
 
   if (isAuthLoading) {
@@ -362,7 +353,10 @@ const App = () => {
         <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
           <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
           
+          {/* PWA Install prompt only for non-iOS */}
           {!isIOS && <InstallGate isLoggedIn={isLoggedIn} />}
+          
+          {/* Notification controls: handles iOS A2HS guidance, permission prompts, and subscribed state */}
           <NotificationControls isLoggedIn={isLoggedIn} />
 
           <div className="content-wrapper">

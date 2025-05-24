@@ -1,7 +1,3 @@
-// --------------- Firebase Service Worker: public/firebase-messaging-sw.js ---------------
-// Must be in the public folder
-
-// Use the same Firebase SDK version as your app for compatibility
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js'); // Or your specific version
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
