@@ -2,11 +2,7 @@
 
 // 1) Core Firebase imports
 import { initializeApp } from 'firebase/app';
-import {
-  getMessaging,
-  getToken as firebaseGetToken,
-  onMessage
-} from 'firebase/messaging';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // 2) Your Firebase web config
 const firebaseConfig = {
@@ -21,17 +17,16 @@ const firebaseConfig = {
 
 // 3) Initialize Firebase + Messaging
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+export const messaging = getMessaging(app);
 
-// 4) YOUR exact Web Push (VAPID) public key from Firebase Console!
-const PUBLIC_VAPID_KEY =
+// 4) Your exact Web Push (VAPID) public key from Firebase Console
+const PUBLIC_VAPID_KEY = 
   'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw';
 
 /**
  * requestPermissionAndGetToken()
- *  - Call this from a click handler (e.g. right after login or when user
- *    taps “Enable Notifications”)
- *  - It asks permission, registers SW, then returns the FCM token.
+ * - Call this from a click handler (e.g. right after login)
+ * - It asks permission, registers SW, then returns the FCM token.
  */
 export async function requestPermissionAndGetToken() {
   // A) Ask the user to allow notifications
@@ -41,14 +36,13 @@ export async function requestPermissionAndGetToken() {
   }
 
   // B) Register the Service Worker at your site root
-  //    Make sure public/firebase-messaging-sw.js exists and is deployed
   const swRegistration = await navigator.serviceWorker.register(
     '/firebase-messaging-sw.js'
   );
   console.log('[firebase.js] SW registered at', swRegistration.scope);
 
-  // C) Now fetch the FCM token, passing your VAPID key + the SW registration
-  const fcmToken = await firebaseGetToken(messaging, {
+  // C) Fetch the FCM token
+  const fcmToken = await getToken(messaging, {
     vapidKey: PUBLIC_VAPID_KEY,
     serviceWorkerRegistration: swRegistration
   });
@@ -61,5 +55,5 @@ export async function requestPermissionAndGetToken() {
   return fcmToken;
 }
 
-// Export messaging for onMessage handlers if you need
-export { messaging, onMessage };
+// 5) Optionally export onMessage if you want to handle incoming pushes in-app
+export { onMessage };

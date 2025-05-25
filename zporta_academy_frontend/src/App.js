@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
+// --- Firebase Messaging imports (for fetching the token) ---
 import { messaging, requestPermissionAndGetToken as fetchFcmToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
 

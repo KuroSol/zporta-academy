@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'; // Keep Link
 import { AuthContext } from './context/AuthContext';
 import apiClient from './api';
 import styles from './Login.module.css'; // <-- Import the CSS module
-
+import { requestPermissionAndGetToken } from './firebase';
+import { v4 as uuidv4 } from 'uuid';
 // --- Placeholder for AI Image ---
 // Ideally, host this image somewhere accessible (e.g., your public folder or a CDN)
 // For example purposes, using a placeholder service or a relative path if in public folder:
@@ -152,6 +153,18 @@ useEffect(() => {
             console.log("🔍 Standard login response:", data);
             login(data, data.token);
              showMessage("Login successful!", 'success'); // Show success briefly
+            // —— FCM: ask permission & get token on successful login ——
+            try {
+            const fcmToken = await requestPermissionAndGetToken();
+            await apiClient.post(
+                '/api/notifications/save-fcm-token/',
+                { token: fcmToken, device_id: uuidv4() },
+                { headers: { Authorization: `Token ${data.token}` } }
+            );
+            console.log('[Login] FCM token saved on server');
+            } catch (err) {
+            console.warn('[Login] Could not register FCM:', err);
+            }
 
         } catch (error) {
             console.error('Error during standard login:', error);
