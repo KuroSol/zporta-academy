@@ -41,8 +41,13 @@ import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
 
 // --- Platform Detection ---
+// detect iOS device
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+// detect Chrome on iOS
+const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 const isAndroid = /Android/.test(navigator.userAgent);
+
+
 
 const isStandalonePWA = () => {
     if (isIOS) return !!navigator.standalone;
@@ -159,6 +164,10 @@ function useFCM(isLoggedIn, authToken) {
     }, [authToken]);
 
     const requestPermissionAndGetToken = useCallback(async (isProactive = false) => {
+        if (isIosChrome) {
+            console.warn('[FCM] skipping push on Chrome iOS (not supported)');
+            return null;
+        }
         setAttemptedRegistration(true); // Mark that an attempt has been made
         if (!isLoggedIn || typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
             setFcmError('Notifications not supported or user not logged in.');
@@ -276,9 +285,12 @@ function InstallGate({ isLoggedIn }) {
 function NotificationControls({ isLoggedIn }) {
     const { requestPermissionAndGetToken, isFcmSubscribed, setIsFcmSubscribed, fcmError, setAttemptedRegistration } = useFCM(isLoggedIn, useContext(AuthContext).token);
     const showToast = useContext(ToastContext);
-    const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
+    
+  const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
 
     useEffect(() => {
+         // 1️⃣ On Chrome for iOS web push is impossible – skip all Push UI
+    if (isIosChrome) return null;
         if (isIOS && iosSupportsWebPush && isLoggedIn && !isStandalonePWA() && Notification.permission === 'default' && !isFcmSubscribed) {
             setShowA2HSGuidance(true);
         } else {
