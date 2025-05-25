@@ -2,7 +2,6 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 import { messaging } from './firebase'; // Assuming firebase.js exports messaging
-import { requestNotificationPermission } from './firebase';
 import { getToken } from 'firebase/messaging';
 import { v4 as uuidv4 } from 'uuid';
 

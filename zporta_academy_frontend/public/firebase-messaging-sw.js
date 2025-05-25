@@ -1,18 +1,22 @@
-// public/firebase-messaging-sw.js
 
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// ✅ Correct Firebase config
-firebase.initializeApp({
-  apiKey: "AIzaSyApf4q80eDu3A70eDf5khygnNgdELL0-u0",
+const firebaseConfig = {
+  apiKey: "AIzaSyApf4q80uDu3A70eDf5khygnNgdELL0-u0",
   authDomain: "zporta-academy-web.firebaseapp.com",
   projectId: "zporta-academy-web",
-  storageBucket: "zporta-academy-web.appspot.com", // ❗FIXED typo: should be appspot.com not firebasestorage.app
+  storageBucket: "zporta-academy-web.firebasestorage.app",
   messagingSenderId: "798909537942",
   appId: "1:798909537942:web:e5e7d4b1f41c7c216a6cb7",
   measurementId: "G-DZB2R5TFCE"
-});
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+} else {
+  firebase.app();
+}
 
 const messaging = firebase.messaging();
 
@@ -28,25 +32,25 @@ messaging.onBackgroundMessage(function(payload) {
     tag: payload.data?.tag,
     renotify: payload.data?.renotify === 'true',
     data: {
-      url: payload.data?.url || '/',
-      ...payload.data
+        url: payload.data?.url || '/',
+        ...payload.data 
     },
   };
-
+  
   if (payload.data?.actions) {
     try {
-      notificationOptions.actions = JSON.parse(payload.data.actions);
+        notificationOptions.actions = JSON.parse(payload.data.actions);
     } catch (e) {
-      console.error("Error parsing actions from payload", e);
+        console.error("Error parsing actions from payload", e);
     }
   }
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 self.addEventListener('notificationclick', function(event) {
   console.log('[firebase-messaging-sw.js] Notification click Received.', event.notification);
-  event.notification.close();
+  event.notification.close(); 
 
   const targetUrl = event.notification.data?.url || '/';
 
