@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 // --- Firebase Messaging imports (for fetching the token) ---
-import { messaging, requestPermissionAndGetToken as fetchFcmToken } from './firebase';
+import { requestPermissionAndGetToken as fetchFcmToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
@@ -160,7 +160,7 @@ function useFCM(isLoggedIn, authToken) {
 
     const requestPermissionAndGetToken = useCallback(async (isProactive = false) => {
         setAttemptedRegistration(true); // Mark that an attempt has been made
-        if (!isLoggedIn || typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !messaging) {
+        if (!isLoggedIn || typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
             setFcmError('Notifications not supported or user not logged in.');
             if (!isProactive) showToast('Notifications are not supported on this browser or you are not logged in.', 'error');
             return null;
@@ -301,6 +301,20 @@ function NotificationControls({ isLoggedIn }) {
 
     if (!isLoggedIn || typeof Notification === 'undefined') return null;
     // Do not show any controls if on iOS and web push is not supported by the OS version
+    // Detect “Chrome on iOS” (CriOS in userAgent) and skip all Push UI
+    const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
+    if (isIosChrome) {
+        // either return null to hide everything…
+        return null;
+        // …or return a friendly fallback:
+        // return (
+        //   <div style={{ padding: 12, background: '#fff3e0', textAlign: 'center' }}>
+        //     Push notifications aren’t supported in Chrome on iOS. Please open this site in Safari.
+        //   </div>
+        // );
+    }
+
+    // Now the existing “iOS but not 16.4+ PWA” check remains:
     if (isIOS && !iosSupportsWebPush) return null;
 
 
