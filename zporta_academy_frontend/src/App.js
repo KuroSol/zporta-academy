@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 // --- Firebase Messaging imports (for fetching the token) ---
-import { requestPermissionAndGetToken as fetchFcmToken } from './firebase';
+import { requestPermissionAndGetToken as fetchFcmToken } from './firebase'; // This is from firebase.js
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
@@ -41,18 +41,13 @@ import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
 
 // --- Platform Detection ---
-// detect iOS device
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-// detect Chrome on iOS
 const isAndroid = /Android/.test(navigator.userAgent);
-// detect “Chrome on iOS” (where web-push is impossible)
-const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
-
-
+const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent); // Chrome on iOS
 
 const isStandalonePWA = () => {
-    if (isIOS) return !!navigator.standalone;
-    return window.matchMedia('(display-mode: standalone)').matches;
+    if (isIOS) return !!navigator.standalone; // For iOS
+    return window.matchMedia('(display-mode: standalone)').matches; // For other browsers
 };
 
 const getIOSVersion = () => {
@@ -80,7 +75,7 @@ function ToastProvider({ children }) {
     const showToast = (message, type = 'info', duration = 4000) => {
         setToast({ message, type });
         const timer = setTimeout(() => setToast(null), duration);
-        return () => clearTimeout(timer);
+        return () => clearTimeout(timer); // Cleanup timer on unmount or if new toast shown
     };
     return (
         <ToastContext.Provider value={showToast}>
@@ -103,7 +98,7 @@ function ToastProvider({ children }) {
 function useFCM(isLoggedIn, authToken) {
     const showToast = useContext(ToastContext);
     const [isFcmSubscribed, setIsFcmSubscribed] = useState(false);
-    const [lastTokenSent, setLastTokenSent] = useState(null);
+    const [lastTokenSent, setLastTokenSent] = useState(localStorage.getItem('lastFCMTokenSent')); // Initialize from localStorage
     const [fcmError, setFcmError] = useState('');
     const [attemptedRegistration, setAttemptedRegistration] = useState(false);
 
@@ -118,6 +113,7 @@ function useFCM(isLoggedIn, authToken) {
         } else {
             setIsFcmSubscribed(false);
             if (permission !== 'granted' && tokenStored) {
+                // If permission is no longer granted, but we have a stored token, clear it
                 localStorage.removeItem('lastFCMTokenSent');
                 setLastTokenSent(null);
             }
@@ -126,32 +122,35 @@ function useFCM(isLoggedIn, authToken) {
 
     useEffect(() => {
         updateSubscriptionStatus(); // Initial check
-        if (navigator.permissions) {
+        if (navigator.permissions && typeof navigator.permissions.query === 'function') {
             navigator.permissions.query({ name: 'notifications' }).then((status) => {
                 status.onchange = () => {
                     console.log('[FCM] Notification permission changed externally.');
-                    updateSubscriptionStatus();
+                    updateSubscriptionStatus(); // Re-check status on external change
                 };
-            });
+            }).catch(err => console.warn("[FCM] Error querying notification permissions:", err));
         }
     }, [updateSubscriptionStatus]);
 
 
     const sendTokenToServer = useCallback(async (currentToken) => {
         if (!authToken) {
-            setFcmError('Authentication required.');
+            setFcmError('Authentication required to save FCM token.');
+            console.warn('[FCM] Auth token not available for sending FCM token.');
             return false;
         }
         const deviceId = getDeviceId();
-        setFcmError('');
+        setFcmError(''); // Clear previous errors
         try {
-            const response = await fetch('/api/notifications/save-fcm-token/', {
+            // Replace with your actual API endpoint and client (e.g., apiClient from your project)
+            const response = await fetch('/api/notifications/save-fcm-token/', { // Ensure this matches your API structure
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${authToken}` },
                 body: JSON.stringify({ token: currentToken, device_id: deviceId }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || `Server error: ${response.status}`);
+            
             localStorage.setItem('lastFCMTokenSent', currentToken);
             setLastTokenSent(currentToken); // Update state
             setIsFcmSubscribed(true);
@@ -162,90 +161,107 @@ function useFCM(isLoggedIn, authToken) {
             setFcmError(`Failed to save token: ${error.message}`);
             return false;
         }
-    }, [authToken]);
+    }, [authToken]); // Dependency on authToken
 
     const requestPermissionAndGetToken = useCallback(async (isProactive = false) => {
         if (isIosChrome) {
-            console.warn('[FCM] skipping push on Chrome iOS (not supported)');
+            console.warn('[FCM] Skipping push on Chrome iOS (not supported).');
+            if (!isProactive) showToast('Notifications not supported on Chrome for iOS.', 'info');
             return null;
         }
-        setAttemptedRegistration(true); // Mark that an attempt has been made
+        
+        setAttemptedRegistration(true); // Mark that an attempt has been made for this session/interaction
+
         if (!isLoggedIn || typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
-            setFcmError('Notifications not supported or user not logged in.');
-            if (!isProactive) showToast('Notifications are not supported on this browser or you are not logged in.', 'error');
+            const msg = 'Notifications not supported or user not logged in.';
+            setFcmError(msg);
+            if (!isProactive) showToast(msg, 'error');
+            console.warn('[FCM]', msg);
             return null;
         }
+
+        // Crucial iOS PWA check
         if (isIOS && (!isStandalonePWA() || !iosSupportsWebPush)) {
-            if (!isProactive || (isIOS && !isStandalonePWA() && iosSupportsWebPush) ) { // Show A2HS only if interactive or iOS needs A2HS
-                 showToast(iosSupportsWebPush ? 'For notifications, add to Home Screen first.' : 'Push notifications on iOS require iOS 16.4+ and adding to Home Screen.', 'info');
+            const message = iosSupportsWebPush 
+                ? 'For notifications, please add Zporta Academy to your Home Screen first.' 
+                : 'Push notifications on iOS require iOS 16.4+ and adding the app to your Home Screen.';
+            if (!isProactive || (isIOS && !isStandalonePWA() && iosSupportsWebPush)) { // Show A2HS only if interactive or iOS needs A2HS
+                 showToast(message, 'info', 6000); // Longer duration for important info
             }
+            console.warn('[FCM] iOS PWA conditions not met for push notifications.');
             return null;
         }
-        setFcmError('');
+
+        setFcmError(''); // Clear previous errors
 
         try {
             let currentPermission = Notification.permission;
             if (currentPermission === 'default') {
-                // For proactive, we might not want to pop the dialog immediately without context,
-                // but for a button click, it's fine.
-                // However, some browsers block requestPermission if not user-initiated.
-                // Let's assume if isProactive is true, we are okay with it possibly not showing a prompt
-                // and relying on a later button click if needed.
-                // For now, we always request if default.
                 console.log('[FCM] Permission is default, requesting...');
-                currentPermission = await Notification.requestPermission();
+                // Notification.requestPermission() returns a promise that resolves with the new permission state
+                currentPermission = await Notification.requestPermission(); // This is the browser's permission prompt
             }
 
             if (currentPermission === 'denied') {
-                if (!isProactive) showToast('Notifications are disabled. Check browser/OS settings.', 'info');
+                if (!isProactive) showToast('Notifications are disabled. Please check your browser or OS settings.', 'info');
                 setIsFcmSubscribed(false);
                 localStorage.removeItem('lastFCMTokenSent'); setLastTokenSent(null);
+                console.warn('[FCM] Notification permission denied.');
                 return null;
             }
 
             if (currentPermission === 'granted') {
-                // permission granted → fetch token via our firebase.js wrapper
-                const fcmToken = await fetchFcmToken();
+                console.log('[FCM] Notification permission granted. Fetching token...');
+                // fetchFcmToken is the imported function from firebase.js
+                const fcmToken = await fetchFcmToken(); 
 
                 if (fcmToken) {
                     console.log('[FCM] Token received:', fcmToken);
-                    if (fcmToken !== lastTokenSent) { // Check against state `lastTokenSent`
+                    if (fcmToken !== lastTokenSent) {
                         const success = await sendTokenToServer(fcmToken);
-                        if(success && !isProactive) showToast('Notifications enabled!', 'success');
+                        if(success && !isProactive) showToast('Notifications enabled successfully!', 'success');
                     } else {
-                        setIsFcmSubscribed(true);
-                        if(!isProactive) showToast('Notifications already active.', 'info');
+                        setIsFcmSubscribed(true); // Already subscribed with the same token
+                        if(!isProactive) showToast('Notifications are already active.', 'info');
+                        console.log('[FCM] Token is current, no server update needed.');
                     }
                     return fcmToken;
                 } else {
-                    setIsFcmSubscribed(false);
-                    setFcmError('Could not get notification token. Ensure permissions are granted.');
-                    if (!isProactive) showToast('Failed to get token. Check settings.', 'error');
+                    setIsFcmSubscribed(false); // Ensure state reflects failure
+                    const msg = 'Could not get notification token. Ensure permissions are granted and service worker is active.';
+                    setFcmError(msg);
+                    if (!isProactive) showToast('Failed to get notification token. Check settings.', 'error');
+                    console.error('[FCM]', msg);
                     return null;
                 }
             }
         } catch (error) {
             console.error('[FCM] Error in requestPermissionAndGetToken:', error);
-            setFcmError(`Notification error: ${error.message}`);
-            if (!isProactive) showToast(`Notification error: ${error.message}`, 'error');
-            setIsFcmSubscribed(false);
+            const errorMsg = error.message.includes('Notification permission not granted') 
+                ? 'Notification permission was not granted.'
+                : `Notification error: ${error.message}`;
+            setFcmError(errorMsg);
+            if (!isProactive) showToast(errorMsg, 'error');
+            setIsFcmSubscribed(false); // Ensure state reflects failure
             return null;
         }
-        return null;
-    }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent]); // Added lastTokenSent
+        return null; // Should not be reached if logic is correct
+    }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent]);
 
-    // Proactive attempt to register after login
+    // Proactive attempt to register after login, IF conditions are met
     useEffect(() => {
-        // only inside the installed PWA
-        if (!isStandalonePWA()) return;
+        if (!isStandalonePWA()) { // Only for PWAs
+            console.log('[FCM] Not a PWA, skipping proactive registration.');
+            return;
+        }
+        // Attempt only if logged in, auth token exists, not already subscribed, permission is default, and no prior attempt in this session
         if (isLoggedIn && authToken && !isFcmSubscribed && Notification.permission === 'default' && !attemptedRegistration) {
-            // Only attempt proactively if permission is default and we haven't tried yet this session
-            // And for iOS, only if it's A2HS and supports push
             if (isIOS && (!isStandalonePWA() || !iosSupportsWebPush)) {
-                return; // Don't proactively try on iOS if not A2HS or not supported
+                console.log('[FCM] iOS PWA conditions not met for proactive registration.');
+                return; 
             }
             console.log('[FCM] Proactively attempting notification registration after login...');
-            requestPermissionAndGetToken(true); // true for proactive, less verbose
+            requestPermissionAndGetToken(true); // true for proactive (less verbose toasts)
         }
     }, [isLoggedIn, authToken, isFcmSubscribed, requestPermissionAndGetToken, attemptedRegistration]);
 
@@ -259,27 +275,46 @@ function InstallGate({ isLoggedIn }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Do not show install prompt on iOS (uses "Add to Home Screen" manually)
+    // or if already a PWA on Android, or if not logged in.
     if (isIOS || (isAndroid && isStandalonePWA()) || !isLoggedIn) {
         setDeferredPrompt(null); setIsVisible(false); return;
     }
-    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); setIsVisible(true); };
+    const handler = (e) => { 
+        e.preventDefault(); 
+        setDeferredPrompt(e); 
+        setIsVisible(true); 
+        console.log('[InstallGate] beforeinstallprompt event fired.');
+    };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [isLoggedIn]);
+  }, [isLoggedIn]); // Re-evaluate if login status changes
 
   if (!isVisible || !deferredPrompt) return null;
+
   const handleInstall = async () => {
+    if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') showToast('App installed successfully!', 'success');
-    setDeferredPrompt(null); setIsVisible(false);
+    if (outcome === 'accepted') {
+        showToast('Zporta Academy installed successfully!', 'success');
+        console.log('[InstallGate] PWA installation accepted.');
+    } else {
+        console.log('[InstallGate] PWA installation dismissed.');
+    }
+    setDeferredPrompt(null); // Prompt can only be used once
+    setIsVisible(false);
   };
-  const handleDismiss = () => setIsVisible(false);
+  const handleDismiss = () => {
+    setIsVisible(false);
+    console.log('[InstallGate] Install prompt dismissed by user.');
+  };
+
   return (
-    <div style={{ padding: '10px', background: '#e0f7fa', textAlign: 'center', borderBottom: '1px solid #b2ebf2', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span>Install Zporta Academy!</span>
-      <button onClick={handleInstall} style={{ marginLeft: 10, padding: '5px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Install</button>
-      <button onClick={handleDismiss} style={{ marginLeft: 10, fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' }}>Dismiss</button>
+    <div style={{ padding: '10px', background: '#e0f7fa', textAlign: 'center', borderBottom: '1px solid #b2ebf2', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+      <span>Install Zporta Academy for the best experience!</span>
+      <button onClick={handleInstall} style={{ padding: '5px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Install</button>
+      <button onClick={handleDismiss} style={{ fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' }}>Dismiss</button>
     </div>
   );
 }
@@ -287,70 +322,72 @@ function InstallGate({ isLoggedIn }) {
 
 // --- Notification Controls Component ---
 export function NotificationControls({ isLoggedIn }) {
-  // ─── ① Hooks (always first, unconditionally) ──────────────────────────
   const showToast = useContext(ToastContext);
-  const { token } = useContext(AuthContext);
+  const { token: authToken } = useContext(AuthContext); // Get authToken for useFCM
   const {
     requestPermissionAndGetToken,
     isFcmSubscribed,
-    setIsFcmSubscribed,
+    setIsFcmSubscribed, // To manually update state if needed
     fcmError,
-    setAttemptedRegistration
-  } = useFCM(isLoggedIn, token);
+    setAttemptedRegistration // To reset attempt flag for manual interaction
+  } = useFCM(isLoggedIn, authToken); // Pass authToken to useFCM
   const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
 
-  // detect Chrome on iOS
-  const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
-
-  // ─── ② Effects (must come *before* any returns) ─────────────────────────
+  // Effect to show "Add to Home Screen" guidance on iOS if applicable
   useEffect(() => {
     if (
       isIOS &&
       iosSupportsWebPush &&
-      !isStandalonePWA() &&
-      Notification.permission === 'default' &&
-      !isFcmSubscribed
+      !isStandalonePWA() && // Only if NOT yet a PWA
+      Notification.permission === 'default' && // Only if permission hasn't been granted/denied
+      !isFcmSubscribed // And not already subscribed
     ) {
       setShowA2HSGuidance(true);
     } else {
       setShowA2HSGuidance(false);
     }
-  }, [isFcmSubscribed]);
+  }, [isFcmSubscribed]); // Re-check when subscription status changes
 
-  // ─── ② Early returns (now safe: after hooks) ──────────────────────────
-  if (!isStandalonePWA()) return null;     // only inside installed PWA
-  if (isIosChrome)            return null; // Chrome on iOS can’t do web-push
-  if (!isLoggedIn)            return null;
-  if (typeof Notification === 'undefined') return null;
-  if (isIOS && !iosSupportsWebPush) return null;
-
-  // ─── ② Effects (before any return) ───────────────────────────────────────
-
-
-  // ─── ④ Handlers ───────────────────────────────────────────────────────────
+  // Early returns for unsupported scenarios
+  if (!isStandalonePWA()) return null; // Only show controls inside an installed PWA
+  if (isIosChrome) return null;        // Web push not supported on Chrome for iOS
+  if (!isLoggedIn) return null;        // User must be logged in
+  if (typeof Notification === 'undefined') return null; // Notifications API not available
+  if (isIOS && !iosSupportsWebPush) { // iOS version too old
+      return (
+          <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d' }}>
+              Push notifications on iOS require iOS 16.4 or later.
+          </div>
+      );
+  }
+  
   const handleEnableNotifications = async () => {
-    setAttemptedRegistration(false);
-    await requestPermissionAndGetToken(false);
+    setAttemptedRegistration(false); // Reset attempt flag for this manual interaction
+    await requestPermissionAndGetToken(false); // `false` for non-proactive (shows more toasts)
   };
+
   const handleDisableNotifications = () => {
+    // Basic client-side "disable" - doesn't unsubscribe from FCM server-side yet
+    // To fully unsubscribe, you'd need to delete the token from your server
     localStorage.removeItem('lastFCMTokenSent');
     setIsFcmSubscribed(false);
     showToast('Notifications disabled on this device.', 'info');
+    // For iOS, revoking permission is done in OS settings
     if (Notification.permission === 'granted' && isIOS && iosSupportsWebPush) {
       showToast(
         'To fully stop notifications, also check iPhone Settings → Notifications → Zporta Academy.',
         'info',
-        5000
+        6000 // Longer duration
       );
     }
+    // Note: This doesn't revoke the permission if already granted. User has to do that in browser/OS settings.
   };
 
-  // ─── ⑤ Render UI ──────────────────────────────────────────────────────────
   if (showA2HSGuidance) {
     return (
-      <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d' }}>
-        To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first.&nbsp;
-        <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10 }}>Dismiss</button>
+      <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        <span>To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first.</span>
+        <button onClick={() => setShowA2HSGuidance(false)} style={{ padding: '3px 8px', fontSize: '12px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white' }}>Dismiss</button>
       </div>
     );
   }
@@ -358,31 +395,34 @@ export function NotificationControls({ isLoggedIn }) {
   if (Notification.permission === 'denied') {
     return (
       <div style={{ padding: 12, background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2' }}>
-        Notifications are blocked. Please enable them in your browser/OS settings.
+        Notifications are blocked. Please enable them in your browser/OS settings to receive updates.
       </div>
     );
   }
 
   if (isFcmSubscribed) {
     return (
-      <div style={{ padding: 12, background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #a5d6a7' }}>
-        Push notifications are ON.
-        <button onClick={handleDisableNotifications} style={{ marginLeft: 10 }}>Disable</button>
+      <div style={{ padding: 12, background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #a5d6a7', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        <span>Push notifications are ON for this device.</span>
+        <button onClick={handleDisableNotifications} style={{ padding: '5px 10px', background: '#ffc107', color: 'black', border: 'none', borderRadius: '4px' }}>Disable</button>
       </div>
     );
   }
 
+  // If permission is 'default', offer to enable
   if (Notification.permission === 'default') {
     return (
-      <div style={{ padding: 12, background: '#e3f2fd', textAlign: 'center', borderBottom: '1px solid #90caf9' }}>
-        Enable push notifications?
-        <button onClick={handleEnableNotifications} style={{ marginLeft: 10 }}>Enable</button>
-        {fcmError && <p style={{ color: '#c62828', marginTop: 8 }}>{fcmError}</p>}
+      <div style={{ padding: 12, background: '#e3f2fd', textAlign: 'center', borderBottom: '1px solid #90caf9', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div>
+            <span>Enable push notifications to stay updated?</span>
+            <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}>Enable</button>
+        </div>
+        {fcmError && <p style={{ color: '#c62828', marginTop: 0, fontSize: '12px' }}>Error: {fcmError}</p>}
       </div>
     );
   }
 
-  return null;
+  return null; // Fallback, should ideally be covered by above states
 }
 
 
@@ -390,69 +430,91 @@ export function NotificationControls({ isLoggedIn }) {
 const App = () => {
   const { token, logout, isAuthLoading } = useContext(AuthContext);
   const isLoggedIn = !!token;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // For sidebar
   const location = useLocation();
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
 
-  const handleLogout = () => { logout(); };
+  const handleLogout = () => { 
+    logout(); 
+    // Optionally, clear FCM token from localStorage if you want to force re-registration on next login
+    // localStorage.removeItem('lastFCMTokenSent'); 
+  };
 
   useEffect(() => {
-    console.log('[App] Mount/Update. isIOS:', isIOS, 'iosSupportsWebPush:', iosSupportsWebPush, 'isStandalonePWA:', isStandalonePWA(), 'isLoggedIn:', isLoggedIn, 'Notification.permission:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A');
-  }, [isLoggedIn]);
+    // General app status logging
+    console.log('[App] Status Update. LoggedIn:', isLoggedIn, 'PWA:', isStandalonePWA(), 'iOS:', isIOS, 'iOS Push Support:', iosSupportsWebPush, 'Notification Perm:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A');
+  }, [isLoggedIn, location.pathname]); // Log on login status or path change
 
   if (isAuthLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f0f0', color: '#333' }}>Loading App...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f0f0', color: '#333', fontSize: '18px' }}>Loading Zporta Academy...</div>;
   }
 
+  // Determine when to show InstallGate and NotificationControls
+  // Show install prompt only if logged in, not on iOS (manual A2HS), and not already PWA on Android
   const showInstallGate = isLoggedIn && !isIOS && (!isAndroid || (isAndroid && !isStandalonePWA()));
+  // Show notification controls only if logged in (the component itself has PWA checks)
   const showNotificationControls = isLoggedIn;
+
 
   return (
     <ToastProvider>
         <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
-          <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+          {isLoggedIn && <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />}
           
-          {showInstallGate && <InstallGate isLoggedIn={isLoggedIn} />}
-          {showNotificationControls && <NotificationControls isLoggedIn={isLoggedIn} />}
+          <div className="main-content"> {/* Wrapper for content that is not sidebar/bottom menu */}
+            {showInstallGate && <InstallGate isLoggedIn={isLoggedIn} />}
+            {/* NotificationControls will only render if PWA conditions are met within the component */}
+            {showNotificationControls && <NotificationControls isLoggedIn={isLoggedIn} />}
 
-          <div className="content-wrapper">
-            <Routes>
-              {/* ... (routes are unchanged) ... */}
-              <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/profile" replace />} />
-              <Route path="/password-reset" element={<PasswordReset />} />
-              <Route path="/reset-password-confirm/:uid/:token" element={<PasswordResetConfirm />} />
-              <Route path="/change-password" element={isLoggedIn ? <ChangePassword token={token} /> : <Navigate to="/login" replace />} />
-              <Route path="/notifications" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
-              <Route path="/alerts" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
-              <Route path="/guide-requests" element={isLoggedIn ? <GuideRequestsPage /> : <Navigate to="/login" replace />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/home" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" replace />} />
-              <Route path="/profile" element={isLoggedIn ? <Profile onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
-              <Route path="/learn" element={<Explorer />} />
-              <Route path="/explore" element={<UserPosts />} />
-              <Route path="/guides" element={<GuideList />} />
-              <Route path="/guide/:username" element={<PublicGuideProfile />} />
-              <Route path="/posts/*" element={<PostDetail />} />
-              <Route path="/courses/:username/:date/:subject/:courseTitle" element={<CourseDetail />} />
-              <Route path="/lessons/:username/:subject/:date/:lessonSlug" element={<LessonDetail />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-cancel" element={<PaymentCancel />} />
-              <Route path="/quizzes/my" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
-              <Route path="/quizzes/Attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
-              <Route path="/quizzes/:username/:subject/:date/:quizSlug" element={isLoggedIn ? <QuizPage /> : <Navigate to="/login" replace />} />
-              <Route path="/admin/create-course" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />
-              <Route path="/admin/courses/edit/:username/:date/:subject/:courseTitle" element={isLoggedIn ? <CourseDetail /> : <Navigate to="/login" replace />} />
-              <Route path="/admin/create-lesson" element={isLoggedIn ? <CreateLesson /> : <Navigate to="/login" replace />} />
-              <Route path="/admin/create-quiz" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} />
-              <Route path="/admin/create-quiz/:quizId" element={isLoggedIn ? <CreateQuiz />: <Navigate to="/login" replace />} />
-              <Route path="/admin/create-post" element={isLoggedIn ? <CreatePost /> : <Navigate to="/login" replace />} />
-              <Route path="/my-courses" element={isLoggedIn ? <MyCourses /> : <Navigate to="/login" replace />} />
-              <Route path="/enrolled-courses" element={isLoggedIn ? <EnrolledCourses /> : <Navigate to="/login" replace />} />
-              <Route path="/courses/enrolled/:enrollmentId" element={isLoggedIn ? <EnrolledCourseDetail />: <Navigate to="/login" replace />} />
-              <Route path="/diary" element={isLoggedIn ? <DiaryManagement /> : <Navigate to="/login" replace />} />
-              <Route path="/study/dashboard" element={isLoggedIn ? <StudyDashboard /> : <Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to={isLoggedIn ? "/home" : "/login"} replace />} />
-            </Routes>
+            <div className="content-wrapper"> {/* This will contain the routes */}
+              <Routes>
+                <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/home" replace />} />
+                <Route path="/register" element={!isLoggedIn ? <Register /> : <Navigate to="/home" replace />} />
+                <Route path="/password-reset" element={<PasswordReset />} />
+                <Route path="/reset-password-confirm/:uid/:token" element={<PasswordResetConfirm />} />
+                
+                {/* Protected Routes */}
+                <Route path="/home" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" replace />} />
+                <Route path="/profile" element={isLoggedIn ? <Profile onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+                <Route path="/change-password" element={isLoggedIn ? <ChangePassword token={token} /> : <Navigate to="/login" replace />} />
+                <Route path="/notifications" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
+                <Route path="/alerts" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} /> {/* Alias for notifications? */}
+                <Route path="/guide-requests" element={isLoggedIn ? <GuideRequestsPage /> : <Navigate to="/login" replace />} />
+                
+                <Route path="/learn" element={<Explorer />} /> {/* Assuming Explorer is public or handles auth internally */}
+                <Route path="/explore" element={<UserPosts />} /> {/* Assuming UserPosts is public or handles auth internally */}
+                <Route path="/guides" element={<GuideList />} /> {/* Assuming GuideList is public or handles auth internally */}
+                <Route path="/guide/:username" element={<PublicGuideProfile />} />
+                <Route path="/posts/*" element={<PostDetail />} /> {/* Handles nested post routes */}
+                
+                <Route path="/courses/:username/:date/:subject/:courseTitle" element={<CourseDetail />} />
+                <Route path="/lessons/:username/:subject/:date/:lessonSlug" element={<LessonDetail />} />
+                
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-cancel" element={<PaymentCancel />} />
+                
+                <Route path="/quizzes/my" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
+                <Route path="/quizzes/Attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
+                <Route path="/quizzes/:username/:subject/:date/:quizSlug" element={isLoggedIn ? <QuizPage /> : <Navigate to="/login" replace />} />
+                
+                {/* Admin Routes - Consider a dedicated Admin layout or further protection */}
+                <Route path="/admin/create-course" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />
+                <Route path="/admin/courses/edit/:username/:date/:subject/:courseTitle" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} /> {/* Assuming CreateCourse handles edits too */}
+                <Route path="/admin/create-lesson" element={isLoggedIn ? <CreateLesson /> : <Navigate to="/login" replace />} />
+                <Route path="/admin/create-quiz" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} />
+                <Route path="/admin/create-quiz/:quizId" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} /> {/* For editing quizzes */}
+                <Route path="/admin/create-post" element={isLoggedIn ? <CreatePost /> : <Navigate to="/login" replace />} />
+                
+                <Route path="/my-courses" element={isLoggedIn ? <MyCourses /> : <Navigate to="/login" replace />} />
+                <Route path="/enrolled-courses" element={isLoggedIn ? <EnrolledCourses /> : <Navigate to="/login" replace />} />
+                <Route path="/courses/enrolled/:enrollmentId" element={isLoggedIn ? <EnrolledCourseDetail />: <Navigate to="/login" replace />} />
+                <Route path="/diary" element={isLoggedIn ? <DiaryManagement /> : <Navigate to="/login" replace />} />
+                <Route path="/study/dashboard" element={isLoggedIn ? <StudyDashboard /> : <Navigate to="/login" replace />} />
+                
+                {/* Fallback Route */}
+                <Route path="*" element={<Navigate to={isLoggedIn ? "/home" : "/login"} replace />} />
+              </Routes>
+            </div>
           </div>
           {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
         </div>
