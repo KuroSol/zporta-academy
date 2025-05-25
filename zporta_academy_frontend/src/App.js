@@ -1,8 +1,7 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
-import { messaging } from './firebase'; // Assuming firebase.js exports messaging
-import { getToken } from 'firebase/messaging';
+import { messaging, requestPermissionAndGetToken as fetchFcmToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
@@ -194,14 +193,8 @@ function useFCM(isLoggedIn, authToken) {
             }
 
             if (currentPermission === 'granted') {
-                const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                console.log('[FCM] Service Worker registered:', swRegistration.scope);
-                // IMPORTANT: Replace with YOUR actual VAPID key from Firebase Console
-                const VAPID_KEY = 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw'; 
-                const fcmToken = await getToken(messaging, {
-                    vapidKey: VAPID_KEY, 
-                    serviceWorkerRegistration: swRegistration,
-                });
+                // permission granted → fetch token via our firebase.js wrapper
+                const fcmToken = await fetchFcmToken();
 
                 if (fcmToken) {
                     console.log('[FCM] Token received:', fcmToken);
