@@ -1,9 +1,14 @@
-// frontend/src/firebase.js
+// src/firebase.js
 
+// 1) Core Firebase imports
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import {
+  getMessaging,
+  getToken as firebaseGetToken,
+  onMessage
+} from 'firebase/messaging';
 
-// ✅ Your Firebase Config
+// 2) Your Firebase web config
 const firebaseConfig = {
   apiKey: "AIzaSyApf4q80uDu3A70eDf5khygnNgdELL0-u0",
   authDomain: "zporta-academy-web.firebaseapp.com",
@@ -14,27 +19,47 @@ const firebaseConfig = {
   measurementId: "G-DZB2R5TFCE"
 };
 
+// 3) Initialize Firebase + Messaging
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// ✅ Add permission handler here
-export const requestNotificationPermission = async () => {
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      const token = await getToken(messaging, {
-        vapidKey: 'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw'  // ⚠️ You must get this from Firebase Console
-      });
-      console.log("✅ FCM Token:", token);
+// 4) YOUR exact Web Push (VAPID) public key from Firebase Console!
+const PUBLIC_VAPID_KEY =
+  'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw';
 
-      // TODO: send `token` to your Django backend
-    } else {
-      console.warn("🚫 Notification permission denied");
-    }
-  } catch (err) {
-    console.error("❌ Error getting permission or token:", err);
+/**
+ * requestPermissionAndGetToken()
+ *  - Call this from a click handler (e.g. right after login or when user
+ *    taps “Enable Notifications”)
+ *  - It asks permission, registers SW, then returns the FCM token.
+ */
+export async function requestPermissionAndGetToken() {
+  // A) Ask the user to allow notifications
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    throw new Error('Notification permission not granted');
   }
-};
 
-// Export messaging and helpers
-export { messaging, getToken, onMessage };
+  // B) Register the Service Worker at your site root
+  //    Make sure public/firebase-messaging-sw.js exists and is deployed
+  const swRegistration = await navigator.serviceWorker.register(
+    '/firebase-messaging-sw.js'
+  );
+  console.log('[firebase.js] SW registered at', swRegistration.scope);
+
+  // C) Now fetch the FCM token, passing your VAPID key + the SW registration
+  const fcmToken = await firebaseGetToken(messaging, {
+    vapidKey: PUBLIC_VAPID_KEY,
+    serviceWorkerRegistration: swRegistration
+  });
+
+  if (!fcmToken) {
+    throw new Error('Failed to get FCM token');
+  }
+
+  console.log('[firebase.js] FCM token:', fcmToken);
+  return fcmToken;
+}
+
+// Export messaging for onMessage handlers if you need
+export { messaging, onMessage };
