@@ -42,6 +42,7 @@ import StudyDashboard from './components/StudyDashboard';
 
 // --- Platform Detection ---
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+const isAndroid = /Android/.test(navigator.userAgent);
 const isStandalonePWA = () => {
     if (isIOS) return !!navigator.standalone; // Reliable for iOS
     return window.matchMedia('(display-mode: standalone)').matches;
@@ -232,6 +233,7 @@ function InstallGate({ isLoggedIn }) {
 
 // --- Notification Controls Component ---
 function NotificationControls({ isLoggedIn }) {
+    if (!isLoggedIn || !isAndroid) return null;
     const { token: authToken } = useContext(AuthContext);
     const { requestPermissionAndToken, isFcmSubscribed, setIsFcmSubscribed } = useFCM(isLoggedIn, authToken);
     const showToast = useContext(ToastContext);
@@ -353,11 +355,13 @@ const App = () => {
         <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
           <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
           
-          {/* PWA Install prompt only for non-iOS */}
-          {!isIOS && <InstallGate isLoggedIn={isLoggedIn} />}
-          
-          {/* Notification controls: handles iOS A2HS guidance, permission prompts, and subscribed state */}
-          <NotificationControls isLoggedIn={isLoggedIn} />
+            {/* only show on Android mobile, hide completely on iOS and desktop */}
+            {isAndroid && (
+            <>
+                <InstallGate isLoggedIn={isLoggedIn} />
+                <NotificationControls isLoggedIn={isLoggedIn} />
+            </>
+            )}
 
           <div className="content-wrapper">
             <Routes>
