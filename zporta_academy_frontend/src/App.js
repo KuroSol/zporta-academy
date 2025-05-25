@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 // --- Firebase Messaging imports (for fetching the token) ---
-import { messaging, requestPermissionAndGetToken as fetchFcmToken } from './firebase';
+import { requestPermissionAndGetToken as fetchFcmToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
@@ -236,6 +236,8 @@ function useFCM(isLoggedIn, authToken) {
 
     // Proactive attempt to register after login
     useEffect(() => {
+        // only inside the installed PWA
+        if (!isStandalonePWA()) return;
         if (isLoggedIn && authToken && !isFcmSubscribed && Notification.permission === 'default' && !attemptedRegistration) {
             // Only attempt proactively if permission is default and we haven't tried yet this session
             // And for iOS, only if it's A2HS and supports push
@@ -283,8 +285,9 @@ function InstallGate({ isLoggedIn }) {
 }
 
 
+// --- Notification Controls Component ---
 export function NotificationControls({ isLoggedIn }) {
-  // ─── ① Hooks (always in same order) ────────────────────────────────────────
+  // ─── ① Hooks (always first, unconditionally) ──────────────────────────
   const showToast = useContext(ToastContext);
   const { token } = useContext(AuthContext);
   const {
@@ -294,20 +297,17 @@ export function NotificationControls({ isLoggedIn }) {
     fcmError,
     setAttemptedRegistration
   } = useFCM(isLoggedIn, token);
-
   const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
 
-  // detect “Chrome on iOS” (where web-push is impossible)
+  // detect Chrome on iOS
   const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 
-  // ─── ② Effects ────────────────────────────────────────────────────────────
+  // ─── ② Effects (must come *before* any returns) ─────────────────────────
   useEffect(() => {
-    if (isIosChrome) return;
     if (
       isIOS &&
       iosSupportsWebPush &&
-      isLoggedIn &&
-      !window.matchMedia('(display-mode: standalone)').matches && // your isStandalonePWA()
+      !isStandalonePWA() &&
       Notification.permission === 'default' &&
       !isFcmSubscribed
     ) {
@@ -315,25 +315,30 @@ export function NotificationControls({ isLoggedIn }) {
     } else {
       setShowA2HSGuidance(false);
     }
-  }, [isLoggedIn, isFcmSubscribed, isIosChrome]);
+  }, [isFcmSubscribed]);
 
-  // ─── ③ Early returns ──────────────────────────────────────────────────────
-  if (isIosChrome) return null;
-  if (!isLoggedIn || typeof Notification === 'undefined') return null;
+  // ─── ② Early returns (now safe: after hooks) ──────────────────────────
+  if (!isStandalonePWA()) return null;     // only inside installed PWA
+  if (isIosChrome)            return null; // Chrome on iOS can’t do web-push
+  if (!isLoggedIn)            return null;
+  if (typeof Notification === 'undefined') return null;
   if (isIOS && !iosSupportsWebPush) return null;
+
+  // ─── ② Effects (before any return) ───────────────────────────────────────
+
 
   // ─── ④ Handlers ───────────────────────────────────────────────────────────
   const handleEnableNotifications = async () => {
     setAttemptedRegistration(false);
     await requestPermissionAndGetToken(false);
   };
-  const handleDisableNotifications = async () => {
+  const handleDisableNotifications = () => {
     localStorage.removeItem('lastFCMTokenSent');
     setIsFcmSubscribed(false);
     showToast('Notifications disabled on this device.', 'info');
     if (Notification.permission === 'granted' && isIOS && iosSupportsWebPush) {
       showToast(
-        'To fully stop notifications, also check iPhone Settings > Notifications > Zporta Academy.',
+        'To fully stop notifications, also check iPhone Settings → Notifications → Zporta Academy.',
         'info',
         5000
       );
@@ -344,7 +349,7 @@ export function NotificationControls({ isLoggedIn }) {
   if (showA2HSGuidance) {
     return (
       <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d' }}>
-        To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first. (Tap Share → Add to Home Screen)
+        To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first.&nbsp;
         <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10 }}>Dismiss</button>
       </div>
     );
@@ -379,6 +384,7 @@ export function NotificationControls({ isLoggedIn }) {
 
   return null;
 }
+
 
 // --- Main App Component ---
 const App = () => {
