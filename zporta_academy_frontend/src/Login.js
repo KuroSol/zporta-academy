@@ -12,10 +12,16 @@ import { v4 as uuidv4 } from 'uuid';
 // const aiImageUrl = '/images/login-visual.png'; // If image is in public/images
 // detect iOS device
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-// detect Chrome on iOS
+// Chrome on iOS userAgent substring
 const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png'; // Example image (Replace with your actual AI-generated image URL)
-
+// helper: are we running as an installed PWA?
+export const isStandalonePWA = () => {
+  if (isIOS) {
+    return !!window.navigator.standalone;
+  }
+  return window.matchMedia('(display-mode: standalone)').matches;
+};
 
 const Login = () => {
     const { login } = useContext(AuthContext);
