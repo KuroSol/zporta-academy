@@ -1,40 +1,29 @@
-# notifications/apps.py
-from django.apps import AppConfig
-from django.conf import settings # Import settings
-from pathlib import Path
+# zporta_academy_backend/notifications/apps.py
+
 import firebase_admin
 from firebase_admin import credentials
+from django.apps import AppConfig
+from pathlib import Path
+import os
 
 class NotificationsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField' # Recommended for newer Django versions
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'notifications'
 
     def ready(self):
-        # Initialize Firebase only once
         if not firebase_admin._apps:
             try:
-                # It's best to define the path to your credentials in settings.py
-                # Example: FIREBASE_ADMIN_SDK_CREDENTIALS_FILE = BASE_DIR / "path_to_your_service_account_key.json"
-                if hasattr(settings, 'FIREBASE_ADMIN_SDK_CREDENTIALS_FILE'):
-                    cred_path_str = getattr(settings, 'FIREBASE_ADMIN_SDK_CREDENTIALS_FILE')
-                    cred_path = Path(cred_path_str)
+                # ✅ Absolute path from BASE_DIR
+                base_dir = Path(__file__).resolve().parent.parent  # This resolves to zporta_academy_backend/
+                cred_path = base_dir / 'zporta' / 'firebase_credentials.json'
 
-                    if cred_path.exists():
-                        cred = credentials.Certificate(str(cred_path))
-                        firebase_admin.initialize_app(cred)
-                        print("Firebase Admin SDK initialized via NotificationsConfig.")
-                    else:
-                        print(f"Firebase Admin SDK: Credential file not found at {cred_path_str} (configured in settings).")
+                if cred_path.exists():
+                    cred = credentials.Certificate(str(cred_path))
+                    firebase_admin.initialize_app(cred, {
+                        'projectId': 'zporta-academy-web'
+                    })
+                    print("✅ Firebase Admin SDK initialized.")
                 else:
-                    # Fallback or alternative path if not in settings (less ideal for flexibility)
-                    # Example: cred_path = settings.BASE_DIR / "zporta" / "firebase_credentials.json"
-                    # Ensure this path is correct for your project structure if using a hardcoded path.
-                    # For this example, we'll assume the settings variable is preferred.
-                    print("Firebase Admin SDK: FIREBASE_ADMIN_SDK_CREDENTIALS_FILE not configured in Django settings. Initialization skipped in apps.py.")
-
+                    print(f"❌ Firebase credentials file NOT found at: {cred_path}")
             except Exception as e:
-                print(f"Error initializing Firebase Admin SDK in NotificationsConfig: {e}")
-        
-        # Register your signals
-        import notifications.signals
-        print("Notification signals imported and registered.")
+                print(f"❌ Firebase initialization error: {e}")
