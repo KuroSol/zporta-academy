@@ -232,100 +232,121 @@ function InstallGate({ isLoggedIn }) {
 }
 
 // --- Notification Controls Component ---
+// --- Notification Controls Component (replace your existing version) ---
 function NotificationControls({ isLoggedIn }) {
-    if (!isLoggedIn || !isAndroid) return null;
-    const { token: authToken } = useContext(AuthContext);
-    const { requestPermissionAndToken, isFcmSubscribed, setIsFcmSubscribed } = useFCM(isLoggedIn, authToken);
-    const showToast = useContext(ToastContext);
-    const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
+  // ── 1) Hooks at the top, in the same order every render ───────────────
+  const showToast = useContext(ToastContext);
+  const { token: authToken } = useContext(AuthContext);
+  const {
+    requestPermissionAndToken,
+    isFcmSubscribed,
+    setIsFcmSubscribed
+  } = useFCM(isLoggedIn, authToken);
+  const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
 
-    // Determine if any notification UI should be shown
-    const shouldShowControls = isLoggedIn && ('Notification' in window);
-
-    useEffect(() => {
-        if (isIOS && isLoggedIn && !isStandalonePWA() && Notification.permission === 'default' && !isFcmSubscribed) {
-            setShowA2HSGuidance(true);
-        } else {
-            setShowA2HSGuidance(false);
-        }
-    }, [isLoggedIn, isFcmSubscribed]);
-
-
-    const handleEnableNotifications = async () => {
-        if (isIOS && !isStandalonePWA()) {
-            setShowA2HSGuidance(true); // Re-emphasize A2HS if they click enable in Safari
-            showToast('Please add to Home Screen first to enable notifications.', 'info');
-            return;
-        }
-        const token = await requestPermissionAndToken();
-        if (token) {
-            showToast('Notifications enabled!', 'success');
-            // isFcmSubscribed is updated by useFCM
-        }
-    };
-
-    const handleDisableNotifications = async () => {
-        // Client-side disable: update UI, clear local token.
-        // For full server-side removal, an API call to delete the token would be needed.
-        localStorage.removeItem('lastFCMTokenSent');
-        setIsFcmSubscribed(false);
-        showToast('Notifications disabled on this device.', 'info');
-        // Potentially: Tell user they might need to disable in OS settings too for full effect.
-        if (Notification.permission === 'granted' && isIOS) {
-             showToast('To fully stop notifications, also check iPhone Settings > Notifications > Zporta Academy.', 'info', 5000);
-        }
-    };
-
-    if (!shouldShowControls) return null;
-
-    // If on iOS and not yet A2HS, show A2HS guidance and nothing else from this component.
-    if (showA2HSGuidance) {
-        return (
-            <div style={{ padding: '10px', background: '#fff9c4', textAlign: 'center', borderBottom: '1px solid #fff176', fontSize: '14px' }}>
-                To enable notifications on iOS, first add this app to your Home Screen (Tap Share icon, then 'Add to Home Screen').
-                <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10, fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' }}>Dismiss</button>
-            </div>
-        );
+  // track when to show the iOS “Add to Home Screen” guidance
+  useEffect(() => {
+    if (
+      isIOS &&
+      isLoggedIn &&
+      !isStandalonePWA() &&
+      Notification.permission === 'default' &&
+      !isFcmSubscribed
+    ) {
+      setShowA2HSGuidance(true);
+    } else {
+      setShowA2HSGuidance(false);
     }
+  }, [isLoggedIn, isFcmSubscribed]);
 
-    // If permission is denied, show message and hide controls.
-    if (Notification.permission === 'denied') {
-        return (
-            <div style={{ padding: '10px', background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2', fontSize: '14px' }}>
-                Notifications are blocked. Please enable them in your browser or OS settings.
-            </div>
-        );
-    }
+  // ── 2) Early exit: only for Android + logged-in + browser supports Notifications ─
+  if (
+    !isLoggedIn ||                // must be logged in
+    !isAndroid ||                 // only Android
+    typeof Notification === 'undefined'
+  ) {
+    return null;
+  }
 
-    // If already subscribed (or permission granted and token sent), don't show enable prompt.
-    // Show "Disable" option or nothing.
-    if (isFcmSubscribed) {
-         // You can choose to show nothing, or only the disable button if desired.
-         // For now, let's show the disable button if subscribed.
-        return (
-            <div style={{ padding: '10px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #c8e6c9', fontSize: '14px' }}>
-                <span>Push notifications are ON for this device.</span>
-                <button onClick={handleDisableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    Disable
-                </button>
-            </div>
-        );
+  // ── 3) Handlers ──────────────────────────────────────────────────────────────
+  const handleEnableNotifications = async () => {
+    // on iOS require A2HS first
+    if (isIOS && !isStandalonePWA()) {
+      setShowA2HSGuidance(true);
+      showToast('Please add to Home Screen first to enable notifications.', 'info');
+      return;
     }
-    
-    // If permission is 'default' (and not iOS non-A2HS), show "Enable" prompt.
-    if (Notification.permission === 'default') {
-        return (
-            <div style={{ padding: '10px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #c8e6c9', fontSize: '14px' }}>
-                <span>Enable push notifications for updates?</span>
-                <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    Enable
-                </button>
-            </div>
-        );
+    const token = await requestPermissionAndToken();
+    if (token) {
+      showToast('Notifications enabled!', 'success');
     }
-    
-    return null; // Fallback, should not be reached if logic is correct
+  };
+
+  const handleDisableNotifications = () => {
+    localStorage.removeItem('lastFCMTokenSent');
+    setIsFcmSubscribed(false);
+    showToast('Notifications disabled on this device.', 'info');
+    if (Notification.permission === 'granted' && isIOS) {
+      showToast(
+        'Also disable in iOS Settings → Notifications → Zporta Academy.',
+        'info',
+        5000
+      );
+    }
+  };
+
+  // ── 4) Render the correct UI block ──────────────────────────────────────────
+  if (showA2HSGuidance) {
+    return (
+      <div style={{ padding: 10, background: '#fff9c4', textAlign: 'center',
+                    borderBottom: '1px solid #fff176', fontSize: 14 }}>
+        To enable notifications on iOS, add this app to your Home Screen (Share → Add to Home Screen).
+        <button
+          onClick={() => setShowA2HSGuidance(false)}
+          style={{ marginLeft: 10, fontSize: 12, padding: '3px 8px',
+                   background: '#bbb', border: 'none', borderRadius: 3,
+                   color: 'white', cursor: 'pointer' }}
+        >Dismiss</button>
+      </div>
+    );
+  }
+
+  if (Notification.permission === 'denied') {
+    return (
+      <div style={{ padding: 10, background: '#ffebee', textAlign: 'center',
+                    borderBottom: '1px solid #ffcdd2', fontSize: 14 }}>
+        Notifications are blocked. Please enable them in your browser or OS settings.
+      </div>
+    );
+  }
+
+  if (isFcmSubscribed) {
+    return (
+      <div style={{ padding: 10, background: '#e8f5e9', textAlign: 'center',
+                    borderBottom: '1px solid #c8e6c9', fontSize: 14 }}>
+        Push notifications are ON for this device.
+        <button
+          onClick={handleDisableNotifications}
+          style={{ marginLeft: 10, padding: '5px 10px', background: '#ff9800',
+                   color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+        >Disable</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 10, background: '#e8f5e9', textAlign: 'center',
+                  borderBottom: '1px solid #c8e6c9', fontSize: 14 }}>
+      Enable push notifications for updates?
+      <button
+        onClick={handleEnableNotifications}
+        style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50',
+                 color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+      >Enable</button>
+    </div>
+  );
 }
+
 
 
 // --- Main App Component ---
