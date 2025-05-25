@@ -5,10 +5,15 @@ import apiClient from './api';
 import styles from './Login.module.css'; // <-- Import the CSS module
 import { requestPermissionAndGetToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
+
 // --- Placeholder for AI Image ---
 // Ideally, host this image somewhere accessible (e.g., your public folder or a CDN)
 // For example purposes, using a placeholder service or a relative path if in public folder:
 // const aiImageUrl = '/images/login-visual.png'; // If image is in public/images
+// detect iOS device
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+// detect Chrome on iOS
+const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png'; // Example image (Replace with your actual AI-generated image URL)
 
 
@@ -155,12 +160,19 @@ useEffect(() => {
              showMessage("Login successful!", 'success'); // Show success briefly
             // —— FCM: ask permission & get token on successful login ——
             try {
-            const fcmToken = await requestPermissionAndGetToken();
-            await apiClient.post(
-                '/api/notifications/save-fcm-token/',
-                { token: fcmToken, device_id: uuidv4() },
-                { headers: { Authorization: `Token ${data.token}` } }
-            );
+                if (!isIosChrome) {
+                    try {
+                    const fcmToken = await requestPermissionAndGetToken();
+                    await apiClient.post(
+                        '/api/notifications/save-fcm-token/',
+                        { token: fcmToken, device_id: uuidv4() },
+                        { headers: { Authorization: `Token ${data.token}` } }
+                    );
+                    console.log('[Login] FCM token saved on server');
+                    } catch (err) {
+                    console.warn('[Login] Could not register FCM (probably iOS Chrome):', err);
+                    }
+                }
             console.log('[Login] FCM token saved on server');
             } catch (err) {
             console.warn('[Login] Could not register FCM:', err);
