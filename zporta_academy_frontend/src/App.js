@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
 // --- Firebase Messaging imports (for fetching the token) ---
-import { requestPermissionAndGetToken as fetchFcmToken } from './firebase';
+import { messaging, requestPermissionAndGetToken as fetchFcmToken } from './firebase';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
@@ -44,8 +44,9 @@ import StudyDashboard from './components/StudyDashboard';
 // detect iOS device
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 // detect Chrome on iOS
-const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 const isAndroid = /Android/.test(navigator.userAgent);
+// detect “Chrome on iOS” (where web-push is impossible)
+const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 
 
 
@@ -281,95 +282,102 @@ function InstallGate({ isLoggedIn }) {
   );
 }
 
-// --- Notification Controls Component ---
-function NotificationControls({ isLoggedIn }) {
-    const { requestPermissionAndGetToken, isFcmSubscribed, setIsFcmSubscribed, fcmError, setAttemptedRegistration } = useFCM(isLoggedIn, useContext(AuthContext).token);
-    const showToast = useContext(ToastContext);
-    
+
+export function NotificationControls({ isLoggedIn }) {
+  // ─── ① Hooks (always in same order) ────────────────────────────────────────
+  const showToast = useContext(ToastContext);
+  const { token } = useContext(AuthContext);
+  const {
+    requestPermissionAndGetToken,
+    isFcmSubscribed,
+    setIsFcmSubscribed,
+    fcmError,
+    setAttemptedRegistration
+  } = useFCM(isLoggedIn, token);
+
   const [showA2HSGuidance, setShowA2HSGuidance] = useState(false);
 
-    useEffect(() => {
-         // 1️⃣ On Chrome for iOS web push is impossible – skip all Push UI
-    if (isIosChrome) return null;
-        if (isIOS && iosSupportsWebPush && isLoggedIn && !isStandalonePWA() && Notification.permission === 'default' && !isFcmSubscribed) {
-            setShowA2HSGuidance(true);
-        } else {
-            setShowA2HSGuidance(false);
-        }
-    }, [isLoggedIn, isFcmSubscribed]);
+  // detect “Chrome on iOS” (where web-push is impossible)
+  const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
 
-    const handleEnableNotifications = async () => {
-        setAttemptedRegistration(false); // Allow retry via button
-        await requestPermissionAndGetToken(false); // false for interactive, more verbose
-    };
-    const handleDisableNotifications = async () => {
-        localStorage.removeItem('lastFCMTokenSent');
-        setIsFcmSubscribed(false); 
-        showToast('Notifications disabled on this device.', 'info');
-        if (Notification.permission === 'granted' && isIOS && iosSupportsWebPush) {
-             showToast('To fully stop notifications, also check iPhone Settings > Notifications > Zporta Academy.', 'info', 5000);
-        }
-    };
+  // ─── ② Effects ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isIosChrome) return;
+    if (
+      isIOS &&
+      iosSupportsWebPush &&
+      isLoggedIn &&
+      !window.matchMedia('(display-mode: standalone)').matches && // your isStandalonePWA()
+      Notification.permission === 'default' &&
+      !isFcmSubscribed
+    ) {
+      setShowA2HSGuidance(true);
+    } else {
+      setShowA2HSGuidance(false);
+    }
+  }, [isLoggedIn, isFcmSubscribed, isIosChrome]);
 
-    if (!isLoggedIn || typeof Notification === 'undefined') return null;
-    // Do not show any controls if on iOS and web push is not supported by the OS version
-    // Detect “Chrome on iOS” (CriOS in userAgent) and skip all Push UI
-    const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
-    if (isIosChrome) {
-        // either return null to hide everything…
-        return null;
-        // …or return a friendly fallback:
-        // return (
-        //   <div style={{ padding: 12, background: '#fff3e0', textAlign: 'center' }}>
-        //     Push notifications aren’t supported in Chrome on iOS. Please open this site in Safari.
-        //   </div>
-        // );
-    }
+  // ─── ③ Early returns ──────────────────────────────────────────────────────
+  if (isIosChrome) return null;
+  if (!isLoggedIn || typeof Notification === 'undefined') return null;
+  if (isIOS && !iosSupportsWebPush) return null;
 
-    // Now the existing “iOS but not 16.4+ PWA” check remains:
-    if (isIOS && !iosSupportsWebPush) return null;
+  // ─── ④ Handlers ───────────────────────────────────────────────────────────
+  const handleEnableNotifications = async () => {
+    setAttemptedRegistration(false);
+    await requestPermissionAndGetToken(false);
+  };
+  const handleDisableNotifications = async () => {
+    localStorage.removeItem('lastFCMTokenSent');
+    setIsFcmSubscribed(false);
+    showToast('Notifications disabled on this device.', 'info');
+    if (Notification.permission === 'granted' && isIOS && iosSupportsWebPush) {
+      showToast(
+        'To fully stop notifications, also check iPhone Settings > Notifications > Zporta Academy.',
+        'info',
+        5000
+      );
+    }
+  };
 
+  // ─── ⑤ Render UI ──────────────────────────────────────────────────────────
+  if (showA2HSGuidance) {
+    return (
+      <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d' }}>
+        To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first. (Tap Share → Add to Home Screen)
+        <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10 }}>Dismiss</button>
+      </div>
+    );
+  }
 
-    if (showA2HSGuidance) {
-        return (
-            <div style={{ padding: '12px', background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d', fontSize: '14px', color: '#5f4300' }}>
-                To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first.
-                (Tap Share, then 'Add to Home Screen').
-                <button onClick={() => setShowA2HSGuidance(false)} style={{ marginLeft: 10, fontSize: '13px', padding: '4px 10px', background: '#9e9e9e', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', marginTop: '5px' }}>Dismiss</button>
-            </div>
-        );
-    }
-    if (Notification.permission === 'denied') {
-        return (
-            <div style={{ padding: '12px', background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2', fontSize: '14px', color: '#c62828' }}>
-                Notifications are blocked. Please enable them in your browser/OS settings.
-            </div>
-        );
-    }
-    if (isFcmSubscribed) {
-        return (
-            <div style={{ padding: '12px', background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #a5d6a7', fontSize: '14px', color: '#2e7d32' }}>
-                <span>Push notifications are ON.</span>
-                <button onClick={handleDisableNotifications} style={{ marginLeft: 10, padding: '6px 12px', background: '#fb8c00', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontWeight: 500 }}>
-                    Disable
-                </button>
-            </div>
-        );
-    }
-    if (Notification.permission === 'default') {
-        // For iOS, only show enable button if it's A2HS
-        if (isIOS && !isStandalonePWA()) return null; 
-        return (
-            <div style={{ padding: '12px', background: '#e3f2fd', textAlign: 'center', borderBottom: '1px solid #90caf9', fontSize: '14px', color: '#1565c0' }}>
-                <span>Enable push notifications?</span>
-                <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '6px 12px', background: '#43a047', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontWeight: 500 }}>
-                    Enable
-                </button>
-                {fcmError && <p style={{color: '#c62828', fontSize: '13px', marginTop: '8px', fontWeight: 'normal'}}>{fcmError}</p>}
-            </div>
-        );
-    }
-    return null;
+  if (Notification.permission === 'denied') {
+    return (
+      <div style={{ padding: 12, background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2' }}>
+        Notifications are blocked. Please enable them in your browser/OS settings.
+      </div>
+    );
+  }
+
+  if (isFcmSubscribed) {
+    return (
+      <div style={{ padding: 12, background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #a5d6a7' }}>
+        Push notifications are ON.
+        <button onClick={handleDisableNotifications} style={{ marginLeft: 10 }}>Disable</button>
+      </div>
+    );
+  }
+
+  if (Notification.permission === 'default') {
+    return (
+      <div style={{ padding: 12, background: '#e3f2fd', textAlign: 'center', borderBottom: '1px solid #90caf9' }}>
+        Enable push notifications?
+        <button onClick={handleEnableNotifications} style={{ marginLeft: 10 }}>Enable</button>
+        {fcmError && <p style={{ color: '#c62828', marginTop: 8 }}>{fcmError}</p>}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 // --- Main App Component ---
