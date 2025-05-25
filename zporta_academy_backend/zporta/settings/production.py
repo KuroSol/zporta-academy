@@ -15,7 +15,7 @@ env_path = os.path.join(BASE_DIR, '.env')
 config = Config(RepositoryEnv(env_path))
 
 # Production settings
-DEBUG = False
+DEBUG = True
 
 # --- STEP 1: Update ALLOWED_HOSTS ---
 # Add your new domain (and www subdomain) that will access the server.
