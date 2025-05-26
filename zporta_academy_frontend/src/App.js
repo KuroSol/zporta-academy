@@ -470,7 +470,7 @@ const App = () => {
   // Show notification controls only if logged in (the component itself has PWA checks)
   const showNotificationControls = isLoggedIn;
 
-
+try {
   return (
     <ToastProvider>
         <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
@@ -534,6 +534,15 @@ const App = () => {
           {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
         </div>
     </ToastProvider>
-  );
+  );}
+  catch (err) {
+     console.error("App render error:", err);
+     return (
+       <div style={{ padding: 20, color: "red" }}>
+         <h1>Rendering Error</h1>
+         <pre>{err.message}</pre>
+       </div>
+     );
+   }
 };
 export default App;
