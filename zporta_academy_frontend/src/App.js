@@ -94,17 +94,22 @@ function ToastProvider({ children }) {
     );
 }
 
-// --- FCM Service Hook ---
 function useFCM(isLoggedIn, authToken) {
+    // ALL HOOKS AT THE TOP!
     const showToast = useContext(ToastContext);
     const [isFcmSubscribed, setIsFcmSubscribed] = useState(false);
     const [lastTokenSent, setLastTokenSent] = useState(localStorage.getItem('lastFCMTokenSent')); // Initialize from localStorage
     const [fcmError, setFcmError] = useState('');
     const [attemptedRegistration, setAttemptedRegistration] = useState(false);
 
+    // HARD GUARD: Prevent notification logic if NOT PWA
+    const notPWA = !isStandalonePWA();
+
+    // All logic wrapped in if (!notPWA) { ... }
+    // All "side effects" should be skipped if not PWA
 
     const updateSubscriptionStatus = useCallback(() => {
-        if (typeof Notification === 'undefined') return;
+        if (notPWA || typeof Notification === 'undefined') return;
         const permission = Notification.permission;
         const tokenStored = localStorage.getItem('lastFCMTokenSent');
         setLastTokenSent(tokenStored); // Update state with current localStorage
@@ -118,9 +123,10 @@ function useFCM(isLoggedIn, authToken) {
                 setLastTokenSent(null);
             }
         }
-    }, []);
+    }, [notPWA]);
 
     useEffect(() => {
+        if (notPWA) return;
         updateSubscriptionStatus(); // Initial check
         if (navigator.permissions && typeof navigator.permissions.query === 'function') {
             navigator.permissions.query({ name: 'notifications' }).then((status) => {
@@ -130,10 +136,10 @@ function useFCM(isLoggedIn, authToken) {
                 };
             }).catch(err => console.warn("[FCM] Error querying notification permissions:", err));
         }
-    }, [updateSubscriptionStatus]);
-
+    }, [updateSubscriptionStatus, notPWA]);
 
     const sendTokenToServer = useCallback(async (currentToken) => {
+        if (notPWA) return false;
         if (!authToken) {
             setFcmError('Authentication required to save FCM token.');
             console.warn('[FCM] Auth token not available for sending FCM token.');
@@ -161,9 +167,10 @@ function useFCM(isLoggedIn, authToken) {
             setFcmError(`Failed to save token: ${error.message}`);
             return false;
         }
-    }, [authToken]); // Dependency on authToken
+    }, [authToken, notPWA]);
 
     const requestPermissionAndGetToken = useCallback(async (isProactive = false) => {
+        if (notPWA) return null;
         if (isIosChrome) {
             console.warn('[FCM] Skipping push on Chrome iOS (not supported).');
             if (!isProactive) showToast('Notifications not supported on Chrome for iOS.', 'info');
@@ -246,14 +253,11 @@ function useFCM(isLoggedIn, authToken) {
             return null;
         }
         return null; // Should not be reached if logic is correct
-    }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent]);
+    }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent, notPWA]);
 
     // Proactive attempt to register after login, IF conditions are met
     useEffect(() => {
-        if (!isStandalonePWA()) { // Only for PWAs
-            console.log('[FCM] Not a PWA, skipping proactive registration.');
-            return;
-        }
+        if (notPWA) return;
         // Attempt only if logged in, auth token exists, not already subscribed, permission is default, and no prior attempt in this session
         if (isLoggedIn && authToken && !isFcmSubscribed && Notification.permission === 'default' && !attemptedRegistration) {
             if (isIOS && (!isStandalonePWA() || !iosSupportsWebPush)) {
@@ -263,10 +267,23 @@ function useFCM(isLoggedIn, authToken) {
             console.log('[FCM] Proactively attempting notification registration after login...');
             requestPermissionAndGetToken(true); // true for proactive (less verbose toasts)
         }
-    }, [isLoggedIn, authToken, isFcmSubscribed, requestPermissionAndGetToken, attemptedRegistration]);
+    }, [isLoggedIn, authToken, isFcmSubscribed, requestPermissionAndGetToken, attemptedRegistration, notPWA]);
 
+    // If not a PWA, always return dummy handlers/state
+    if (notPWA) {
+        return {
+            requestPermissionAndGetToken: () => {},
+            isFcmSubscribed: false,
+            setIsFcmSubscribed: () => {},
+            fcmError: '',
+            setAttemptedRegistration: () => {}
+        };
+    }
+
+    // Otherwise, normal return
     return { requestPermissionAndGetToken, isFcmSubscribed, setIsFcmSubscribed, fcmError, setAttemptedRegistration };
 }
+
 
 // --- PWA Install Prompt Gate ---
 function InstallGate({ isLoggedIn }) {
@@ -318,7 +335,6 @@ function InstallGate({ isLoggedIn }) {
     </div>
   );
 }
-
 
 // --- Notification Controls Component ---
 export function NotificationControls({ isLoggedIn }) {
@@ -424,7 +440,6 @@ export function NotificationControls({ isLoggedIn }) {
 
   return null; // Fallback, should ideally be covered by above states
 }
-
 
 // --- Main App Component ---
 const App = () => {
