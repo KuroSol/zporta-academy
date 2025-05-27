@@ -425,6 +425,17 @@ export function NotificationControls({ isLoggedIn }) {
 const App = () => {
   const { token, logout, isAuthLoading } = useContext(AuthContext);
   const isLoggedIn = !!token;
+
+  const { requestPermissionAndGetToken, isFcmSubscribed } = useFCM(isLoggedIn, token);
+
+  useEffect(() => {
+    if (!isFcmSubscribed && isLoggedIn && isStandalonePWA()) {
+      console.log('[FCM] Proactive requestPostLogin');
+      requestPermissionAndGetToken(true);
+    }
+  }, [isLoggedIn, isFcmSubscribed, requestPermissionAndGetToken]);
+
+
   const [isExpanded, setIsExpanded] = useState(false); 
   const location = useLocation();
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
