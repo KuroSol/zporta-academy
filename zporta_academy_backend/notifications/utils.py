@@ -30,109 +30,95 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
         )
         return 0
 
-    # --- Simplified Link for testing ---
+    processed_extra_data = {}
+    if extra_data:
+        for key, value in extra_data.items():
+            processed_extra_data[key] = str(value)
+
     final_link_str = DEFAULT_DOMAIN + "/"
     if link and isinstance(link, str) and link.strip():
-        if link.strip().startswith("https://"):
-            final_link_str = link.strip()
-        elif link.strip().startswith("/"):
-            final_link_str = f"{DEFAULT_DOMAIN}{link.strip()}"
-    # --- End of Simplified Link ---
+        link_stripped = link.strip()
+        if link_stripped.startswith("https://"):
+            final_link_str = link_stripped
+        elif link_stripped.startswith("http://"):
+            final_link_str = "https://" + link_stripped[len("http://"):]
+        elif link_stripped.startswith("/"):
+            final_link_str = f"{DEFAULT_DOMAIN}{link_stripped}"
+    # (Simplified link processing from your previous simplified version for this test)
 
-
-    messages_to_send = []
-    token_instances_map = {}
-
+    messages_to_send_individually = []
     for fcm_token_obj in active_user_tokens:
-        # --- Create the SIMPLEST possible message, similar to test_fcm.py ---
         simple_data_payload = {
             'title': str(title),
             'body': str(body),
-            'url': final_link_str, # Use the processed link
-            # Add any absolutely essential extra_data items as strings
+            'url': final_link_str,
         }
-        if extra_data and "notification_db_id" in extra_data:
+        if extra_data and "notification_db_id" in extra_data: # Keep essential data if needed by client
             simple_data_payload["notification_db_id"] = str(extra_data["notification_db_id"])
-
-        print(f"DEBUG: Constructing simple message for token {fcm_token_obj.token[:10]}... with payload: {simple_data_payload}")
+        
+        # Also ensure all values in simple_data_payload are strings
+        for key in simple_data_payload: simple_data_payload[key] = str(simple_data_payload[key])
 
         msg = messaging.Message(
             token=fcm_token_obj.token,
             data=simple_data_payload,
-            # Temporarily remove complex configs to isolate the problem:
-            # webpush=webpush_config,
-            # android=android_config,
-            # apns=apns_config
+            # NO webpush, android, apns configs for this test to match test_fcm.py simplicity
         )
-        messages_to_send.append(msg)
-        token_instances_map[fcm_token_obj.token] = fcm_token_obj
+        messages_to_send_individually.append({ "message_obj": msg, "fcm_token_instance": fcm_token_obj })
 
-    if not messages_to_send:
+    if not messages_to_send_individually:
         return 0
 
     success_count = 0
-    try:
-        print(f"DEBUG: Attempting to send {len(messages_to_send)} SIMPLIFIED messages. Using app: {current_app.name}")
-        batch_response = messaging.send_all(messages_to_send, app=current_app)
-        
-        FCMLog.objects.create(
-            user=user, action='send_attempt', success=True,
-            detail=f"Batch send (simplified) attempted. Success: {batch_response.success_count}, Failure: {batch_response.failure_count} for {len(messages_to_send)} tokens."
-        )
+    print(f"DEBUG: Attempting to send {len(messages_to_send_individually)} messages INDIVIDUALLY using messaging.send(). Using app: {current_app.name}")
 
-        # ... (rest of your success/failure logging based on batch_response) ...
-        # This part remains the same as your previous version
-        for idx, response_item in enumerate(batch_response.responses):
-            original_message = messages_to_send[idx]
-            token_str_for_this_message = original_message.token
-            fcm_token_instance = token_instances_map.get(token_str_for_this_message)
+    for item_to_send in messages_to_send_individually:
+        msg = item_to_send["message_obj"]
+        fcm_token_instance = item_to_send["fcm_token_instance"]
+        try:
+            print(f"DEBUG: Sending to token {msg.token[:20]}...")
+            response_message_id = messaging.send(msg, app=current_app) # Using messaging.send()
+            success_count += 1
+            print(f"DEBUG: Successfully sent message to token {msg.token[:20]}... Message ID: {response_message_id}")
+            FCMLog.objects.create(
+                user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
+                action='send_success', success=True, detail=f"Message ID: {response_message_id}"
+            )
+            fcm_token_instance.save() # Updates last_seen
+        except FirebaseError as e:
+            error_code = e.code if hasattr(e, 'code') else 'UNKNOWN_ERROR'
+            error_detail = str(e)
+            print(f"DEBUG: FirebaseError during individual send to token {msg.token[:20]}... Error: {error_code} - {error_detail}")
+            if hasattr(e, 'http_response') and e.http_response is not None:
+                 print(f"DEBUG: HTTP Response Status for failed send: {e.http_response.status_code}")
+                 print(f"DEBUG: HTTP Response Text for failed send: {e.http_response.text}")
+            FCMLog.objects.create(
+                user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
+                action='send_failure', success=False, detail=f"Error sending individually: {error_code} - {error_detail}"
+            )
+            # Handle token deactivation as before if needed based on error_code
+            unregistered_codes = [
+                'messaging/registration-token-not-registered',
+                'messaging/invalid-registration-token',
+            ]
+            if error_code in unregistered_codes:
+                fcm_token_instance.is_active = False
+                fcm_token_instance.save()
+                # ... (log token_inactive)
+            elif error_code == 'messaging/invalid-argument' and "registration token" in error_detail.lower():
+                fcm_token_instance.is_active = False
+                fcm_token_instance.save()
+                # ... (log token_inactive)
+        except Exception as ex_generic: # Catch any other unexpected errors
+            print(f"DEBUG: Generic error during individual send to token {msg.token[:20]}... Error: {str(ex_generic)}")
+            FCMLog.objects.create(
+                user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
+                action='send_failure', success=False, detail=f"Generic error sending individually: {str(ex_generic)}"
+            )
 
-            if not fcm_token_instance:
-                print(f"Error: Could not find FCMToken instance for token {token_str_for_this_message[:10]} during batch response processing.")
-                continue
 
-            if response_item.success:
-                success_count += 1
-                FCMLog.objects.create(
-                    user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
-                    action='send_success', success=True, detail=f"Message ID: {response_item.message_id}"
-                )
-                fcm_token_instance.save() 
-            else:
-                error_code = response_item.exception.code if hasattr(response_item.exception, 'code') else 'UNKNOWN_ERROR'
-                error_detail = str(response_item.exception)
-                print(f"DEBUG: Send failure (simplified) for token {fcm_token_instance.token[:10]}... Error: {error_code} - {error_detail}")
-                FCMLog.objects.create(
-                    user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
-                    action='send_failure', success=False, detail=f"Error (simplified send): {error_code} - {error_detail}"
-                )
-                unregistered_codes = [
-                    'messaging/registration-token-not-registered',
-                    'messaging/invalid-registration-token',
-                ]
-                if error_code in unregistered_codes:
-                    fcm_token_instance.is_active = False
-                    fcm_token_instance.save()
-                    FCMLog.objects.create(
-                        user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
-                        action='token_inactive', detail=f"Token marked inactive due to send error: {error_code}"
-                    )
-                elif error_code == 'messaging/invalid-argument' and "registration token" in error_detail.lower():
-                    fcm_token_instance.is_active = False
-                    fcm_token_instance.save()
-                    FCMLog.objects.create(
-                        user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
-                        action='token_inactive', detail=f"Token marked inactive due to invalid argument (likely bad token): {error_detail}"
-                    )
-    except FirebaseError as e:
-        print(f"DEBUG: FirebaseError during SIMPLIFIED batch send (utils.py): {e}")
-        if hasattr(e, 'http_response') and e.http_response is not None:
-             print(f"DEBUG: HTTP Response Status: {e.http_response.status_code}")
-             print(f"DEBUG: HTTP Response Text: {e.http_response.text}") # This will show the HTML 404 page if it's still that
-        FCMLog.objects.create(
-            user=user, action='send_attempt', success=False,
-            detail=f"FirebaseError during simplified batch send: {str(e)}"
-        )
-        return 0
-
+    FCMLog.objects.create(
+        user=user, action='send_attempt', success=(success_count > 0),
+        detail=f"Individual send attempts completed. Success: {success_count}, Total attempted: {len(messages_to_send_individually)}."
+    )
     return success_count
