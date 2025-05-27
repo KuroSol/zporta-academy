@@ -19,41 +19,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const messaging = getMessaging(app);
 
-// 4) Your exact Web Push (VAPID) public key from Firebase Console
-const PUBLIC_VAPID_KEY = 
+// 4) Your Web Push (VAPID) public key from Firebase Console
+const PUBLIC_VAPID_KEY =
   'BDm-BOtLstlVLYXxuVIyNwFzghCGtiFD5oFd1qkrMrRG_sRTTmE-GE_tL5I8Qu355iun2xAmqukiQIRvU4ZJKcw';
 
 /**
  * requestPermissionAndGetToken()
- * - Call this from a click handler (e.g. right after login)
- * - It asks permission, registers SW, then returns the FCM token.
+ * - Call this after login or from a button handler
+ * - Prompts if needed, registers SW, and returns the FCM token
  */
 export async function requestPermissionAndGetToken() {
-  // A) Ask the user to allow notifications
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    throw new Error('Notification permission not granted');
+  try {
+    console.debug('[firebase.js] ▶ Notification.permission before:', Notification.permission);
+
+    // Only ask if user hasn't decided yet
+    if (Notification.permission === 'default') {
+      const perm = await Notification.requestPermission();
+      console.debug('[firebase.js] ▶ Notification.permission after request:', perm);
+    }
+
+    // Register the Service Worker for FCM
+    const swRegistration = await navigator.serviceWorker.register(
+      '/firebase-messaging-sw.js'
+    );
+    console.debug('[firebase.js] ✅ SW registered at:', swRegistration.scope);
+
+    // Attempt to retrieve the FCM token
+    const fcmToken = await getToken(messaging, {
+      vapidKey: PUBLIC_VAPID_KEY,
+      serviceWorkerRegistration: swRegistration,
+    });
+
+    if (!fcmToken) {
+      console.warn('[firebase.js] ⚠ No FCM token retrieved.');
+      return null;
+    }
+
+    console.debug('[firebase.js] 🎉 FCM token:', fcmToken);
+    return fcmToken;
+  } catch (error) {
+    console.error('[firebase.js] ❌ Error retrieving FCM token:', error);
+    return null;
   }
-
-  // B) Register the Service Worker at your site root
-  const swRegistration = await navigator.serviceWorker.register(
-    '/firebase-messaging-sw.js'
-  );
-  console.log('[firebase.js] SW registered at', swRegistration.scope);
-
-  // C) Fetch the FCM token
-  const fcmToken = await getToken(messaging, {
-    vapidKey: PUBLIC_VAPID_KEY,
-    serviceWorkerRegistration: swRegistration
-  });
-
-  if (!fcmToken) {
-    throw new Error('Failed to get FCM token');
-  }
-
-  console.log('[firebase.js] FCM token:', fcmToken);
-  return fcmToken;
 }
 
-// 5) Optionally export onMessage if you want to handle incoming pushes in-app
+// Export onMessage to handle incoming messages in the foreground
 export { onMessage };
