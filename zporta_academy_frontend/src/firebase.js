@@ -33,9 +33,15 @@ export async function requestPermissionAndGetToken() {
     console.debug('[firebase.js] ▶ Notification.permission before:', Notification.permission);
 
     // Only ask if user hasn't decided yet
-    if (Notification.permission === 'default') {
-      const perm = await Notification.requestPermission();
-      console.debug('[firebase.js] ▶ Notification.permission after request:', perm);
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+      console.debug('[firebase.js] ▶ Notification.permission after request:', permission);
+    }
+
+    if (permission !== 'granted') {
+      console.warn('[firebase.js] ⚠ Notification permission not granted.');
+      return null;
     }
 
     // Register the Service Worker for FCM
