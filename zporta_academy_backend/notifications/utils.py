@@ -2,10 +2,14 @@
 import firebase_admin
 from firebase_admin import messaging
 from firebase_admin.exceptions import FirebaseError
-from django.conf import settings
-from pathlib import Path
+from django.conf import settings # Not strictly needed here if DOMAIN is hardcoded or comes from elsewhere
+from pathlib import Path # Not strictly needed here unless for other path operations
 
 from .models import FCMToken, FCMLog, Notification as AppNotification
+
+# Define your default domain here, or pull from settings if preferred
+# e.g., from django.conf import settings; DEFAULT_DOMAIN = getattr(settings, 'DEFAULT_DOMAIN', 'https://zportaacademy.com')
+DEFAULT_DOMAIN = "https://zportaacademy.com"
 
 def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
     """
@@ -32,87 +36,76 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
         for key, value in extra_data.items():
             processed_extra_data[key] = str(value) # Ensure all extra_data values are strings
 
-    # --- Minimalist Test (Uncomment the block below and comment out the detailed configs if the string conversion above doesn't work) ---
-    # print("DEBUG: Attempting MINIMALIST push notification send.")
-    # data_payload_minimal = {
-    #     "title": str(title),
-    #     "body": str(body),
-    #     "url": str(link or "https://zportaacademy.com/"), # Ensure link is also a string
-    #     # "click_action": str(link or "https://zportaacademy.com/") # Sometimes used
-    # }
-    # webpush_config_minimal = messaging.WebpushConfig(
-    #     notification=messaging.WebpushNotification(title=str(title), body=str(body)),
-    #     fcm_options=messaging.WebpushFCMOptions(link=str(link or "https://zportaacademy.com/"))
-    # )
-    # messages_to_send_minimal = []
-    # for fcm_token_obj in active_user_tokens:
-    #     msg = messaging.Message(
-    #         token=fcm_token_obj.token,
-    #         data=data_payload_minimal, # Using minimal data payload
-    #         # webpush=webpush_config_minimal # Optionally add minimal webpush
-    #     )
-    #     messages_to_send_minimal.append(msg)
-    #
-    # if not messages_to_send_minimal:
-    #     return 0
-    # try:
-    #     print(f"DEBUG: Sending {len(messages_to_send_minimal)} MINIMAL messages.")
-    #     batch_response = messaging.send_all(messages_to_send_minimal)
-    #     # ... (rest of your logging and success/failure handling for the minimal test)
-    #     # For brevity, I'm omitting the detailed batch response handling here, but you'd adapt it.
-    #     print(f"DEBUG: Minimal batch response success: {batch_response.success_count}, failure: {batch_response.failure_count}")
-    #     if batch_response.success_count > 0:
-    #        return batch_response.success_count
-    #     else: # if failures, log the first error for insight
-    #        for resp_item in batch_response.responses:
-    #            if not resp_item.success:
-    #                print(f"DEBUG: Minimal send failure: {resp_item.exception}")
-    #                FCMLog.objects.create(user=user, action='send_failure', success=False, detail=f"Minimal send error: {str(resp_item.exception)}")
-    #                break # Log first error
-    #        return 0
-    # except FirebaseError as e:
-    #     print(f"DEBUG: FirebaseError during MINIMAL batch send: {e}")
-    #     FCMLog.objects.create(user=user, action='send_attempt', success=False, detail=f"Minimal FirebaseError: {str(e)}")
-    #     return 0
-    # --- End of Minimalist Test block ---
+    # --- Robust Link Processing ---
+    final_link_str = DEFAULT_DOMAIN + "/" # Default link if all else fails or link is None/empty
 
-    # If not using the minimalist test, use the original detailed configuration:
+    if link and isinstance(link, str) and link.strip(): # Check if link is a non-empty string
+        link_stripped = link.strip()
+        if link_stripped.startswith("https://"):
+            final_link_str = link_stripped
+        elif link_stripped.startswith("http://"):
+            # Convert HTTP to HTTPS or use default; for now, let's convert
+            final_link_str = "https://" + link_stripped[len("http://"):]
+            print(f"Info: Converted HTTP link '{link_stripped}' to HTTPS '{final_link_str}'.")
+        elif link_stripped.startswith("/"):
+            # Handle relative paths by prepending your domain
+            final_link_str = f"{DEFAULT_DOMAIN}{link_stripped}"
+            print(f"Info: Converted relative link '{link_stripped}' to '{final_link_str}'.")
+        else:
+            # If link is present but not recognized as valid https/http/relative,
+            # or if it's a malformed URL, use default.
+            # You might want to log a more specific warning if it's an unexpected format.
+            print(f"Warning: Provided link '{link_stripped}' is not a recognized absolute HTTPS/HTTP URL or relative path. Using default link: '{final_link_str}'.")
+    else: # link is None, empty, or not a string
+        print(f"Info: No valid link provided or link is empty. Using default link: '{final_link_str}'.")
+    # --- End of Robust Link Processing ---
+
     webpush_config = messaging.WebpushConfig(
         notification=messaging.WebpushNotification(
-            title=str(title), body=str(body), # Ensure title and body are strings
-            icon=str(processed_extra_data.get("icon", "https://zportaacademy.com/logo192.png")),
-            badge=str(processed_extra_data.get("badge", "https://zportaacademy.com/badge-icon.png")),
+            title=str(title), body=str(body),
+            icon=str(processed_extra_data.get("icon", f"{DEFAULT_DOMAIN}/logo192.png")), # Use default domain for default icon
+            badge=str(processed_extra_data.get("badge", f"{DEFAULT_DOMAIN}/badge-icon.png")), # Use default domain for default badge
         ),
-        fcm_options=messaging.WebpushFCMOptions(link=str(link or "https://zportaacademy.com/"))
+        fcm_options=messaging.WebpushFCMOptions(link=final_link_str) # Use the processed final_link_str
     )
 
     android_config = messaging.AndroidConfig(
         priority="high",
         notification=messaging.AndroidNotification(
-            title=str(title), body=str(body), # Ensure title and body are strings
+            title=str(title), body=str(body),
             icon=str(processed_extra_data.get("icon_android", "ic_notification")),
             color=str(processed_extra_data.get("color", "#FFA500")),
             channel_id=str(processed_extra_data.get("channel_id", "default_channel_id")),
+            click_action=final_link_str # For Android, click_action in notification payload can be used
         )
     )
+
+    # For APNS, the click action is typically handled by the 'url' in custom_data or by the app interpreting the payload.
+    # The 'custom_data' dictionary in APNSPayload is the right place for the URL.
+    apns_custom_data = {key: str(value) for key, value in processed_extra_data.items()}
+    apns_custom_data["url"] = final_link_str # Ensure the URL is in the custom data for APNS
 
     apns_config = messaging.APNSConfig(
         payload=messaging.APNSPayload(
             aps=messaging.Aps(
-                alert=messaging.ApsAlert(title=str(title), body=str(body)), # Ensure title and body are strings
+                alert=messaging.ApsAlert(title=str(title), body=str(body)),
                 badge=int(processed_extra_data.get("badge_count", 1)), # Badge should be an int
                 sound="default",
-                custom_data={key: str(value) for key, value in {**processed_extra_data, "url": str(link or "https://zportaacademy.com/")}.items()}
+                custom_data=apns_custom_data # Pass the dictionary with the URL
             )
         )
     )
 
     data_payload = {
-        "url": str(link or "https://zportaacademy.com/"),
+        "url": final_link_str, # Use the processed final_link_str
         "title": str(title),
         "body": str(body),
-        **processed_extra_data # Use the processed_extra_data with string values
+        **processed_extra_data
     }
+    # Ensure all values in data_payload are strings, as FCM requires this for the 'data' field.
+    for key in data_payload:
+        data_payload[key] = str(data_payload[key])
+
 
     messages_to_send = []
     token_instances_map = {}
@@ -133,7 +126,7 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
 
     success_count = 0
     try:
-        print(f"DEBUG: Attempting to send {len(messages_to_send)} fully configured messages.") # Added debug print
+        print(f"DEBUG: Attempting to send {len(messages_to_send)} fully configured messages. Link: {final_link_str}")
         batch_response = messaging.send_all(messages_to_send)
 
         FCMLog.objects.create(
@@ -160,7 +153,7 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
             else:
                 error_code = response_item.exception.code if hasattr(response_item.exception, 'code') else 'UNKNOWN_ERROR'
                 error_detail = str(response_item.exception)
-                print(f"DEBUG: Send failure for token {fcm_token_instance.token[:10]}... Error: {error_code} - {error_detail}") # Added debug print
+                print(f"DEBUG: Send failure for token {fcm_token_instance.token[:10]}... Error: {error_code} - {error_detail}")
                 FCMLog.objects.create(
                     user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
                     action='send_failure', success=False, detail=f"Error: {error_code} - {error_detail}"
@@ -186,7 +179,7 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
                     )
 
     except FirebaseError as e:
-        print(f"DEBUG: FirebaseError during FULL batch send: {e}") # Added debug print
+        print(f"DEBUG: FirebaseError during FULL batch send: {e}")
         FCMLog.objects.create(
             user=user, action='send_attempt', success=False,
             detail=f"FirebaseError during batch send: {str(e)}"
