@@ -2,14 +2,12 @@
 import firebase_admin
 from firebase_admin import messaging
 from firebase_admin.exceptions import FirebaseError
-from django.conf import settings # Not strictly needed here if DOMAIN is hardcoded or comes from elsewhere
-from pathlib import Path # Not strictly needed here unless for other path operations
+# from django.conf import settings # Only if you need settings.DEFAULT_DOMAIN
+from pathlib import Path # Not strictly needed here for this version
 
 from .models import FCMToken, FCMLog, Notification as AppNotification
 
-# Define your default domain here, or pull from settings if preferred
-# e.g., from django.conf import settings; DEFAULT_DOMAIN = getattr(settings, 'DEFAULT_DOMAIN', 'https://zportaacademy.com')
-DEFAULT_DOMAIN = "https://zportaacademy.com"
+DEFAULT_DOMAIN = "https://zportaacademy.com" # Hardcoded for simplicity, or use settings
 
 def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
     """
@@ -17,11 +15,14 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
     Returns the number of successful deliveries.
     """
     try:
-        firebase_admin.get_app()
+        # Get the default Firebase app instance.
+        # This assumes Firebase was initialized successfully at startup (e.g., in base.py or apps.py)
+        current_app = firebase_admin.get_app()
+        print(f"DEBUG: Using Firebase app: {current_app.name} for project: {current_app.project_id}")
     except ValueError:
-        print("Firebase Admin SDK not initialized. Cannot send push notifications.")
-        FCMLog.objects.create(action='send_attempt', success=False, detail="Firebase Admin SDK not initialized.")
-        return 0
+        print("CRITICAL ERROR: Firebase Admin SDK not initialized (default app not found). Cannot send push notifications.")
+        FCMLog.objects.create(action='send_attempt', success=False, detail="Firebase Admin SDK default app not found prior to send.")
+        return 0 # Critical failure, SDK isn't ready
 
     active_user_tokens = FCMToken.objects.filter(user=user, is_active=True)
     if not active_user_tokens.exists():
@@ -34,39 +35,31 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
     processed_extra_data = {}
     if extra_data:
         for key, value in extra_data.items():
-            processed_extra_data[key] = str(value) # Ensure all extra_data values are strings
+            processed_extra_data[key] = str(value)
 
-    # --- Robust Link Processing ---
-    final_link_str = DEFAULT_DOMAIN + "/" # Default link if all else fails or link is None/empty
-
-    if link and isinstance(link, str) and link.strip(): # Check if link is a non-empty string
+    final_link_str = DEFAULT_DOMAIN + "/"
+    if link and isinstance(link, str) and link.strip():
         link_stripped = link.strip()
         if link_stripped.startswith("https://"):
             final_link_str = link_stripped
         elif link_stripped.startswith("http://"):
-            # Convert HTTP to HTTPS or use default; for now, let's convert
             final_link_str = "https://" + link_stripped[len("http://"):]
             print(f"Info: Converted HTTP link '{link_stripped}' to HTTPS '{final_link_str}'.")
         elif link_stripped.startswith("/"):
-            # Handle relative paths by prepending your domain
             final_link_str = f"{DEFAULT_DOMAIN}{link_stripped}"
             print(f"Info: Converted relative link '{link_stripped}' to '{final_link_str}'.")
         else:
-            # If link is present but not recognized as valid https/http/relative,
-            # or if it's a malformed URL, use default.
-            # You might want to log a more specific warning if it's an unexpected format.
-            print(f"Warning: Provided link '{link_stripped}' is not a recognized absolute HTTPS/HTTP URL or relative path. Using default link: '{final_link_str}'.")
-    else: # link is None, empty, or not a string
-        print(f"Info: No valid link provided or link is empty. Using default link: '{final_link_str}'.")
-    # --- End of Robust Link Processing ---
+            print(f"Warning: Provided link '{link_stripped}' is not a recognized URL. Using default: '{final_link_str}'.")
+    else:
+        print(f"Info: No valid link provided. Using default: '{final_link_str}'.")
 
     webpush_config = messaging.WebpushConfig(
         notification=messaging.WebpushNotification(
             title=str(title), body=str(body),
-            icon=str(processed_extra_data.get("icon", f"{DEFAULT_DOMAIN}/logo192.png")), # Use default domain for default icon
-            badge=str(processed_extra_data.get("badge", f"{DEFAULT_DOMAIN}/badge-icon.png")), # Use default domain for default badge
+            icon=str(processed_extra_data.get("icon", f"{DEFAULT_DOMAIN}/logo192.png")),
+            badge=str(processed_extra_data.get("badge", f"{DEFAULT_DOMAIN}/badge-icon.png")),
         ),
-        fcm_options=messaging.WebpushFCMOptions(link=final_link_str) # Use the processed final_link_str
+        fcm_options=messaging.WebpushFCMOptions(link=final_link_str)
     )
 
     android_config = messaging.AndroidConfig(
@@ -76,65 +69,55 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
             icon=str(processed_extra_data.get("icon_android", "ic_notification")),
             color=str(processed_extra_data.get("color", "#FFA500")),
             channel_id=str(processed_extra_data.get("channel_id", "default_channel_id")),
-            click_action=final_link_str # For Android, click_action in notification payload can be used
+            click_action=final_link_str
         )
     )
 
-    # For APNS, the click action is typically handled by the 'url' in custom_data or by the app interpreting the payload.
-    # The 'custom_data' dictionary in APNSPayload is the right place for the URL.
     apns_custom_data = {key: str(value) for key, value in processed_extra_data.items()}
-    apns_custom_data["url"] = final_link_str # Ensure the URL is in the custom data for APNS
+    apns_custom_data["url"] = final_link_str
 
     apns_config = messaging.APNSConfig(
         payload=messaging.APNSPayload(
             aps=messaging.Aps(
                 alert=messaging.ApsAlert(title=str(title), body=str(body)),
-                badge=int(processed_extra_data.get("badge_count", 1)), # Badge should be an int
+                badge=int(processed_extra_data.get("badge_count", 1)),
                 sound="default",
-                custom_data=apns_custom_data # Pass the dictionary with the URL
+                custom_data=apns_custom_data
             )
         )
     )
 
     data_payload = {
-        "url": final_link_str, # Use the processed final_link_str
-        "title": str(title),
-        "body": str(body),
+        "url": final_link_str, "title": str(title), "body": str(body),
         **processed_extra_data
     }
-    # Ensure all values in data_payload are strings, as FCM requires this for the 'data' field.
-    for key in data_payload:
-        data_payload[key] = str(data_payload[key])
-
+    for key in data_payload: data_payload[key] = str(data_payload[key])
 
     messages_to_send = []
     token_instances_map = {}
-
     for fcm_token_obj in active_user_tokens:
         msg = messaging.Message(
-            token=fcm_token_obj.token,
-            data=data_payload,
-            webpush=webpush_config,
-            android=android_config,
-            apns=apns_config
+            token=fcm_token_obj.token, data=data_payload,
+            webpush=webpush_config, android=android_config, apns=apns_config
         )
         messages_to_send.append(msg)
         token_instances_map[fcm_token_obj.token] = fcm_token_obj
 
-    if not messages_to_send:
-        return 0
+    if not messages_to_send: return 0
 
     success_count = 0
     try:
-        print(f"DEBUG: Attempting to send {len(messages_to_send)} fully configured messages. Link: {final_link_str}")
-        batch_response = messaging.send_all(messages_to_send)
-
+        print(f"DEBUG: Attempting to send {len(messages_to_send)} messages. Link: {final_link_str}. Using app: {current_app.name}")
+        # Explicitly pass the app instance to send_all
+        batch_response = messaging.send_all(messages_to_send, app=current_app) # <--- Explicit app instance
+        
         FCMLog.objects.create(
             user=user, action='send_attempt', success=True,
             detail=f"Batch send attempted. Success: {batch_response.success_count}, Failure: {batch_response.failure_count} for {len(messages_to_send)} tokens."
         )
 
         for idx, response_item in enumerate(batch_response.responses):
+            # ... (rest of your existing success/failure logging for each item in batch_response) ...
             original_message = messages_to_send[idx]
             token_str_for_this_message = original_message.token
             fcm_token_instance = token_instances_map.get(token_str_for_this_message)
@@ -149,7 +132,7 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
                     user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
                     action='send_success', success=True, detail=f"Message ID: {response_item.message_id}"
                 )
-                fcm_token_instance.save() # Updates last_seen
+                fcm_token_instance.save() 
             else:
                 error_code = response_item.exception.code if hasattr(response_item.exception, 'code') else 'UNKNOWN_ERROR'
                 error_detail = str(response_item.exception)
@@ -158,7 +141,7 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
                     user=user, token=fcm_token_instance.token, device_id=fcm_token_instance.device_id,
                     action='send_failure', success=False, detail=f"Error: {error_code} - {error_detail}"
                 )
-
+                # ... (your existing code for handling unregistered_codes) ...
                 unregistered_codes = [
                     'messaging/registration-token-not-registered',
                     'messaging/invalid-registration-token',
@@ -179,7 +162,10 @@ def send_push_to_user_devices(user, title, body, link=None, extra_data=None):
                     )
 
     except FirebaseError as e:
-        print(f"DEBUG: FirebaseError during FULL batch send: {e}")
+        print(f"DEBUG: FirebaseError during FULL batch send (utils.py): {e}")
+        if hasattr(e, 'http_response') and e.http_response is not None:
+             print(f"DEBUG: HTTP Response Status: {e.http_response.status_code}")
+             print(f"DEBUG: HTTP Response Text: {e.http_response.text}")
         FCMLog.objects.create(
             user=user, action='send_attempt', success=False,
             detail=f"FirebaseError during batch send: {str(e)}"
