@@ -71,25 +71,10 @@ const getDeviceId = () => {
 // --- Toast Notification ---
 const ToastContext = React.createContext();
 function ToastProvider({ children }) {
-    const [toast, setToast] = useState(null);
-    const showToast = (message, type = 'info', duration = 4000) => {
-        setToast({ message, type });
-        const timer = setTimeout(() => setToast(null), duration);
-        return () => clearTimeout(timer); // Cleanup timer on unmount or if new toast shown
-    };
+  const showToast = () => {};
     return (
         <ToastContext.Provider value={showToast}>
-            {children}
-            {toast && (
-                <div style={{
-                    position: 'fixed', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
-                    padding: '12px 25px', background: toast.type === 'error' ? '#d32f2f' : (toast.type === 'success' ? '#388e3c' : '#1976d2'),
-                    color: 'white', borderRadius: '4px', zIndex: 10000, boxShadow: '0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px 0 rgba(0,0,0,0.14), 0 1px 18px 0 rgba(0,0,0,0.12)',
-                    textAlign: 'center', fontSize: '14px', fontWeight: 500, minWidth: '288px', maxWidth: 'calc(100% - 40px)'
-                }}>
-                    {toast.message}
-                </div>
-            )}
+
         </ToastContext.Provider>
     );
 }
@@ -458,91 +443,91 @@ const App = () => {
   useEffect(() => {
     // General app status logging
     console.log('[App] Status Update. LoggedIn:', isLoggedIn, 'PWA:', isStandalonePWA(), 'iOS:', isIOS, 'iOS Push Support:', iosSupportsWebPush, 'Notification Perm:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A');
-  }, [isLoggedIn, location.pathname]); // Log on login status or path change
+    }, [isLoggedIn, location.pathname]); // Log on login status or path change
 
-  if (isAuthLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f0f0', color: '#333', fontSize: '18px' }}>Loading Zporta Academy...</div>;
-  }
+    if (isAuthLoading) {
+      return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f0f0', color: '#333', fontSize: '18px' }}>Loading Zporta Academy...</div>;
+    }
 
-  // Determine when to show InstallGate and NotificationControls
-  // Show install prompt only if logged in, not on iOS (manual A2HS), and not already PWA on Android
-  const showInstallGate = isLoggedIn && !isIOS && (!isAndroid || (isAndroid && !isStandalonePWA()));
-  // Show notification controls only if logged in (the component itself has PWA checks)
-  const showNotificationControls = isLoggedIn;
+    // Determine when to show InstallGate and NotificationControls
+    // Show install prompt only if logged in, not on iOS (manual A2HS), and not already PWA on Android
+    const showInstallGate = isLoggedIn && !isIOS && (!isAndroid || (isAndroid && !isStandalonePWA()));
+    // Show notification controls only if logged in (the component itself has PWA checks)
+    const showNotificationControls = isLoggedIn;
 
-try {
-  return (
-    <ToastProvider>
-        <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
-          {isLoggedIn && <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />}
-          
-          <div className="main-content"> {/* Wrapper for content that is not sidebar/bottom menu */}
-            {showInstallGate && <InstallGate isLoggedIn={isLoggedIn} />}
-            {/* NotificationControls will only render if PWA conditions are met within the component */}
-            {showNotificationControls && <NotificationControls isLoggedIn={isLoggedIn} />}
+    try {
+      return (
+        <ToastProvider>
+            <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+              {isLoggedIn && <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />}
+              
+              <div className="main-content"> {/* Wrapper for content that is not sidebar/bottom menu */}
+                {showInstallGate && <InstallGate isLoggedIn={isLoggedIn} />}
+                {/* NotificationControls will only render if PWA conditions are met within the component */}
+                {showNotificationControls && <NotificationControls isLoggedIn={isLoggedIn} />}
 
-            <div className="content-wrapper"> {/* This will contain the routes */}
-              <Routes>
-                <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/home" replace />} />
-                <Route path="/register" element={!isLoggedIn ? <Register /> : <Navigate to="/home" replace />} />
-                <Route path="/password-reset" element={<PasswordReset />} />
-                <Route path="/reset-password-confirm/:uid/:token" element={<PasswordResetConfirm />} />
-                
-                {/* Protected Routes */}
-                <Route path="/home" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" replace />} />
-                <Route path="/profile" element={isLoggedIn ? <Profile onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
-                <Route path="/change-password" element={isLoggedIn ? <ChangePassword token={token} /> : <Navigate to="/login" replace />} />
-                <Route path="/notifications" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
-                <Route path="/alerts" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} /> {/* Alias for notifications? */}
-                <Route path="/guide-requests" element={isLoggedIn ? <GuideRequestsPage /> : <Navigate to="/login" replace />} />
-                
-                <Route path="/learn" element={<Explorer />} /> {/* Assuming Explorer is public or handles auth internally */}
-                <Route path="/explore" element={<UserPosts />} /> {/* Assuming UserPosts is public or handles auth internally */}
-                <Route path="/guides" element={<GuideList />} /> {/* Assuming GuideList is public or handles auth internally */}
-                <Route path="/guide/:username" element={<PublicGuideProfile />} />
-                <Route path="/posts/*" element={<PostDetail />} /> {/* Handles nested post routes */}
-                
-                <Route path="/courses/:username/:date/:subject/:courseTitle" element={<CourseDetail />} />
-                <Route path="/lessons/:username/:subject/:date/:lessonSlug" element={<LessonDetail />} />
-                
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-cancel" element={<PaymentCancel />} />
-                
-                <Route path="/quizzes/my" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
-                <Route path="/quizzes/Attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
-                <Route path="/quizzes/:username/:subject/:date/:quizSlug" element={isLoggedIn ? <QuizPage /> : <Navigate to="/login" replace />} />
-                
-                {/* Admin Routes - Consider a dedicated Admin layout or further protection */}
-                <Route path="/admin/create-course" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />
-                <Route path="/admin/courses/edit/:username/:date/:subject/:courseTitle" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} /> {/* Assuming CreateCourse handles edits too */}
-                <Route path="/admin/create-lesson" element={isLoggedIn ? <CreateLesson /> : <Navigate to="/login" replace />} />
-                <Route path="/admin/create-quiz" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} />
-                <Route path="/admin/create-quiz/:quizId" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} /> {/* For editing quizzes */}
-                <Route path="/admin/create-post" element={isLoggedIn ? <CreatePost /> : <Navigate to="/login" replace />} />
-                
-                <Route path="/my-courses" element={isLoggedIn ? <MyCourses /> : <Navigate to="/login" replace />} />
-                <Route path="/enrolled-courses" element={isLoggedIn ? <EnrolledCourses /> : <Navigate to="/login" replace />} />
-                <Route path="/courses/enrolled/:enrollmentId" element={isLoggedIn ? <EnrolledCourseDetail />: <Navigate to="/login" replace />} />
-                <Route path="/diary" element={isLoggedIn ? <DiaryManagement /> : <Navigate to="/login" replace />} />
-                <Route path="/study/dashboard" element={isLoggedIn ? <StudyDashboard /> : <Navigate to="/login" replace />} />
-                
-                {/* Fallback Route */}
-                <Route path="*" element={<Navigate to={isLoggedIn ? "/home" : "/login"} replace />} />
-              </Routes>
+                <div className="content-wrapper"> {/* This will contain the routes */}
+                  <Routes>
+                    <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/home" replace />} />
+                    <Route path="/register" element={!isLoggedIn ? <Register /> : <Navigate to="/home" replace />} />
+                    <Route path="/password-reset" element={<PasswordReset />} />
+                    <Route path="/reset-password-confirm/:uid/:token" element={<PasswordResetConfirm />} />
+                    
+                    {/* Protected Routes */}
+                    <Route path="/home" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" replace />} />
+                    <Route path="/profile" element={isLoggedIn ? <Profile onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+                    <Route path="/change-password" element={isLoggedIn ? <ChangePassword token={token} /> : <Navigate to="/login" replace />} />
+                    <Route path="/notifications" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
+                    <Route path="/alerts" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} /> {/* Alias for notifications? */}
+                    <Route path="/guide-requests" element={isLoggedIn ? <GuideRequestsPage /> : <Navigate to="/login" replace />} />
+                    
+                    <Route path="/learn" element={<Explorer />} /> {/* Assuming Explorer is public or handles auth internally */}
+                    <Route path="/explore" element={<UserPosts />} /> {/* Assuming UserPosts is public or handles auth internally */}
+                    <Route path="/guides" element={<GuideList />} /> {/* Assuming GuideList is public or handles auth internally */}
+                    <Route path="/guide/:username" element={<PublicGuideProfile />} />
+                    <Route path="/posts/*" element={<PostDetail />} /> {/* Handles nested post routes */}
+                    
+                    <Route path="/courses/:username/:date/:subject/:courseTitle" element={<CourseDetail />} />
+                    <Route path="/lessons/:username/:subject/:date/:lessonSlug" element={<LessonDetail />} />
+                    
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-cancel" element={<PaymentCancel />} />
+                    
+                    <Route path="/quizzes/my" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
+                    <Route path="/quizzes/Attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
+                    <Route path="/quizzes/:username/:subject/:date/:quizSlug" element={isLoggedIn ? <QuizPage /> : <Navigate to="/login" replace />} />
+                    
+                    {/* Admin Routes - Consider a dedicated Admin layout or further protection */}
+                    <Route path="/admin/create-course" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />
+                    <Route path="/admin/courses/edit/:username/:date/:subject/:courseTitle" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} /> {/* Assuming CreateCourse handles edits too */}
+                    <Route path="/admin/create-lesson" element={isLoggedIn ? <CreateLesson /> : <Navigate to="/login" replace />} />
+                    <Route path="/admin/create-quiz" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} />
+                    <Route path="/admin/create-quiz/:quizId" element={isLoggedIn ? <CreateQuiz /> : <Navigate to="/login" replace />} /> {/* For editing quizzes */}
+                    <Route path="/admin/create-post" element={isLoggedIn ? <CreatePost /> : <Navigate to="/login" replace />} />
+                    
+                    <Route path="/my-courses" element={isLoggedIn ? <MyCourses /> : <Navigate to="/login" replace />} />
+                    <Route path="/enrolled-courses" element={isLoggedIn ? <EnrolledCourses /> : <Navigate to="/login" replace />} />
+                    <Route path="/courses/enrolled/:enrollmentId" element={isLoggedIn ? <EnrolledCourseDetail />: <Navigate to="/login" replace />} />
+                    <Route path="/diary" element={isLoggedIn ? <DiaryManagement /> : <Navigate to="/login" replace />} />
+                    <Route path="/study/dashboard" element={isLoggedIn ? <StudyDashboard /> : <Navigate to="/login" replace />} />
+                    
+                    {/* Fallback Route */}
+                    <Route path="*" element={<Navigate to={isLoggedIn ? "/home" : "/login"} replace />} />
+                  </Routes>
+                </div>
+              </div>
+              {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
             </div>
+        </ToastProvider>
+      );}
+      catch (err) {
+        console.error("App render error:", err);
+        return (
+          <div style={{ padding: 20, color: "red" }}>
+            <h1>Rendering Error</h1>
+            <pre>{err.message}</pre>
           </div>
-          {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
-        </div>
-    </ToastProvider>
-  );}
-  catch (err) {
-     console.error("App render error:", err);
-     return (
-       <div style={{ padding: 20, color: "red" }}>
-         <h1>Rendering Error</h1>
-         <pre>{err.message}</pre>
-       </div>
-     );
-   }
+        );
+      }
 };
 export default App;
