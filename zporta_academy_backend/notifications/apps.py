@@ -1,3 +1,4 @@
+# notifications/apps.py
 import firebase_admin
 from firebase_admin import credentials
 from django.apps import AppConfig
@@ -10,14 +11,15 @@ class NotificationsConfig(AppConfig):
     def ready(self):
         if not firebase_admin._apps:
             try:
-                # ✅ Absolute path from backend base to firebase_credentials.json
                 cred_path = Path(__file__).resolve().parent.parent / 'zporta' / 'firebase_credentials.json'
 
                 if cred_path.exists():
                     cred = credentials.Certificate(str(cred_path))
-                    firebase_admin.initialize_app(cred, {
-                        'projectId': 'zporta-academy-web'  # ← THIS IS CRITICAL
-                    })
+                    # MODIFICATION: Initialize without the projectId override
+                    firebase_admin.initialize_app(cred)
+                    # You can optionally print the project ID from the credential itself to verify
+                    # app = firebase_admin.get_app()
+                    # print(f"✅ Firebase Admin SDK initialized for project: {app.project_id}")
                     print("✅ Firebase Admin SDK initialized.")
                 else:
                     print(f"❌ Firebase credential file NOT found at: {cred_path}")
