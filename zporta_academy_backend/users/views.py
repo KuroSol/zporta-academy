@@ -1,8 +1,7 @@
 # users/views.py
-
-# ... (keep other imports)
+from django.shortcuts import get_object_or_404
 from django.http import Http404
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -23,12 +22,15 @@ from .serializers import PasswordResetConfirmSerializer
 from .serializers import ChangePasswordSerializer
 from .serializers import PublicProfileSerializer
 from .serializers import PasswordResetSerializer
+from .serializers import UserScoreSerializer
 from datetime import date
 import math
 from subjects.models import Subject
 from quizzes.models import Quiz
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q # Ensure Q is imported
+
+
 
 # ... (Keep other views like UserLearningScoreView, ChangePasswordView, LoginView, etc.)
 class UserLearningScoreView(APIView):
@@ -361,3 +363,14 @@ class PasswordResetConfirmView(APIView):
              return Response({"error": "Invalid or expired password reset link."}, status=status.HTTP_400_BAD_REQUEST)
         # Return other validation errors (e.g., password complexity)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MyScoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # ensure profile exists
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response({
+            "growth_score": profile.growth_score,
+            "impact_score": profile.impact_score
+        }, status=HTTP_200_OK)

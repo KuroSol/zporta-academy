@@ -171,12 +171,15 @@ class PublicProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source="user.last_name", required=False, allow_blank=True)
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True, format="%Y-%m-%d")
     profile_image_url = serializers.SerializerMethodField()
+    growth_score = serializers.IntegerField(read_only=True)
+    impact_score = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Profile
         fields = [
             "id", "user_id", "username", "email", "first_name", "last_name", "date_joined",
-            "role", "bio", "active_guide", "profile_image", "profile_image_url"
+            "role", "bio", "active_guide", "profile_image", "profile_image_url",
+            "growth_score", "impact_score"
         ]
         extra_kwargs = {
             "profile_image": {"required": False, "allow_null": True},
@@ -189,3 +192,11 @@ class PublicProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.profile_image.url)
             return obj.profile_image.url
         return None
+
+class UserScoreSerializer(serializers.ModelSerializer):
+    user_id  = serializers.IntegerField(source='user.id', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model  = Profile
+        fields = ['user_id', 'username', 'growth_score', 'impact_score']

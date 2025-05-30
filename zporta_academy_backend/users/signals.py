@@ -10,6 +10,7 @@ from courses.models import Course
 from lessons.models import Lesson
 from quizzes.models import Quiz
 
+
 def update_profile_to_both(user):
     """
     Update the user's profile so that the role is 'both'
@@ -71,3 +72,5 @@ def quiz_created_update_profile(sender, instance, created, **kwargs):
 def delete_profile_image_on_delete(sender, instance, **kwargs):
     if instance.image and os.path.isfile(instance.image.path):
         os.remove(instance.image.path)
+
+

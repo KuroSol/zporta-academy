@@ -1,12 +1,20 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext'; // Adjust path as needed
 import apiClient from '../api'; // Adjust path as needed
 import styles from './HomePage.module.css'; // Import NEW CSS Module styles
 
-// --- Helper Components (Keep as is) ---
+import { 
+    FaRocket, FaChalkboardTeacher, FaNewspaper, FaGraduationCap, 
+    FaCheckCircle, FaTimesCircle, FaEllipsisH, FaBookOpen
+} from 'react-icons/fa'; // Example icons
+
+// --- Helper Components (Styled with CSS Modules) ---
 const LoadingPlaceholder = ({ message = "Loading..." }) => (
-    <div className={styles.loadingPlaceholder}>{message}</div>
+    <div className={styles.loadingPlaceholder}>
+        <FaSpinner className={styles.spinner} size={24} /> {/* Using spinner class from CSS */}
+        {message}
+    </div>
 );
 const ErrorMessage = ({ message }) => (
     <p className={styles.errorMessage}>{message}</p>
@@ -14,6 +22,15 @@ const ErrorMessage = ({ message }) => (
 const EmptyState = ({ message }) => (
     <p className={styles.emptyStateMessage}>{message}</p>
 );
+
+// FaSpinner for inline loading states if needed
+const FaSpinner = ({ className, ...props }) => (
+    <svg className={`${styles.spinner} ${className || ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
 
 // --- Main HomePage Component ---
 const HomePage = () => {
@@ -28,59 +45,69 @@ const HomePage = () => {
     }, [token, navigate]);
 
     // --- State Declarations ---
-    // Discover
     const [latestPosts, setLatestPosts] = useState([]);
     const [randomCourses, setRandomCourses] = useState([]);
     const [loadingDiscover, setLoadingDiscover] = useState(true);
     const [errorDiscover, setErrorDiscover] = useState('');
-    // Enrolled Courses
+
     const [enrolledCourses, setEnrolledCourses] = useState([]);
     const [loadingEnrolled, setLoadingEnrolled] = useState(true);
     const [errorEnrolled, setErrorEnrolled] = useState('');
-    // Quiz Attempts
+
     const [latestQuizAttempts, setLatestQuizAttempts] = useState([]);
     const [loadingQuizAttempts, setLoadingQuizAttempts] = useState(true);
     const [errorQuizAttempts, setErrorQuizAttempts] = useState('');
-    // **NEW**: Recent Lessons (will hold Lesson objects from completions)
-    const [latestLessons, setLatestLessons] = useState([]);
+
+    const [latestLessons, setLatestLessons] = useState([]); 
     const [loadingLessons, setLoadingLessons] = useState(true);
     const [errorLessons, setErrorLessons] = useState('');
 
 
     // --- Data Fetching Effects ---
+    const handleApiError = useCallback((err, setErrorState, defaultMessage) => {
+        console.error("API Error:", err.response ? err.response.data : err.message);
+        let message = defaultMessage;
+        if (err.response) {
+            if (err.response.status === 401 || err.response.status === 403) {
+                message = "Session expired. Please log in again.";
+                logout(); 
+            } else if (err.response.data?.detail) {
+                message = err.response.data.detail;
+            } else if (typeof err.response.data === 'string' && err.response.data.length < 100) {
+                message = err.response.data;
+            }
+        } else if (err.message) {
+            message = err.message;
+        }
+        setErrorState(message);
+    }, [logout]);
 
-    // Fetch Discover Content
     useEffect(() => {
         if (!token) return;
-        const fetchDiscoverContent = async () => { /* ... keep existing fetch logic ... */
+        const fetchDiscoverContent = async () => {
             setLoadingDiscover(true);
             setErrorDiscover('');
             try {
                 const [postsRes, coursesRes] = await Promise.all([
-                    apiClient.get('/posts/?ordering=-created_at&limit=4'),
-                    apiClient.get('/courses/?random=4')
+                    apiClient.get('/posts/?ordering=-created_at&limit=4'), 
+                    apiClient.get('/courses/?random=4') 
                 ]);
                 setLatestPosts(Array.isArray(postsRes.data) ? postsRes.data : []);
                 setRandomCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
             } catch (err) {
-                console.error("Error fetching discover content:", err.response ? err.response.data : err.message);
-                setErrorDiscover("Could not load discover content.");
+                handleApiError(err, setErrorDiscover, "Could not load discover content.");
                 setLatestPosts([]);
                 setRandomCourses([]);
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    logout();
-                }
             } finally {
                 setLoadingDiscover(false);
             }
         };
         fetchDiscoverContent();
-    }, [token, logout]);
+    }, [token, handleApiError]);
 
-    // Fetch Enrolled Courses Preview
     useEffect(() => {
         if (!token) return;
-        const fetchEnrolledCourses = async () => { /* ... keep existing fetch logic ... */
+        const fetchEnrolledCourses = async () => {
             setLoadingEnrolled(true);
             setErrorEnrolled('');
             try {
@@ -88,154 +115,93 @@ const HomePage = () => {
                 if (Array.isArray(response.data)) {
                     setEnrolledCourses(response.data);
                 } else {
-                    console.warn("Unexpected format for enrolled courses:", response.data);
                     setEnrolledCourses([]);
-                    setErrorEnrolled("Unexpected data format.");
+                    setErrorEnrolled("Unexpected data format for enrolled courses.");
                 }
             } catch (err) {
-                console.error("Error fetching enrolled courses:", err.response ? err.response.data : err.message);
+                handleApiError(err, setErrorEnrolled, "Failed to load enrolled courses preview.");
                 setEnrolledCourses([]);
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    setErrorEnrolled('Session expired. Please log in again.');
-                    logout();
-                } else {
-                    setErrorEnrolled(`Failed to load course preview: ${err.response?.data?.detail || err.message}`);
-                }
             } finally {
                 setLoadingEnrolled(false);
             }
         };
         fetchEnrolledCourses();
-    }, [token, logout]);
-
-    // Fetch Latest Quiz Attempts Preview
+    }, [token, handleApiError]);
+    
     useEffect(() => {
         if (!token) return;
-      
         const fetchQuizAttempts = async () => {
           setLoadingQuizAttempts(true);
           setErrorQuizAttempts('');
-      
           try {
-            // 1) Fetch all quiz-answer events
-            const res = await apiClient.get(
-              "/events/?event_type=quiz_answer_submitted&ordering=-timestamp"
-            );
-      
+            const res = await apiClient.get("/events/?event_type=quiz_answer_submitted&ordering=-timestamp");
             if (!Array.isArray(res.data)) {
-              console.warn("Unexpected data format for quiz attempts:", res.data);
-              setErrorQuizAttempts("Unexpected data format received.");
-              setLatestQuizAttempts([]);
-              return;
+              setErrorQuizAttempts("Unexpected data format for quiz attempts.");
+              setLatestQuizAttempts([]); return;
             }
-      
-            // 2) Group by quizId
             const grouped = res.data.reduce((acc, event) => {
               const quizId = event.object_id;
               if (!quizId) return acc;
               if (!acc[quizId]) {
-                acc[quizId] = {
-                  events: [],
-                  quiz_title: event.quiz_title || `Quiz ${quizId}`,
-                  quizId
-                };
+                acc[quizId] = { events: [], quiz_title: event.quiz_title || `Quiz ${quizId}`, quizId };
               }
               acc[quizId].events.push(event);
               return acc;
             }, {});
-      
-            // 3) Aggregate stats
             let aggregated = Object.values(grouped).map(({ events, quiz_title, quizId }) => {
               const total = events.length;
               const correct = events.filter(e => e.metadata?.is_correct).length;
-              const latestTimestamp = events
-                .map(e => new Date(e.timestamp))
-                .sort((a, b) => b - a)[0]
-                .toISOString();
+              const latestTimestamp = events.map(e => new Date(e.timestamp)).sort((a, b) => b - a)[0].toISOString();
               return { quizId, quiz_title, total, correct, wrong: total - correct, timestamp: latestTimestamp };
             });
-      
-            // 4) Sort and limit to 3
-            aggregated = aggregated
-              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-              .slice(0, 3);
-      
-            // 5) Fetch each quiz’s permalink
+            aggregated = aggregated.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 3);
             const withPermalinks = await Promise.all(
               aggregated.map(async item => {
                 try {
                   const quizRes = await apiClient.get(`/quizzes/${item.quizId}/`);
                   return { ...item, permalink: quizRes.data.permalink };
-                } catch {
-                  return { ...item, permalink: null };
-                }
+                } catch { return { ...item, permalink: null }; }
               })
             );
-      
             setLatestQuizAttempts(withPermalinks);
           } catch (err) {
-            console.error("Error fetching quiz attempts:", err.response ?? err.message);
-            setErrorQuizAttempts(
-              err.response?.status === 401 || err.response?.status === 403
-                ? "Session expired. Please log in again."
-                : `Failed to fetch quiz attempts: ${err.response?.data?.detail || err.message}`
-            );
+            handleApiError(err, setErrorQuizAttempts, "Failed to fetch quiz attempts.");
             setLatestQuizAttempts([]);
-            if (err.response?.status === 401 || err.response?.status === 403) logout();
-          } finally {
-            setLoadingQuizAttempts(false);
-          }
+          } finally { setLoadingQuizAttempts(false); }
         };
-      
         fetchQuizAttempts();
-      }, [token, logout]);
+      }, [token, handleApiError]);
       
-
-    // **UPDATED**: Fetch Recent Lesson Completions
     useEffect(() => {
         if (!token) return;
-
-        const fetchRecentLessonCompletions = async () => { // Renamed function
+        const fetchRecentLessonCompletions = async () => {
             setLoadingLessons(true);
             setErrorLessons('');
             try {
-                // **CHANGED**: Call the new backend endpoint
-                const response = await apiClient.get('/lessons/completed/recent/'); // Use the new URL
-
+                const response = await apiClient.get('/lessons/completed/recent/'); 
                 if (Array.isArray(response.data)) {
-                    // The response data should be LessonCompletion objects with nested lesson details
-                    // Extract the lesson details for the state
-                    const lessons = response.data.map(completion => completion.lesson).filter(lesson => lesson); // Get lesson object and filter out nulls
+                    const lessons = response.data.map(completion => completion.lesson).filter(lesson => lesson).slice(0, 3); 
                     setLatestLessons(lessons);
                 } else {
-                    console.warn("Unexpected format for recent lesson completions:", response.data);
                     setLatestLessons([]);
                     setErrorLessons("Unexpected data format for completed lessons.");
                 }
             } catch (err) {
-                console.error("Error fetching recent lesson completions:", err.response ? err.response.data : err.message);
+                handleApiError(err, setErrorLessons, "Failed to load recent lessons.");
                 setLatestLessons([]);
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    setErrorLessons("Session expired. Please log in again.");
-                    logout();
-                } else {
-                    setErrorLessons(`Failed to load recent lessons: ${err.response?.data?.detail || err.message}`);
-                }
             } finally {
                 setLoadingLessons(false);
             }
         };
-
-        fetchRecentLessonCompletions(); // Call the renamed function
-    }, [token, logout]);
+        fetchRecentLessonCompletions();
+    }, [token, handleApiError]);
 
 
     // --- Render Logic ---
-
-    if (!user && token) {
-        return <LoadingPlaceholder message="Loading user info..." />;
+    if (!user && token) { 
+        return <LoadingPlaceholder message="Initializing your dashboard..." />;
     }
-    if (!user) return null;
+    if (!user) return null; 
 
     const userRole = user.profile?.role || 'explorer';
     const showStudentSections = userRole === 'explorer' || userRole === 'both';
@@ -243,27 +209,23 @@ const HomePage = () => {
 
     return (
         <div className={styles.homeWrapper}>
-            {/* HERO SECTION */}
             <header className={styles.homeHeader}>
-                <h1 className={styles.homeTitle}>Welcome back, {user.first_name || user.username}!</h1>
-                <p className={styles.homeSubtitle}>Ready to dive back into your learning journey?</p>
+                {/* Welcome Title and Subtitle are removed for a more compact header */}
+                {/* <h1 className={styles.homeTitle}>Welcome back, {user.first_name || user.username}!</h1> */}
+                {/* <p className={styles.homeSubtitle}>Ready to dive back into your learning journey or manage your content?</p> */}
                 <button
                     className={styles.startPlanButton}
-                    onClick={() => navigate('/study/dashboard')}
+                    onClick={() => navigate(showTeacherSections && !showStudentSections ? '/teacher-dashboard' : '/study/dashboard')}
                 >
-                    <span className={styles.startPlanIcon}>🚀</span>
-                    Start Your Study Plan
+                    <span className={styles.startPlanIcon}><FaRocket /></span>
+                    {showTeacherSections && !showStudentSections ? 'Go to Teacher Dashboard' : 'Start Your Study Plan'}
                 </button>
             </header>
 
-            {/* DASHBOARD & DISCOVER CONTENT AREA */}
             <main className={styles.homeContentGrid}>
-
-                {/* --- Student Focused Cards --- */}
                 {showStudentSections && (
                     <>
-                        {/* Enrolled Courses Card */}
-                        <div className={`${styles.dashboardCard} ${styles.enrolledCoursesCard}`}>
+                        <div className={styles.dashboardCard}>
                             <h2>Your Courses</h2>
                             {loadingEnrolled ? <LoadingPlaceholder /> : errorEnrolled ? <ErrorMessage message={errorEnrolled} /> : enrolledCourses.length > 0 ? (
                                 <div className={styles.enrolledPreviewList}>
@@ -278,10 +240,10 @@ const HomePage = () => {
                                                 aria-label={`Go to course: ${enrollment.course.title || 'Untitled Course'}`}
                                             >
                                                 {enrollment.course.cover_image ? (
-                                                    <img src={enrollment.course.cover_image} alt="" className={styles.enrolledPreviewThumb} />
+                                                    <img src={enrollment.course.cover_image} alt="" className={styles.enrolledPreviewThumb} onError={(e) => e.target.style.display='none'}/>
                                                 ) : (
                                                     <div className={`${styles.enrolledPreviewThumb} ${styles.placeholderThumb}`}>
-                                                        <svg xmlns="https://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                        <FaChalkboardTeacher />
                                                     </div>
                                                 )}
                                                 <div className={styles.enrolledPreviewDetails}>
@@ -299,52 +261,42 @@ const HomePage = () => {
                                         )
                                     ))}
                                 </div>
-                            ) : (
-                                <EmptyState message="You haven't enrolled in any courses yet." />
-                            )}
+                            ) : ( <EmptyState message="You haven't enrolled in any courses yet. Explore some now!" /> )}
                             <button className={styles.cardActionButton} onClick={() => navigate('/enrolled-courses')}>
-                                See All Courses
+                                See All Your Courses
                             </button>
                         </div>
 
-                        {/* **UPDATED**: Recent Lessons Card (using completion data) */}
-                        <div className={`${styles.dashboardCard} ${styles.lessonsHistoryCard}`}>
-                            <h2>Recently Completed Lessons</h2> {/* Title changed */}
+                        <div className={styles.dashboardCard}>
+                            <h2>Recently Completed Lessons</h2>
                             {loadingLessons ? <LoadingPlaceholder /> : errorLessons ? <ErrorMessage message={errorLessons} /> : latestLessons.length > 0 ? (
                                 <div className={styles.lessonHistoryPreview}>
-                                    {latestLessons.map(lesson => ( // Now mapping over Lesson objects
-                                        lesson?.id && lesson?.permalink && ( // Check lesson details
+                                    {latestLessons.map(lesson => (
+                                        lesson?.id && lesson?.permalink && (
                                             <div
-                                                key={lesson.id} // Use lesson ID as key
+                                                key={lesson.id}
                                                 className={styles.lessonHistoryItem}
-                                                onClick={() => navigate(`/lessons/${lesson.permalink}`)} // Navigate using permalink
+                                                onClick={() => navigate(`/lessons/${lesson.permalink}`)}
                                                 role="button" tabIndex={0}
                                                 onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/lessons/${lesson.permalink}`)}
                                                 aria-label={`Go to lesson: ${lesson.title || 'Untitled Lesson'}`}
                                             >
-                                                <div className={styles.lessonHistoryIcon}>
-                                                     <svg xmlns="https://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                                                </div>
+                                                <div className={styles.lessonHistoryIcon}><FaBookOpen /></div>
                                                 <div className={styles.lessonHistoryDetails}>
                                                     <h3>{lesson.title || "Untitled Lesson"}</h3>
-                                                    {/* Use course_title from the serialized lesson data */}
                                                     {lesson.course_title && <p className={styles.lessonCourseContext}>{lesson.course_title}</p>}
                                                 </div>
                                             </div>
                                         )
                                     ))}
                                 </div>
-                            ) : (
-                                <EmptyState message="No recently completed lessons." /> // Message updated
-                            )}
-                             {/* Optional: Link to a page showing all completed lessons */}
+                            ) : ( <EmptyState message="No recently completed lessons to show." /> )}
                             <button className={styles.cardActionButton} onClick={() => navigate('/lessons/completed')}>
-                                See All Completed
+                                View All Completed
                             </button>
                         </div>
 
-                        {/* Latest Quiz Attempts Card - Links fixed */}
-                        <div className={`${styles.dashboardCard} ${styles.quizAttemptsCard}`}>
+                        <div className={styles.dashboardCard}>
                             <h2>Recent Quizzes</h2>
                              {loadingQuizAttempts ? <LoadingPlaceholder /> : errorQuizAttempts ? <ErrorMessage message={errorQuizAttempts} /> : latestQuizAttempts.length > 0 ? (
                                 <div className={styles.quizAttemptsPreview}>
@@ -353,132 +305,115 @@ const HomePage = () => {
                                             <div
                                                 key={attempt.quizId}
                                                 className={styles.quizAttemptItem}
-                                                // **Navigate using quizId**
                                                 onClick={() => attempt.permalink && navigate(`/quizzes/${attempt.permalink}`)}
-                                                role="button"
-                                                tabIndex={0}
-                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/quizzes/${attempt.quizId}`)}
+                                                role="button" tabIndex={0}
+                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && attempt.permalink && navigate(`/quizzes/${attempt.permalink}`)}
                                                 aria-label={`View quiz: ${attempt.quiz_title || `Quiz ${attempt.quizId}`}`}
-                                                style={{ cursor: 'pointer' }}
                                             >
                                                 <div className={styles.attemptInfo}>
                                                     <span className={styles.attemptQuiz}>{attempt.quiz_title || `Quiz ${attempt.quizId}`}</span>
-                                                    <span className={styles.attemptDate}>
-                                                        {new Date(attempt.timestamp).toLocaleDateString()}
-                                                    </span>
+                                                    <span className={styles.attemptDate}>{new Date(attempt.timestamp).toLocaleDateString()}</span>
                                                 </div>
                                                 <div className={styles.attemptStats}>
-                                                    <span title={`${attempt.correct} Correct`}><svg xmlns="https://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.statIconCorrect}><polyline points="20 6 9 17 4 12"></polyline></svg> {attempt.correct}</span>
-                                                    <span title={`${attempt.wrong} Incorrect`}><svg xmlns="https://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.statIconIncorrect}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> {attempt.wrong}</span>
-                                                    <span title={`${attempt.total} Total Questions`}>Σ {attempt.total}</span>
+                                                    <span title={`${attempt.correct} Correct`}><FaCheckCircle className={styles.statIconCorrect}/> {attempt.correct}</span>
+                                                    <span title={`${attempt.wrong} Incorrect`}><FaTimesCircle className={styles.statIconIncorrect}/> {attempt.wrong}</span>
+                                                    <span title={`${attempt.total} Total Questions`}> <FaEllipsisH /> {attempt.total}</span>
                                                 </div>
                                             </div>
                                         )
                                     ))}
                                 </div>
-                            ) : (
-                                <EmptyState message="No recent quiz attempts found." />
-                            )}
+                            ) : ( <EmptyState message="No recent quiz attempts found." /> )}
                             <button className={styles.cardActionButton} onClick={() => navigate('/quizzes/attempts')}>
-                                See All Attempts
+                                See All Quiz Attempts
                             </button>
                         </div>
                     </>
                 )}
 
-                {/* --- Teacher Focused Cards --- */}
                 {showTeacherSections && (
                    <>
-                       {/* ... Teacher cards remain the same ... */}
-                       <div className={`${styles.dashboardCard} ${styles.teacherToolsCard}`}>
+                       <div className={styles.dashboardCard}>
                            <h2>Teacher Dashboard</h2>
-                           <p>Manage your content and students.</p>
+                           <p>Access tools to manage your courses, lessons, and student interactions.</p>
                            <button className={styles.cardActionButton} onClick={() => navigate('/teacher-dashboard')}>
-                               Go to Dashboard
+                               Go to Teacher Dashboard
                            </button>
                        </div>
-                       <div className={`${styles.dashboardCard} ${styles.studentInquiriesCard}`}>
-                           <h2>Student Questions</h2>
-                           <p>Review questions needing your attention.</p>
+                       <div className={styles.dashboardCard}>
+                           <h2>Student Inquiries</h2>
+                           <p>Review and respond to questions from your students.</p>
                            <button className={styles.cardActionButton} onClick={() => navigate('/teacher-questions')}>
-                               View Questions
+                               View Student Questions
                            </button>
                        </div>
                    </>
                 )}
 
-                {/* --- Discover Sections --- */}
-                 {/* ... Discover sections remain the same ... */}
                  {loadingDiscover ? (
-                     <div className={styles.discoverSectionLoading}> <LoadingPlaceholder /> </div>
+                     <div className={`${styles.discoverSection} ${styles.discoverSectionLoading}`}> <LoadingPlaceholder message="Loading new content..." /> </div>
                  ) : errorDiscover ? (
-                      <div className={styles.discoverSectionError}> <ErrorMessage message={errorDiscover} /> </div>
-                 ) : latestPosts.length > 0 && (
-                    <section className={`${styles.discoverSection} ${styles.postsSection}`}>
+                      <div className={`${styles.discoverSection} ${styles.discoverSectionError}`}> <ErrorMessage message={errorDiscover} /> </div>
+                 ) : (latestPosts.length > 0 || randomCourses.length > 0) ? (
+                    <>
+                    {latestPosts.length > 0 && (
+                    <section className={styles.discoverSection}>
                         <div className={styles.discoverHeader}>
-                            <h3>Recent Posts</h3>
-                            <Link to="/posts" className={styles.discoverSeeAllBtn}>See All</Link>
+                            <h3>Recent Posts from Zporta</h3>
+                            <Link to="/posts" className={styles.discoverSeeAllBtn}>See All Posts</Link>
                         </div>
                         <div className={styles.discoverGrid}>
                             {latestPosts.map(post => (
                                 post && (
                                     <Link to={post.permalink ? `/posts/${post.permalink}` : '#'} key={post.id} className={styles.discoverCardLink}>
-                                        <div className={styles.discoverCard}>
-                                            {post.og_image_url ? (
-                                                <img src={post.og_image_url} alt="" className={styles.discoverImage} loading="lazy" />
-                                            ) : (
-                                                <div className={`${styles.discoverImage} ${styles.discoverPlaceholder}`}>
-                                                     <svg xmlns="httsp://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                                </div>
-                                            )}
-                                            <div className={styles.discoverInfo}>
-                                                <h4>{post.title || 'Untitled Post'}</h4>
-                                                <p>{post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
-                                            </div>
+                                        {post.og_image_url ? (
+                                            <img src={post.og_image_url} alt="" className={styles.discoverImage} loading="lazy" onError={(e) => e.target.style.display='none'} />
+                                        ) : (
+                                            <div className={styles.discoverPlaceholder}><FaNewspaper /></div>
+                                        )}
+                                        <div className={styles.discoverInfo}>
+                                            <h4>{post.title || 'Untitled Post'}</h4>
+                                            <p>{post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
                                         </div>
                                     </Link>
                                 )
                             ))}
                         </div>
                     </section>
-                 )}
-                 {loadingDiscover ? null : errorDiscover ? null : randomCourses.length > 0 && (
-                    <section className={`${styles.discoverSection} ${styles.coursesSection}`}>
+                    )}
+                    {randomCourses.length > 0 && (
+                    <section className={styles.discoverSection}>
                         <div className={styles.discoverHeader}>
-                            <h3>Explore Courses</h3>
-                            <Link to="/explore?tab=courses" className={styles.discoverSeeAllBtn}>See All</Link>
+                            <h3>Explore New Courses</h3>
+                            <Link to="/explore?tab=courses" className={styles.discoverSeeAllBtn}>Explore All</Link>
                         </div>
                         <div className={styles.discoverGrid}>
                             {randomCourses.map(course => (
                                 course && (
                                      <Link to={course.permalink ? `/courses/${course.permalink}` : '#'} key={course.id} className={styles.discoverCardLink}>
-                                        <div className={styles.discoverCard}>
-                                             {course.cover_image ? (
-                                                <img src={course.cover_image} alt="" className={styles.discoverImage} loading="lazy"/>
-                                            ) : (
-                                                <div className={`${styles.discoverImage} ${styles.discoverPlaceholder}`}>
-                                                    <svg xmlns="https://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                                </div>
-                                            )}
-                                            <div className={styles.discoverInfo}>
-                                                <h4>{course.title || 'Untitled Course'}</h4>
-                                                <p className={styles.courseTypeLabel}>
-                                                   {course.course_type ? course.course_type.charAt(0).toUpperCase() + course.course_type.slice(1) : 'Standard'}
-                                                </p>
-                                            </div>
+                                        {course.cover_image ? (
+                                            <img src={course.cover_image} alt="" className={styles.discoverImage} loading="lazy" onError={(e) => e.target.style.display='none'}/>
+                                        ) : (
+                                            <div className={styles.discoverPlaceholder}><FaGraduationCap /></div>
+                                        )}
+                                        <div className={styles.discoverInfo}>
+                                            <h4>{course.title || 'Untitled Course'}</h4>
+                                            <p className={styles.courseTypeLabel}>
+                                               {course.course_type ? course.course_type.charAt(0).toUpperCase() + course.course_type.slice(1) : 'Standard'}
+                                            </p>
                                         </div>
                                     </Link>
                                 )
                             ))}
                         </div>
                     </section>
-                 )}
-                 {!loadingDiscover && !errorDiscover && latestPosts.length === 0 && randomCourses.length === 0 && (
-                     <div className={styles.discoverSectionEmpty}>
+                    )}
+                    </>
+                 ) : (
+                     <div className={`${styles.discoverSection} ${styles.discoverSectionEmpty}`}>
                          <EmptyState message="Nothing new to discover right now. Check back later!" />
                      </div>
                  )}
-
             </main>
         </div>
     );

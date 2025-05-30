@@ -1,10 +1,15 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
-import { requestPermissionAndGetToken as fetchFcmToken } from './firebase'; // This is from firebase.js
+// Assuming firebase.js is in the src directory and exports requestPermissionAndGetToken
+import { requestPermissionAndGetToken as fetchFcmToken } from './firebase'; 
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
+// Ensure AppHeader.js and AppHeader.module.css are in src/components/AppHeader/
+import AppHeader from './components/AppHeader/AppHeader'; 
+import appHeaderStyles from './components/AppHeader/AppHeader.module.css'; 
+
 import Login from './Login';
 import Profile from './components/Profile';
 import Register from './Register';
@@ -23,7 +28,8 @@ import Explorer from './components/Explorer';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import CreatePost from './components/Admin/CreatePost';
-import './styles.css';
+import './styles.css'; // Main global styles
+
 import UserPosts from './components/UserPosts';
 import PostDetail from './components/PostDetail';
 import ChangePassword from './ChangePassword';
@@ -39,14 +45,15 @@ import EnrolledCourses from './components/EnrolledCourses';
 import EnrolledCourseDetail from './components/EnrolledCourseDetail';
 import StudyDashboard from './components/StudyDashboard';
 
+
 // --- Platform Detection ---
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 const isAndroid = /Android/.test(navigator.userAgent);
-const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent); // Chrome on iOS
+const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent); 
 
 const isStandalonePWA = () => {
-    if (isIOS) return !!navigator.standalone; // For iOS
-    return window.matchMedia('(display-mode: standalone)').matches; // For other browsers
+    if (isIOS) return !!navigator.standalone; 
+    return window.matchMedia('(display-mode: standalone)').matches; 
 };
 
 const getIOSVersion = () => {
@@ -92,41 +99,41 @@ function useFCM(isLoggedIn, authToken) {
     const [attemptedRegistration, setAttemptedRegistration] = useState(false);
 
     const notPWA = !isStandalonePWA();
-    console.log('[useFCM Hook] Initializing. notPWA:', notPWA, 'isLoggedIn:', isLoggedIn, 'authToken:', !!authToken);
+    // console.log('[useFCM Hook] Initializing. notPWA:', notPWA, 'isLoggedIn:', isLoggedIn, 'authToken:', !!authToken);
 
 
     const updateSubscriptionStatus = useCallback(() => {
-        console.log('[useFCM updateSubscriptionStatus] Called. notPWA:', notPWA, 'Notification:', typeof Notification);
+        // console.log('[useFCM updateSubscriptionStatus] Called. notPWA:', notPWA, 'Notification:', typeof Notification);
         if (notPWA || typeof Notification === 'undefined') return;
         const permission = Notification.permission;
         const tokenStored = localStorage.getItem('lastFCMTokenSent');
-        console.log('[useFCM updateSubscriptionStatus] Permission:', permission, 'Token Stored:', !!tokenStored);
+        // console.log('[useFCM updateSubscriptionStatus] Permission:', permission, 'Token Stored:', !!tokenStored);
         setLastTokenSent(tokenStored);
         if (permission === 'granted' && tokenStored) {
             setIsFcmSubscribed(true);
-            console.log('[useFCM updateSubscriptionStatus] Set isFcmSubscribed to true');
+            // console.log('[useFCM updateSubscriptionStatus] Set isFcmSubscribed to true');
         } else {
             setIsFcmSubscribed(false);
-            console.log('[useFCM updateSubscriptionStatus] Set isFcmSubscribed to false');
+            // console.log('[useFCM updateSubscriptionStatus] Set isFcmSubscribed to false');
             if (permission !== 'granted' && tokenStored) {
                 localStorage.removeItem('lastFCMTokenSent');
                 setLastTokenSent(null);
-                console.log('[useFCM updateSubscriptionStatus] Removed lastFCMTokenSent from localStorage');
+                // console.log('[useFCM updateSubscriptionStatus] Removed lastFCMTokenSent from localStorage');
             }
         }
     }, [notPWA]);
 
     useEffect(() => {
-        console.log('[useFCM useEffect for updateSubscriptionStatus] Running. notPWA:', notPWA);
+        // console.log('[useFCM useEffect for updateSubscriptionStatus] Running. notPWA:', notPWA);
         if (notPWA) {
-            console.log('[useFCM useEffect for updateSubscriptionStatus] Bailing out: notPWA is true.');
+            // console.log('[useFCM useEffect for updateSubscriptionStatus] Bailing out: notPWA is true.');
             return;
         }
         updateSubscriptionStatus();
         if (navigator.permissions && typeof navigator.permissions.query === 'function') {
             navigator.permissions.query({ name: 'notifications' }).then((status) => {
                 status.onchange = () => {
-                    console.log('[FCM App.js] Notification permission changed externally.');
+                    // console.log('[FCM App.js] Notification permission changed externally.');
                     updateSubscriptionStatus();
                 };
             }).catch(err => console.warn("[FCM App.js] Error querying notification permissions:", err));
@@ -134,9 +141,9 @@ function useFCM(isLoggedIn, authToken) {
     }, [updateSubscriptionStatus, notPWA]);
 
     const sendTokenToServer = useCallback(async (currentToken) => {
-        console.log('[useFCM sendTokenToServer] Called. notPWA:', notPWA, 'authToken:', !!authToken);
+        // console.log('[useFCM sendTokenToServer] Called. notPWA:', notPWA, 'authToken:', !!authToken);
         if (notPWA) {
-             console.log('[useFCM sendTokenToServer] Bailing out: notPWA is true.');
+             //console.log('[useFCM sendTokenToServer] Bailing out: notPWA is true.');
             return false;
         }
         if (!authToken) {
@@ -147,8 +154,8 @@ function useFCM(isLoggedIn, authToken) {
         const deviceId = getDeviceId();
         setFcmError('');
         try {
-            console.log('[useFCM sendTokenToServer] Attempting to send token to server:', currentToken);
-            const response = await fetch('/api/notifications/save-fcm-token/', {
+            // console.log('[useFCM sendTokenToServer] Attempting to send token to server:', currentToken);
+            const response = await fetch('/api/notifications/save-fcm-token/', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${authToken}` },
                 body: JSON.stringify({ token: currentToken, device_id: deviceId }),
@@ -159,7 +166,7 @@ function useFCM(isLoggedIn, authToken) {
             localStorage.setItem('lastFCMTokenSent', currentToken);
             setLastTokenSent(currentToken);
             setIsFcmSubscribed(true);
-            console.log('[FCM App.js] Token saved on server:', data);
+            // console.log('[FCM App.js] Token saved on server:', data);
             return true;
         } catch (error) {
             console.error('[FCM App.js] Error sending token to server:', error);
@@ -169,30 +176,30 @@ function useFCM(isLoggedIn, authToken) {
     }, [authToken, notPWA]);
 
     const requestPermissionAndGetToken = useCallback(async (isProactive = false) => {
-        console.log('[useFCM requestPermissionAndGetToken] Called. isProactive:', isProactive, 'notPWA:', notPWA, 'isIosChrome:', isIosChrome);
+        // console.log('[useFCM requestPermissionAndGetToken] Called. isProactive:', isProactive, 'notPWA:', notPWA, 'isIosChrome:', isIosChrome);
 
         if (notPWA) {
-            console.log('[useFCM requestPermissionAndGetToken] Exiting: notPWA is true.');
+            // console.log('[useFCM requestPermissionAndGetToken] Exiting: notPWA is true.');
             return null;
         }
         if (isIosChrome) {
-            console.warn('[useFCM requestPermissionAndGetToken] Exiting: Skipping push on Chrome iOS (not supported).');
+            // console.warn('[useFCM requestPermissionAndGetToken] Exiting: Skipping push on Chrome iOS (not supported).');
             if (!isProactive && showToast) showToast('Notifications not supported on Chrome for iOS.', 'info');
             return null;
         }
 
         setAttemptedRegistration(true);
-        console.log('[useFCM requestPermissionAndGetToken] setAttemptedRegistration to true. isLoggedIn:', isLoggedIn, 'Notification:', typeof Notification, 'serviceWorker in navigator:', ('serviceWorker' in navigator));
+        // console.log('[useFCM requestPermissionAndGetToken] setAttemptedRegistration to true. isLoggedIn:', isLoggedIn, 'Notification:', typeof Notification, 'serviceWorker in navigator:', ('serviceWorker' in navigator));
 
         if (!isLoggedIn || typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
             const msg = 'Notifications not supported or user not logged in.';
             setFcmError(msg);
             if (!isProactive && showToast) showToast(msg, 'error');
-            console.warn('[useFCM requestPermissionAndGetToken] Exiting:', msg);
+            // console.warn('[useFCM requestPermissionAndGetToken] Exiting:', msg);
             return null;
         }
         
-        console.log('[useFCM requestPermissionAndGetToken] iOS checks: isIOS:', isIOS, 'isStandalonePWA():', isStandalonePWA(), 'iosSupportsWebPush:', iosSupportsWebPush);
+        // console.log('[useFCM requestPermissionAndGetToken] iOS checks: isIOS:', isIOS, 'isStandalonePWA():', isStandalonePWA(), 'iosSupportsWebPush:', iosSupportsWebPush);
         if (isIOS && (!isStandalonePWA() || !iosSupportsWebPush)) {
             const message = iosSupportsWebPush
                 ? 'For notifications, please add Zporta Academy to your Home Screen first.'
@@ -200,7 +207,7 @@ function useFCM(isLoggedIn, authToken) {
             if ((!isProactive || (isIOS && !isStandalonePWA() && iosSupportsWebPush)) && showToast) {
                 showToast(message, 'info', 6000);
             }
-            console.warn('[useFCM requestPermissionAndGetToken] Exiting: iOS PWA conditions not met for push notifications.');
+            // console.warn('[useFCM requestPermissionAndGetToken] Exiting: iOS PWA conditions not met for push notifications.');
             return null;
         }
 
@@ -208,36 +215,43 @@ function useFCM(isLoggedIn, authToken) {
 
         try {
             let currentPermission = Notification.permission;
-            console.log('[useFCM requestPermissionAndGetToken] Current Notification.permission:', currentPermission);
+            // console.log('[useFCM requestPermissionAndGetToken] Current Notification.permission:', currentPermission);
             if (currentPermission === 'default') {
-                console.log('[useFCM requestPermissionAndGetToken] Permission is default, requesting...');
+                // console.log('[useFCM requestPermissionAndGetToken] Permission is default, requesting...');
                 currentPermission = await Notification.requestPermission();
-                console.log('[useFCM requestPermissionAndGetToken] Permission after request:', currentPermission);
+                // console.log('[useFCM requestPermissionAndGetToken] Permission after request:', currentPermission);
             }
 
             if (currentPermission === 'denied') {
                 if (!isProactive && showToast) showToast('Notifications are disabled. Please check your browser or OS settings.', 'info');
                 setIsFcmSubscribed(false);
                 localStorage.removeItem('lastFCMTokenSent'); setLastTokenSent(null);
-                console.warn('[useFCM requestPermissionAndGetToken] Exiting: Notification permission denied.');
+                // console.warn('[useFCM requestPermissionAndGetToken] Exiting: Notification permission denied.');
                 return null;
             }
 
             if (currentPermission === 'granted') {
-                console.log('[FCM App.js] Notification permission granted. Attempting to call fetchFcmToken from firebase.js...'); // <<< KEY LOG BEFORE CALLING FIREBASE.JS
-                const fcmToken = await fetchFcmToken(); // This is the call to firebase.js
+                // console.log('[FCM App.js] Notification permission granted. Attempting to call fetchFcmToken from firebase.js...'); 
+                if (typeof fetchFcmToken !== 'function') { 
+                    console.error("[FCM App.js] fetchFcmToken is not defined or not a function. Cannot get FCM token. Make sure './firebase.js' exports 'requestPermissionAndGetToken'.");
+                    setIsFcmSubscribed(false);
+                    setFcmError('FCM setup error. Token function missing.');
+                    if (!isProactive && showToast) showToast('Failed to get notification token (setup error).', 'error');
+                    return null;
+                }
+                const fcmTokenValue = await fetchFcmToken(); 
 
-                if (fcmToken) {
-                    console.log('[FCM App.js] Token received from firebase.js:', fcmToken);
-                    if (fcmToken !== lastTokenSent) {
-                        const success = await sendTokenToServer(fcmToken);
+                if (fcmTokenValue) {
+                    // console.log('[FCM App.js] Token received from firebase.js:', fcmTokenValue);
+                    if (fcmTokenValue !== lastTokenSent) {
+                        const success = await sendTokenToServer(fcmTokenValue);
                         if (success && !isProactive && showToast) showToast('Notifications enabled successfully!', 'success');
                     } else {
                         setIsFcmSubscribed(true);
                         if (!isProactive && showToast) showToast('Notifications are already active.', 'info');
-                        console.log('[FCM App.js] Token is current, no server update needed.');
+                        // console.log('[FCM App.js] Token is current, no server update needed.');
                     }
-                    return fcmToken;
+                    return fcmTokenValue;
                 } else {
                     setIsFcmSubscribed(false);
                     const msg = 'Could not get notification token. Ensure permissions are granted and service worker is active. (fetchFcmToken from firebase.js returned null/falsy)';
@@ -247,7 +261,7 @@ function useFCM(isLoggedIn, authToken) {
                     return null;
                 }
             }
-             console.log('[useFCM requestPermissionAndGetToken] Exiting: Did not enter "granted" block or no token from granted block.');
+             //console.log('[useFCM requestPermissionAndGetToken] Exiting: Did not enter "granted" block or no token from granted block.');
         } catch (error) {
             console.error('[FCM App.js] Error in requestPermissionAndGetToken (App.js):', error);
             const errorMsg = error.message && error.message.includes('Notification permission not granted')
@@ -258,36 +272,37 @@ function useFCM(isLoggedIn, authToken) {
             setIsFcmSubscribed(false);
             return null;
         }
-        console.log('[useFCM requestPermissionAndGetToken] Reached end of function unexpectedly.');
+        // console.log('[useFCM requestPermissionAndGetToken] Reached end of function unexpectedly.');
         return null;
     }, [isLoggedIn, sendTokenToServer, showToast, lastTokenSent, notPWA]);
 
     useEffect(() => {
-        console.log('[useFCM useEffect for proactive registration] Running. Conditions: notPWA:', notPWA, 'isLoggedIn:', isLoggedIn, 'authToken:', !!authToken, '!isFcmSubscribed:', !isFcmSubscribed, 'Notification.permission:', (typeof Notification !== 'undefined' ? Notification.permission : 'N/A'), '!attemptedRegistration:', !attemptedRegistration);
+        // console.log('[useFCM useEffect for proactive registration] Running. Conditions: notPWA:', notPWA, 'isLoggedIn:', isLoggedIn, 'authToken:', !!authToken, '!isFcmSubscribed:', !isFcmSubscribed, 'Notification.permission:', (typeof Notification !== 'undefined' ? Notification.permission : 'N/A'), '!attemptedRegistration:', !attemptedRegistration);
 
         if (notPWA) {
-            console.log('[useFCM useEffect for proactive registration] Exiting: notPWA is true.');
+            // console.log('[useFCM useEffect for proactive registration] Exiting: notPWA is true.');
             return;
         }
         if (isLoggedIn && authToken && !isFcmSubscribed && typeof Notification !== 'undefined' && Notification.permission === 'default' && !attemptedRegistration) {
             if (isIOS && (!isStandalonePWA() || !iosSupportsWebPush)) {
-                console.log('[FCM useFCM useEffect for proactive registration] iOS PWA conditions not met for proactive registration. Exiting.');
+                // console.log('[FCM useFCM useEffect for proactive registration] iOS PWA conditions not met for proactive registration. Exiting.');
                 return;
             }
-            console.log('[FCM useFCM useEffect for proactive registration] Conditions met. Proactively attempting notification registration after login... Calling requestPermissionAndGetToken(true)');
+            // console.log('[FCM useFCM useEffect for proactive registration] Conditions met. Proactively attempting notification registration after login... Calling requestPermissionAndGetToken(true)');
             requestPermissionAndGetToken(true);
-        } else {
-            console.log('[useFCM useEffect for proactive registration] Proactive registration conditions NOT MET. Reasons:');
-            if (!isLoggedIn) console.log('  - Not LoggedIn');
-            if (!authToken) console.log('  - No AuthToken');
-            if (isFcmSubscribed) console.log('  - Already FcmSubscribed');
-            if (typeof Notification === 'undefined' || Notification.permission !== 'default') console.log('  - Notification permission not default or Notification undefined. Current permission:', (typeof Notification !== 'undefined' ? Notification.permission : 'N/A'));
-            if (attemptedRegistration) console.log('  - Already attempted registration');
-        }
+        } 
+        // else {
+            // console.log('[useFCM useEffect for proactive registration] Proactive registration conditions NOT MET. Reasons:');
+            // if (!isLoggedIn) console.log('  - Not LoggedIn');
+            // if (!authToken) console.log('  - No AuthToken');
+            // if (isFcmSubscribed) console.log('  - Already FcmSubscribed');
+            // if (typeof Notification === 'undefined' || Notification.permission !== 'default') console.log('  - Notification permission not default or Notification undefined. Current permission:', (typeof Notification !== 'undefined' ? Notification.permission : 'N/A'));
+            // if (attemptedRegistration) console.log('  - Already attempted registration');
+        // }
     }, [isLoggedIn, authToken, isFcmSubscribed, requestPermissionAndGetToken, attemptedRegistration, notPWA]);
 
     if (notPWA) {
-        console.log('[useFCM Hook] Bailing out at the end because notPWA is true. Returning stubs.');
+        // console.log('[useFCM Hook] Bailing out at the end because notPWA is true. Returning stubs.');
         return {
             requestPermissionAndGetToken: () => { console.log('[FCM Stub] requestPermissionAndGetToken called'); return Promise.resolve(null); },
             isFcmSubscribed: false,
@@ -314,7 +329,7 @@ function InstallGate({ isLoggedIn }) {
         e.preventDefault();
         setDeferredPrompt(e);
         setIsVisible(true);
-        console.log('[InstallGate] beforeinstallprompt event fired.');
+        // console.log('[InstallGate] beforeinstallprompt event fired.');
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -328,23 +343,29 @@ function InstallGate({ isLoggedIn }) {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
         if(showToast) showToast('Zporta Academy installed successfully!', 'success');
-        console.log('[InstallGate] PWA installation accepted.');
+        // console.log('[InstallGate] PWA installation accepted.');
     } else {
-        console.log('[InstallGate] PWA installation dismissed.');
+        // console.log('[InstallGate] PWA installation dismissed.');
     }
     setDeferredPrompt(null);
     setIsVisible(false);
   };
   const handleDismiss = () => {
     setIsVisible(false);
-    console.log('[InstallGate] Install prompt dismissed by user.');
+    // console.log('[InstallGate] Install prompt dismissed by user.');
   };
 
+  // Simple inline styles for the install gate banner
+  const bannerStyle = { padding: '10px', background: '#e0f7fa', textAlign: 'center', borderBottom: '1px solid #b2ebf2', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', position: 'sticky', top: 0, zIndex: 900 };
+  const buttonStyle = { padding: '5px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' };
+  const dismissButtonStyle = { fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' };
+
+
   return (
-    <div style={{ padding: '10px', background: '#e0f7fa', textAlign: 'center', borderBottom: '1px solid #b2ebf2', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+    <div style={bannerStyle}>
       <span>Install Zporta Academy for the best experience!</span>
-      <button onClick={handleInstall} style={{ padding: '5px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Install</button>
-      <button onClick={handleDismiss} style={{ fontSize: '12px', padding: '3px 8px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white', cursor: 'pointer' }}>Dismiss</button>
+      <button onClick={handleInstall} style={buttonStyle}>Install</button>
+      <button onClick={handleDismiss} style={dismissButtonStyle}>Dismiss</button>
     </div>
   );
 }
@@ -374,7 +395,7 @@ export function NotificationControls({ isLoggedIn }) {
     } else {
       setShowA2HSGuidance(false);
     }
-  }, [isFcmSubscribed]); // Removed isIOS, iosSupportsWebPush, isStandalonePWA from deps as they don't change
+  }, [isFcmSubscribed]); 
 
   if (!isStandalonePWA()) return null;
   if (isIosChrome) return null;
@@ -389,8 +410,8 @@ export function NotificationControls({ isLoggedIn }) {
   }
 
   const handleEnableNotifications = async () => {
-    if (setAttemptedRegistration) setAttemptedRegistration(false); // Allow re-attempt
-    if (requestPermissionAndGetToken) await requestPermissionAndGetToken(false); // Not proactive here, user initiated
+    if (setAttemptedRegistration) setAttemptedRegistration(false); 
+    if (requestPermissionAndGetToken) await requestPermissionAndGetToken(false); 
   };
 
   const handleDisableNotifications = () => {
@@ -405,19 +426,31 @@ export function NotificationControls({ isLoggedIn }) {
       );
     }
   };
+  
+  // Simple inline styles for notification banners
+  const bannerBaseStyle = { padding: 12, textAlign: 'center', borderBottom: '1px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', position: 'sticky', top: 0, zIndex: 890 }; 
+  const infoBannerStyle = { ...bannerBaseStyle, background: '#e3f2fd', borderBottomColor: '#90caf9' };
+  const successBannerStyle = { ...bannerBaseStyle, background: '#e8f5e9', borderBottomColor: '#a5d6a7' };
+  const warningBannerStyle = { ...bannerBaseStyle, background: '#fffde7', borderBottomColor: '#fff59d' };
+  const errorBannerStyle = { ...bannerBaseStyle, background: '#ffebee', borderBottomColor: '#ffcdd2' };
+  const buttonBaseStyle = { border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: 'pointer' };
+  const primaryButtonStyle = { ...buttonBaseStyle, background: '#4CAF50', color: 'white' };
+  const secondaryButtonStyle = { ...buttonBaseStyle, background: '#ffc107', color: 'black' };
+  const dismissButtonSmallStyle = { ...buttonBaseStyle, fontSize: '12px', padding: '3px 8px', background: '#bbb', color: 'white' };
+
 
   if (showA2HSGuidance) {
     return (
-      <div style={{ padding: 12, background: '#fffde7', textAlign: 'center', borderBottom: '1px solid #fff59d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+      <div style={warningBannerStyle}>
         <span>To enable notifications on your iPhone, please add Zporta Academy to your Home Screen first.</span>
-        <button onClick={() => setShowA2HSGuidance(false)} style={{ padding: '3px 8px', fontSize: '12px', background: '#bbb', border: 'none', borderRadius: '3px', color: 'white' }}>Dismiss</button>
+        <button onClick={() => setShowA2HSGuidance(false)} style={dismissButtonSmallStyle}>Dismiss</button>
       </div>
     );
   }
 
   if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
     return (
-      <div style={{ padding: 12, background: '#ffebee', textAlign: 'center', borderBottom: '1px solid #ffcdd2' }}>
+      <div style={errorBannerStyle}>
         Notifications are blocked. Please enable them in your browser/OS settings to receive updates.
       </div>
     );
@@ -425,19 +458,19 @@ export function NotificationControls({ isLoggedIn }) {
 
   if (isFcmSubscribed) {
     return (
-      <div style={{ padding: 12, background: '#e8f5e9', textAlign: 'center', borderBottom: '1px solid #a5d6a7', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+      <div style={successBannerStyle}>
         <span>Push notifications are ON for this device.</span>
-        <button onClick={handleDisableNotifications} style={{ padding: '5px 10px', background: '#ffc107', color: 'black', border: 'none', borderRadius: '4px' }}>Disable</button>
+        <button onClick={handleDisableNotifications} style={secondaryButtonStyle}>Disable</button>
       </div>
     );
   }
 
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
     return (
-      <div style={{ padding: 12, background: '#e3f2fd', textAlign: 'center', borderBottom: '1px solid #90caf9', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+      <div style={{...infoBannerStyle, flexDirection: 'column', alignItems: 'center', gap: '8px'}}>
         <div>
             <span>Enable push notifications to stay updated?</span>
-            <button onClick={handleEnableNotifications} style={{ marginLeft: 10, padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}>Enable</button>
+            <button onClick={handleEnableNotifications} style={{...primaryButtonStyle, marginLeft: 10}}>Enable</button>
         </div>
         {fcmError && <p style={{ color: '#c62828', marginTop: 0, fontSize: '12px' }}>Error: {fcmError}</p>}
       </div>
@@ -451,35 +484,53 @@ export function NotificationControls({ isLoggedIn }) {
 const App = () => {
   const { token, logout, isAuthLoading } = useContext(AuthContext);
   const isLoggedIn = !!token;
+  const location = useLocation(); // Get current location
 
-  // requestPermissionAndGetToken from useFCM will be used.
-  // isFcmSubscribed from useFCM will be used.
   const { requestPermissionAndGetToken, isFcmSubscribed } = useFCM(isLoggedIn, token);
 
   useEffect(() => {
-    console.log('[App Component useEffect for proactive FCM] Running. Conditions: !isFcmSubscribed:', !isFcmSubscribed, 'isLoggedIn:', isLoggedIn, 'isStandalonePWA():', isStandalonePWA());
+    // console.log('[App Component useEffect for proactive FCM] Running. Conditions: !isFcmSubscribed:', !isFcmSubscribed, 'isLoggedIn:', isLoggedIn, 'isStandalonePWA():', isStandalonePWA());
     if (!isFcmSubscribed && isLoggedIn && isStandalonePWA()) {
-      console.log('[App Component useEffect for proactive FCM] Conditions MET. Calling requestPermissionAndGetToken(true)');
-      requestPermissionAndGetToken(true); // This calls the function within useFCM
-    } else {
-      console.log('[App Component useEffect for proactive FCM] Conditions NOT MET. Reasons:');
-      if (isFcmSubscribed) console.log('  - Already FcmSubscribed');
-      if (!isLoggedIn) console.log('  - Not LoggedIn');
-      if (!isStandalonePWA()) console.log('  - Not StandalonePWA');
-    }
-  }, [isLoggedIn, isFcmSubscribed, requestPermissionAndGetToken]); // requestPermissionAndGetToken is stable due to useCallback
+      // console.log('[App Component useEffect for proactive FCM] Conditions MET. Calling requestPermissionAndGetToken(true)');
+      requestPermissionAndGetToken(true); 
+    } 
+    // else {
+      // console.log('[App Component useEffect for proactive FCM] Conditions NOT MET. Reasons:');
+      // if (isFcmSubscribed) console.log('  - Already FcmSubscribed');
+      // if (!isLoggedIn) console.log('  - Not LoggedIn');
+      // if (!isStandalonePWA()) console.log('  - Not StandalonePWA');
+    // }
+  }, [isLoggedIn, isFcmSubscribed, requestPermissionAndGetToken]);
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const location = useLocation();
   const isOnLessonDetailPage = location.pathname.startsWith('/lessons/');
+
+  // Define paths where the AppHeader should NOT be shown
+  const noHeaderPaths = ['/login', '/register', '/password-reset'];
+  const pathStartsWith = (paths) => paths.some(path => location.pathname.startsWith(path));
+  
+  const showAppHeader = isLoggedIn && !noHeaderPaths.includes(location.pathname) && !pathStartsWith(['/reset-password-confirm/']);
+
+  // Manage body padding based on AppHeader visibility
+  useEffect(() => {
+    if (showAppHeader) {
+      document.body.classList.add(appHeaderStyles.bodyWithFixedHeader);
+    } else {
+      document.body.classList.remove(appHeaderStyles.bodyWithFixedHeader);
+    }
+    return () => {
+      document.body.classList.remove(appHeaderStyles.bodyWithFixedHeader);
+    };
+  }, [showAppHeader]); 
+
 
   const handleLogout = () => {
     logout();
   };
 
-  useEffect(() => {
-    console.log('[App Component Status Update] LoggedIn:', isLoggedIn, 'PWA:', isStandalonePWA(), 'iOS:', isIOS, 'iOS Push Support:', iosSupportsWebPush, 'Notification Perm:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A', 'Path:', location.pathname);
-  }, [isLoggedIn, location.pathname]);
+  // useEffect(() => {
+    // console.log('[App Component Status Update] LoggedIn:', isLoggedIn, 'PWA:', isStandalonePWA(), 'iOS:', isIOS, 'iOS Push Support:', iosSupportsWebPush, 'Notification Perm:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A', 'Path:', location.pathname);
+  // }, [isLoggedIn, location.pathname]);
 
   if (isAuthLoading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f0f0', color: '#333', fontSize: '18px' }}>Loading Zporta Academy...</div>;
@@ -491,6 +542,7 @@ const App = () => {
   try {
     return (
           <div className={`app-container ${isExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+            {showAppHeader && <AppHeader />} {/* Conditional rendering of AppHeader */}
             {isLoggedIn && <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />}
 
             <div className="main-content">
@@ -511,11 +563,11 @@ const App = () => {
                   <Route path="/alerts" element={isLoggedIn ? <Notifications /> : <Navigate to="/login" replace />} />
                   <Route path="/guide-requests" element={isLoggedIn ? <GuideRequestsPage /> : <Navigate to="/login" replace />} />
 
-                  <Route path="/learn" element={<Explorer />} />
+                  <Route path="/learn" element={<Explorer />} /> 
                   <Route path="/explore" element={<UserPosts />} />
                   <Route path="/guides" element={<GuideList />} />
                   <Route path="/guide/:username" element={<PublicGuideProfile />} />
-                  <Route path="/posts/*" element={<PostDetail />} />
+                  <Route path="/posts/*" element={<PostDetail />} /> 
 
                   <Route path="/courses/:username/:date/:subject/:courseTitle" element={<CourseDetail />} />
                   <Route path="/lessons/:username/:subject/:date/:lessonSlug" element={<LessonDetail />} />
@@ -544,7 +596,7 @@ const App = () => {
                 </Routes>
               </div>
             </div>
-            {isLoggedIn && !isOnLessonDetailPage && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
+            {isLoggedIn && !isOnLessonDetailPage && !noHeaderPaths.includes(location.pathname) && !pathStartsWith(['/reset-password-confirm/']) && <BottomMenu permissions={localStorage.getItem('permissions')?.split(',') || []} />}
           </div>
     );}
     catch (err) {
@@ -557,4 +609,5 @@ const App = () => {
       );
     }
 };
+// The extraneous text that caused the syntax error was here and has been removed.
 export default App;
