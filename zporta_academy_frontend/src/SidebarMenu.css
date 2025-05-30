@@ -1,32 +1,34 @@
-/* SidebarMenu.css (Mobile Refinements) */
+/* SidebarMenu.css - Aligned with AppHeader */
 
 :root {
   /* Z-Indexes */
-  --zindex-main-header: 1010;         /* Example for your main page header */
   --zindex-sidebar: 1030;              /* Sidebar panel */
   --zindex-sidebar-handle: 1031;       /* Sidebar toggle handle */
 
   /* Sidebar Dimensions */
-  --sidebar-width-desktop-collapsed: 60px; /* "Tiny bar" width for PC/Tablet */
-  --sidebar-width-expanded: 250px;         /* Full width when expanded */
+  --sidebar-width-desktop-collapsed: 60px; 
+  --sidebar-width-expanded: 250px;         
   --sidebar-transition-duration: 0.3s;
   --sidebar-transition-timing: ease; 
 
   /* Unified Handle Toggle Dimensions & Style */
-  --sidebar-handle-width: 28px;          /* Width of the handle's touch area */
-  --sidebar-handle-visual-width: 20px;   /* Visual width of the colored part */
-  --sidebar-handle-height: 60px;         /* Height of the handle */
-  --sidebar-handle-bg-closed: #ffc107;   /* Gold when sidebar is closed */
-  --sidebar-handle-icon-closed: #1B2735; /* Dark blue icon */
-  --sidebar-handle-bg-open: #2c3e50;   /* Darker blue when sidebar is open, for contrast */
-  --sidebar-handle-icon-open: #ffc107;   /* Gold icon */
+  --sidebar-handle-width: 28px;          
+  --sidebar-handle-visual-width: 20px;   
+  --sidebar-handle-height: 60px;         
+  --sidebar-handle-bg-closed: #ffc107;   
+  --sidebar-handle-icon-closed: #1B2735; 
+  --sidebar-handle-bg-open: #2c3e50;   
+  --sidebar-handle-icon-open: #ffc107;   
   
-  /* Colors & Base Styles */
-  --sidebar-bg-color: rgba(27, 39, 53, 0.97); /* Dark blue with slight transparency */
+  /* Colors & Base Styles from your original SidebarMenu.css */
+  --sidebar-bg-color: rgba(27, 39, 53, 0.97); 
   --sidebar-text-color: #ffc107;
-  --sidebar-accent-color: #ffc107;       /* For borders, highlights */
-  --main-header-height: 60px;            /* << IMPORTANT: Approx. height of your main page header */
-  --zporta-radius-md: 8px;               /* Assuming from global styles */
+  --sidebar-accent-color: #ffc107;       
+  --zporta-radius-md: 8px;               
+
+  /* NEW: AppHeader Heights (from AppHeader.module.css) */
+  --app-header-height-desktop: 55px;
+  --app-header-height-mobile: 50px;
 }
 
 /* -----------------------------------------------------------------------------
@@ -34,10 +36,10 @@
 ----------------------------------------------------------------------------- */
 .sidebar-menu {
   position: fixed;
-  /* Default top:0 for desktop, will be overridden for mobile */
-  top: 0; 
-  right: 0; /* Sidebar is on the right */
-  bottom: 0;
+  top: var(--app-header-height-desktop); /* Start below desktop header */
+  right: 0; 
+  bottom: 0; /* Stretches to bottom of viewport */
+  height: calc(100vh - var(--app-header-height-desktop)); /* Fill remaining height */
   background-color: var(--sidebar-bg-color);
   color: var(--sidebar-text-color);
   z-index: var(--zindex-sidebar);
@@ -45,19 +47,19 @@
   flex-direction: column;
   justify-content: flex-start;
   box-sizing: border-box;
-  padding: 20px 10px; /* Default padding */
+  padding: 20px 10px; 
   overflow-x: hidden;
   overflow-y: auto;
   box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.25);
 
-  /* Default: Desktop/Tablet collapsed state */
   width: var(--sidebar-width-desktop-collapsed);
-  transform: translateX(0); /* On screen by default for desktop */
+  transform: translateX(0); 
   opacity: 1;
   transition: width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
               transform var(--sidebar-transition-duration) var(--sidebar-transition-timing),
               opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing),
-              top var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Added top transition */
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing), /* Added top transition */
+              height var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Added height transition */
 }
 
 .sidebar-menu.expanded {
@@ -108,8 +110,19 @@
 ----------------------------------------------------------------------------- */
 .sidebar-unified-handle {
   position: fixed;
-  top: 50%; /* Vertically center on screen */
+  top: calc(var(--app-header-height-desktop) + 30px); /* Position relative to header + offset */
+  /* Or, to keep it viewport-centered: top: 50%; transform: translateY(-50%); */
+  /* Let's try viewport centered first, it's usually more stable visually */
+  /* top: 50%; */ 
+  /* transform: translateY(-50%); */
+  /* If the sidebar starts lower, the handle should also be relative to that new top */
+  /* Let's calculate its top based on the sidebar's new top position */
+  /* We want it to be roughly in the middle of the *visible* sidebar area */
+  /* This might need tweaking or a JS solution if perfect centering is hard with pure CSS */
+  /* For now, let's keep it viewport centered, as it's simpler and often works well */
+  top: 50%; 
   transform: translateY(-50%);
+
   width: var(--sidebar-handle-width); 
   height: var(--sidebar-handle-height);
   background-color: transparent; 
@@ -178,17 +191,13 @@
 ----------------------------------------------------------------------------- */
 @media only screen and (max-width: 768px) {
   .sidebar-menu {
-    /* On mobile, sidebar starts below the main header */
-    top: var(--main-header-height); 
-    bottom: 0; /* Ensure it doesn't go beyond the bottom of viewport */
-    height: calc(100vh - var(--main-header-height)); /* Adjust height */
+    top: var(--app-header-height-mobile); /* Use mobile header height */
+    height: calc(100vh - var(--app-header-height-mobile)); /* Adjust height for mobile header */
     
     width: var(--sidebar-width-expanded); 
     transform: translateX(100%); 
     opacity: 0; 
-    background-color: var(--sidebar-bg-color); /* Already slightly transparent */
-    /* Padding for content inside the sidebar, top padding is now more critical */
-    padding: 15px 10px; /* Adjusted top padding as sidebar itself starts lower */
+    padding: 15px 10px; 
   }
 
   .sidebar-menu.expanded {
@@ -196,46 +205,45 @@
     opacity: 1; 
   }
 
-  /* Ensure content is correctly displayed when expanded on mobile */
   .sidebar-menu.expanded .sidebar-header .sidebar-title {
-    font-size: 20px; /* Slightly smaller if header area is more compact */
+    font-size: 20px; 
   }
   .sidebar-menu.expanded .profile-info,
   .sidebar-menu.expanded nav ul li a span {
     display: inline;
   }
   .sidebar-menu.expanded .profile-hexagon {
-    width: 60px; /* Adjust if needed for new layout */
+    width: 60px; 
     height: 60px;
     border-width: 2px;
   }
   .sidebar-menu.expanded .icon {
-    margin-right: 10px; /* Adjusted margin */
-    font-size: 18px;  /* Adjusted icon size */
+    margin-right: 10px; 
+    font-size: 18px;  
   }
   .sidebar-menu.expanded nav ul li a {
-    padding: 8px 10px; /* Adjusted padding */
+    padding: 8px 10px; 
     justify-content: flex-start;
   }
   .sidebar-menu.expanded .notification-link .notification-badge {
     top: -4px; 
     right: -4px;
-    width: 16px; /* Slightly smaller badge */
+    width: 16px; 
     height: 16px;
     font-size: 10px;
     line-height: 16px;
   }
 
-  /* Mobile Handle Positioning */
-  /* The handle is still vertically centered on the viewport (top: 50%; transform: translateY(-50%))
-     This should make it appear centered against the visible portion of the sidebar panel.
-     If the sidebar panel is shorter (due to starting below the main header), the handle will
-     still be at 50% of the viewport height.
-  */
-  .sidebar-unified-handle.is-closed {
-    right: 0px; /* Flush to screen edge when sidebar is hidden */
+  /* Mobile Handle Positioning - remains viewport centered */
+   .sidebar-unified-handle.is-closed {
+    right: 0px; /* Flush to screen edge when sidebar is hidden on mobile */
   }
   /* .is-open styles for handle are the same as desktop: right: var(--sidebar-width-expanded); */
+  /* Adjust top of handle if it looks off with mobile header */
+  .sidebar-unified-handle {
+    top: calc(var(--app-header-height-mobile) + 30px); /* Example: 30px below mobile header */
+    /* Or keep viewport centered: top: 50%; transform: translateY(-50%); */
+  }
 }
 
 /* -----------------------------------------------------------------------------
@@ -314,12 +322,12 @@
   white-space: nowrap;
 }
 .sidebar-menu nav ul li a:hover {
-  color: var(--sidebar-bg-color); /* Text becomes dark */
-  background-color: var(--sidebar-accent-color); /* BG becomes gold */
-  padding-left: 15px; /* Slight indent on hover */
+  color: var(--sidebar-bg-color); 
+  background-color: var(--sidebar-accent-color); 
+  padding-left: 15px; 
 }
 .sidebar-menu nav ul li a:hover .icon {
-  color: var(--sidebar-bg-color); /* Icon becomes dark */
+  color: var(--sidebar-bg-color); 
 }
 .sidebar-menu nav ul li a.active {
   color: var(--sidebar-bg-color);

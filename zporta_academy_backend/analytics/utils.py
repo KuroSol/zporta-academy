@@ -6,6 +6,8 @@ from django.utils import timezone
 import math
 from datetime import timedelta
 import logging
+from users.models import Profile
+from django.db.models import F
 
 # Attempt to import Quiz model, needed for total question count
 try:
@@ -45,6 +47,9 @@ def log_event(user, event_type, instance, metadata=None):
             object_id=instance.id,
             metadata=metadata
         )
+        if event_type == 'quiz_answer_submitted':
+            Profile.objects.filter(user=user).update(growth_score=F('growth_score') + 1)
+
     except Exception as e:
         logger.error(f"Failed to log event {event_type} for user {user.id}: {e}", exc_info=True)
 

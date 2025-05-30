@@ -25,6 +25,21 @@ class Profile(models.Model):
     bio = models.TextField(blank=True, null=True)
     active_guide = models.BooleanField(default=False)
     profile_image = models.ImageField(upload_to=profile_image_upload_to, blank=True, null=True)
+
+    # ── Growth & Impact Scores ─────────────────────────────────────────────────
+    growth_score = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text="🌱 Growth Score: +1 per quiz, +2 per lesson, +3 per course completed"
+    )
+    impact_score = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text="✨ Impact Score: +2 per quiz, +4 per lesson, +6 per course created; +1/+2/+3 when others complete"
+    )
+    # ────────────────────────────────────────────────────────────────────────────
+
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

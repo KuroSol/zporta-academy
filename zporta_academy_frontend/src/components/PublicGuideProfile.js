@@ -1,545 +1,535 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
-import apiClient from '../api'; 
-import "./PublicGuideProfile.css"; 
+import { AuthContext } from "../context/AuthContext"; // Assuming correct path
+import apiClient from '../api'; // Assuming correct path
+import styles from "./PublicGuideProfile.module.css"; // Ensure this path is correct
+import { FaBookReader, FaAward } from "react-icons/fa";
+
+const INITIAL_DISPLAY_DEFAULT_TAB = 6; // Max items for the very first display of the default tab
+const SUBSEQUENT_LOAD_BATCH_SIZE = { // Number of items to load on each scroll and for initial display of non-default tabs
+  courses: 6, // Batch size for courses (can be same or different from initial)
+  lessons: 5,
+  quizzes: 5,
+};
+
+// Simple throttle function
+const throttle = (func, limit) => {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+};
 
 const PublicGuideProfile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
 
-  // Get current user and token from AuthContext
   const { user: currentUser, token, logout } = useContext(AuthContext);
 
   const [profile, setProfile] = useState(null);
-  const [activeTab, setActiveTab] = useState("courses");
+  const [activeTab, setActiveTab] = useState("courses"); // Default active tab
 
-  const [posts, setPosts] = useState([]);
-  const [postsLoading, setPostsLoading] = useState(true);
-
+  // Data states
   const [courses, setCourses] = useState([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-  const [currentCoursePage, setCurrentCoursePage] = useState(1);
-  const itemsPerCoursePage = 5;
-  const totalCoursePages = Math.ceil(courses.length / itemsPerCoursePage);
-  const paginatedCourses = courses.slice(
-    (currentCoursePage - 1) * itemsPerCoursePage,
-    currentCoursePage * itemsPerCoursePage
-  );
-
   const [lessons, setLessons] = useState([]);
-  const [lessonsLoading, setLessonsLoading] = useState(true);
-  const [currentLessonPage, setCurrentLessonPage] = useState(1);
-  const itemsPerLessonPage = 5;
-  const totalLessonPages = Math.ceil(lessons.length / itemsPerLessonPage);
-  const paginatedLessons = lessons.slice(
-    (currentLessonPage - 1) * itemsPerLessonPage,
-    currentLessonPage * itemsPerLessonPage
-  );
-
   const [quizzes, setQuizzes] = useState([]);
+
+  // Loading states for each data type (initial fetch)
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [lessonsLoading, setLessonsLoading] = useState(true);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
-  const [currentQuizPage, setCurrentQuizPage] = useState(1);
-  const itemsPerQuizPage = 5;
-  const totalQuizPages = Math.ceil(quizzes.length / itemsPerQuizPage);
-  const paginatedQuizzes = quizzes.slice(
-    (currentQuizPage - 1) * itemsPerQuizPage,
-    currentQuizPage * itemsPerQuizPage
-  );
+  
+  // Loading state for "load more" action to prevent multiple triggers
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Display counts
+  const [displayedCoursesCount, setDisplayedCoursesCount] = useState(SUBSEQUENT_LOAD_BATCH_SIZE.courses);
+  const [displayedLessonsCount, setDisplayedLessonsCount] = useState(SUBSEQUENT_LOAD_BATCH_SIZE.lessons);
+  const [displayedQuizzesCount, setDisplayedQuizzesCount] = useState(SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
 
   const [attendances, setAttendances] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Overall page loading
   const [error, setError] = useState("");
 
-  // State for guide request (attendance) functionality
   const [guideRequest, setGuideRequest] = useState(null);
   const [attendLoading, setAttendLoading] = useState(false);
 
-  // Helper: strip HTML tags
   const stripHTML = (html) => {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = html;
     return tempDiv.textContent || tempDiv.innerText || "";
   };
 
-// Main data fetching effect using apiClient (with individual loading states)
-useEffect(() => {
-  const fetchData = async () => {
-    // Set ALL loading states true at the beginning
-    setLoading(true); // Overall page loading
-    setPostsLoading(true);
-    setCoursesLoading(true);
-    setLessonsLoading(true);
-    setQuizzesLoading(true);
-    setError("");
-    // Reset content states
-    setProfile(null); setPosts([]); setCourses([]); setLessons([]); setQuizzes([]);
-    setAttendances(0); setGuideRequest(null);
+  // Load more handlers using SUBSEQUENT_LOAD_BATCH_SIZE
+  const handleLoadMoreCourses = useCallback(() => {
+    if (isLoadingMore || displayedCoursesCount >= courses.length) return;
+    setIsLoadingMore(true);
+    setDisplayedCoursesCount(prevCount => prevCount + SUBSEQUENT_LOAD_BATCH_SIZE.courses);
+    setTimeout(() => setIsLoadingMore(false), 300); 
+  }, [isLoadingMore, displayedCoursesCount, courses.length]);
 
-    let fetchedProfileData = null;
+  const handleLoadMoreLessons = useCallback(() => {
+    if (isLoadingMore || displayedLessonsCount >= lessons.length) return;
+    setIsLoadingMore(true);
+    setDisplayedLessonsCount(prevCount => prevCount + SUBSEQUENT_LOAD_BATCH_SIZE.lessons);
+    setTimeout(() => setIsLoadingMore(false), 300);
+  }, [isLoadingMore, displayedLessonsCount, lessons.length]);
 
-    try {
-      // --- Fetch core profile first ---
-      const profileRes = await apiClient.get(`/users/guides/${username}/`);
-      fetchedProfileData = profileRes.data;
-      if (!fetchedProfileData?.id) {
-        throw new Error("Guide profile not found or is invalid.");
-      }
-      setProfile(fetchedProfileData);
-      const profileUserId = fetchedProfileData.id;
+  const handleLoadMoreQuizzes = useCallback(() => {
+    if (isLoadingMore || displayedQuizzesCount >= quizzes.length) return;
+    setIsLoadingMore(true);
+    setDisplayedQuizzesCount(prevCount => prevCount + SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
+    setTimeout(() => setIsLoadingMore(false), 300);
+  }, [isLoadingMore, displayedQuizzesCount, quizzes.length]);
 
-      // --- Fetch other data concurrently ---
-      const promisesToRun = [
-        apiClient.get(`/posts/?created_by=${username}`),
-        apiClient.get(`/courses/?created_by=${username}`),
-        apiClient.get(`/lessons/?created_by=${username}`),
-        apiClient.get(`/quizzes/?created_by=${username}`),
-        (token && currentUser) ? apiClient.get(`/social/guide-requests/`) : Promise.resolve({ data: null })
-      ];
 
-      // Execute all promises (errors will be caught below)
-      const [
-        postsRes,
-        coursesRes,
-        lessonsRes,
-        quizzesRes,
-        guideRequestsRes
-      ] = await Promise.all(promisesToRun);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setCoursesLoading(true);
+      setLessonsLoading(true);
+      setQuizzesLoading(true);
+      setIsLoadingMore(false);
+      setError("");
+      setProfile(null); setCourses([]); setLessons([]); setQuizzes([]);
+      setAttendances(0); setGuideRequest(null);
 
-      // --- Process results and set loading states individually ---
-      try {
-        setPosts(Array.isArray(postsRes?.data) ? postsRes.data : []);
-      } catch (e) { console.error("Error processing posts", e); setPosts([]); }
-      finally { setPostsLoading(false); } // Mark posts as loaded (or failed)
+      // Reset active tab to default when profile changes
+      setActiveTab("courses"); 
+
+      // Set initial display counts
+      // Default active tab ("courses") gets the special initial limit
+      setDisplayedCoursesCount(INITIAL_DISPLAY_DEFAULT_TAB);
+      // Other tabs get their standard batch size for their first view when activated
+      setDisplayedLessonsCount(SUBSEQUENT_LOAD_BATCH_SIZE.lessons);
+      setDisplayedQuizzesCount(SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
+
+      let fetchedProfileData = null;
 
       try {
-        setCourses(Array.isArray(coursesRes?.data) ? coursesRes.data : []);
-      } catch (e) { console.error("Error processing courses", e); setCourses([]); }
-      finally { setCoursesLoading(false); } // Mark courses as loaded
-
-      try {
-        setLessons(Array.isArray(lessonsRes?.data) ? lessonsRes.data : []);
-      } catch (e) { console.error("Error processing lessons", e); setLessons([]); }
-      finally { setLessonsLoading(false); } // Mark lessons as loaded
-
-      try {
-        setQuizzes(Array.isArray(quizzesRes?.data) ? quizzesRes.data : []);
-      } catch (e) { console.error("Error processing quizzes", e); setQuizzes([]); }
-      finally { setQuizzesLoading(false); } // Mark quizzes as loaded
-
-      // Process Guide Requests (Client-side filtering required)
-       try {
-            const allUserRequests = Array.isArray(guideRequestsRes?.data) ? guideRequestsRes.data : [];
-            // Calculate Attendances
-            const acceptedCount = allUserRequests.filter(
-                req => String(req.guide) === String(profileUserId) && req.status === 'accepted'
-            ).length;
-            setAttendances(acceptedCount);
-            // Find Specific Request Status
-            if (currentUser && token && currentUser.user_id !== profileUserId) {
-                const specificRequest = allUserRequests.find(
-                    req => String(req.explorer) === String(currentUser.user_id) && String(req.guide) === String(profileUserId)
-                );
-                setGuideRequest(specificRequest || null);
-            } else {
-                setGuideRequest(null);
-            }
-        } catch (e) {
-             console.error("Error processing guide requests", e);
-             setAttendances(0);
-             setGuideRequest(null);
+        const profileRes = await apiClient.get(`/users/guides/${username}/`);
+        fetchedProfileData = profileRes.data;
+        if (!fetchedProfileData?.id) {
+          throw new Error("Guide profile not found or is invalid.");
         }
-      // All non-critical data processed or failed individually
+        setProfile(fetchedProfileData);
+        const profileUserId = fetchedProfileData.id;
 
-    } catch (err) { // Catch critical errors (like profile fetch) or Promise.all failure
-      console.error("Error fetching profile page data:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-      const isProfileError = err.config?.url?.includes(`/users/guides/${username}`);
-      const displayError = (isProfileError && err.response?.status === 404)
+        const promisesToRun = [
+          apiClient.get(`/courses/?created_by=${username}`),
+          apiClient.get(`/lessons/?created_by=${username}`),
+          apiClient.get(`/quizzes/?created_by=${username}`),
+          (token && currentUser) ? apiClient.get(`/social/guide-requests/`) : Promise.resolve({ data: null })
+        ];
+
+        const [
+          coursesRes,
+          lessonsRes,
+          quizzesRes,
+          guideRequestsRes
+        ] = await Promise.all(promisesToRun);
+
+        try {
+          setCourses(Array.isArray(coursesRes?.data) ? coursesRes.data : []);
+        } catch (e) { console.error("Error processing courses", e); setCourses([]); }
+        finally { setCoursesLoading(false); }
+
+        try {
+          setLessons(Array.isArray(lessonsRes?.data) ? lessonsRes.data : []);
+        } catch (e) { console.error("Error processing lessons", e); setLessons([]); }
+        finally { setLessonsLoading(false); }
+
+        try {
+          setQuizzes(Array.isArray(quizzesRes?.data) ? quizzesRes.data : []);
+        } catch (e) { console.error("Error processing quizzes", e); setQuizzes([]); }
+        finally { setQuizzesLoading(false); }
+
+        try {
+          const allUserRequests = Array.isArray(guideRequestsRes?.data) ? guideRequestsRes.data : [];
+          const acceptedCount = allUserRequests.filter(
+            req => String(req.guide) === String(profileUserId) && req.status === 'accepted'
+          ).length;
+          setAttendances(acceptedCount);
+
+          if (currentUser && token && currentUser.user_id !== profileUserId) {
+            const specificRequest = allUserRequests.find(
+              req => String(req.explorer) === String(currentUser.user_id) && String(req.guide) === String(profileUserId)
+            );
+            setGuideRequest(specificRequest || null);
+          } else {
+            setGuideRequest(null);
+          }
+        } catch (e) {
+          console.error("Error processing guide requests", e);
+          setAttendances(0);
+          setGuideRequest(null);
+        }
+
+      } catch (err) {
+        console.error("Error fetching profile page data:", err.response ? err.response.data : err.message);
+        const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
+        const isProfileError = err.config?.url?.includes(`/users/guides/${username}`);
+        const displayError = (isProfileError && err.response?.status === 404)
           ? "Guide profile not found."
           : `Failed to load profile data: ${apiErrorMessage || "Please try again."}`;
-      setError(displayError);
+        setError(displayError);
 
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          logout();
+        }
+        setProfile(null); setCourses([]); setLessons([]); setQuizzes([]);
+        setAttendances(0); setGuideRequest(null);
+        setCoursesLoading(false); setLessonsLoading(false); setQuizzesLoading(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [username, currentUser, token, logout]);
+
+
+  // Infinite Scroll Logic
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 && !isLoadingMore) {
+        if (activeTab === "courses" && !coursesLoading && displayedCoursesCount < courses.length) {
+          handleLoadMoreCourses();
+        } else if (activeTab === "lessons" && !lessonsLoading && displayedLessonsCount < lessons.length) {
+          handleLoadMoreLessons();
+        } else if (activeTab === "quizzes" && !quizzesLoading && displayedQuizzesCount < quizzes.length) {
+          handleLoadMoreQuizzes();
+        }
+      }
+    };
+
+    const throttledScrollHandler = throttle(handleScroll, 200); 
+
+    window.addEventListener('scroll', throttledScrollHandler);
+    return () => window.removeEventListener('scroll', throttledScrollHandler);
+
+  }, [activeTab, coursesLoading, lessonsLoading, quizzesLoading, 
+      displayedCoursesCount, displayedLessonsCount, displayedQuizzesCount,
+      courses.length, lessons.length, quizzes.length,
+      handleLoadMoreCourses, handleLoadMoreLessons, handleLoadMoreQuizzes, isLoadingMore]);
+
+
+  const handleAttend = async () => {
+    if (!profile?.id || !token) {
+      alert("Cannot send request: Profile ID missing or not logged in.");
+      return;
+    }
+    setAttendLoading(true);
+    setError('');
+
+    try {
+      const response = await apiClient.post(`/social/guide-requests/`, {
+        guide: profile.id
+      });
+      if (response.data && response.data.id) {
+        setGuideRequest(response.data);
+        alert("Attend request sent successfully!");
+      } else {
+        console.error("Send attend request response missing data:", response.data);
+        alert("Request sent, but status update failed. Please refresh.");
+      }
+    } catch (err) {
+      console.error("Error sending attend request:", err.response ? err.response.data : err.message);
+      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
+      setError(`Failed to send request: ${apiErrorMessage || "Please try again."}`);
       if (err.response?.status === 401 || err.response?.status === 403) {
         logout();
       }
-      // Ensure all states are cleared on critical error
-      setProfile(null); setPosts([]); setCourses([]); setLessons([]); setQuizzes([]);
-      setAttendances(0); setGuideRequest(null);
-      // Ensure all loading states are false on critical error
-      setPostsLoading(false); setCoursesLoading(false); setLessonsLoading(false); setQuizzesLoading(false);
     } finally {
-      setLoading(false); // Stop overall page loading indicator
+      setAttendLoading(false);
     }
   };
 
-  fetchData();
-}, [username, currentUser, token, logout]); // Keep dependencies
-
-// Handler to send an attend request using apiClient
-const handleAttend = async () => {
-  if (!profile?.id || !token) {
-      alert("Cannot send request: Profile ID missing or not logged in.");
-      return;
-  }
-  setAttendLoading(true);
-  setError(''); // Clear previous main errors
-
-  try {
-    // Use apiClient.post - Auth handled automatically
-    const response = await apiClient.post(`/social/guide-requests/`, {
-      guide: profile.id // Send the ID of the guide profile being viewed
-    });
-
-    // --- Handle Success ---
-    // Assuming the API returns the created/updated request object
-    if (response.data && response.data.id) {
-        setGuideRequest(response.data); // Update state with the new request status
-        alert("Attend request sent successfully!");
-    } else {
-        console.error("Send attend request response missing data:", response.data);
-        alert("Request sent, but status update failed. Please refresh.");
-    }
-
-  } catch (err) {
-    // --- Handle Errors ---
-    console.error("Error sending attend request:", err.response ? err.response.data : err.message);
-    const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-    // Display error in main error state or alert
-    setError(`Failed to send request: ${apiErrorMessage || "Please try again."}`);
-    // alert(`Failed to send request: ${apiErrorMessage || "Please try again."}`);
-
-    // Check for authorization errors
-    if (err.response?.status === 401 || err.response?.status === 403) {
-      logout();
-    }
-  } finally {
-      setAttendLoading(false); // Stop button loading indicator
-  }
-};
-
-// Handler to cancel/unattend request using apiClient
-const cancelAttend = async () => {
-  if (!guideRequest?.id || !token) {
+  const cancelAttend = async () => {
+    if (!guideRequest?.id || !token) {
       alert("Cannot cancel request: Request ID missing or not logged in.");
       return;
-  }
-  setAttendLoading(true);
-  setError(''); // Clear previous main errors
-
-  try {
-    // Use apiClient.post - Auth handled automatically, no body needed assumed
-    // This endpoint might handle both cancelling 'pending' and 'accepted' requests
-    await apiClient.post(`/social/guide-requests/${guideRequest.id}/cancel/`);
-
-    // --- Handle Success ---
-    // Assume success if no error is thrown
-    setGuideRequest(null); // Clear the request state to show the 'Attend' button again
-    alert("Request cancelled successfully.");
-
-  } catch (err) {
-    // --- Handle Errors ---
-    console.error("Error cancelling attend request:", err.response ? err.response.data : err.message);
-    const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-    setError(`Failed to cancel request: ${apiErrorMessage || "Please try again."}`);
-    // alert(`Failed to cancel request: ${apiErrorMessage || "Please try again."}`);
-
-    // Check for authorization errors
-    if (err.response?.status === 401 || err.response?.status === 403) {
-      logout();
     }
-  } finally {
-      setAttendLoading(false); // Stop button loading indicator
-  }
-};
+    setAttendLoading(true);
+    setError('');
 
-if (loading) return <p>Loading profile...</p>;
-if (error) return <p className="error">{error}</p>;
-if (!profile) return <p>No profile found.</p>;
+    try {
+      await apiClient.post(`/social/guide-requests/${guideRequest.id}/cancel/`);
+      setGuideRequest(null);
+      alert("Request cancelled successfully.");
+    } catch (err) {
+      console.error("Error cancelling attend request:", err.response ? err.response.data : err.message);
+      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
+      setError(`Failed to cancel request: ${apiErrorMessage || "Please try again."}`);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logout();
+      }
+    } finally {
+      setAttendLoading(false);
+    }
+  };
+  
+  const itemsToDisplay = {
+    courses: courses.slice(0, displayedCoursesCount),
+    lessons: lessons.slice(0, displayedLessonsCount),
+    quizzes: quizzes.slice(0, displayedQuizzesCount),
+  };
 
-  console.log("currentUser:", currentUser);
-  console.log("profile:", profile);
+  if (loading && !profile) return <p className={styles.loading}>Loading profile...</p>;
+  if (error) return <p className={styles.error}>{error}</p>;
+  if (!profile) return <p className={styles.loading}>No profile found.</p>;
 
-  // Determine which button to show based on the guideRequest state
   let attendButton;
   if (guideRequest) {
     if (guideRequest.status === "pending") {
       attendButton = (
-        <button
-          onClick={cancelAttend}
-          disabled={attendLoading}
-          className="btn btn-secondary"
-        >
+        <button onClick={cancelAttend} disabled={attendLoading} className={styles.btnSecondary}>
           Pending (Cancel Request)
         </button>
       );
     } else if (guideRequest.status === "accepted") {
       attendButton = (
-        <button
-          onClick={cancelAttend}
-          disabled={attendLoading}
-          className="btn btn-secondary"
-        >
+        <button onClick={cancelAttend} disabled={attendLoading} className={styles.btnSecondary}>
           Attended (Unattend)
         </button>
       );
-    } else {
-      // fallback for status=declined or something else
+    } else { 
       attendButton = (
-        <button
-          onClick={cancelAttend}
-          disabled={attendLoading}
-          className="btn btn-secondary"
-        >
+        <button onClick={cancelAttend} disabled={attendLoading} className={styles.btnSecondary}>
           Cancel Request
         </button>
       );
     }
   } else {
     attendButton = (
-      <button
-        onClick={handleAttend}
-        disabled={attendLoading}
-        className="btn btn-primary"
-      >
-        Attend
+      <button onClick={handleAttend} disabled={attendLoading} className={styles.btnPrimary}>
+        Attend Guide
       </button>
     );
   }
 
   const renderTabContent = () => {
-    // POSTS TAB
-    // if (activeTab === "posts") {
-    //   return (
-    //     <div className="tab-panel">
-    //       <h2>Posts</h2>
-    //       {/* Use postsLoading state for this tab */}
-    //       {postsLoading ? (
-    //         <p className="loading">Loading posts...</p>
-    //       ) : posts.length > 0 ? (
-    //         <div className="cards-grid">
-    //           {/* Map posts... (keep existing map logic) */}
-    //           {posts.map((post) => (
-    //               post && ( // Safe access check
-    //                   <Link to={`/posts/${post.permalink}`} key={post.id} className="card">
-    //                       <div className="card-image">
-    //                           {post.og_image_url ? (
-    //                           <img src={post.og_image_url} alt={post.title || 'Post image'} />
-    //                           ) : (
-    //                           <div className="post-placeholder">
-    //                               <p>{post.title || 'Untitled Post'}</p>
-    //                           </div>
-    //                           )}
-    //                       </div>
-    //                       <div className="card-info">
-    //                           <h3>{post.title || 'Untitled Post'}</h3>
-    //                           <p>
-    //                           {post.created_by} | {post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}
-    //                           </p>
-    //                       </div>
-    //                   </Link>
-    //               )
-    //           ))}
-    //         </div>
-    //       ) : (
-    //         <p>No posts available.</p> // Message if loading done and no posts
-    //       )}
-    //     </div>
-    //   );
-    // }
-    // COURSES TAB
-    /* else*/ if (activeTab === "courses") {
+    if (activeTab === "courses") {
       return (
-        <div className="tab-panel">
-          <h2>Courses</h2>
-          {/* Use coursesLoading state for this tab */}
-          {coursesLoading ? (
-            <p className="loading">Loading courses...</p>
+        <div className={styles.tabPanel}>
+          <h2>Courses Created</h2>
+          {coursesLoading && itemsToDisplay.courses.length === 0 ? ( 
+            <p className={styles.loading}>Loading courses...</p>
           ) : courses.length > 0 ? (
-             <>
-                <div className="cards-grid">
-                {/* Map paginatedCourses... (keep existing map logic) */}
-                {paginatedCourses.map((course) => (
-                     course && ( // Safe access check
-                        <div key={course.id} className="card">
-                            {course.cover_image ? (
-                            <img
-                                src={course.cover_image}
-                                alt={`${course.title || 'Course'} cover`}
-                                className="card-image"
-                            />
-                            ) : (
-                            <div className="grid-item-placeholder"><p>No Image</p></div>
-                            )}
-                            <div className="card-info">
-                            <h3>{course.title || 'Untitled Course'}</h3>
-                            <p>{course.description ? course.description.substring(0, 100) + '...' : ''}</p>
-                            <button
-                                className="details-btn"
-                                onClick={() => course.permalink ? navigate(`/courses/${course.permalink}`) : null}
-                                disabled={!course.permalink}
-                            >
-                                View Details
-                            </button>
-                            </div>
-                        </div>
-                     )
+            <>
+              <div className={styles.cardsGrid}>
+                {itemsToDisplay.courses.map((course) => (
+                  course && (
+                    <div key={course.id} className={styles.card}>
+                      {course.cover_image ? (
+                        <img
+                          src={course.cover_image}
+                          alt={`${course.title || 'Course'} cover`}
+                          className={styles.cardImage}
+                          onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/600x400/eee/ccc?text=No+Image"; }}
+                        />
+                      ) : (
+                        <div className={styles.gridItemPlaceholder}><p>No Image</p></div>
+                      )}
+                      <div className={styles.cardInfo}>
+                        <h3>{course.title || 'Untitled Course'}</h3>
+                        <p>{course.description ? stripHTML(course.description).substring(0, 100) + '...' : 'No description available.'}</p>
+                        <button
+                          className={styles.detailsBtn}
+                          onClick={() => course.permalink ? navigate(`/courses/${course.permalink}`) : null}
+                          disabled={!course.permalink}
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  )
                 ))}
-                </div>
-                {/* Keep Pagination Logic */}
-                {totalCoursePages > 1 && ( <div className="pagination">{/*...*/}</div> )}
+              </div>
+              {isLoadingMore && displayedCoursesCount < courses.length && <p className={styles.loading}>Loading</p>}
             </>
           ) : (
-            <p>No courses available.</p>
+            <p>No courses created by this guide yet.</p>
           )}
         </div>
       );
-    }
-    // LESSONS TAB
-    else if (activeTab === "lessons") {
-       return (
-        <div className="tab-panel">
-          <h2>Lessons</h2>
-          {/* Use lessonsLoading state for this tab */}
-          {lessonsLoading ? (
-            <p className="loading">Loading lessons...</p>
+    } else if (activeTab === "lessons") {
+      return (
+        <div className={styles.tabPanel}>
+          <h2>Lessons Created</h2>
+          {lessonsLoading && itemsToDisplay.lessons.length === 0 ? (
+            <p className={styles.loading}>Loading lessons...</p>
           ) : lessons.length > 0 ? (
             <>
-                <ul className="list">
-                {/* Map paginatedLessons... (keep existing map logic) */}
-                {paginatedLessons.map((lesson) => (
-                    lesson && ( // Safe access check
-                        <li key={lesson.id} className="list-item">
-                        <h3>{lesson.title || 'Untitled Lesson'}</h3>
-                        <p>{lesson.content ? stripHTML(lesson.content).substring(0, 100) + '...' : ''}</p>
-                        <button
-                            onClick={() => lesson.permalink ? navigate(`/lessons/${lesson.permalink}`) : null}
-                            className="details-btn"
-                            disabled={!lesson.permalink}
-                        >
-                            View Details
-                        </button>
-                        </li>
-                    )
+              <ul className={styles.list}>
+                {itemsToDisplay.lessons.map((lesson) => (
+                  lesson && (
+                    <li key={lesson.id} className={styles.listItem}>
+                      <h3>{lesson.title || 'Untitled Lesson'}</h3>
+                      <p>{lesson.content ? stripHTML(lesson.content).substring(0, 150) + '...' : 'No content preview.'}</p>
+                      <button
+                        onClick={() => lesson.permalink ? navigate(`/lessons/${lesson.permalink}`) : null}
+                        className={styles.detailsBtn}
+                        disabled={!lesson.permalink}
+                      >
+                        View Details
+                      </button>
+                    </li>
+                  )
                 ))}
-                </ul>
-                {/* Keep Pagination Logic */}
-                {totalLessonPages > 1 && ( <div className="pagination">{/*...*/}</div> )}
+              </ul>
+              {isLoadingMore && displayedLessonsCount < lessons.length && <p className={styles.loading}>Loading</p>}
             </>
           ) : (
-            <p>No lessons available.</p>
+            <p>No lessons created by this guide yet.</p>
           )}
         </div>
       );
-    }
-    // QUIZZES TAB
-    else if (activeTab === "quizzes") {
-       return (
-        <div className="tab-panel">
-          <h2>Quizzes</h2>
-          {/* Use quizzesLoading state for this tab */}
-          {quizzesLoading ? (
-            <p className="loading">Loading quizzes...</p>
+    } else if (activeTab === "quizzes") {
+      return (
+        <div className={styles.tabPanel}>
+          <h2>Quizzes Created</h2>
+          {quizzesLoading && itemsToDisplay.quizzes.length === 0 ? (
+            <p className={styles.loading}>Loading quizzes...</p>
           ) : quizzes.length > 0 ? (
-             <>
-                <ul className="list">
-                {/* Map paginatedQuizzes... (keep existing map logic) */}
-                {paginatedQuizzes.map((quiz) => (
-                     quiz && ( // Safe access check
-                        <li key={quiz.id} className="list-item">
-                            <h3>{quiz.title || 'Untitled Quiz'}</h3>
-                            <p>
-                            {quiz.question ? stripHTML(quiz.question).substring(0, 100) + "..." : ""}
-                            </p>
-                            {/* Link assumes viewing quiz details doesn't require enrollment context */}
-                            <Link to={`/quizzes/${quiz.permalink}`} className="details-btn">
-                            View Details
-                            </Link>
-                        </li>
-                     )
+            <>
+              <ul className={styles.list}>
+                {itemsToDisplay.quizzes.map((quiz) => (
+                  quiz && (
+                    <li key={quiz.id} className={styles.listItem}>
+                      <h3>{quiz.title || 'Untitled Quiz'}</h3>
+                      <p>
+                        {quiz.question ? stripHTML(quiz.question).substring(0, 150) + "..." : "No question preview."}
+                      </p>
+                      <Link to={`/quizzes/${quiz.permalink}`} className={styles.detailsBtn}>
+                        View Details
+                      </Link>
+                    </li>
+                  )
                 ))}
-                </ul>
-                {/* Keep Pagination Logic */}
-                {totalQuizPages > 1 && ( <div className="pagination">{/*...*/}</div> )}
+              </ul>
+              {isLoadingMore && displayedQuizzesCount < quizzes.length && <p className={styles.loading}>Loading</p>}
             </>
           ) : (
-            <p>No quizzes available.</p>
+            <p>No quizzes created by this guide yet.</p>
           )}
         </div>
       );
     }
-    // Fallback if no tab matches (shouldn't happen)
     return null;
   };
 
   return (
-    <div className="public-profile-dashboard">
-      <aside className="public-profile-sidebar">
-        <div className="sidebar-card">
-          <div className="sidebar-image-container">
+    <div className={styles.publicProfileDashboard}>
+      <aside className={styles.publicProfileSidebar}>
+        <div className={styles.sidebarCard}>
+          <div className={styles.sidebarImageContainer}>
             <img
               src={
                 profile.profile_image_url && profile.profile_image_url.trim()
                   ? profile.profile_image_url
-                  : "https://via.placeholder.com/150"
+                  : "https://placehold.co/150x150/FFC107/1B2735?text=User"
               }
               alt={profile.username}
-              className="hexagon"
+              className={styles.hexagon}
+              onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/150x150/FFC107/1B2735?text=User"; }}
             />
           </div>
-          <div className="sidebar-info">
-            <h2 className="sidebar-username">{profile.username}</h2>
-            <p className="sidebar-joined">
-              Joined {new Date(profile.date_joined).toLocaleDateString()}
+          <div className={styles.sidebarInfo}>
+            <h1 className={styles.sidebarUsername}>{profile.username}</h1>
+            <p className={styles.sidebarJoined}>
+              Guide since: {new Date(profile.date_joined).toLocaleDateString()}
             </p>
-            <p className="sidebar-bio">{profile.bio || "No bio available."}</p>
+            <p className={styles.sidebarBio}>{profile.bio || "This guide hasn't shared a bio yet."}</p>
           </div>
-          {/* Show the attend/cancel/unattend button if user is not the profile owner */}
+          
+          <div className={styles.scoreContainer}>
+            <div className={styles.scoreItem}>
+              <FaBookReader size={24} />
+              <div>
+                <span className={styles.scoreValue}>{profile.growth_score || 0}</span>
+                <div className={styles.scoreLabel}>Learning Score</div>
+              </div>
+            </div>
+            <div className={styles.scoreItem}>
+              <FaAward size={24} />
+              <div>
+                <span className={styles.scoreValue}>{profile.impact_score || 0}</span>
+                <div className={styles.scoreLabel}>Impact Score</div>
+              </div>
+            </div>
+          </div>
+
           {currentUser && currentUser.username !== profile.username && (
-            <div className="attend-section">{attendButton}</div>
+            <div className={styles.attendSection}>{attendButton}</div>
           )}
         </div>
       </aside>
-      <main className="public-profile-main">
-        <div className="stats-section">
-          {/*<div className="stat">
-            <h3>{posts.length}</h3>
-            <p>Posts</p>
-          </div>*/}
-          <div className="stat">
+      <main className={styles.publicProfileMain}>
+        <div className={styles.statsSection}>
+          {/* Courses Stat/Tab */}
+          <div 
+            className={`${styles.stat} ${styles.statClickable} ${activeTab === 'courses' ? styles.statActive : ''}`}
+            onClick={() => setActiveTab('courses')}
+            role="button" 
+            tabIndex={0} 
+            onKeyPress={(e) => e.key === 'Enter' && setActiveTab('courses')} 
+          >
             <h3>{courses.length}</h3>
             <p>Courses</p>
           </div>
-          <div className="stat">
+          {/* Lessons Stat/Tab */}
+          <div 
+            className={`${styles.stat} ${styles.statClickable} ${activeTab === 'lessons' ? styles.statActive : ''}`}
+            onClick={() => setActiveTab('lessons')}
+            role="button"
+            tabIndex={0}
+            onKeyPress={(e) => e.key === 'Enter' && setActiveTab('lessons')}
+          >
             <h3>{lessons.length}</h3>
             <p>Lessons</p>
           </div>
-          <div className="stat">
+          {/* Quizzes Stat/Tab */}
+          <div 
+            className={`${styles.stat} ${styles.statClickable} ${activeTab === 'quizzes' ? styles.statActive : ''}`}
+            onClick={() => setActiveTab('quizzes')}
+            role="button"
+            tabIndex={0}
+            onKeyPress={(e) => e.key === 'Enter' && setActiveTab('quizzes')}
+          >
             <h3>{quizzes.length}</h3>
             <p>Quizzes</p>
           </div>
-          <div className="stat">
+          {/* Attendees Stat (Not clickable as a tab) */}
+          <div className={styles.stat}>
             <h3>{attendances}</h3>
             <p>Attendees</p>
           </div>
         </div>
-        <div className="tab-navigation">
-          {[/*"posts", */"courses", "lessons", "quizzes"].map((tab) => (
+        
+        {/* The old tab navigation bar is now removed */}
+        {/* <div className={styles.tabNavigation}>
+          {["courses", "lessons", "quizzes"].map((tab) => (
             <button
               key={tab}
-              className={`tab-btn ${activeTab === tab ? "active" : ""}`}
+              className={`${styles.tabBtn} ${activeTab === tab ? styles.active : ""}`}
               onClick={() => {
                 setActiveTab(tab);
-                if (tab === "courses") setCurrentCoursePage(1);
-                if (tab === "lessons") setCurrentLessonPage(1);
-                if (tab === "quizzes") setCurrentQuizPage(1);
               }}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
-        </div>
-        <div className="tab-content">{renderTabContent()}</div>
+        </div> 
+        */}
+
+        <div className={styles.tabContent}>{renderTabContent()}</div>
       </main>
     </div>
   );
