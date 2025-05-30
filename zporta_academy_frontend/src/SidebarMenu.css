@@ -1,9 +1,9 @@
-/* SidebarMenu.css - Aligned with AppHeader */
+/* SidebarMenu.css - Aligned with AppHeader & Handle Re-centered */
 
 :root {
   /* Z-Indexes */
-  --zindex-sidebar: 1030;              /* Sidebar panel */
-  --zindex-sidebar-handle: 1031;       /* Sidebar toggle handle */
+  --zindex-sidebar: 1030;              
+  --zindex-sidebar-handle: 1031;       
 
   /* Sidebar Dimensions */
   --sidebar-width-desktop-collapsed: 60px; 
@@ -14,19 +14,19 @@
   /* Unified Handle Toggle Dimensions & Style */
   --sidebar-handle-width: 28px;          
   --sidebar-handle-visual-width: 20px;   
-  --sidebar-handle-height: 60px;         
+  --sidebar-handle-height: 60px; /* Height of the handle itself */        
   --sidebar-handle-bg-closed: #ffc107;   
   --sidebar-handle-icon-closed: #1B2735; 
   --sidebar-handle-bg-open: #2c3e50;   
   --sidebar-handle-icon-open: #ffc107;   
   
-  /* Colors & Base Styles from your original SidebarMenu.css */
+  /* Colors & Base Styles */
   --sidebar-bg-color: rgba(27, 39, 53, 0.97); 
   --sidebar-text-color: #ffc107;
   --sidebar-accent-color: #ffc107;       
   --zporta-radius-md: 8px;               
 
-  /* NEW: AppHeader Heights (from AppHeader.module.css) */
+  /* AppHeader Heights (ensure these match your AppHeader.module.css) */
   --app-header-height-desktop: 55px;
   --app-header-height-mobile: 50px;
 }
@@ -36,10 +36,10 @@
 ----------------------------------------------------------------------------- */
 .sidebar-menu {
   position: fixed;
-  top: var(--app-header-height-desktop); /* Start below desktop header */
+  top: var(--app-header-height-desktop); 
   right: 0; 
-  bottom: 0; /* Stretches to bottom of viewport */
-  height: calc(100vh - var(--app-header-height-desktop)); /* Fill remaining height */
+  bottom: 0; 
+  height: calc(100vh - var(--app-header-height-desktop)); 
   background-color: var(--sidebar-bg-color);
   color: var(--sidebar-text-color);
   z-index: var(--zindex-sidebar);
@@ -58,8 +58,8 @@
   transition: width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
               transform var(--sidebar-transition-duration) var(--sidebar-transition-timing),
               opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing),
-              top var(--sidebar-transition-duration) var(--sidebar-transition-timing), /* Added top transition */
-              height var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Added height transition */
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              height var(--sidebar-transition-duration) var(--sidebar-transition-timing);
 }
 
 .sidebar-menu.expanded {
@@ -110,19 +110,16 @@
 ----------------------------------------------------------------------------- */
 .sidebar-unified-handle {
   position: fixed;
-  top: calc(var(--app-header-height-desktop) + 30px); /* Position relative to header + offset */
-  /* Or, to keep it viewport-centered: top: 50%; transform: translateY(-50%); */
-  /* Let's try viewport centered first, it's usually more stable visually */
-  /* top: 50%; */ 
-  /* transform: translateY(-50%); */
-  /* If the sidebar starts lower, the handle should also be relative to that new top */
-  /* Let's calculate its top based on the sidebar's new top position */
-  /* We want it to be roughly in the middle of the *visible* sidebar area */
-  /* This might need tweaking or a JS solution if perfect centering is hard with pure CSS */
-  /* For now, let's keep it viewport centered, as it's simpler and often works well */
-  top: 50%; 
-  transform: translateY(-50%);
-
+  /* Calculation to center the handle vertically within the sidebar's visible area:
+    top_of_sidebar = var(--app-header-height-desktop)
+    height_of_sidebar = (100vh - var(--app-header-height-desktop))
+    midpoint_of_sidebar_from_viewport_top = top_of_sidebar + (height_of_sidebar / 2)
+    top_for_handle = midpoint_of_sidebar_from_viewport_top - (var(--sidebar-handle-height) / 2)
+    Simplified: calc( (var(--app-header-height-desktop) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  */
+  top: calc( (var(--app-header-height-desktop) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  /* transform: translateY(-50%); -- This is NOT needed with the above 'top' calculation */
+  
   width: var(--sidebar-handle-width); 
   height: var(--sidebar-handle-height);
   background-color: transparent; 
@@ -133,7 +130,8 @@
   display: flex;
   align-items: center;
   justify-content: center; 
-  transition: right var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+  transition: right var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Add top transition */
 }
 
 /* Visual part of the handle */
@@ -191,8 +189,8 @@
 ----------------------------------------------------------------------------- */
 @media only screen and (max-width: 768px) {
   .sidebar-menu {
-    top: var(--app-header-height-mobile); /* Use mobile header height */
-    height: calc(100vh - var(--app-header-height-mobile)); /* Adjust height for mobile header */
+    top: var(--app-header-height-mobile); 
+    height: calc(100vh - var(--app-header-height-mobile)); 
     
     width: var(--sidebar-width-expanded); 
     transform: translateX(100%); 
@@ -234,15 +232,12 @@
     line-height: 16px;
   }
 
-  /* Mobile Handle Positioning - remains viewport centered */
-   .sidebar-unified-handle.is-closed {
-    right: 0px; /* Flush to screen edge when sidebar is hidden on mobile */
-  }
-  /* .is-open styles for handle are the same as desktop: right: var(--sidebar-width-expanded); */
-  /* Adjust top of handle if it looks off with mobile header */
+  /* Mobile Handle Positioning - Centered relative to mobile sidebar's visible area */
   .sidebar-unified-handle {
-    top: calc(var(--app-header-height-mobile) + 30px); /* Example: 30px below mobile header */
-    /* Or keep viewport centered: top: 50%; transform: translateY(-50%); */
+    top: calc( (var(--app-header-height-mobile) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  }
+   .sidebar-unified-handle.is-closed {
+    right: 0px; 
   }
 }
 
