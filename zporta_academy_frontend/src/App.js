@@ -1,12 +1,10 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from "./context/AuthContext";
-// Assuming firebase.js is in the src directory and exports requestPermissionAndGetToken
 import { requestPermissionAndGetToken as fetchFcmToken } from './firebase'; 
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Component Imports ---
-// Ensure AppHeader.js and AppHeader.module.css are in src/components/AppHeader/
 import AppHeader from './components/AppHeader/AppHeader'; 
 import appHeaderStyles from './components/AppHeader/AppHeader.module.css'; 
 
