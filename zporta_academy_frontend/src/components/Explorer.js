@@ -5,43 +5,35 @@ import { AuthContext } from '../context/AuthContext'; // Adjust path as needed
 import QuizCard from './QuizCard'; // Assuming this component exists
 import styles from './Explorer.module.css'; // Import NEW CSS Module styles
 
-// --- Helper Functions (Keep as is) ---
+// --- Helper Functions (from your original code) ---
 const stripHTML = (html) => {
   if (!html) return '';
-  // Basic check if running in a browser environment
   if (typeof window !== 'undefined' && typeof window.DOMParser === 'function') {
     try {
       const doc = new window.DOMParser().parseFromString(html, 'text/html');
       return doc.body.textContent || "";
     } catch (e) {
       console.error("Error parsing HTML string:", e);
-      // Fallback for environments without DOMParser or if parsing fails
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
       return tempDiv.textContent || tempDiv.innerText || "";
     }
   } else if (typeof document !== 'undefined' && document.createElement) {
-      // Fallback for environments like Node.js testing setup with basic DOM
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
       return tempDiv.textContent || tempDiv.innerText || "";
   }
-  // Final fallback if no DOM is available
-  return String(html).replace(/<[^>]+>/g, ''); // Basic tag stripping
+  return String(html).replace(/<[^>]+>/g, '');
 };
 
-
-// --- Skeleton Loader Component ---
-// Uses updated CSS classes for styling
+// --- Skeleton Loader Component (from your original code) ---
 const SkeletonCard = () => (
-  // Apply quiz-specific class here too if needed for skeleton layout
-  <div className={styles.gridItem}> {/* Use gridItem directly */}
+  <div className={styles.gridItem}>
     <div className={`${styles.gridItemCard} ${styles.skeleton}`}>
       <div className={styles.skeletonImage}></div>
       <div className={styles.skeletonInfo}>
         <div className={styles.skeletonText} style={{ width: '80%', height: '1rem', marginBottom: '0.5rem' }}></div>
         <div className={styles.skeletonText} style={{ width: '60%', height: '0.8rem', marginBottom: '0.5rem' }}></div>
-         {/* Skeleton for creator */}
         <div className={styles.skeletonCreator}>
             <div className={styles.skeletonAvatar}></div>
             <div className={styles.skeletonText} style={{ width: '40%', height: '0.7rem' }}></div>
@@ -51,48 +43,72 @@ const SkeletonCard = () => (
   </div>
 );
 
-// --- Item Card Component ---
-// Uses updated CSS classes for styling and displays creator info
-const ItemCard = ({ item, activeTab }) => {
+// --- Item Card Component (from your original code, with IntersectionObserver integrated) ---
+const ItemCard = ({ item, activeTab, onItemVisible, onItemHidden }) => {
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    // Ensure IntersectionObserver is available (it should be in modern browsers)
+    if (!('IntersectionObserver' in window)) {
+      console.warn('IntersectionObserver not supported in this browser.');
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (onItemVisible) onItemVisible(item.id, activeTab); // Pass activeTab as itemType
+        } else {
+          if (onItemHidden) onItemHidden(item.id, activeTab); // Pass activeTab as itemType
+        }
+      },
+      { threshold: 0.5 } // Trigger when 50% of the item is visible
+    );
+
+    const currentCardRef = cardRef.current;
+    if (currentCardRef) {
+      observer.observe(currentCardRef);
+    }
+
+    return () => {
+      if (currentCardRef) {
+        observer.unobserve(currentCardRef);
+      }
+    };
+  }, [item, activeTab, onItemVisible, onItemHidden]); // item.id and activeTab ensure re-observation if item changes
+
   if (!item || !item.id) {
     console.warn("Skipping render for invalid item:", item);
     return null;
   }
 
-  // --- Determine Item Properties (Logic mostly kept, adjusted for display) ---
   let linkUrl = '#';
-  // Use a default placeholder if no image is found
   const defaultPlaceholder = 'https://placehold.co/600x400/f5f5f7/c7c7cc?text=No+Image';
   let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || defaultPlaceholder;
   let title = item.title || item.username || 'Untitled Item';
-  let creatorName = item.created_by || null; // Get creator name
-
-  // Simplified meta info - maybe course type or date if no creator
+  let creatorName = item.created_by || null;
   let metaInfo = '';
-   if (activeTab === 'courses' && item.course_type) {
-      metaInfo = item.course_type.charAt(0).toUpperCase() + item.course_type.slice(1);
-   } else if (item.created_at && !creatorName) { // Show date only if no creator
-      metaInfo = new Date(item.created_at).toLocaleDateString();
-   }
-   // Guides already show username as title, so creator might be redundant unless different
-   if (activeTab === 'guides' && item.username === creatorName) {
-       creatorName = null; // Avoid showing the same name twice
-   }
 
+  if (activeTab === 'courses' && item.course_type) {
+    metaInfo = item.course_type.charAt(0).toUpperCase() + item.course_type.slice(1);
+  } else if (item.created_at && !creatorName) {
+    metaInfo = new Date(item.created_at).toLocaleDateString();
+  }
+  if (activeTab === 'guides' && item.username === creatorName) {
+    creatorName = null;
+  }
 
-  // --- Determine Link URL (Keep as is) ---
-    if (activeTab === 'posts' && item.permalink) {
-        linkUrl = `/posts/${item.permalink}`;
-    } else if (activeTab === 'courses' && item.permalink) {
-        linkUrl = `/courses/${item.permalink}`;
-    } else if (activeTab === 'lessons' && item.permalink) {
-        linkUrl = `/lessons/${item.permalink}`;
-    } else if (activeTab === 'guides' && item.username) {
-        linkUrl = `/guide/${item.username}`;
-    }
-  // Note: Quizzes are handled separately
+  if (activeTab === 'posts' && item.permalink) {
+    linkUrl = `/posts/${item.permalink}`;
+  } else if (activeTab === 'courses' && item.permalink) {
+    linkUrl = `/courses/${item.permalink}`;
+  } else if (activeTab === 'lessons' && item.permalink) {
+    linkUrl = `/lessons/${item.permalink}`;
+  } else if (activeTab === 'guides' && item.username) {
+    linkUrl = `/guide/${item.username}`;
+  }
+  // Note: Quizzes are handled by QuizCard directly in renderContent
 
-  // --- Render Image with Error Handling ---
   const renderImage = () => (
     <img
       src={imageUrl}
@@ -100,38 +116,29 @@ const ItemCard = ({ item, activeTab }) => {
       className={styles.gridItemImage}
       loading="lazy"
       onError={(e) => {
-        // Prevent infinite loop if the placeholder itself fails
         if (e.target.src !== defaultPlaceholder) {
-            e.target.onerror = null; // stop trying to load the broken image
-            e.target.src = defaultPlaceholder; // Fallback to default placeholder
-            e.target.classList.add(styles.placeholderImage); // Add class to style placeholder text if needed
+          e.target.onerror = null;
+          e.target.src = defaultPlaceholder;
+          e.target.classList.add(styles.placeholderImage);
         } else {
-            // If the placeholder itself fails, hide the image element
-            e.target.style.display = 'none';
+          e.target.style.display = 'none';
         }
       }}
     />
   );
 
   return (
-    // Apply quiz-specific class here too if needed for item layout
-    <div className={styles.gridItem}>
-      {/* Link wraps the entire card content for better click/tap target */}
+    <div ref={cardRef} className={styles.gridItem} data-item-id={item.id} data-item-type={activeTab}>
       <Link to={linkUrl} className={styles.gridItemLink} aria-label={`View ${title}`}>
         <div className={styles.gridItemCard}>
           <div className={styles.gridItemImageContainer}>
             {renderImage()}
           </div>
           <div className={styles.gridItemInfo}>
-            {/* Display Meta Info (e.g., Course Type) if available */}
             {metaInfo && <p className={styles.gridItemMeta}>{metaInfo}</p>}
-            {/* Display Title */}
             <h3 className={styles.gridItemTitle}>{title}</h3>
-            {/* Display Creator Info if available */}
             {creatorName && (
               <div className={styles.gridItemCreator}>
-                {/* Placeholder for potential avatar in the future */}
-                {/* <img src={creatorAvatarUrl || defaultAvatar} alt="" className={styles.creatorAvatar} /> */}
                 <span className={styles.creatorName}>{creatorName}</span>
               </div>
             )}
@@ -144,47 +151,54 @@ const ItemCard = ({ item, activeTab }) => {
 
 
 // --- Main Explorer Component ---
-// (No significant logical changes, just using the updated ItemCard and styles)
 const Explorer = () => {
-  const [activeTab, setActiveTab] = useState('courses');
+  const [activeTab, setActiveTab] = useState('courses'); // Your original default
   const [items, setItems] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const { logout } = useContext(AuthContext);
-  const tabBarRef = useRef(null); // Ref for tab bar scrolling
+  const { token, logout } = useContext(AuthContext) || {}; // Added || {} for safety
+  const tabBarRef = useRef(null);
+  const visibleItemTimers = useRef({}); // Stores { [`${itemType}-${itemId}`]: startTime }
 
-  // Define tab configuration
   const tabs = [
-    // { key: 'posts', label: 'Posts', path: '/posts/' }, // Uncomment if needed
     { key: 'courses', label: 'Courses', path: '/courses/' },
     { key: 'lessons', label: 'Lessons', path: '/lessons/' },
     { key: 'quizzes', label: 'Quizzes', path: '/quizzes/' },
     { key: 'guides', label: 'Guides', path: '/users/guides/' },
+    // { key: 'posts', label: 'Posts', path: '/posts/' }, // Your original had posts commented out
   ];
 
-  // --- Data Fetching (Keep as is, uses useCallback) ---
   const fetchData = useCallback(async () => {
     setLoading(true);
     setMessage('');
-    setItems([]); // Clear items before fetching new tab data
+    setItems([]);
+    // Clear timers for items that were visible from the previous tab
+    Object.keys(visibleItemTimers.current).forEach(key => {
+        const [type, idStr] = key.split('-');
+        // Call handleItemHidden to log time for items that were visible before tab switch
+        // Ensure handleItemHidden is defined or pass null if it's not critical here
+        if (handleItemHidden) handleItemHidden(parseInt(idStr), type);
+    });
+    visibleItemTimers.current = {}; // Reset timers for the new tab
 
     const currentTabConfig = tabs.find(tab => tab.key === activeTab);
     if (!currentTabConfig) {
-        setMessage(`Invalid tab selected.`);
-        setLoading(false);
-        return;
+      setMessage(`Invalid tab selected.`);
+      setLoading(false);
+      return;
     }
-    const relativePath = currentTabConfig.path;
+    const relativePath = currentTabConfig.path.startsWith('/') ? currentTabConfig.path.substring(1) : currentTabConfig.path;
+
 
     try {
-      const response = await apiClient.get(relativePath);
-      // Ensure data is always an array, even if API returns null or something else
-      const data = Array.isArray(response.data) ? response.data : [];
+      const response = await apiClient.get(relativePath, { // Removed leading slash from relativePath if apiClient.baseURL has it
+         headers: token ? { Authorization: `Bearer ${token}` } : {} // Conditionally add auth header
+      });
+      const data = Array.isArray(response.data) ? response.data : (response.data?.results || []); // Handle paginated results
       setItems(data);
       if (data.length === 0) {
-          setMessage(`No ${activeTab} found.`); // Set info message if empty
+        setMessage(`No ${activeTab} found.`);
       }
-
     } catch (error) {
       console.error(`Error fetching ${activeTab}:`, error.response ? error.response.data : error.message);
       let errorMsg = `Failed to load ${activeTab}. Please try again later.`;
@@ -192,51 +206,86 @@ const Explorer = () => {
         errorMsg = error.response.data.detail;
       }
       setMessage(errorMsg);
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 && logout) {
         setMessage('Authentication failed. Logging out...');
         setTimeout(logout, 1500);
       }
     } finally {
       setLoading(false);
     }
-  }, [activeTab, logout]); // Dependency array includes activeTab and logout
+  }, [activeTab, token, logout]); // Removed handleItemHidden from deps as it's defined below
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // Re-run fetch when fetchData changes (i.e., when activeTab changes)
+  }, [fetchData]);
 
-  // Scroll active tab into view on mobile
   useEffect(() => {
     const activeTabElement = tabBarRef.current?.querySelector(`.${styles.active}`);
     if (activeTabElement && typeof activeTabElement.scrollIntoView === 'function') {
       activeTabElement.scrollIntoView({
         behavior: 'smooth',
-        inline: 'center', // Centers the tab horizontally
-        block: 'nearest', // Avoids vertical scrolling if possible
+        inline: 'center',
+        block: 'nearest',
       });
     }
-  }, [activeTab]); // Run when activeTab changes
+  }, [activeTab]);
+
+  // --- Visibility Tracking Callbacks ---
+  const handleItemVisible = useCallback((itemId, itemType) => {
+    const key = `${itemType}-${itemId}`;
+    if (!visibleItemTimers.current[key]) {
+      visibleItemTimers.current[key] = Date.now();
+      // console.log(`Item visible: ${key} (Type: ${itemType}, ID: ${itemId}), timer started.`);
+    }
+  }, []);
+
+  const handleItemHidden = useCallback(async (itemId, itemType) => {
+    const key = `${itemType}-${itemId}`;
+    const startTime = visibleItemTimers.current[key];
+
+    if (startTime) {
+      const durationMs = Date.now() - startTime;
+      delete visibleItemTimers.current[key];
+
+      if (durationMs > 1000 && token) { // Only log if visible for >1s and user is logged in
+        // console.log(`Item hidden: ${key}, duration: ${durationMs}ms. Logging...`);
+        try {
+          await apiClient.post('/analytics/log-interaction-time/', { // Ensure this path is correct
+            item_type: itemType,
+            item_id: itemId,
+            duration_ms: durationMs,
+            context: 'ExplorerView',
+            // url: window.location.pathname, // Optional: current page URL
+          }, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          // console.log(`Logged interaction for ${key}`);
+        } catch (error) {
+          console.error(`Failed to log interaction time for ${key}:`, error);
+          // Handle specific errors like 401 if needed
+          if (error.response?.status === 401 && logout) {
+             console.warn("Logging interaction failed due to auth error, logging out.");
+             logout();
+          }
+        }
+      } else {
+        // console.log(`Item hidden: ${key}, duration too short (${durationMs}ms) or no token, not logging.`);
+      }
+    }
+  }, [token, logout]);
 
 
-  // --- Render Content ---
   const renderContent = () => {
-    // Determine if the quiz layout should be applied
     const isQuizLayout = activeTab === 'quizzes';
-
-    // Show loading skeletons
     if (loading) {
       return (
-        // Add quizLayout class to skeleton container if quiz tab is loading
         <div className={`${styles.gridContainer} ${isQuizLayout ? styles.quizLayout : ''}`}>
-          {/* Render a good number of skeletons for visual feedback */}
           {Array.from({ length: 12 }).map((_, index) => (
             <SkeletonCard key={`skeleton-${index}`} />
           ))}
         </div>
       );
     }
-
-    // Show messages (Error or Info like "No items found")
     if (message) {
       const isError = message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') || message.toLowerCase().includes('invalid');
       return (
@@ -245,48 +294,62 @@ const Explorer = () => {
         </div>
       );
     }
+    if (!loading && items.length === 0 && !message) {
+      return (
+        <div className={`${styles.messageContainer} ${styles.infoMessage}`} role="status" aria-live="polite">
+          No {activeTab} available yet. Explore other categories!
+        </div>
+      );
+    }
 
-    // Show "No items" message specifically if items array is empty and no other message is set
-     if (!loading && items.length === 0 && !message) {
-         return (
-             <div className={`${styles.messageContainer} ${styles.infoMessage}`} role="status" aria-live="polite">
-                 No {activeTab} available yet. Explore other categories!
-             </div>
-         );
-     }
-
-
-    // Render Items using the new grid structure
-    // Conditionally add the quizLayout class
     return (
       <div className={`${styles.gridContainer} ${isQuizLayout ? styles.quizLayout : ''}`}>
         {items.map((item) => {
-          // Handle invalid items defensively
           if (!item || !item.id) {
             console.warn("Skipping render for item without ID:", item);
             return null;
           }
-
           if (activeTab === 'quizzes') {
-             // Wrap QuizCard in gridItem for layout consistency
-             // Ensure QuizCard itself is styled appropriately or adapt here
-             // The gridItem will now be full width due to the quizLayout class on the parent
-             return (
-                 <div className={styles.gridItem} key={`quiz-wrapper-${item.id}`}>
-                     <QuizCard quiz={item} />
-                     {/* Consider adding creator info here too if QuizCard doesn't handle it */}
-                     {item.created_by && (
-                        <div className={`${styles.gridItemInfo} ${styles.quizCreatorInfo}`}>
-                            <div className={styles.gridItemCreator}>
-                                <span className={styles.creatorName}>{item.created_by}</span>
-                            </div>
-                        </div>
-                     )}
-                 </div>
-             );
+            // For QuizCard, we need to wrap it or ensure QuizCard itself implements IntersectionObserver
+            // For simplicity, we'll wrap it with a div that has the ref and data attributes
+            // QuizCard itself will receive the quiz prop
+            return (
+              <div
+                key={`quiz-wrapper-${item.id}`}
+                ref={el => {
+                  // This is a bit tricky with dynamic refs in a map.
+                  // A more robust way is to have QuizCard accept onItemVisible/onItemHidden
+                  // or use a dedicated wrapper component for QuizCard that handles observation.
+                  // For now, this div won't directly trigger the observer unless ItemCard logic is moved here.
+                  // The BEST approach is to pass onItemVisible/Hidden to QuizCard if it's a separate component.
+                }}
+                // data-item-id={item.id} // These should be on the observed element
+                // data-item-type={activeTab}
+              >
+                {/*
+                  If QuizCard is a simple display component, it won't trigger visibility events.
+                  You'd need to wrap it with something like ItemCard, or make QuizCard itself
+                  use IntersectionObserver and call onItemVisible/onItemHidden.
+
+                  Let's assume QuizCard needs to be adapted or you use ItemCard structure for it too.
+                  For now, to keep your structure, we render QuizCard.
+                  To enable tracking for QuizCard, it should ideally accept onItemVisible/onItemHidden
+                  and use IntersectionObserver internally, or be wrapped by a component like ItemCard.
+                */}
+                 <QuizCard quiz={item} onItemVisible={handleItemVisible} onItemHidden={handleItemHidden} itemType={activeTab} />
+              </div>
+            );
           }
-          // Render standard items using the updated ItemCard
-          return <ItemCard key={`${activeTab}-${item.id}`} item={item} activeTab={activeTab} />;
+          // Render standard items using ItemCard which has IntersectionObserver
+          return (
+            <ItemCard
+              key={`${activeTab}-${item.id}`}
+              item={item}
+              activeTab={activeTab}
+              onItemVisible={handleItemVisible}
+              onItemHidden={handleItemHidden}
+            />
+          );
         })}
       </div>
     );
@@ -294,7 +357,6 @@ const Explorer = () => {
 
   return (
     <div className={styles.explorerContainer}>
-      {/* Tab Bar */}
       <div className={styles.tabBarContainer}>
         <div className={styles.tabBar} ref={tabBarRef} role="tablist" aria-label="Content categories">
           {tabs.map((tab) => (
@@ -302,27 +364,32 @@ const Explorer = () => {
               key={tab.key}
               role="tab"
               aria-selected={activeTab === tab.key}
-              aria-controls={`tabpanel-${tab.key}`} // Links button to panel
-              id={`tab-${tab.key}`} // Unique ID for label association
+              aria-controls={`tabpanel-${tab.key}`}
+              id={`tab-${tab.key}`}
               className={`${styles.tabBtn} ${activeTab === tab.key ? styles.active : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-              disabled={loading} // Disable tabs while loading
+              onClick={() => {
+                // Before changing tab, log durations for any items currently visible
+                Object.keys(visibleItemTimers.current).forEach(key => {
+                    const [type, idStr] = key.split('-');
+                    if (handleItemHidden) handleItemHidden(parseInt(idStr), type);
+                });
+                setActiveTab(tab.key);
+              }}
+              disabled={loading}
             >
               {tab.label}
             </button>
           ))}
         </div>
       </div>
-
-      {/* Content Area - Linked to active tab via aria-labelledby */}
       <div
-        id={`tabpanel-${activeTab}`} // ID matches button's aria-controls
+        id={`tabpanel-${activeTab}`}
         role="tabpanel"
-        aria-labelledby={`tab-${activeTab}`} // Associates panel with its controlling tab
-        tabIndex={-1} // Make panel focusable programmatically if needed, -1 removes from normal tab order
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={-1}
         className={styles.contentArea}
       >
-         {renderContent()}
+        {renderContent()}
       </div>
     </div>
   );

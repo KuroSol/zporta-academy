@@ -32,6 +32,7 @@ urlpatterns = [
 
     path('api/user_media/', include('user_media.urls')),
     path('api/', include('analytics.urls')),
+    path('api/analytics/', include('analytics.urls')), # Corrected line
     path('api/study/', include('learning.urls')),
 
 ]

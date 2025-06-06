@@ -3,6 +3,10 @@
 from rest_framework import serializers
 from django.db import transaction # Import transaction for atomic operations
 
+from django.contrib.contenttypes.models import ContentType
+from analytics.models import ActivityEvent
+
+
 # Assuming Subject/Course models live in separate apps:
 from subjects.models import Subject # Import Subject from the 'subjects' app
 from courses.models import Course   # Import Course from the 'courses' app
@@ -42,6 +46,10 @@ class QuestionSerializer(serializers.ModelSerializer):
     option2 = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     option3 = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     option4 = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    attempt_count = serializers.IntegerField(read_only=True)
+    correct_count = serializers.IntegerField(read_only=True)
+    wrong_count   = serializers.IntegerField(read_only=True)
 
     correct_option = serializers.IntegerField(required=False, allow_null=True) # For MCQ
     correct_options = serializers.JSONField(required=False, allow_null=True) # For Multi, Sort solution
@@ -101,6 +109,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             '_fill_blank',     # Outgoing nested object for dragdrop (read-only, represents FillBlankQuestion)
             # Hints
             'hint1', 'hint2',
+            'attempt_count', 'correct_count', 'wrong_count',
         ]
         # 'quiz' is typically set by the parent QuizSerializer.
         # '_fill_blank' is read-only as it's a representation of related models.
@@ -109,6 +118,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             'id', 'quiz', '_fill_blank',
             'question_image_alt', 'option1_image_alt', 'option2_image_alt',
             'option3_image_alt', 'option4_image_alt',
+            'attempt_count', 'correct_count', 'wrong_count',
         ]
 
     def validate(self, data):
@@ -272,210 +282,236 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 # --- Quiz Serializer ---
 class QuizSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True, required=False) # Allow empty list on create/update
+    # ─────── Read-only fields (populated by the view's .annotate(...) call) ───────
+    attempt_count = serializers.IntegerField(read_only=True)
+    correct_count = serializers.IntegerField(read_only=True)
+    wrong_count   = serializers.IntegerField(read_only=True)
+
+    # Use a SerializerMethodField for questions so we can pick up any
+    # "annotated_questions" attribute set on the Quiz instance by the view.
+    questions = serializers.SerializerMethodField()
+
     tags = TagSerializer(many=True, read_only=True)
     tag_names = serializers.ListField(
-        child=serializers.CharField(max_length=100), write_only=True, required=False
+        child=serializers.CharField(max_length=100),
+        write_only=True,
+        required=False
     )
+
     created_by = serializers.CharField(source='created_by.username', read_only=True)
-    subject = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(), allow_null=True, required=False) # Made not required for flexibility
-    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), allow_null=True, required=False)  # Made not required
+    subject    = serializers.PrimaryKeyRelatedField(
+                     queryset=Subject.objects.all(),
+                     allow_null=True,
+                     required=False
+                  )
+    course     = serializers.PrimaryKeyRelatedField(
+                     queryset=Course.objects.all(),
+                     allow_null=True,
+                     required=False
+                  )
 
     class Meta:
         model = Quiz
         fields = [
-            'id','title','content','lesson','subject','course','quiz_type',
-            'permalink','created_by','created_at',
-            'seo_title','seo_description','focus_keyword','canonical_url',
-            'og_title','og_description','og_image','is_locked',
-            'tags','tag_names', # Tag fields
-            'questions'
+            'id',
+            'title',
+            'content',
+            'lesson',
+            'subject',
+            'course',
+            'quiz_type',
+            'permalink',
+            'created_by',
+            'created_at',
+
+            'seo_title',
+            'seo_description',
+            'focus_keyword',
+            'canonical_url',
+            'og_title',
+            'og_description',
+            'og_image',
+            'is_locked',
+
+            'tags',
+            'tag_names',
+
+            'questions',
+
+            # These three come from the view's annotate(...) call, not from a database lookup in the serializer:
+            'attempt_count',
+            'correct_count',
+            'wrong_count',
         ]
         read_only_fields = [
-            'id', 'permalink', 'created_by', 'created_at', 'is_locked', 'tags',
-            'seo_title', 'seo_description', 'canonical_url', # SEO fields often auto-generated
-            'og_title', 'og_description', 'og_image', # OG fields often auto-generated
+            'id',
+            'permalink',
+            'created_by',
+            'created_at',
+            'is_locked',
+            'tags',
+            'seo_title',
+            'seo_description',
+            'canonical_url',
+            'og_title',
+            'og_description',
+            'og_image',
+
+            'attempt_count',
+            'correct_count',
+            'wrong_count',
         ]
         extra_kwargs = {
-            'title': {'required': True, 'allow_blank': False},
-            'subject': {'required': True}, # Subject is mandatory for a quiz
-            'content': {'required': False, 'allow_blank': True}, # Optional main content
-            'lesson': {'required': False, 'allow_null': True},
-            'course': {'required': False, 'allow_null': True},
+            'title':   {'required': True, 'allow_blank': False},
+            'subject': {'required': True},
+            'content': {'required': False, 'allow_blank': True},
+            'lesson':  {'required': False, 'allow_null': True},
+            'course':  {'required': False, 'allow_null': True},
         }
 
+    def get_questions(self, quiz_obj):
+        """
+        Return the annotated questions if present; otherwise fallback to quiz_obj.questions.all()
+        """
+        annotated = getattr(quiz_obj, 'annotated_questions', None)
+        if annotated is not None:
+            qs = annotated
+        else:
+            qs = quiz_obj.questions.all()
+
+        return QuestionSerializer(qs, many=True, context=self.context).data
+
+    # ─────── Internal helpers to manage tags & drag‐drop data ───────
     def _save_tags(self, quiz_instance, tag_names_list):
-        """Helper to manage tags for a quiz instance."""
-        quiz_instance.tags.clear() # Clear existing tags first
+        quiz_instance.tags.clear()
         for name in tag_names_list:
-            name = name.strip() # Remove leading/trailing whitespace
-            if name: # Ensure tag name is not empty
-                tag, _ = Tag.objects.get_or_create(name=name) # Get or create tag
-                quiz_instance.tags.add(tag) # Add tag to quiz
+            name = name.strip()
+            if name:
+                tag, _ = Tag.objects.get_or_create(name=name)
+                quiz_instance.tags.add(tag)
 
     def _save_dragdrop_data(self, question_instance, fill_blank_data_dict, frontend_question_temp_id):
-        """
-        Helper to save FillBlankQuestion, BlankWord, and BlankSolution models
-        for a 'dragdrop' type question.
-        """
         if not fill_blank_data_dict or not isinstance(fill_blank_data_dict, dict):
-            # This should ideally be caught by QuestionSerializer.validate
-            print(f"Error: Invalid or missing fill_blank_data for question {question_instance.id}")
             return
 
         try:
-            # 1. Create or update the FillBlankQuestion instance (OneToOne with Question)
             fb_instance, created = FillBlankQuestion.objects.update_or_create(
                 question=question_instance,
                 defaults={'sentence': fill_blank_data_dict.get('sentence', '')}
             )
-
-            # If updating, clear old words and solutions to ensure consistency with new data.
-            # A more complex diffing logic could be used for partial updates of words/solutions.
             if not created:
-                fb_instance.words.all().delete() # This will cascade delete BlankSolution via ForeignKey
+                fb_instance.words.all().delete()
 
-            # 2. Create BlankWord instances from the 'words' list in fill_blank_data
-            word_id_map = {} # Maps frontend temporary item ID to backend BlankWord.id
-            words_list_from_frontend = fill_blank_data_dict.get('words', []) # e.g., [{'text':'word1'}, ...]
+            word_id_map = {}
+            words_list_from_frontend = fill_blank_data_dict.get('words', [])
             if not isinstance(words_list_from_frontend, list):
-                 raise TypeError("Expected 'words' in fill_blank_data to be a list.")
+                raise TypeError("Expected 'words' to be a list.")
 
             for idx, word_obj in enumerate(words_list_from_frontend):
                 if not isinstance(word_obj, dict) or 'text' not in word_obj:
-                     raise TypeError(f"Invalid word object format at index {idx} in fill_blank_data.")
-                
+                    raise TypeError(f"Invalid word object format at index {idx}.")
                 word_instance = BlankWord.objects.create(fill_blank=fb_instance, text=word_obj['text'])
-                
-                # Map the frontend's temporary ID for this word to the new BlankWord's DB ID
-                if frontend_question_temp_id: # Ensure the question's temp_id was passed
-                    # This is the ID generated on the frontend (e.g., "item_questionTempId_wordIndex")
-                    current_frontend_item_id = f"item_{frontend_question_temp_id}_{idx}"
-                    word_id_map[current_frontend_item_id] = word_instance.id
-                else:
-                    # Log if temp_id is missing, as mapping will fail
-                    print(f"Warning: Missing frontend_question_temp_id for question {question_instance.id}. Cannot accurately map drag-drop solutions.")
 
-            # 3. Create BlankSolution instances using the mapped IDs
-            solutions_list_from_frontend = fill_blank_data_dict.get('solutions', []) # e.g., [{'slot_index':0, 'correct_word':'item_..._0'}, ...]
+                if frontend_question_temp_id:
+                    frontend_id = f"item_{frontend_question_temp_id}_{idx}"
+                    word_id_map[frontend_id] = word_instance.id
+
+            solutions_list_from_frontend = fill_blank_data_dict.get('solutions', [])
             if not isinstance(solutions_list_from_frontend, list):
-                raise TypeError("Expected 'solutions' in fill_blank_data to be a list.")
+                raise TypeError("Expected 'solutions' to be a list.")
 
             for sol_obj in solutions_list_from_frontend:
-                 if not isinstance(sol_obj, dict) or 'correct_word' not in sol_obj or 'slot_index' not in sol_obj:
-                     raise TypeError("Invalid solution object format in fill_blank_data.")
-                 
-                 frontend_item_id_for_solution = sol_obj['correct_word'] # This is the frontend's temp item ID
-                 correct_word_db_id = word_id_map.get(frontend_item_id_for_solution) # Look up the DB ID
-
-                 if correct_word_db_id:
-                     BlankSolution.objects.create(
-                         fill_blank=fb_instance,
-                         slot_index=sol_obj['slot_index'],
-                         correct_word_id=correct_word_db_id # Use the actual DB ID of the BlankWord
-                     )
-                 else:
-                     # Log a warning if a solution couldn't be mapped (e.g., temp_id mismatch or missing)
-                     print(f"Warning: Could not map frontend item ID '{frontend_item_id_for_solution}' to a backend BlankWord ID for quiz {question_instance.quiz.id}, question {question_instance.id}, slot {sol_obj['slot_index']}.")
-                     # Depending on requirements, you might want to raise an error here
-                     # raise serializers.ValidationError(f"Invalid mapping for solution in slot {sol_obj['slot_index']}.")
+                if not isinstance(sol_obj, dict) or 'correct_word' not in sol_obj or 'slot_index' not in sol_obj:
+                    raise TypeError("Invalid solution object format.")
+                frontend_item_id = sol_obj['correct_word']
+                correct_db_id = word_id_map.get(frontend_item_id)
+                if correct_db_id:
+                    BlankSolution.objects.create(
+                        fill_blank=fb_instance,
+                        slot_index=sol_obj['slot_index'],
+                        correct_word_id=correct_db_id
+                    )
+                else:
+                    print(f"Warning: Could not map '{frontend_item_id}' for question {question_instance.id}.")
 
         except (TypeError, KeyError, ValueError) as e:
-             # Catch potential errors during processing of the fill_blank structure
-             raise serializers.ValidationError(f"Error processing fill_blank data for question {question_instance.id}: {e}")
+            raise serializers.ValidationError(f"Error processing fill_blank for question {question_instance.id}: {e}")
 
 
-    @transaction.atomic # Ensure all database operations succeed or fail together
+    @transaction.atomic
     def create(self, validated_data):
-        questions_input_data = validated_data.pop('questions', []) # Extract questions data
-        tag_names_input = validated_data.pop('tag_names', [])       # Extract tag names
-        validated_data['created_by'] = self.context['request'].user # Set creator
+        questions_input_data = validated_data.pop('questions', [])
+        tag_names_input = validated_data.pop('tag_names', [])
+        validated_data['created_by'] = self.context['request'].user
 
-        quiz = Quiz.objects.create(**validated_data) # Create the Quiz instance
+        quiz = Quiz.objects.create(**validated_data)
 
-        if tag_names_input: # Save tags if provided
+        if tag_names_input:
             self._save_tags(quiz, tag_names_input)
 
-        # Process each question from the input data
         for q_input_data in questions_input_data:
             serializer_context = self.context.copy()
-            # Get the frontend's temporary ID for this question (used for mapping dragdrop items)
             frontend_q_temp_id = q_input_data.get('temp_id')
             if frontend_q_temp_id:
-                 serializer_context['temp_id'] = frontend_q_temp_id # Pass to QuestionSerializer via context
+                serializer_context['temp_id'] = frontend_q_temp_id
 
-            # Instantiate and validate the QuestionSerializer with the current question's data
             question_serializer = QuestionSerializer(data=q_input_data, context=serializer_context)
             question_serializer.is_valid(raise_exception=True)
-            
-            # The QuestionSerializer.create method will pop 'fill_blank' and 'temp_id'
-            # before saving the Question model.
             question_instance = question_serializer.save(quiz=quiz)
 
-            # After Question instance is saved, if it's a dragdrop type,
-            # process the 'fill_blank' data that was validated by QuestionSerializer.
             if question_instance.question_type == 'dragdrop':
-                # Get the validated 'fill_blank' data from the QuestionSerializer instance
-                fill_blank_json_data = question_serializer.validated_data.get('fill_blank')
-                if fill_blank_json_data:
-                    self._save_dragdrop_data(question_instance, fill_blank_json_data, frontend_q_temp_id)
+                fill_blank_json = question_serializer.validated_data.get('fill_blank')
+                if fill_blank_json:
+                    self._save_dragdrop_data(question_instance, fill_blank_json, frontend_q_temp_id)
+
         return quiz
 
-    @transaction.atomic # Ensure atomicity for updates as well
+    @transaction.atomic
     def update(self, instance, validated_data):
-        # Remove fields that should not be updated directly or are handled separately
-        validated_data.pop('permalink', None) # Permalink is auto-generated and usually not changed
-        validated_data.pop('created_by', None) # Creator should not change
+        validated_data.pop('permalink', None)
+        validated_data.pop('created_by', None)
 
-        questions_input_data = validated_data.pop('questions', None) # None if not provided for update
-        tag_names_input = validated_data.pop('tag_names', None)       # None if not provided
+        questions_input_data = validated_data.pop('questions', None)
+        tag_names_input = validated_data.pop('tag_names', None)
 
-        # Update the Quiz instance with simple fields
         instance = super().update(instance, validated_data)
 
-        # Update tags if tag_names were provided in the request
-        if tag_names_input is not None: # Allows sending empty list to clear tags
+        if tag_names_input is not None:
             self._save_tags(instance, tag_names_input)
 
-        # Handle updates to nested questions if questions_data was provided
         if questions_input_data is not None:
-            existing_questions_map = {q.id: q for q in instance.questions.all()}
-            processed_question_ids = set()
+            existing_map = {q.id: q for q in instance.questions.all()}
+            processed_ids = set()
 
             for q_input_data in questions_input_data:
-                question_db_id = q_input_data.get('id') # ID of existing question, or None for new
-                question_model_instance = existing_questions_map.get(question_db_id) if question_db_id else None
+                question_db_id = q_input_data.get('id')
+                question_model_instance = existing_map.get(question_db_id) if question_db_id else None
 
                 serializer_context = self.context.copy()
-                frontend_q_temp_id = q_input_data.get('temp_id') # For new dragdrop questions during update
+                frontend_q_temp_id = q_input_data.get('temp_id')
                 if frontend_q_temp_id:
-                     serializer_context['temp_id'] = frontend_q_temp_id
+                    serializer_context['temp_id'] = frontend_q_temp_id
 
                 question_serializer = QuestionSerializer(
-                    instance=question_model_instance, # Existing instance or None (for create)
+                    instance=question_model_instance,
                     data=q_input_data,
-                    partial=bool(question_model_instance), # Partial update if instance exists
+                    partial=bool(question_model_instance),
                     context=serializer_context
                 )
                 question_serializer.is_valid(raise_exception=True)
-                
-                # QuestionSerializer.create/update will pop 'fill_blank' and 'temp_id'
-                saved_question_instance = question_serializer.save(quiz=instance)
-                processed_question_ids.add(saved_question_instance.id)
+                saved_q = question_serializer.save(quiz=instance)
+                processed_ids.add(saved_q.id)
 
-                # Handle drag & drop data for the updated/created question
-                if saved_question_instance.question_type == 'dragdrop':
-                    fill_blank_json_data = question_serializer.validated_data.get('fill_blank')
-                    if fill_blank_json_data:
-                        self._save_dragdrop_data(saved_question_instance, fill_blank_json_data, frontend_q_temp_id)
-                # If question type changed FROM dragdrop, delete its old FillBlankQuestion structure
-                elif question_model_instance and question_model_instance.question_type == 'dragdrop' and saved_question_instance.question_type != 'dragdrop':
-                     FillBlankQuestion.objects.filter(question=saved_question_instance).delete()
+                if saved_q.question_type == 'dragdrop':
+                    fill_blank_json = question_serializer.validated_data.get('fill_blank')
+                    if fill_blank_json:
+                        self._save_dragdrop_data(saved_q, fill_blank_json, frontend_q_temp_id)
+                elif question_model_instance and question_model_instance.question_type == 'dragdrop' and saved_q.question_type != 'dragdrop':
+                    FillBlankQuestion.objects.filter(question=saved_q).delete()
 
-            # Delete any questions that were previously associated but not included in this update
-            ids_to_delete = set(existing_questions_map.keys()) - processed_question_ids
+            ids_to_delete = set(existing_map.keys()) - processed_ids
             if ids_to_delete:
                 instance.questions.filter(id__in=ids_to_delete).delete()
 
-        instance.refresh_from_db() # Refresh to get latest state from DB
+        instance.refresh_from_db()
         return instance

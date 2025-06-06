@@ -16,8 +16,21 @@ from .models import LessonTemplate
 from .serializers import LessonTemplateSerializer
 from rest_framework import viewsets
 from rest_framework import viewsets
+from django.db.models import Count, Q
+from rest_framework.viewsets import ModelViewSet
 
 
+class LessonViewSet(ModelViewSet):
+    serializer_class = LessonSerializer
+
+    def get_queryset(self):
+        return Lesson.objects.all().annotate(
+            completed_count=Count(
+                'learningrecord',
+                filter=Q(learningrecord__is_completed=True),
+                distinct=True
+            )
+        )
 
 class EnrollmentLessonCompletionsView(APIView):
     permission_classes = [IsAuthenticated]

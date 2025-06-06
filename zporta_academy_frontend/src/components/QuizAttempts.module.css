@@ -1,556 +1,412 @@
 /* QuizAttempts.module.css */
 
-/* --- Base Variables (Assume global or redefine if needed) --- */
+/* --- Color Palette --- */
 :root {
-  --primary-color: #2c3e50;   /* Deep navy */
-  --secondary-color: #e67e22; /* Warm accent/orange */
-  --background-color: #ecf0f1; /* Light grayish background */
-  --card-background: #ffffff;
-  --text-color: #333333;
-  --text-light: #555555;
-  --text-secondary: #6b7280; /* From previous examples */
-  --text-on-primary: #ffffff;
-  --success-color: #27ae60; /* Slightly different green */
-  --error-color: #c0392b;   /* Slightly different red */
-  --border-color: #dfe4ea; /* Lighter border */
-  --border-radius: 8px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
-  --spacing-unit: 1rem; /* 16px */
-  --transition-speed: 0.25s;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /* Consistent font */
-  --bg-subtle: #f8f9fa; /* Subtle background for footer etc. */
+  --primary-dark: #1B2735;   /* Dark Navy */
+  --accent-gold: #FFC107;    /* Yellow/Gold */
+  --neutral-light: #FDFDFD;  /* Off-White */
+  --neutral-bg: #f4f6f8;     /* Slightly off-white background for page */
+  --neutral-grey: #e9ecef;   /* Light grey for borders, subtle backgrounds */
+  --text-primary-on-light: #1B2735; /* Dark navy text on light backgrounds */
+  --text-secondary-on-light: #525f6f; /* Softer navy/grey for secondary text */
+  --text-on-dark: #FDFDFD;      /* Off-white text on dark backgrounds */
+  --text-on-accent: #1B2735;   /* Dark navy text on gold accents */
+
+  --success-color: #28a745;  /* Green */
+  --warning-color: #ffc107;  /* Gold (also accent) */
+  --error-color: #dc3545;    /* Red */
+  --info-color: #17a2b8;     /* Teal/Info blue */
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  --shadow-sm: 0 1px 3px rgba(27, 39, 53, 0.08);
+  --shadow-md: 0 4px 10px rgba(27, 39, 53, 0.1);
+  --shadow-lg: 0 10px 20px rgba(27, 39, 53, 0.12);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --spacing-base: 1rem; /* 16px */
+  --transition-main: all 0.25s ease-in-out;
 }
 
-/* --- Page Container --- */
+/* --- Page Base --- */
 .quizAttemptsPage {
-  max-width: 1200px;
-  margin: calc(var(--spacing-unit) * 1.5) auto;
-  padding: var(--spacing-unit);
   font-family: var(--font-sans);
-  background-color: var(--background-color);
+  background-color: var(--neutral-bg);
+  color: var(--text-primary-on-light);
+  padding: calc(var(--spacing-base) * 1.5);
+  min-height: 100vh;
 }
 
-/* --- Section Titles --- */
-.sectionTitle {
-  color: var(--primary-color);
+.pageMasthead {
   text-align: center;
-  margin-bottom: calc(var(--spacing-unit) * 1.5);
-  font-size: 1.8rem;
-  font-weight: 600;
-  padding-bottom: calc(var(--spacing-unit) * 0.5);
-  border-bottom: 2px solid var(--secondary-color);
+  margin-bottom: calc(var(--spacing-base) * 2.5);
+  padding: var(--spacing-base) 0;
 }
 
-/* --- Loading / Error / No Data Containers --- */
-.loadingContainer,
-.errorContainer,
-.noDataContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--spacing-unit) * 0.5);
-  text-align: center;
-  padding: calc(var(--spacing-unit) * 1.5);
-  margin: calc(var(--spacing-unit) * 1.5) auto;
-  border-radius: var(--border-radius);
-  max-width: 700px;
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.errorContainer {
-  background-color: #fff0f0;
-  color: var(--error-color);
-  border-color: #fcc;
-  font-weight: 500;
-}
-
-.loadingContainer {
-  color: var(--text-light);
-  font-style: italic;
-}
-
-.loadingIcon {
-    animation: spin 1.5s linear infinite;
-}
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.noDataContainer {
-  color: var(--text-light);
-  flex-direction: column;
-  gap: var(--spacing-unit);
-}
-
-.findQuizLink {
-  color: var(--secondary-color);
-  font-weight: 600;
-  text-decoration: none;
-  padding: calc(var(--spacing-unit) * 0.3) calc(var(--spacing-unit) * 0.6);
-  border: 1px solid var(--secondary-color);
-  border-radius: 4px;
-  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
-}
-.findQuizLink:hover {
-  background-color: var(--secondary-color);
-  color: var(--text-on-primary);
-  text-decoration: none;
-}
-
-
-/* ================================================== */
-/* --- User Score by Subject Section (Improved Cards) --- */
-/* ================================================== */
-
-.userScoreContainer {
-  margin-bottom: calc(var(--spacing-unit) * 2);
-  background-color: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.subjectScoreGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: calc(var(--spacing-unit) * 1.5);
-}
-
-.subjectScoreCard {
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: calc(var(--spacing-unit) * 1.25);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-}
-
-.subjectScoreCard:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.subjectScoreCardTop {
-  display: flex;
-  align-items: center;
-  /* Increased gap slightly to push text further from chart area */
-  gap: calc(var(--spacing-unit) * 1.5); /* <<< Increased gap */
-  margin-bottom: calc(var(--spacing-unit) * 1);
-  padding-bottom: calc(var(--spacing-unit) * 1);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.scoreChartWrapper {
-  flex-shrink: 0;
-  /*
-  width: 75px;
-  height: 75px;
-  */
-  position: relative;
-  /* Ensure the chart component *inside* doesn't overflow this visually */
-  overflow: hidden; /* Add overflow hidden as a safeguard */
-}
-
-.subjectScoreCardInfo {
-  flex-grow: 1;
-  min-width: 0; /* Important for flex item wrapping/shrinking */
-  /* Added slight left padding for extra safety margin */
-  padding-left: calc(var(--spacing-unit) * 0.25); /* <<< Added padding */
-}
-
-.subjectTitle {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  margin: 0 0 calc(var(--spacing-unit) * 0.25) 0;
-  font-weight: 600;
-  line-height: 1.3;
-  white-space: normal;
-  overflow-wrap: break-word;
-}
-
-.subjectScoreValue {
-  font-size: 1.8rem;
+.mainTitle {
+  font-size: 2.5rem;
   font-weight: 700;
-  color: var(--secondary-color);
-  margin: 0;
+  color: var(--primary-dark);
+  margin-bottom: calc(var(--spacing-base) * 0.5);
+}
+
+.mainSubtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary-on-light);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* --- Section --- */
+.dashboardSection {
+  background-color: var(--neutral-light);
+  padding: calc(var(--spacing-base) * 1.5);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: calc(var(--spacing-base) * 2);
+  box-shadow: var(--shadow-md);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: calc(var(--spacing-base) * 1.5);
+  padding-bottom: var(--spacing-base);
+  border-bottom: 1px solid var(--neutral-grey);
+}
+.sectionHeader svg {
+  margin-right: calc(var(--spacing-base) * 0.75);
+  color: var(--accent-gold);
+  width: 28px;
+  height: 28px;
+}
+.sectionCount {
+  margin-left: calc(var(--spacing-base) * 0.5);
+  font-size: 0.9rem;
+  font-weight: 500;
+  background-color: var(--neutral-grey);
+  color: var(--text-secondary-on-light);
+  padding: calc(var(--spacing-base) * 0.2) calc(var(--spacing-base) * 0.6);
+  border-radius: var(--border-radius-sm);
+}
+
+/* --- Highlight Section (Snapshot) --- */
+.highlightSection {
+  background-color: var(--primary-dark);
+  color: var(--text-on-dark);
+}
+.highlightSection .sectionHeader {
+  color: var(--neutral-light);
+  border-bottom-color: rgba(253, 253, 253, 0.2);
+}
+.highlightSection .sectionHeader svg {
+  color: var(--accent-gold);
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-base);
+}
+.summaryCard {
+  background-color: rgba(253, 253, 253, 0.05); /* Subtle contrast on dark bg */
+  padding: calc(var(--spacing-base) * 1.25);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  border: 1px solid rgba(253, 253, 253, 0.1);
+  transition: var(--transition-main);
+}
+.summaryCard:hover {
+  background-color: rgba(253, 253, 253, 0.1);
+  transform: translateY(-3px);
+}
+.summaryIcon {
+  color: var(--accent-gold);
+  margin-bottom: calc(var(--spacing-base) * 0.5);
+}
+.summaryValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--neutral-light);
+  display: block;
   line-height: 1;
 }
+.summaryLabel {
+  font-size: 0.85rem;
+  color: rgba(253, 253, 253, 0.8);
+  margin-top: calc(var(--spacing-base) * 0.3);
+}
+.summaryCardUrgent .summaryValue,
+.summaryCardUrgent .summaryIcon {
+  color: var(--accent-gold); /* Make urgent numbers pop more */
+  font-weight: bold;
+}
 
-.scoreOutOf {
-    font-size: 0.9rem;
-    font-weight: 400;
+/* --- Items Grid & Cards --- */
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: calc(var(--spacing-base) * 1.5);
+}
+
+.memoryItemCard {
+  background-color: var(--neutral-light);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-base);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-main);
+  border-left: 5px solid var(--neutral-grey); /* Default state */
+}
+.memoryItemCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.dueItem { border-left-color: var(--error-color); }
+.upcomingItem { border-left-color: var(--warning-color); } /* Using warning for upcoming */
+.strongItem { border-left-color: var(--success-color); }
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing-base) * 0.5);
+  margin-bottom: calc(var(--spacing-base) * 0.75);
+}
+.itemTypeIconBase { /* Base for Zap, Calendar, Star in card headers */
+  width: 22px;
+  height: 22px;
+}
+.dueIconAnimation { color: var(--error-color); animation: pulseError 1.5s infinite; }
+.upcomingIconAnimation { color: var(--warning-color); }
+.strongIconAnimation { color: var(--success-color); }
+
+.itemTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary-on-light);
+  margin: 0;
+  line-height: 1.3;
+  flex-grow: 1; /* Allow title to take space */
+}
+.itemStatusText { /* For text next to icon in cardTopRow */
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary-on-light);
+}
+.cardTopRow { /* For MemoryItemCard */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--spacing-base) * 0.5);
+}
+
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-base) * 0.6);
+  margin-bottom: var(--spacing-base);
+  flex-grow: 1; /* Allow details to take space before button */
+}
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing-base) * 0.5);
+  font-size: 0.85rem;
+  color: var(--text-secondary-on-light);
+  padding-bottom: calc(var(--spacing-base) * 0.3);
+  border-bottom: 1px solid #f0f0f0; /* Lighter separator */
+}
+.detailRow:last-child {
+  border-bottom: none;
+}
+.detailRow svg { /* Icons in detail rows */
+  color: var(--primary-dark);
+  opacity: 0.7;
+}
+.detailValue {
+  font-weight: 500;
+  color: var(--text-primary-on-light);
+  margin-left: auto;
+  text-align: right;
+}
+.highlightReviewDate {
+  color: var(--error-color);
+  font-weight: bold;
+}
+.fullDateTooltip {
+    font-size: 0.75rem;
     color: var(--text-light);
     margin-left: 4px;
 }
 
-.scoreDetails {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 1);
-  margin-top: calc(var(--spacing-unit) * 0.5);
-}
+/* Strength indicators */
+.strengthExcellent { color: var(--success-color); }
+.strengthStrong { color: var(--success-color); } /* Can be same as excellent */
+.strengthGood { color: #5cb85c; } /* Slightly different green for good */
+.strengthFair { color: var(--warning-color); }
+.strengthWeak { color: var(--error-color); }
+.strengthUnknown { color: var(--text-light); }
 
-.detailItem {
-  display: flex;
+.strengthExcellent svg, .strengthStrong svg, .strengthGood svg { color: var(--success-color); }
+.strengthFair svg { color: var(--warning-color); }
+.strengthWeak svg { color: var(--error-color); }
+
+
+.actionButton {
+  display: inline-flex;
   align-items: center;
-  gap: calc(var(--spacing-unit) * 0.4);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.detailIcon {
-    flex-shrink: 0;
-    color: var(--primary-color);
-    opacity: 0.8;
-}
-
-.detailLabel {
+  justify-content: center;
+  gap: calc(var(--spacing-base) * 0.4);
+  padding: calc(var(--spacing-base) * 0.6) var(--spacing-base);
+  border-radius: var(--border-radius-sm);
   font-weight: 500;
-  white-space: nowrap;
-  color: var(--text-color);
-}
-
-.detailValue {
-  font-weight: 600;
-  margin-left: auto;
-  white-space: nowrap;
-  color: var(--text-secondary);
-}
-
-
-/* ================================================== */
-/* --- Quiz Attempts List Section (Remains the same) --- */
-/* ================================================== */
-.quizAttemptsContainer {
-    margin-top: calc(var(--spacing-unit) * 2);
-}
-
-.quizAttemptsList {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: calc(var(--spacing-unit) * 1.5);
-}
-
-.quizAttemptCard {
-  background-color: var(--card-background);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-}
-
-.quizAttemptCard:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.cardHeader {
-  background-color: var(--primary-color);
-  color: var(--text-on-primary);
-  padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
-}
-
-.cardTitle {
-  margin: 0 0 calc(var(--spacing-unit) * 0.2) 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cardDate {
-  margin: 0;
-  font-size: 0.8rem;
-  opacity: 0.85;
-}
-
-.cardBody {
-  padding: var(--spacing-unit);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-unit);
-  align-items: center;
-  flex-grow: 1;
-}
-
-.cardChartContainer {
-  flex: 0 0 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.cardPercentage {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-top: calc(var(--spacing-unit) * 0.4);
-}
-
-.cardStats {
-  flex: 1 1 150px;
-  min-width: 0;
-}
-
-.cardStats p {
-  margin: calc(var(--spacing-unit) * 0.3) 0;
   font-size: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1px dashed var(--border-color);
-  padding-bottom: calc(var(--spacing-unit) * 0.3);
-  flex-wrap: wrap;
-}
-.cardStats p:last-child {
-    border-bottom: none;
-}
-
-.cardStats p span:first-child {
-    color: var(--text-secondary);
-    margin-right: var(--spacing-unit);
-    white-space: nowrap;
-}
-.cardStats p span:last-child {
-  font-weight: 600;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.statCorrect { color: var(--success-color); }
-.statWrong { color: var(--error-color); }
-
-.cardFooter {
-  padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
-  border-top: 1px solid var(--border-color);
-  text-align: right;
-  background-color: var(--bg-subtle);
-  margin-top: auto;
-}
-
-.cardReviewButton {
-  background-color: var(--secondary-color);
-  color: var(--text-on-primary);
-  padding: calc(var(--spacing-unit) * 0.4) calc(var(--spacing-unit) * 1);
+  text-decoration: none;
   border: none;
-  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-main);
+  width: 100%;
+  margin-top: auto; /* Push to bottom */
+}
+.actionButtonPrimary {
+  background-color: var(--accent-gold);
+  color: var(--text-on-accent);
+}
+.actionButtonPrimary:hover {
+  background-color: #e0a800; /* Darken gold */
+  box-shadow: var(--shadow-sm);
+}
+.actionButtonSecondary {
+  background-color: var(--primary-dark);
+  color: var(--text-on-dark);
+}
+.actionButtonSecondary:hover {
+  background-color: #2c3e50; /* Slightly lighter navy */
+  box-shadow: var(--shadow-sm);
+}
+.actionButtonView { /* For "View Details" or "Go to Quiz" */
+  background-color: transparent;
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-dark);
+}
+.actionButtonView:hover {
+  background-color: var(--primary-dark);
+  color: var(--text-on-dark);
+}
+
+
+/* --- Quiz Insight Card Specifics --- */
+.quizInsightCard { /* Inherits from memoryItemCard */
+  border-left-color: var(--info-color); /* Distinct color for quiz insights */
+}
+.quizInsightCard .itemTypeIconBase {
+  color: var(--info-color);
+}
+.quizInsightMessage {
+  background-color: #e8f7fa; /* Light info blue background */
+  padding: calc(var(--spacing-base) * 0.75);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  color: #0c5460; /* Darker info text */
+  line-height: 1.5;
+  margin: calc(var(--spacing-base) * 0.5) 0;
+  border-left: 3px solid var(--info-color);
+}
+.lastAttemptText {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: calc(var(--spacing-base) * 0.25);
+}
+
+
+/* --- Loading / Error / Empty States --- */
+.loadingState, .errorState, .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-base) * 2);
+  text-align: center;
+  min-height: 180px;
+  border-radius: var(--border-radius-md);
+}
+.loadingState { color: var(--text-secondary-on-light); }
+.loadingState svg { color: var(--primary-dark); margin-bottom: var(--spacing-base); }
+.errorState { background-color: rgba(220, 53, 69, 0.05); border: 1px dashed var(--error-color); color: var(--error-color); }
+.errorState svg { color: var(--error-color); margin-bottom: var(--spacing-base); }
+.emptyState { background-color: var(--neutral-bg); }
+.emptyState svg { color: var(--primary-dark); opacity: 0.5; margin-bottom: var(--spacing-base); width: 40px; height: 40px; }
+.emptyState h4 { font-size: 1.1rem; color: var(--text-primary-on-light); margin-bottom: calc(var(--spacing-base)*0.5); }
+.emptyState p { font-size: 0.95rem; color: var(--text-secondary-on-light); max-width: 400px; margin-bottom: var(--spacing-base); }
+.emptyStateLink {
+  background-color: var(--accent-gold);
+  color: var(--text-on-accent);
+  padding: calc(var(--spacing-base) * 0.6) calc(var(--spacing-base) * 1.2);
+  border-radius: var(--border-radius-sm);
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
-  display: inline-block;
+  transition: var(--transition-main);
 }
-
-.cardReviewButton:hover {
-  background-color: #d35400;
-  transform: scale(1.02);
-}
-
-.noReviewLink {
-    font-size: 0.85rem;
-    color: var(--text-light);
-    font-style: italic;
-    padding: calc(var(--spacing-unit) * 0.4) 0;
-    display: inline-block;
-}
-
-.retentionBlock {
-  background-color: #f9f9fc;
-  border-left: 4px solid var(--secondary-color);
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-top: 1rem;
-  font-size: 0.92rem;
+.emptyStateLink:hover {
+  background-color: #e0a800;
   box-shadow: var(--shadow-sm);
 }
 
-.retentionMeterRow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+.fullPageLoader, .fullPageError { /* For initial page load states */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: var(--spacing-base);
+}
+.fullPageLoader p, .fullPageError p { font-size: 1.2rem; color: var(--text-secondary-on-light); }
+.fullPageError { color: var(--error-color); }
+
+
+/* --- Animations --- */
+@keyframes pulseError {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+.dueIconAnimation { animation: pulseError 2s infinite ease-in-out; }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.retentionLabel {
-  font-weight: 500;
-  color: var(--text-secondary);
+/* --- Responsive --- */
+@media (max-width: 992px) {
+  .summaryGrid { grid-template-columns: repeat(2, 1fr); }
+  .itemsGrid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 }
-
-.retentionMeter {
-  flex-grow: 1;
-  height: 10px;
-  background-color: #ddd;
-  border-radius: 5px;
-  overflow: hidden;
+@media (max-width: 768px) {
+  .pageMasthead { margin-bottom: calc(var(--spacing-base) * 2); }
+  .mainTitle { font-size: 2rem; }
+  .mainSubtitle { font-size: 1rem; }
+  .sectionHeader { font-size: 1.3rem; }
+  .sectionHeader svg { width: 24px; height: 24px; }
+  .dashboardSection { padding: calc(var(--spacing-base) * 1.25); }
 }
-
-.retentionMeterFill {
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.retentionDays {
-  font-weight: bold;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-
-
-/* ================================================== */
-/* --- Responsive Adjustments --- */
-/* ================================================== */
-@media screen and (max-width: 768px) {
-  .sectionTitle {
-    font-size: 1.6rem;
-  }
-
-  .subjectScoreGrid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-unit);
-  }
-
-  .quizAttemptsList {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-unit);
-  }
-
-  .cardBody {
-     gap: calc(var(--spacing-unit) * 1.5);
-  }
-
-  .cardChartContainer {
-     margin: 0 auto var(--spacing-unit) auto;
-  }
-
-  .cardStats {
-     text-align: left;
-  }
-   .cardStats p {
-     justify-content: space-between;
-   }
-
-   .subjectScoreCardTop {
-       /* Keep increased gap from above for consistency */
-       gap: calc(var(--spacing-unit) * 1); /* Can reduce gap slightly if needed on tablet */
-   }
-   .scoreChartWrapper {
-       width: 65px;
-       height: 65px;
-   }
-   .subjectScoreCardInfo {
-       padding-left: 0; /* Remove extra padding if gap is sufficient */
-   }
-   .subjectTitle {
-       font-size: 1.15rem;
-   }
-   .subjectScoreValue {
-       font-size: 1.6rem;
-   }
-   .scoreDetails {
-       grid-template-columns: 1fr;
-       gap: calc(var(--spacing-unit) * 0.5);
-   }
-   .detailItem {
-       font-size: 0.8rem;
-   }
-
-}
-
-@media screen and (max-width: 480px) {
-  .quizAttemptsPage {
-    margin-top: var(--spacing-unit);
-    margin-bottom: var(--spacing-unit);
-    padding: calc(var(--spacing-unit) * 0.5);
-  }
-  .sectionTitle {
-    font-size: 1.4rem;
-  }
-
-  .subjectScoreGrid {
-      grid-template-columns: 1fr;
-  }
-
-  .subjectScoreCard {
-    padding: var(--spacing-unit);
-  }
-
-  .quizAttemptCard {
-    padding: 0;
-  }
-   .cardHeader, .cardFooter {
-       padding: calc(var(--spacing-unit) * 0.5) calc(var(--spacing-unit) * 0.75);
-   }
-   .cardBody {
-       padding: var(--spacing-unit);
-       flex-direction: column;
-       align-items: stretch;
-   }
-   .cardChartContainer {
-       margin-bottom: var(--spacing-unit);
-   }
-   .cardStats {
-       flex-basis: auto;
-   }
-
-
-  .subjectScoreCardTop {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding-bottom: calc(var(--spacing-unit) * 0.75);
-      margin-bottom: calc(var(--spacing-unit) * 0.75);
-      gap: calc(var(--spacing-unit) * 0.5); /* Adjust gap for column layout */
-  }
-  .scoreChartWrapper {
-      width: 70px;
-      height: 70px;
-      margin-bottom: calc(var(--spacing-unit) * 0.5);
-  }
-   .subjectScoreCardInfo {
-       padding-left: 0; /* No left padding needed in column layout */
-   }
-  .subjectTitle {
-      font-size: 1.1rem;
-  }
-  .subjectScoreValue {
-      font-size: 1.5rem;
-  }
-  .scoreDetails {
-       gap: calc(var(--spacing-unit) * 0.6);
-  }
-  .detailItem {
-      font-size: 0.85rem;
-      gap: calc(var(--spacing-unit) * 0.5);
-  }
-
-
-  .cardTitle {
-     font-size: 1.1rem;
-     white-space: normal;
-  }
-  .cardDate { font-size: 0.75rem; }
-  .cardPercentage { font-size: 1.1rem; }
-  .cardStats p { font-size: 0.85rem; }
-  .cardReviewButton { font-size: 0.8rem; }
-
-  .cardFooter { text-align: center; }
-  .cardReviewButton {
-     width: 90%;
-     padding: calc(var(--spacing-unit) * 0.5) 0;
-  }
+@media (max-width: 576px) {
+  .summaryGrid { grid-template-columns: 1fr; }
+  .itemsGrid { grid-template-columns: 1fr; }
+  .mainTitle { font-size: 1.75rem; }
+  .sectionHeader { font-size: 1.2rem; }
+  .memoryItemCard, .quizInsightCard { padding: var(--spacing-base); }
+  .itemTitle { font-size: 1rem; }
+  .detailRow { font-size: 0.8rem; }
+  .actionButton { font-size: 0.85rem; }
 }

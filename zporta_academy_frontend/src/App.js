@@ -453,7 +453,7 @@ export function NotificationControls({ isLoggedIn }) {
       </div>
     );
   }
-
+/* 
   if (isFcmSubscribed) {
     return (
       <div style={successBannerStyle}>
@@ -461,7 +461,7 @@ export function NotificationControls({ isLoggedIn }) {
         <button onClick={handleDisableNotifications} style={secondaryButtonStyle}>Disable</button>
       </div>
     );
-  }
+  } */
 
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
     return (

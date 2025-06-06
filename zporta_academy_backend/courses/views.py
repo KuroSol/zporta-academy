@@ -11,9 +11,23 @@ from enrollment.models import Enrollment
 from django.http import Http404
 from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
+from django.db.models import Count, Q
+from rest_framework.viewsets import ModelViewSet
 
+class CourseViewSet(ModelViewSet):
+    serializer_class = CourseSerializer
 
-
+    def get_queryset(self):
+        return Course.objects.all().annotate(
+            enrolled_count=Count('enrollment', distinct=True),
+            completed_count=Count(
+                'coursecompletion',
+                filter=Q(coursecompletion__user__isnull=False),
+                distinct=True
+            )
+        )
+    
+    
 class DetachQuizFromCourseView(APIView):
     permission_classes = [IsAuthenticated]
 

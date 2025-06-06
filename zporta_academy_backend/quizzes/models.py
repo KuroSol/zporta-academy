@@ -10,6 +10,9 @@ from pykakasi import kakasi
 from subjects.models import Subject
 from subjects.models import Subject
 from tags.models    import Tag
+from django.contrib.contenttypes.fields import GenericRelation
+from analytics.models import ActivityEvent
+
 # --- japanese_to_romaji function ---
 def japanese_to_romaji(text):
     kks = kakasi()
@@ -97,7 +100,9 @@ class Quiz(models.Model):
         help_text="Attach zero or more tags (auto-created if they don't exist)."
     )
 
+    activity_events = GenericRelation(ActivityEvent)
 
+    
     def save(self, *args, **kwargs):
         if not self.permalink:
             date_str     = timezone.now().strftime('%Y-%m-%d')
@@ -151,7 +156,7 @@ class Quiz(models.Model):
 class Question(models.Model):
     quiz                = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
     allow_speech_to_text = models.BooleanField(default=False)
-
+    activity_events = GenericRelation(ActivityEvent)
     QUESTION_TYPE_CHOICES = [
         ('mcq', 'Multiple Choice'),
         ('multi', 'Multiple Select'),

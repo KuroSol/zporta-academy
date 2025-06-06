@@ -1,330 +1,338 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import { Link } from "react-router-dom";
-// Import recharts if ScoreChart or QuizPerformanceChart depend on it, otherwise remove if unused.
-// Assuming ScoreChart might use something simple or custom SVG, no top-level recharts import needed here unless QuizPerformanceChart uses it.
-import apiClient from "../api"; // Assuming apiClient is configured
-import { AuthContext } from "../context/AuthContext"; // Assuming AuthContext is set up
-import styles from "./QuizAttempts.module.css"; // Import CSS Module
-import QuizPerformanceChart from "./QuizPerformanceChart"; // Assuming this component exists for the attempts list
-import ScoreChart from "./ScoreChart"; // Re-introducing ScoreChart for the subject scores
-import { AlertCircle, Loader, Inbox, TrendingUp, Percent, Clock, UserCheck } from 'lucide-react'; // Added more relevant icons
+import apiClient from "../api";
+import { AuthContext } from "../context/AuthContext";
+import styles from "./QuizAttempts.module.css"; // This CSS will be revamped
 
-// --- Helper Function for Date Formatting ---
+import {
+  AlertCircle, Loader, Inbox, Brain, Zap, TrendingUp, CalendarCheck2, Star, Clock, HelpCircle, ListChecks, ChevronsRight, Smile, Meh, Frown, Target, BarChartHorizontalBig, BookOpenCheck, ThumbsUp
+} from 'lucide-react';
+
+// --- Helper Functions ---
 const formatDate = (isoString) => {
   if (!isoString) return "N/A";
   try {
-    return new Date(isoString).toLocaleString(undefined, { // Use locale-sensitive formatting
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   } catch (e) {
-    console.error("Error formatting date:", e);
+    console.error("Error formatting date:", e, isoString);
     return "Invalid Date";
   }
 };
 
-// --- Helper function to format detail labels ---
-const formatDetailLabel = (key) => {
-    switch (key) {
-        case 'accuracy': return 'Accuracy';
-        case 'engagement': return 'Engagement';
-        case 'recency': return 'Recency';
-        case 'tenure': return 'Tenure';
-        default: return key.charAt(0).toUpperCase() + key.slice(1);
-    }
+const getRelativeDateText = (isoString) => {
+    if (!isoString) return { text: "N/A", isToday: false, isTomorrow: false, isOverdue: false };
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return { text: "Invalid Date", isToday: false, isTomorrow: false, isOverdue: false };
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const targetDate = new Date(date);
+    targetDate.setHours(0,0,0,0);
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let text;
+    if (diffDays === 0) text = "Today";
+    else if (diffDays === 1) text = "Tomorrow";
+    else if (diffDays < 0) text = `${Math.abs(diffDays)} day(s) ago`;
+    else text = `In ${diffDays} days`;
+    
+    return {
+        text: text,
+        fullDate: formatDate(isoString),
+        isToday: diffDays === 0,
+        isTomorrow: diffDays === 1,
+        isOverdue: diffDays < 0
+    };
 };
 
-// --- Helper function to get icons for details ---
-const getDetailIcon = (key) => {
-    switch (key) {
-        case 'accuracy': return <Percent size={14} className={styles.detailIcon} />;
-        case 'engagement': return <TrendingUp size={14} className={styles.detailIcon} />;
-        case 'recency': return <Clock size={14} className={styles.detailIcon} />;
-        case 'tenure': return <UserCheck size={14} className={styles.detailIcon} />;
-        default: return null;
-    }
+const getMemoryStrengthConfig = (estimate) => {
+  if (estimate === null || estimate === undefined) return { text: "No Data", colorClass: styles.strengthUnknown, icon: <HelpCircle /> };
+  if (estimate >= 0.85) return { text: "Excellent", colorClass: styles.strengthExcellent, icon: <Star /> };
+  if (estimate >= 0.7) return { text: "Strong", colorClass: styles.strengthStrong, icon: <ThumbsUp /> };
+  if (estimate >= 0.5) return { text: "Good", colorClass: styles.strengthGood, icon: <Smile /> };
+  if (estimate >= 0.3) return { text: "Fair", colorClass: styles.strengthFair, icon: <Meh /> };
+  return { text: "Needs Work", colorClass: styles.strengthWeak, icon: <Frown /> };
 };
 
+const getLastReviewEffortText = (quality) => {
+    if (quality === null || quality === undefined) return "N/A";
+    if (quality >= 4) return "Felt Easy";
+    if (quality === 3) return "Challenging";
+    return "Felt Tough";
+};
 
-// --- Quiz Attempts Component ---
+// --- Card Component for Individual Memory Items ---
+const MemoryItemCard = ({ item, type }) => {
+  const {
+    learnable_item_info,
+    next_review_at,
+    current_retention_estimate,
+    repetitions,
+    last_quality_of_recall
+  } = item;
+
+  const reviewDateInfo = getRelativeDateText(next_review_at);
+  const memoryStrength = getMemoryStrengthConfig(current_retention_estimate);
+  const lastEffort = getLastReviewEffortText(last_quality_of_recall);
+  
+  const itemTitle = learnable_item_info?.title || learnable_item_info?.display_text || "Learnable Item";
+  const itemTypeForLink = learnable_item_info?.type?.toLowerCase();
+  const itemIdForLink = learnable_item_info?.id;
+  let reviewLink = '#';
+  if (itemIdForLink) {
+    if (itemTypeForLink === 'question') reviewLink = `/quizzes/question/${itemIdForLink}/review`;
+    else if (itemTypeForLink === 'quiz') reviewLink = `/quizzes/${itemIdForLink}`;
+  }
+
+  let cardClass = styles.memoryItemCard;
+  let typeSpecificIcon = <HelpCircle className={styles.itemTypeIconBase} />;
+  if (type === 'due' || reviewDateInfo.isOverdue) {
+    cardClass += ` ${styles.dueItem}`;
+    typeSpecificIcon = <Zap className={`${styles.itemTypeIconBase} ${styles.dueIconAnimation}`} />;
+  } else if (type === 'upcoming') {
+    cardClass += ` ${styles.upcomingItem}`;
+    typeSpecificIcon = <CalendarCheck2 className={`${styles.itemTypeIconBase} ${styles.upcomingIconAnimation}`} />;
+  } else if (type === 'strong') {
+    cardClass += ` ${styles.strongItem}`;
+    typeSpecificIcon = <Star className={`${styles.itemTypeIconBase} ${styles.strongIconAnimation}`} />;
+  }
+
+  return (
+    <div className={cardClass}>
+      <div className={styles.cardHeader}>
+        {typeSpecificIcon}
+        <h4 className={styles.itemTitle}>{itemTitle}</h4>
+      </div>
+      
+      <div className={styles.itemDetails}>
+        <div className={styles.detailRow}>
+          <Clock size={16} /> 
+          <span>Next Review:</span> 
+          <strong className={`${styles.detailValue} ${reviewDateInfo.isToday || reviewDateInfo.isOverdue ? styles.highlightReviewDate : ''}`}>
+            {reviewDateInfo.text}
+          </strong>
+          {reviewDateInfo.text !== reviewDateInfo.fullDate && <span className={styles.fullDateTooltip}> ({reviewDateInfo.fullDate})</span>}
+        </div>
+        <div className={styles.detailRow}>
+          <Brain size={16} />
+          <span>Memory Strength:</span>
+          <strong className={`${styles.detailValue} ${memoryStrength.colorClass}`}>
+            {memoryStrength.icon} {memoryStrength.text} ({current_retention_estimate !== null ? `${(current_retention_estimate * 100).toFixed(0)}%` : ''})
+          </strong>
+        </div>
+        <div className={styles.detailRow}>
+          <ListChecks size={16} />
+          <span>Correct Streak:</span>
+          <strong className={styles.detailValue}>{repetitions ?? 0}</strong>
+        </div>
+        {last_quality_of_recall !== null && (
+          <div className={styles.detailRow}>
+            <HelpCircle size={16} /> 
+            <span>Last Review Felt:</span>
+            <strong className={styles.detailValue}>{lastEffort}</strong>
+          </div>
+        )}
+      </div>
+      
+      {reviewLink !== '#' && (
+        <Link to={reviewLink} className={`${styles.actionButton} ${type === 'due' || reviewDateInfo.isOverdue ? styles.actionButtonPrimary : styles.actionButtonSecondary}`}>
+          {type === 'due' || reviewDateInfo.isOverdue ? "Review Now" : "Review"} <ChevronsRight size={18} />
+        </Link>
+      )}
+    </div>
+  );
+};
+
+// --- Component for Overall Quiz Retention Insights ---
+const QuizInsightCard = ({ insight }) => {
+  const memoryStrength = getMemoryStrengthConfig(insight.current_quiz_retention_estimate);
+  const reviewDaysText = insight.retention_days === 0 ? "Today!" : insight.retention_days > 0 ? `in ~${insight.retention_days} days` : `Overdue`;
+
+  return (
+    <div className={`${styles.memoryItemCard} ${styles.quizInsightCard}`}>
+      <div className={styles.cardHeader}>
+        <BookOpenCheck className={styles.itemTypeIconBase} />
+        <h4 className={styles.itemTitle}>{insight.quiz_title}</h4>
+      </div>
+      <p className={styles.quizInsightMessage}>{insight.message}</p>
+      <div className={styles.itemDetails}>
+        <div className={styles.detailRow}>
+          <Clock size={16} />
+          <span>Next Ideal Review:</span>
+          <strong className={styles.detailValue}>{reviewDaysText}</strong>
+        </div>
+        {insight.current_quiz_retention_estimate !== null && (
+          <div className={styles.detailRow}>
+            <Brain size={16} />
+            <span>Current Strength:</span>
+            <strong className={`${styles.detailValue} ${memoryStrength.colorClass}`}>
+              {memoryStrength.icon} {memoryStrength.text} ({(insight.current_quiz_retention_estimate * 100).toFixed(0)}%)
+            </strong>
+          </div>
+        )}
+      </div>
+      <p className={styles.lastAttemptText}>Last Activity: {formatDate(insight.last_attempt_timestamp)}</p>
+      <Link to={`/quizzes/${insight.quiz_id}`} className={`${styles.actionButton} ${styles.actionButtonView}`}>
+        Go to Quiz <ChevronsRight size={18}/>
+      </Link>
+    </div>
+  );
+};
+
+// --- Main Dashboard Component ---
 const QuizAttempts = () => {
-  // --- State Variables ---
-  const [aggregatedAttempts, setAggregatedAttempts] = useState([]);
-  const [userScoresBySubject, setUserScoresBySubject] = useState({});
-  const [retentionInsights, setRetentionInsights] = useState({}); 
-  const [loadingAttempts, setLoadingAttempts] = useState(true); // Specific loading state
-  const [loadingScores, setLoadingScores] = useState(true); // Specific loading state
-  const [attemptsError, setAttemptsError] = useState("");
-  const [scoresError, setScoresError] = useState("");
+  const [memoryProfile, setMemoryProfile] = useState(null);
+  const [quizInsights, setQuizInsights] = useState([]);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingInsights, setLoadingInsights] = useState(true);
+  const [errorProfile, setErrorProfile] = useState("");
+  const [errorInsights, setErrorInsights] = useState("");
 
-  // --- Hooks ---
   const { token, logout } = useContext(AuthContext);
 
-  // --- Data Fetching Callbacks (Identical to previous versions) ---
-  const fetchAttempts = useCallback(async () => {
-    setLoadingAttempts(true);
-    setAttemptsError("");
+  const fetchData = useCallback(async (endpoint, setData, setError, setLoading, type) => {
+    if (!token && (type === 'profile' || type === 'insights')) { // Only require token for profile/insights
+        setError("Please log in to view this information.");
+        setLoading(false);
+        return;
+    }
+    setLoading(true);
+    setError("");
     try {
-      const response = await apiClient.get("/events/", {
-         headers: { Authorization: `Bearer ${token}` }
+      const response = await apiClient.get(endpoint, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-
-      if (Array.isArray(response.data)) {
-        const answerEvents = response.data.filter(
-          (event) => event.event_type === "quiz_answer_submitted" && event.object_id && event.quiz_permalink
-        );
-        const grouped = answerEvents.reduce((acc, event) => {
-          const quizId = event.object_id;
-          if (!acc[quizId]) acc[quizId] = [];
-          acc[quizId].push(event);
-          return acc;
-        }, {});
-        const aggregated = Object.keys(grouped).map((quizId) => {
-          const events = grouped[quizId];
-          if (!events || events.length === 0) return null;
-          const firstEvent = events[0];
-          const quiz_permalink = firstEvent.quiz_permalink;
-          const quiz_title = firstEvent.quiz_title || `Quiz ${quizId}`;
-          const total = events.length;
-          const correct = events.filter(e => e.metadata?.is_correct === true).length;
-          const wrong = total - correct;
-          const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
-          const timestamp = events.reduce((earliest, event) => {
-             try {
-                 const currentEventDate = new Date(event.timestamp);
-                 return currentEventDate < new Date(earliest) ? event.timestamp : earliest;
-             } catch { return earliest; }
-          }, events[0].timestamp);
-          return { quizId, quiz_title, quiz_permalink, total, correct, wrong, percentage, timestamp };
-        }).filter(Boolean);
-        aggregated.sort((a, b) => {
-           try { return new Date(b.timestamp) - new Date(a.timestamp); }
-           catch { return 0; }
-        });
-        setAggregatedAttempts(aggregated);
-      } else {
-        console.error("Unexpected data format for attempts:", response.data);
-        setAttemptsError("Unexpected data format received for quiz attempts.");
-      }
+      setData(response.data);
     } catch (err) {
-      console.error("Failed to fetch quiz attempts:", err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      } else {
-        setAttemptsError("Failed to load your quiz attempts. Please try again later.");
-      }
+      console.error(`Failed to fetch ${type}:`, err);
+      const msg = err.response?.data?.message || err.response?.data?.detail || err.response?.data?.error || err.message || `Could not load ${type}.`;
+      setError(msg);
+      if (err.response?.status === 401 && logout) logout();
     } finally {
-      setLoadingAttempts(false);
+      setLoading(false);
     }
   }, [token, logout]);
 
-  const fetchUserScore = useCallback(async () => {
-    setLoadingScores(true);
-    setScoresError("");
-    try {
-      const { data } = await apiClient.get('/users/score/', {
-         headers: { Authorization: `Bearer ${token}` }
-      });
-      if (typeof data === 'object' && data !== null) {
-        setUserScoresBySubject(data);
-      } else {
-        console.error("Unexpected data format for scores:", data);
-        setScoresError("Unexpected data format received for scores.");
-        setUserScoresBySubject({});
-      }
-    } catch (err) {
-      console.error("Failed to fetch user score:", err);
-       if (err.response?.status === 401 || err.response?.status === 403) {
-         setScoresError("Could not load scores due to authorization issue.");
-       } else {
-         setScoresError("Failed to load your scores by subject.");
-       }
-       setUserScoresBySubject({});
-    } finally {
-      setLoadingScores(false);
-    }
-  }, [token]);
-
-  const fetchRetention = useCallback(async () => {
-        try {
-          const { data } = await apiClient.get('/quiz-retention-insights/',
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          // convert list to map by quiz_id for quick lookup
-          const map = {};
-          data.forEach(item => { map[item.quiz_id] = item; });
-          setRetentionInsights(map);
-        } catch (err) {
-          console.error('Failed to fetch retention insights:', err);
-        }
-      }, [token]);
-
-  // --- Effect to Fetch Data ---
   useEffect(() => {
-    if (token) {
-      fetchAttempts();
-      fetchUserScore();
-      fetchRetention();
+    fetchData("/analytics/user-memory-profile/", setMemoryProfile, setErrorProfile, setLoadingProfile, 'profile');
+    fetchData("/analytics/quiz-retention-insights/", setQuizInsights, setErrorInsights, setLoadingInsights, 'insights');
+  }, [fetchData]);
+
+  const renderSection = (title, items, type, isLoading, errorMsg, icon, noItemsInfo) => {
+    let content;
+    const currentError = (type === 'due' || type === 'upcoming' || type === 'strong') ? errorProfile : errorInsights;
+
+    if (isLoading) {
+      content = <div className={styles.loadingState}><Loader size={32} className="animate-spin" /> <p>Loading {title.toLowerCase()}...</p></div>;
+    } else if (currentError && (!items || items.length === 0)) { 
+      content = <div className={styles.errorState}><AlertCircle size={32} /> <p>{currentError}</p></div>;
+    } else if (!items || items.length === 0) {
+      content = (
+        <div className={styles.emptyState}>
+          {noItemsInfo.icon}
+          <h4>{noItemsInfo.title}</h4>
+          <p>{noItemsInfo.message}</p>
+          {noItemsInfo.link && <Link to={noItemsInfo.link.to} className={styles.emptyStateLink}>{noItemsInfo.link.text}</Link>}
+        </div>
+      );
     } else {
-      setLoadingAttempts(false);
-      setLoadingScores(false);
-      setAttemptsError("Please log in to view your quiz attempts.");
-      setScoresError("Please log in to view your scores.");
-      setAggregatedAttempts([]);
-      setUserScoresBySubject({});
+      content = (
+        <div className={styles.itemsGrid}>
+          {items.map(item => <MemoryItemCard key={`${type}-${item.id}`} item={item} type={type} />)}
+        </div>
+      );
     }
-  }, [token, fetchAttempts, fetchUserScore]);
-
-  // --- Render Logic ---
-  // const isLoading = loadingAttempts || loadingScores; // Can use this if needed for a single initial loader
-
+    return (
+        <section className={styles.dashboardSection}>
+            <h2 className={styles.sectionHeader}>
+                {icon} {title} <span className={styles.sectionCount}>({items?.length || 0})</span>
+            </h2>
+            {content}
+        </section>
+    );
+  };
+  
   return (
     <div className={styles.quizAttemptsPage}>
+      <header className={styles.pageMasthead}>
+        <h1 className={styles.mainTitle}>Your Learning Hub</h1>
+        <p className={styles.mainSubtitle}>Stay sharp! Here's what your brain is working on.</p>
+      </header>
 
-      {/* --- Scores Per Subject Section (Improved Card Layout) --- */}
-      <section className={styles.userScoreContainer}>
-        <h2 className={styles.sectionTitle}>Your Scores by Subject</h2>
-        {loadingScores ? (
-          <div className={styles.loadingContainer}><Loader className={styles.loadingIcon} size={32} /> Loading Scores...</div>
-        ) : scoresError ? (
-          <div className={styles.errorContainer}><AlertCircle size={20} /> {scoresError}</div>
-        ) : Object.keys(userScoresBySubject).length > 0 ? (
-          <div className={styles.subjectScoreGrid}>
-            {Object.entries(userScoresBySubject)
-              // Optional: Sort subjects alphabetically or by score
-              .sort(([subjectA, scoreInfoA], [subjectB, scoreInfoB]) => subjectA.localeCompare(subjectB)) // Sort alphabetically
-              // .sort(([_, scoreInfoA], [__, scoreInfoB]) => (scoreInfoB?.score ?? 0) - (scoreInfoA?.score ?? 0)) // Sort by score desc
-              .map(([subjectName, scoreInfo]) => (
-              // Validate scoreInfo and scoreInfo.score before rendering
-              scoreInfo && typeof scoreInfo.score === 'number' ? (
-                <div key={subjectName} className={styles.subjectScoreCard}>
-                  {/* Top section with Chart and Main Score */}
-                  <div className={styles.subjectScoreCardTop}>
-                    <div className={styles.scoreChartWrapper}>
-                      {/* Pass score, ensure ScoreChart handles rendering */}
-                      <ScoreChart score={scoreInfo.score} />
-                    </div>
-                    <div className={styles.subjectScoreCardInfo}>
-                      <h3 className={styles.subjectTitle}>{subjectName}</h3>
-                      <p className={styles.subjectScoreValue}>
-                        {scoreInfo.score}
-                        <span className={styles.scoreOutOf}> / 100</span>
-                      </p>
-                    </div>
-                  </div>
+      {loadingProfile && !memoryProfile && (
+          <div className={styles.fullPageLoader}><Loader size={48} className="animate-spin" /> <p>Loading Your Learning Data...</p></div>
+      )}
+      {errorProfile && !memoryProfile && (
+          <div className={styles.fullPageError}><AlertCircle size={48} /> <p>{errorProfile}</p></div>
+      )}
 
-                  {/* Bottom section for Details */}
-                  {scoreInfo.details && (
-                    <div className={styles.scoreDetails}>
-                      {Object.entries(scoreInfo.details).map(([key, value]) => (
-                        <div key={key} className={styles.detailItem}>
-                           {getDetailIcon(key)}
-                           <span className={styles.detailLabel}>{formatDetailLabel(key)}:</span>
-                           <span className={styles.detailValue}>{value ?? 'N/A'}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : null // Don't render card if score info is invalid
-            ))}
-          </div>
-        ) : (
-           <div className={styles.noDataContainer}><Inbox size={24} /> No score data available yet.</div>
-        )}
-      </section>
-
-      {/* --- Quiz Attempts Section (Remains the same) --- */}
-      <section className={styles.quizAttemptsContainer}>
-         <h2 className={styles.sectionTitle}>Your Quiz Attempts</h2>
-         {loadingAttempts ? (
-           <div className={styles.loadingContainer}><Loader className={styles.loadingIcon} size={32} /> Loading Attempts...</div>
-         ) : attemptsError ? (
-           <div className={styles.errorContainer}><AlertCircle size={20} /> {attemptsError}</div>
-         ) : aggregatedAttempts.length > 0 ? (
-           <div className={styles.quizAttemptsList}>
-              {aggregatedAttempts.map((attempt) => (
-                <div key={attempt.quizId + attempt.timestamp} className={styles.quizAttemptCard}>
-                   <div className={styles.cardHeader}>
-                     <h3 className={styles.cardTitle}>{attempt.quiz_title}</h3>
-                     <p className={styles.cardDate}>
-                        Attempted: {formatDate(attempt.timestamp)}
-                     </p>
-                   </div>
-                   <div className={styles.cardBody}>
-                     <div className={styles.cardChartContainer}>
-                        <QuizPerformanceChart
-                          total={attempt.total}
-                          correct={attempt.correct}
-                          wrong={attempt.wrong}
-                        />
-                        <p className={styles.cardPercentage}>{attempt.percentage}%</p>
-                     </div>
-                     <div className={styles.cardStats}>
-                        <p><span>Total Questions:</span> <span>{attempt.total}</span></p>
-                        <p><span>Correct:</span> <span className={styles.statCorrect}>{attempt.correct}</span></p>
-                        <p><span>Wrong:</span> <span className={styles.statWrong}>{attempt.wrong}</span></p>
-                     </div>
-                    {/* retention message below stats */}
-                    {retentionInsights[attempt.quizId] && (
-                        <div className={styles.retentionBlock}>
-                          <p className={styles.lastAttempt}>
-                            Last attempt: {formatDate(retentionInsights[attempt.quizId].last_attempt)}
-                          </p>
-                          <p className={styles.correctWrong}>
-                            ✅ {retentionInsights[attempt.quizId].correct} correct | ❌ {retentionInsights[attempt.quizId].wrong} wrong
-                          </p>
-                          <div className={styles.retentionMeterRow}>
-                            <span className={styles.retentionLabel}>Memory Strength:</span>
-                            <div className={styles.retentionMeter}>
-                              <div
-                                className={styles.retentionMeterFill}
-                                style={{
-                                  width: `${Math.min(100, (retentionInsights[attempt.quizId].retention_days / 30) * 100)}%`,
-                                  backgroundColor:
-                                    retentionInsights[attempt.quizId].retention_days >= 21
-                                      ? 'var(--success-color)'
-                                      : retentionInsights[attempt.quizId].retention_days >= 7
-                                      ? 'var(--secondary-color)'
-                                      : 'var(--error-color)',
-                                }}
-                              />
-                            </div>
-                            <span className={styles.retentionDays}>
-                              {retentionInsights[attempt.quizId].retention_days} day{retentionInsights[attempt.quizId].retention_days !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                            <p className={styles.retentionMessage}>
-                              {retentionInsights[attempt.quizId].retention_days >= 30
-                                ? "🧠 "
-                                : retentionInsights[attempt.quizId].retention_days >= 7
-                                ? "📚 "
-                                : "⚠️ "}
-                              {retentionInsights[attempt.quizId].message}
-                            </p>
-                        </div>
-                      )}
-
-                   </div>
-                   <div className={styles.cardFooter}>
-                     {attempt.quiz_permalink ? (
-                        <Link to={`/quizzes/${attempt.quiz_permalink}`} className={styles.cardReviewButton}>
-                           View Quiz
-                        </Link>
-                     ) : (
-                        <span className={styles.noReviewLink}>Review Unavailable</span>
-                     )}
-                   </div>
-                </div>
-              ))}
-           </div>
-         ) : (
-           <div className={styles.noDataContainer}>
-              <Inbox size={24} />
-              You haven't attempted any quizzes yet.
-              <Link to="/quizzes" className={styles.findQuizLink}> Find a quiz to start!</Link>
-           </div>
-         )}
+      {memoryProfile && (
+        <>
+          <section className={`${styles.dashboardSection} ${styles.highlightSection}`}>
+            <h2 className={styles.sectionHeader}><Target size={28}/> Learning Snapshot</h2>
+            <div className={styles.summaryGrid}>
+              <div className={styles.summaryCard}>
+                  <HelpCircle size={32} className={styles.summaryIcon}/> 
+                  <span className={styles.summaryValue}>{memoryProfile.summary?.total_questions_tracked ?? 0}</span> 
+                  <p className={styles.summaryLabel}>Items Tracked</p>
+              </div>
+              <div className={`${styles.summaryCard} ${memoryProfile.summary?.items_due_count > 0 ? styles.summaryCardUrgent : ''}`}>
+                  <Zap size={32} className={styles.summaryIcon}/> 
+                  <span className={styles.summaryValue}>{memoryProfile.summary?.items_due_count ?? 0}</span> 
+                  <p className={styles.summaryLabel}>Ready to Review!</p>
+              </div>
+              <div className={styles.summaryCard}>
+                  <Brain size={32} className={styles.summaryIcon}/> 
+                  <span className={styles.summaryValue}>{memoryProfile.summary?.average_question_retention ?? 0}%</span> 
+                  <p className={styles.summaryLabel}>Avg. Memory Strength</p>
+              </div>
+              <div className={styles.summaryCard}>
+                  <TrendingUp size={32} className={styles.summaryIcon}/> 
+                  <span className={styles.summaryValue}>{memoryProfile.summary?.average_question_interval_days ?? 0}d</span> 
+                  <p className={styles.summaryLabel}>Avg. Review Interval</p>
+              </div>
+            </div>
+          </section>
+          
+          {renderSection("Up Next: Review Time!", memoryProfile.items_to_review, 'due', loadingProfile, errorProfile, <Zap size={24} />, 
+            {icon: <ThumbsUp size={48}/>, title:"All Caught Up!", message:"Nothing needs your immediate attention. Great job!"}
+          )}
+          {renderSection("Coming Soon: Practice These", memoryProfile.upcoming_review_items, 'upcoming', loadingProfile, errorProfile, <CalendarCheck2 size={24} />,
+            {icon: <Inbox size={48}/>, title:"Nothing Scheduled Soon", message:"Keep learning new things to fill up your review calendar."}
+          )}
+          {renderSection("Brain Champs: You Know These Well!", memoryProfile.strong_memory_items, 'strong', loadingProfile, errorProfile, <Star size={24} />,
+            {icon: <Target size={48}/>, title:"Build Your Strengths", message:"Consistent review turns knowledge into mastery. Keep it up!"}
+          )}
+        </>
+      )}
+      
+      <section className={styles.dashboardSection}>
+          <h2 className={styles.sectionHeader}>
+              <BarChartHorizontalBig size={24} /> Overall Quiz Performance
+          </h2>
+          {loadingInsights && !quizInsights.length && (
+              <div className={styles.loadingState}><Loader size={32} className="animate-spin" /> <p>Loading quiz performance...</p></div>
+          )}
+          {errorInsights && !quizInsights.length && (
+              <div className={styles.errorState}><AlertCircle size={32}/> <p>{errorInsights}</p></div>
+          )}
+          {(!loadingInsights && !errorInsights && (!quizInsights || quizInsights.length === 0)) && (
+              <div className={styles.emptyState}>
+                  <BookOpenCheck size={48} />
+                  <h4>No Quiz Insights Yet</h4>
+                  <p>Complete some quizzes, and we'll show you how you're doing on them overall!</p>
+                  <Link to="/explorer" className={styles.emptyStateLink}>Find Quizzes to Try</Link>
+              </div>
+          )}
+          {quizInsights.length > 0 && (
+              <div className={styles.itemsGrid}> {/* Reusing itemsGrid for quiz insights */}
+              {quizInsights.map(insight => <QuizInsightCard key={`quiz-insight-${insight.quiz_id}`} insight={insight} />)}
+              </div>
+          )}
       </section>
     </div>
   );

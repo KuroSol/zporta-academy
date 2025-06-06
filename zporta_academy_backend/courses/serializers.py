@@ -13,6 +13,8 @@ class LessonSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'content', 'created_at', 'permalink']
 
 class CourseSerializer(serializers.ModelSerializer):
+    enrolled_count  = serializers.IntegerField(read_only=True)
+    completed_count = serializers.IntegerField(read_only=True)
     is_locked = serializers.BooleanField(read_only=True)
     course_url = serializers.SerializerMethodField()
     created_by = serializers.SerializerMethodField()
@@ -31,6 +33,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'lesson_count', 'is_owner', 'is_draft', 'allowed_testers',
+            'enrolled_count', 'completed_count',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink', 'unique_code', 'is_draft']
     
