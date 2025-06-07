@@ -1,6 +1,5 @@
-# In quizzes/urls.py
 from django.urls import path
-from courses.views import AddQuizToCourseView  # Import from courses.views, not quizzes.views
+from courses.views import AddQuizToCourseView
 from .views import (
     QuizListCreateView,
     DynamicQuizView,
@@ -9,9 +8,16 @@ from .views import (
     RecordQuizAnswerView,
     QuizListByCourseView,
     QuizSubmitView,
+    QuestionListCreateView,
+    QuestionRetrieveUpdateDestroyView,
 )
 
 urlpatterns = [
+    # 1. Question CRUD endpoints are correctly placed at the top.
+    path('questions/', QuestionListCreateView.as_view(), name='question-list-create'),
+    path('questions/<int:pk>/', QuestionRetrieveUpdateDestroyView.as_view(), name='question-detail'),
+
+    # 2. Your existing Quiz endpoints remain unchanged.
     path('my/', MyQuizzesView.as_view(), name='my-quizzes'),
     path('detail/<int:pk>/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-detail'),
     path('<int:pk>/edit/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-edit'),
