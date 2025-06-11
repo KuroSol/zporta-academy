@@ -4,6 +4,17 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
+
+// New database imports:
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  push,
+  onChildAdded
+} from 'firebase/database';
+
 // 2) Your Firebase web config
 const firebaseConfig = {
   apiKey: "AIzaSyApf4q80uDu3A70eDf5khygnNgdELL0-u0",
@@ -18,6 +29,33 @@ const firebaseConfig = {
 // 3) Initialize Firebase + Messaging
 const app = initializeApp(firebaseConfig);
 export const messaging = getMessaging(app);
+
+// ⬇️ Initialize Realtime Database
+const db = getDatabase(app);
+
+// ─── Realtime Database helper functions ───────────────────────
+/** write JSON data to a path */
+export function writeTo(path, data) {
+  return set(ref(db, path), data);
+}
+
+/** subscribe to value changes at a path */
+export function subscribeTo(path, callback) {
+  return onValue(ref(db, path), snapshot => callback(snapshot.val()));
+}
+
+/** push a new child under a path (for drawing strokes) */
+export function pushTo(path, data) {
+  return push(ref(db, path), data);
+}
+
+/** subscribe to each new child under a path */
+export function subscribeChildAdded(path, callback) {
+  return onChildAdded(ref(db, path), snapshot => callback(snapshot.key, snapshot.val()));
+}
+// ─────────────────────────────────────────────────────────────
+
+
 
 // 4) Your Web Push (VAPID) public key from Firebase Console
 const PUBLIC_VAPID_KEY =

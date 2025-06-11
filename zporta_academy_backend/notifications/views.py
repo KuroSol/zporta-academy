@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import status, viewsets, mixins
 from rest_framework.decorators import api_view, permission_classes as drf_permission_classes # Renamed to avoid clash
+from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
@@ -25,12 +26,63 @@ class NotificationViewSet(
         mixins.UpdateModelMixin, # For marking as read, etc.
         viewsets.GenericViewSet
     ):
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class       = None
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
         # Users should only see their own notifications
         return AppNotification.objects.filter(user=self.request.user).order_by('-created_at')
+
+    # ======================= ADD THIS NEW ACTION INSIDE THE CLASS =======================
+    @action(detail=False, methods=['post'], url_path='create-collab-invite')
+    def create_collab_invite(self, request):
+        target_user_id = request.data.get('target_user_id')
+        invite_url = request.data.get('invite_url')
+        course_title = request.data.get('course_title')
+        
+        if not all([target_user_id, invite_url, course_title]):
+            return Response(
+                {"error": "Missing target_user_id, invite_url, or course_title"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            target_user = User.objects.get(pk=target_user_id)
+            inviting_user = request.user
+        except User.DoesNotExist:
+            return Response({"error": "Target user not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the notification message
+        title = f"Study Invite from {inviting_user.username}"
+        message = f"Join {inviting_user.username} to study '{course_title}' together!"
+
+        # Create the in-app notification object
+        app_notification = AppNotification.objects.create(
+            user=target_user,
+            title=title,
+            message=message,
+            link=invite_url  # The link contains the collabSession ID
+        )
+
+        # Send the push notification using your existing utility
+        success_count = send_push_to_user_devices(
+            user=target_user,
+            title=title,
+            body=message,
+            link=invite_url,
+            extra_data={"type": "collab_invite", "url": invite_url}
+        )
+
+        if success_count > 0:
+            app_notification.is_sent_push = True
+            app_notification.save(update_fields=['is_sent_push'])
+            return Response({"detail": "Invitation sent successfully."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "In-app notification created, but push could not be sent (no active devices)."}, status=status.HTTP_200_OK)
+    # ====================================================================================
+
 
     def perform_update(self, serializer):
         # Ensure users can only update their own notifications (e.g., mark as read)

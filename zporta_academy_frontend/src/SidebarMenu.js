@@ -19,33 +19,28 @@ const SidebarMenu = ({ isExpanded, setIsExpanded }) => { // Removed permissions,
   const [unreadCount, setUnreadCount] = useState(0);
   // Swipe gesture state and handlers are removed.
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!token) {
-        setUnreadCount(0);
-        return;
-      }
-      try {
-        const response = await apiClient.get("/notifications/");
-        const data = response.data;
-        const unread = data.filter((n) => !n.is_read);
-        setUnreadCount(unread.length);
-      } catch (error) {
-        console.error(
-          "Error fetching notifications:",
-          error.response ? error.response.data : error.message
-        );
-        if (error.response?.status === 401) {
-          logout();
-        }
-        setUnreadCount(0);
-      }
-    };
+ useEffect(() => {
+  const fetchNotifications = async () => {
+    if (!token) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const response = await apiClient.get("/notifications/user-notifications/");
+      const list     = response.data.results ?? response.data;
+      const unread   = list.filter((n) => !n.is_read);
+      setUnreadCount(unread.length);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      if (error.response?.status === 401) logout();
+      setUnreadCount(0);
+    }
+  };
+  fetchNotifications();
+  const intervalId = setInterval(fetchNotifications, 60000);
+  return () => clearInterval(intervalId);
+}, [token, logout]);
 
-    fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(intervalId);
-  }, [token, logout]);
 
   let profileImageUrl = "https://zportaacademy.com/media/managed_images/zpacademy.png";
   if (user?.profile_image_url) {

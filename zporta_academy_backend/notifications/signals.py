@@ -7,6 +7,31 @@ from notes.models import Comment
 from .models import Notification # Refers to your main Notification model
 from .utils import send_push_to_user_devices # For sending push notifications
 
+
+@receiver(post_save, sender=Notification)
+def auto_push_on_notification_create(sender, instance, created, **kwargs):
+    """
+    Whenever a new Notification is saved, immediately fire the Firebase push.
+    """
+    # Only on create, and only if we haven't already sent a push
+    if not created or instance.is_sent_push:
+        return
+
+    # Send to all devices for this user
+    sent_count = send_push_to_user_devices(
+        user=instance.user,
+        title=instance.title,
+        body=instance.message,
+        link=instance.link,
+        extra_data={"notification_app_id": str(instance.id), "type": "auto_push"}
+    )
+
+    # Mark as sent so we don't duplicate
+    if sent_count > 0:
+        instance.is_sent_push = True
+        instance.save(update_fields=["is_sent_push"])
+        
+
 @receiver(post_save, sender=Mention)
 def create_mention_notification(sender, instance, created, **kwargs):
     if not created:
@@ -33,16 +58,16 @@ def create_mention_notification(sender, instance, created, **kwargs):
     # Optionally, send a push notification
     # Consider if all mentions should trigger an immediate push.
     # You might want to add user preferences for this.
-    if getattr(settings, 'SEND_PUSH_ON_MENTION', True): # Example setting
-        send_push_to_user_devices(
-            user=to_user,
-            title="New Mention",
-            body=message,
-            link=link,
-            extra_data={"type": "mention", "object_id": str(note.id)}
-        )
-        app_notification.is_sent_push = True # Mark that a push was attempted
-        app_notification.save(update_fields=['is_sent_push'])
+    #if getattr(settings, 'SEND_PUSH_ON_MENTION', True): # Example setting
+        #send_push_to_user_devices(
+        #    user=to_user,
+        #    title="New Mention",
+        #    body=message,
+        #    link=link,
+        #    extra_data={"type": "mention", "object_id": str(note.id)}
+        #)
+        #app_notification.is_sent_push = True # Mark that a push was attempted
+        #app_notification.save(update_fields=['is_sent_push'])
 
 
 @receiver(post_save, sender=Comment)
