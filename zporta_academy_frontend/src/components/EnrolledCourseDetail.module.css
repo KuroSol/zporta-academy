@@ -86,11 +86,6 @@
   color: #555;
   font-size: 0.95em;
 }
-/* EnrolledCourseDetail.module.css */
-
-.lessonTemplate {
-  /* …your existing styles… */
-}
 
 /* Make ALL table headers use the accent as their background */
 .lessonTemplate table thead th {
@@ -112,9 +107,29 @@
 /* Example: callout boxes also picking up accent border */
 .lessonTemplate .callout {
   border-left: 4px solid var(--accent-color);
-  background: rgba(var(--accent-color-rgb), .1); /* if you compute an RGB var */
+  /* background: rgba(var(--accent-color-rgb), .1); */ /* if you compute an RGB var */
 }
 
+/* Old text highlight style - can be removed or kept for other uses */
+.textHighlight {
+  background-color: rgba(255, 193, 7, 0.5); /* #FFC107 with 50% transparency */
+  border-radius: 2px;
+  padding: 0.1em 0;
+  margin: -0.1em 0;
+}
+
+/* NEW, IMPROVED TEXT HIGHLIGHT STYLE
+  This style uses a thick, offset underline to simulate a real marker stroke over the text.
+*/
+.markerHighlight {
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 193, 7, 0.6); /* Accent color #FFC107 at 60% opacity */
+  text-decoration-thickness: 0.9em; /* Makes the "underline" thick like a marker */
+  text-underline-offset: -0.4em; /* Moves the line up over the text */
+  text-decoration-skip-ink: none; /* Ensures the line is continuous and doesn't break for letters like 'g' or 'p' */
+  background-color: transparent !important; /* IMPORTANT: Ensures no background color is applied */
+  cursor: pointer;
+}
 
 /* responsive tweaks */
 @media (max-width: 768px) {

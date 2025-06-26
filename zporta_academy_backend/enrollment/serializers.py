@@ -1,5 +1,6 @@
 # enrollment/serializers.py
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from .models import Enrollment
 from courses.models import Course    
@@ -8,54 +9,63 @@ from quizzes.serializers import QuizSerializer # Ensure these exist and work
 from lessons.models import LessonCompletion 
 import logging # Import logging
 
+from .models import CollaborationSession, SessionStroke, SessionNote
+from .models import ShareInvite
+
+
+User = get_user_model()
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']
 
 logger = logging.getLogger(__name__) # Setup logger
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     course = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
+    # New: include any one-time share invite details when accessed via shared_token
+    share_invite = serializers.SerializerMethodField()
 
     class Meta:
         model = Enrollment
         fields = [
-            'id',
-            'user', # Consider making 'user' read_only or removing if not needed in response
-            'content_type', # Often only needed internally, maybe remove from fields?
-            'object_id',    # Often only needed internally, maybe remove from fields?
-            'enrollment_date',
-            'status',
-            'enrollment_type',
-            'course',      # This is the detailed object from get_course
-            'progress'
+            'id', 'user', 'content_type', 'object_id',
+            'enrollment_date', 'status', 'enrollment_type',
+            'course', 'progress', 'share_invite',  # include new field
         ]
-        # Added user and potentially content_type/object_id here
-        read_only_fields = ['enrollment_date', 'user', 'content_type', 'course', 'progress']
+        read_only_fields = ['enrollment_date', 'user', 'content_type', 'course', 'progress', 'share_invite']
+
+    def get_share_invite(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return None
+        token = request.query_params.get('shared_token')
+        if not token:
+            return None
+        try:
+            invite = obj.invitations.get(token=token)
+        except ShareInvite.DoesNotExist:
+            return None
+        return {
+            'invited_by': invite.invited_by.username,
+            'invited_at': invite.created_at,
+        }
 
     def validate(self, attrs):
         user        = self.context['request'].user
         obj_id      = attrs.get('object_id')
         enroll_type = attrs.get('enrollment_type')
-
-        # Only support course enrollments here
         if enroll_type != 'course':
             raise serializers.ValidationError("Only course enrollments are allowed via this endpoint.")
-
-        # 1) Check the course exists and is published
         try:
             course = Course.objects.get(pk=obj_id, is_draft=False)
         except Course.DoesNotExist:
             raise serializers.ValidationError("Invalid course ID.")
-
-        # 2) Prevent duplicates
         course_ct = ContentType.objects.get_for_model(Course)
-        if Enrollment.objects.filter(
-                user=user,
-                content_type=course_ct,
-                object_id=course.id
-        ).exists():
+        if Enrollment.objects.filter(user=user, content_type=course_ct, object_id=course.id).exists():
             raise serializers.ValidationError("You’re already enrolled in this course.")
-
-        # scrub the incoming content_type so nobody can fake another model
         attrs['content_type'] = course_ct
         return attrs
 
@@ -153,3 +163,39 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                 logger.error(f"Error calculating progress for enrollment {obj.id}: {e}")
                 return 0 # Return 0 on error
         return None # Return None if not applicable
+    
+class CollaborationSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollaborationSession
+        fields = ['id', 'session_id', 'enrollment', 'created_at', 'ended_at']
+        read_only_fields = ['id', 'created_at']
+
+class SessionStrokeSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    class Meta:
+        model = SessionStroke
+        fields = ['id', 'session', 'user', 'stroke_data', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+class SessionNoteSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    class Meta:
+        model = SessionNote
+        fields = ['id', 'session', 'user', 'note', 'highlight_data', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+class ShareInviteSerializer(serializers.ModelSerializer):
+    # WRITE: accept a PK
+    invited_user = serializers.PrimaryKeyRelatedField(
+      queryset=User.objects.all()
+    )
+    # READ: show the full user object at the same key
+    invited_user = SimpleUserSerializer(read_only=False)
+    invited_by   = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = ShareInvite
+        fields = [
+          'id','enrollment','invited_user','invited_by',
+          'token','created_at'
+        ]
+        read_only_fields = ['id','invited_by','token','created_at']

@@ -9,8 +9,9 @@ const getToken = () => localStorage.getItem('token');
 
 // Create a new Axios instance with custom configuration.
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://zportaacademy.com/api/',
+  baseURL: process.env.REACT_APP_API_BASE_URL ,
   timeout: 10000,
+  withCredentials: true,
 });
 
 // Use an Axios Request Interceptor to automatically add the

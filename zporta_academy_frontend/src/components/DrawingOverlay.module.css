@@ -1,0 +1,130 @@
+/*
+ * DrawingOverlay.module.css
+ * Styles for the drawing canvas and the new floating toolbar.
+ */
+
+.canvasOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998; /* Below the toolbar */
+  touch-action: none; /* Prevents scrolling on touch devices while drawing */
+}
+
+.drawingToolbar {
+  position: fixed;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  background-color: rgba(27, 39, 53, 0.8); /* #1B2735 with transparency */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 10000; /* Above everything */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.toolButton {
+  background-color: rgba(44, 62, 80, 0.7);
+  color: #ecf0f1;
+  border: none;
+  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.toolButton:hover {
+  background-color: rgba(52, 73, 94, 0.9);
+  transform: scale(1.1);
+}
+
+.toolButton.active {
+  background-color: #FFC107; /* Accent color */
+  color: #1B2735; /* Main color */
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+.separator {
+  width: 80%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 4px 0;
+}
+
+.colorPickerContainer {
+  position: relative;
+}
+
+.colorPalette {
+  position: absolute;
+  left: 120%;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #2c3e50;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.colorSwatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.15);
+}
+
+.colorSwatch.active {
+  border-color: #ffffff;
+}
+
+.lineWidthContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-family: monospace;
+}
+
+.lineWidthPreview {
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lineWidthDot {
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.lineWidthControls {
+  display: flex;
+  gap: 8px;
+}

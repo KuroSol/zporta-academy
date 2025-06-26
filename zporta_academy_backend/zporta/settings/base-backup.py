@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user_media.apps.UserMediaConfig',
     'rest_framework',
+    'django_filters',
     'users',
     'rest_framework.authtoken',
     'django_extensions',

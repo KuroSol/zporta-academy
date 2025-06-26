@@ -4,606 +4,609 @@ import { AuthContext } from '../context/AuthContext'; // Adjust path if needed
 import apiClient from '../api'; // Adjust path if needed
 import { Helmet } from 'react-helmet';
 import {
-  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown,Users, Share2, Pencil, UserPlus
-} from 'lucide-react'; // Added HelpCircle, ArrowUp, ArrowDown
+ CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown,Users, Share2, Pencil, UserPlus
+} from 'lucide-react';
 import QuizCard from './QuizCard';
 import styles from './EnrolledCourseDetail.module.css';
-import CollaborationInviteModal from './CollaborationInviteModal'; // Import the new modal
+import CollaborationInviteModal from './CollaborationInviteModal';
 
 // ── Collaboration imports ───────────────────────────────
 import { useCollabCursor } from '../hooks/useCollabCursor';
-import DrawingOverlay      from './DrawingOverlay';
+import { useCollaboration } from '../hooks/useCollaboration';
+import DrawingOverlay from './DrawingOverlay';
+import CollaborationZoneSection from './CollaborationZoneSection';
+import { ref, onValue, get, remove } from 'firebase/database';
 // ────────────────────────────────────────────────────────
 
-// --- Firebase and WebRTC Integration ---
-// As requested, importing the necessary Firebase setup.
-import { messaging, requestPermissionAndGetToken, subscribeTo, writeTo } from '../firebase';
-
+// --- Firebase and WebRTC Integration ───────────────────────
+import { subscribeTo, writeTo, db } from '../firebase';
 
 // --- Helper Functions ---
 
-// Basic HTML Sanitization
 const sanitizeHtml = (htmlString) => {
-  if (!htmlString) return "";
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, "text/html");
-    doc.querySelectorAll('script, [onload], [onerror], [onclick], [onmouseover], [onfocus], [onblur]').forEach(el => el.remove());
-    doc.querySelectorAll('[contenteditable="true"]').forEach(el => el.removeAttribute('contenteditable'));
-    // Add more sanitization rules if needed
-    return doc.body.innerHTML;
-  } catch (error) {
-    console.error("Error sanitizing HTML:", error);
-    return htmlString; // Fallback
-  }
+ if (!htmlString) return "";
+ try {
+   const parser = new DOMParser();
+   const doc = parser.parseFromString(htmlString, "text/html");
+   doc.querySelectorAll('script, [onload], [onerror], [onclick], [onmouseover], [onfocus], [onblur]').forEach(el => el.remove());
+   doc.querySelectorAll('[contenteditable="true"]').forEach(el => el.removeAttribute('contenteditable'));
+   return doc.body.innerHTML;
+ } catch (error) {
+   console.error("Error sanitizing HTML:", error);
+   return htmlString;
+ }
 };
 
-// Extracts plain text from HTML
-const extractTextFromHtml = (htmlString) => {
-  if (!htmlString) return '';
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, 'text/html');
-    return doc.body.textContent || "";
-  } catch (error) {
-    console.error("Error extracting text from HTML:", error);
-    return '';
-  }
-};
-
-// Converts YouTube URLs to embed URLs (Keep your existing logic)
 const getYoutubeEmbedUrl = (url) => {
     if (!url) return null;
     let videoId = null;
     try {
-        // Basic check if it's already an embed URL
         if (url.includes('/embed/')) {
             const parts = url.split('/embed/');
             videoId = parts[1]?.split('?')[0]?.split('&')[0];
         } else {
             const parsedUrl = new URL(url);
-            // Handle standard youtube.com links
             if ((parsedUrl.hostname === 'www.youtube.com' || parsedUrl.hostname === 'youtube.com') && parsedUrl.searchParams.has('v')) {
                 videoId = parsedUrl.searchParams.get('v');
-            }
-            // Handle youtu.be links
-            else if (parsedUrl.hostname === 'youtu.be') {
+            } else if (parsedUrl.hostname === 'youtu.be') {
                 videoId = parsedUrl.pathname.slice(1);
-            }
-            // Handle youtube.com/shorts/ links
-            else if (parsedUrl.hostname === 'www.youtube.com' && parsedUrl.pathname.startsWith('/shorts/')) {
+            } else if (parsedUrl.hostname === 'www.youtube.com' && parsedUrl.pathname.startsWith('/shorts/')) {
                 videoId = parsedUrl.pathname.substring('/shorts/'.length);
             }
-             // Handle googleusercontent proxy links (adjust domains if necessary)
-            else if ((parsedUrl.hostname.endsWith('googleusercontent.com')) && parsedUrl.searchParams.has('v')) {
-                videoId = parsedUrl.searchParams.get('v');
-            } else if ((parsedUrl.hostname.endsWith('googleusercontent.com')) && parsedUrl.pathname.startsWith('/embed/')) {
-                videoId = parsedUrl.pathname.substring('/embed/'.length);
-            } else if (parsedUrl.hostname.endsWith('googleusercontent.com') && parsedUrl.pathname.length > 1) {
-                // Assuming path is like /VIDEO_ID for some proxy cases
-                videoId = parsedUrl.pathname.slice(1);
-            }
         }
-
-        // Clean up potential extra parameters in videoId
-        if (videoId && videoId.includes('&')) videoId = videoId.split('&')[0];
-        if (videoId && videoId.includes('?')) videoId = videoId.split('?')[0];
-
+        if (videoId && (videoId.includes('&') || videoId.includes('?'))) {
+            videoId = videoId.split(/[&?]/)[0];
+        }
     } catch (e) {
         console.error("Error parsing video URL:", e, "URL:", url);
         return null;
     }
-    // Ensure videoId looks like a valid YouTube ID (basic check)
-    // Allow IDs that might be slightly longer or shorter too, as YouTube might change formats
     return videoId && /^[a-zA-Z0-9_-]{10,12}$/.test(videoId) ? `https://www.youtube.com/embed/${videoId}` : null;
 };
 
 
 // --- Child Components ---
 
-// Represents a single quiz section (simplified for this view)
 const QuizSection = React.memo(({ quiz, searchTerm, onOpenQuiz }) => {
-  // Highlight search term function specific to this component
-  const highlightSearchTerm = useCallback((text) => {
-    if (!searchTerm || !text) return text;
-    // Escape special characters in search term for regex
-    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-    // Use the search-match-highlight class for consistency with lesson search
-    return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-600 search-match-highlight">$1</mark>');
-  }, [searchTerm]);
+ const highlightSearchTerm = useCallback((text) => {
+   if (!searchTerm || !text) return text;
+   const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+   const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+   return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-600 search-match-highlight">$1</mark>');
+ }, [searchTerm]);
 
-  const sanitizedDescription = useMemo(() => sanitizeHtml(quiz.description), [quiz.description]);
-  const highlightedTitle = useMemo(() => highlightSearchTerm(quiz.title || 'Untitled Quiz'), [quiz.title, searchTerm, highlightSearchTerm]);
-  const highlightedDescription = useMemo(() => highlightSearchTerm(sanitizedDescription), [sanitizedDescription, searchTerm, highlightSearchTerm]);
+ const sanitizedDescription = useMemo(() => sanitizeHtml(quiz.description), [quiz.description]);
+ const highlightedTitle = useMemo(() => highlightSearchTerm(quiz.title || 'Untitled Quiz'), [quiz.title, searchTerm, highlightSearchTerm]);
+ const highlightedDescription = useMemo(() => highlightSearchTerm(sanitizedDescription), [sanitizedDescription, searchTerm, highlightSearchTerm]);
 
-  // Determine the link target for the quiz
-  // Prioritize permalink, fall back to ID. Adjust the path as needed.
-  const quizLink = quiz.permalink ? `/quizzes/take/${quiz.permalink}` : (quiz.id ? `/quizzes/take/${quiz.id}` : null);
-
-  return (
-    <section
-      id={`quiz-${quiz.id}`} // ID for navigation/linking
-      className="mt-4 pt-4 border-t border-dashed border-gray-300 dark:border-gray-600" // Added top border
-      aria-labelledby={`quiz-title-${quiz.id}`}
-    >
-      <h4 id={`quiz-title-${quiz.id}`} className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2 flex items-center">
-        <HelpCircle className="w-5 h-5 mr-2 text-purple-500" /> {/* Quiz Icon */}
-        <span dangerouslySetInnerHTML={{ __html: highlightedTitle }} />
-      </h4>
-      {quiz.description && (
-        <div
-          className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 mb-3"
-          dangerouslySetInnerHTML={{ __html: highlightedDescription }}
-        />
-      )}
-      
-      <button
-        type="button"
-        onClick={() => onOpenQuiz(quiz)}
-        className="inline-flex items-center px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-md transition duration-150 ease-in-out"
-      >
-        Start Quiz
-      </button>
-      
-    </section>
-  );
+ return (
+   <section
+     id={`quiz-${quiz.id}`}
+     className="mt-4 pt-4 border-t border-dashed border-gray-300 dark:border-gray-600"
+     aria-labelledby={`quiz-title-${quiz.id}`}
+   >
+     <h4 id={`quiz-title-${quiz.id}`} className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2 flex items-center">
+       <HelpCircle className="w-5 h-5 mr-2 text-purple-500" />
+       <span dangerouslySetInnerHTML={{ __html: highlightedTitle }} />
+     </h4>
+     {quiz.description && (
+       <div
+         className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 mb-3"
+         dangerouslySetInnerHTML={{ __html: highlightedDescription }}
+       />
+     )}
+     
+     <button
+       type="button"
+       onClick={() => onOpenQuiz(quiz)}
+       className="inline-flex items-center px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-md transition duration-150 ease-in-out"
+     >
+       Start Quiz
+     </button>
+     
+   </section>
+ );
 });
 
-
-// Represents a single lesson section, potentially including a quiz
 const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, completedAt, onMarkComplete, onOpenQuiz, searchTerm }) => {
-  const [isExpanded, setIsExpanded] = useState(!isCompleted); // Start expanded unless already complete
-  const contentRef = useRef(null);
+ const [isExpanded, setIsExpanded] = useState(!isCompleted);
+ const contentRef = useRef(null);
 
-  // Toggle expansion state
-  const toggleExpand = useCallback(() => {
-    setIsExpanded(prev => !prev);
-  }, []);
+ const toggleExpand = useCallback(() => {
+   setIsExpanded(prev => !prev);
+ }, []);
 
-  // Effect to collapse when marked complete externally
-  useEffect(() => {
-    // This effect might cause unexpected behavior if the user manually expands/collapses
-    // Consider if automatic collapse/expand on completion change is truly desired.
-    // If so, the simpler `setIsExpanded(!isCompleted)` might be sufficient,
-    // but be aware it overrides manual interaction.
-    // Current logic prevents automatic collapse if user manually expanded a completed lesson.
-    if (isCompleted && isExpanded && !lesson.userManuallyExpanded) {
-        // setIsExpanded(false); // Optional: Collapse if marked complete externally
-    }
-    // Reset manual flag if needed
-    // if (!isExpanded) lesson.userManuallyExpanded = false;
-  }, [isCompleted, isExpanded, lesson.userManuallyExpanded]); // Add dependencies if using flags
+ useEffect(() => {
+   if (isCompleted && isExpanded && !lesson.userManuallyExpanded) {
+   }
+ }, [isCompleted, isExpanded, lesson.userManuallyExpanded]);
 
-  // Highlight search term (add specific class for search navigation)
-    const highlightSearchTerm = useCallback((text) => {
-    if (!searchTerm || !text) return text;
-    // Escape special characters in search term for regex
-    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-    // Add the class 'search-match-highlight' to the mark tag
-    return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-600 search-match-highlight">$1</mark>');
-  }, [searchTerm]);
+   const highlightSearchTerm = useCallback((text) => {
+   if (!searchTerm || !text) return text;
+   const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+   const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+   return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-600 search-match-highlight">$1</mark>');
+ }, [searchTerm]);
 
+ const sanitizedContent = useMemo(() => sanitizeHtml(lesson.content), [lesson.content]);
+ const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, searchTerm, highlightSearchTerm]);
+ const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, searchTerm, highlightSearchTerm]);
+ const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
 
-  const sanitizedContent = useMemo(() => sanitizeHtml(lesson.content), [lesson.content]);
-  const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, searchTerm, highlightSearchTerm]);
-  const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, searchTerm, highlightSearchTerm]);
-  const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
+ return (
+   <section
+     id={`lesson-${lesson.id}`}
+     className="mb-6 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out"
+     aria-labelledby={`lesson-title-${lesson.id}`}
+   >
+     <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
+       <h3
+         id={`lesson-title-${lesson.id}`}
+         className="lesson-title flex items-center mr-2 text-[clamp(0.875rem,6vw,1.5rem)] word-break-[keep-all] overflow-wrap-normal whitespace-nowrap font-semibold text-gray-800 dark:text-gray-100"
+       >
+         {lesson.content_type === 'video' && <Video className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />}
+         {lesson.content_type === 'text' && <FileText className="w-5 h-5 mr-2 text-green-500 flex-shrink-0" />}
+           <span className="flex-grow" dangerouslySetInnerHTML={{ __html: highlightedTitle }} />
+       </h3>
+       <div className="flex items-center space-x-3 flex-shrink-0">
+         {isCompleted && (
+           <div className="flex flex-col items-start space-y-1">
+             <span className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center">
+               <CheckCircle className="w-4 h-4 mr-1" /> Completed
+             </span>
+             {completedAt && (
+               <span className="text-xs text-gray-500 dark:text-gray-400">
+                 {new Date(completedAt).toLocaleString()}
+               </span>
+             )}
+           </div>
+         )}
+         {associatedQuiz && (
+           <HelpCircle className="w-4 h-4 text-purple-500 dark:text-purple-400" title="Quiz available for this lesson" />
+         )}
+         <button
+           aria-label={isExpanded ? "Collapse lesson" : "Expand lesson"}
+           className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+         >
+           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+         </button>
+       </div>
+     </div>
 
-  return (
-    <section
-      id={`lesson-${lesson.id}`} // ID for navigation
-      className="mb-6 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out"
-      aria-labelledby={`lesson-title-${lesson.id}`}
-    >
-      {/* Lesson Header */}
-      <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
-        <h3
-          id={`lesson-title-${lesson.id}`}
-          className="
-            lesson-title flex items-center mr-2
+     <div
+       ref={contentRef}
+       className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}
+       style={{ maxHeight: isExpanded ? `${(contentRef.current?.scrollHeight ?? 0) + 250}px` : '0px' }}
+     >
+       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+         {lesson.content_type === 'video' && embedUrl && (
+           <div className="aspect-w-16 aspect-h-9 mb-4 rounded overflow-hidden bg-black shadow-inner">
+             <iframe
+               src={embedUrl}
+               title={`${lesson.title || 'Lesson'} Video`}
+               className="w-full h-full"
+               frameBorder="0"
+               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+               allowFullScreen
+               loading="lazy"
+             ></iframe>
+           </div>
+         )}
+           {lesson.content_type === 'video' && !embedUrl && lesson.video_url && (
+             <p className="text-sm text-red-600 dark:text-red-400 mb-4">Could not embed video. Link: <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="underline">{lesson.video_url}</a></p>
+           )}
 
-            /* 1) clamp font size: min 0.875rem, scales up to 1.5rem at large screens */
-            text-[clamp(0.875rem,6vw,1.5rem)]
+         {lesson.content_type === 'text' && lesson.content && (
+         <div
+             className="content-text prose dark:prose-invert max-w-none break-words whitespace-normal mb-4"
+             dangerouslySetInnerHTML={{ __html: highlightedContent }}
+         />
+         )}
+         {lesson.content_type === 'text' && !lesson.content && (
+           <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">This text lesson has no content.</p>
+         )}
 
-            /* 2) never break inside a CJK “word” */
-            word-break-[keep-all]
-            overflow-wrap-normal
+         {lesson.file_url && (
+           <div className="mt-4 mb-4">
+             <a
+               href={lesson.file_url}
+               target="_blank"
+               rel="noopener noreferrer"
+               download={lesson.file_name || true}
+               className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm hover:shadow-md"
+             >
+               <Download className="w-4 h-4 mr-2" />
+               Download File {lesson.file_name ? `(${lesson.file_name})` : ''}
+             </a>
+           </div>
+         )}
 
-            /* 3) only wrap at real whitespace if absolutely needed */
-            whitespace-nowrap
+         {associatedQuiz && (
+             <QuizSection
+               quiz={associatedQuiz}
+               searchTerm={searchTerm}
+               onOpenQuiz={onOpenQuiz}
+             />
 
-            font-semibold text-gray-800 dark:text-gray-100
-          "
-        > {/* Added margin right */}
-          {lesson.content_type === 'video' && <Video className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />}
-          {lesson.content_type === 'text' && <FileText className="w-5 h-5 mr-2 text-green-500 flex-shrink-0" />}
-          {/* Render highlighted title */}
-            <span className="flex-grow" dangerouslySetInnerHTML={{ __html: highlightedTitle }} /> {/* Allow title to grow */}
-        </h3>
-        <div className="flex items-center space-x-3 flex-shrink-0">
-          {isCompleted && (
-            <div className="flex flex-col items-start space-y-1">
-              <span className="text-green-600 dark:text-green-400 text-sm font-medium flex items-center">
-                <CheckCircle className="w-4 h-4 mr-1" /> Completed
-              </span>
-              {completedAt && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(completedAt).toLocaleString()}
-                </span>
-              )}
-            </div>
-          )}
-          {associatedQuiz && (
-            <HelpCircle className="w-4 h-4 text-purple-500 dark:text-purple-400" title="Quiz available for this lesson" />
-          )}
-          <button
-            aria-label={isExpanded ? "Collapse lesson" : "Expand lesson"}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
-        </div>
-      </div>
+         )}
 
-      {/* Collapsible Content Area */}
-      <div
-        ref={contentRef}
-        className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}
-        style={{ maxHeight: isExpanded ? `${(contentRef.current?.scrollHeight ?? 0) + 250}px` : '0px' }} // Increased buffer slightly
-      >
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          {/* Video Content */}
-          {lesson.content_type === 'video' && embedUrl && (
-            <div className="aspect-w-16 aspect-h-9 mb-4 rounded overflow-hidden bg-black shadow-inner"> {/* Added shadow */}
-              <iframe
-                src={embedUrl}
-                title={`${lesson.title || 'Lesson'} Video`}
-                className="w-full h-full"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // Added web-share
-                allowFullScreen
-                loading="lazy" // Add lazy loading
-              ></iframe>
-            </div>
-          )}
-            {lesson.content_type === 'video' && !embedUrl && lesson.video_url && (
-              <p className="text-sm text-red-600 dark:text-red-400 mb-4">Could not embed video. Link: <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="underline">{lesson.video_url}</a></p>
-            )}
-
-          {/* Text Content */}
-          {lesson.content_type === 'text' && lesson.content && (
-          <div
-              className="content-text prose dark:prose-invert max-w-none break-words whitespace-normal mb-4"
-              dangerouslySetInnerHTML={{ __html: highlightedContent }}
-          />
-          )}
-          {lesson.content_type === 'text' && !lesson.content && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">This text lesson has no content.</p>
-          )}
-
-          {/* Downloadable File */}
-          {lesson.file_url && (
-            <div className="mt-4 mb-4"> {/* Added margin bottom */}
-              <a
-                href={lesson.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                download={lesson.file_name || true}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm hover:shadow-md" // Added shadow
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download File {lesson.file_name ? `(${lesson.file_name})` : ''}
-              </a>
-            </div>
-          )}
-
-          {/* Associated Quiz Section */}
-          {associatedQuiz && (
-              <QuizSection
-                quiz={associatedQuiz}
-                searchTerm={searchTerm}
-                onOpenQuiz={onOpenQuiz}
-              />
-
-          )}
-
-          {/* Mark Complete Button */}
-          {!isCompleted && (
-            <div className="mt-6 text-right">
-              <button
-                onClick={() => onMarkComplete(lesson.id)}
-                className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm hover:shadow-md" // Added shadow
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Mark as Complete
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
+         {!isCompleted && (
+           <div className="mt-6 text-right">
+             <button
+               onClick={() => onMarkComplete(lesson.id)}
+               className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm hover:shadow-md"
+             >
+               <CheckCircle className="w-4 h-4 mr-2" />
+               Mark as Complete
+             </button>
+           </div>
+         )}
+       </div>
+     </div>
+   </section>
+ );
 });
 
-// Floating Navigation Menu
 const FloatingNav = ({ lessons, quizzes, onNavigate }) => {
-  const [isOpen, setIsOpen] = useState(false);
+ const [isOpen, setIsOpen] = useState(false);
 
-  const handleNavClick = (id, type) => {
-    onNavigate(`${type}-${id}`);
-    setIsOpen(false); // Close menu after navigation
-  };
+ const handleNavClick = (id, type) => {
+   onNavigate(`${type}-${id}`);
+   setIsOpen(false);
+ };
 
-  return (
-    // Adjusted positioning: Mobile: bottom-20 right-5; MD+: bottom-16 right-16
-    <div className="fixed bottom-16 right-2 md:bottom-16 md:right-16 z-[100]">
-      
-      {/* Menu Toggle Button - Opaque red background for both states */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`p-3 rounded-full shadow-lg transition-all duration-300 ease-in-out text-white ${
-          isOpen
-            ? 'bg-red-600 hover:bg-red-700 rotate-45'
-            : 'bg-blue-600 hover:bg-blue-700'
-        }`}
-        style={{ opacity: 0.80 }}   // <-- plain numeric opacity
-        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
-        aria-expanded={isOpen}
-        aria-controls="floating-nav-menu"
-      >
-        {isOpen ? <X size={24} /> : <List size={24} />}
-      </button>
+ return (
+   <div className="fixed bottom-16 right-2 md:bottom-16 md:right-16 z-[100]">
+     
+     <button
+       onClick={() => setIsOpen(!isOpen)}
+       className={`p-3 rounded-full shadow-lg transition-all duration-300 ease-in-out text-white ${
+         isOpen
+           ? 'bg-red-600 hover:bg-red-700 rotate-45'
+           : 'bg-blue-600 hover:bg-blue-700'
+       }`}
+       style={{ opacity: 0.80 }}
+       aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+       aria-expanded={isOpen}
+       aria-controls="floating-nav-menu"
+     >
+       {isOpen ? <X size={24} /> : <List size={24} />}
+     </button>
 
 
-      {/* Navigation List - Menu content background changed */}
-      {isOpen && (
-        <div
-            id="floating-nav-menu"
-            role="menu"
-            // Changed bg-white to bg-gray-100 for light mode, kept dark mode the same.
-            // Removed backdrop-blur as it's less effective with more opaque backgrounds.
-            className="absolute bottom-16 right-0 w-64 max-h-80 overflow-y-auto 
-                        bg-gray-100 dark:bg-gray-800 
-                        rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 space-y-1"
-        >
-          <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2 pb-1 border-b border-gray-200 dark:border-gray-700">Navigation</h4>
-          {lessons.length > 0 && (
-            <>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 px-2 pt-1">Lessons</p>
-              {lessons.map(lesson => (
-                <button
-                  key={`nav-lesson-${lesson.id}`}
-                  onClick={() => handleNavClick(lesson.id, 'lesson')}
-                  role="menuitem"
-                  className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md truncate" // Adjusted hover for new bg
-                >
-                  {lesson.content_type === 'video' && <Video className="w-4 h-4 mr-1.5 inline-block text-blue-500 flex-shrink-0" />}
-                  {lesson.content_type === 'text' && <FileText className="w-4 h-4 mr-1.5 inline-block text-green-500 flex-shrink-0" />}
-                  {lesson.title || 'Untitled Lesson'}
-                </button>
-              ))}
-            </>
-          )}
+     {isOpen && (
+       <div
+           id="floating-nav-menu"
+           role="menu"
+           className="absolute bottom-16 right-0 w-64 max-h-80 overflow-y-auto 
+                     bg-gray-100 dark:bg-gray-800 
+                     rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 space-y-1"
+       >
+         <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2 pb-1 border-b border-gray-200 dark:border-gray-700">Navigation</h4>
+         {lessons.length > 0 && (
+           <>
+             <p className="text-xs font-medium text-gray-400 dark:text-gray-500 px-2 pt-1">Lessons</p>
+             {lessons.map(lesson => (
+               <button
+                 key={`nav-lesson-${lesson.id}`}
+                 onClick={() => handleNavClick(lesson.id, 'lesson')}
+                 role="menuitem"
+                 className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md truncate"
+               >
+                 {lesson.content_type === 'video' && <Video className="w-4 h-4 mr-1.5 inline-block text-blue-500 flex-shrink-0" />}
+                 {lesson.content_type === 'text' && <FileText className="w-4 h-4 mr-1.5 inline-block text-green-500 flex-shrink-0" />}
+                 {lesson.title || 'Untitled Lesson'}
+               </button>
+             ))}
+           </>
+         )}
 
-          {quizzes.length > 0 && (
-            <>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 px-2 pt-2">Quizzes</p>
-              {quizzes.map(quiz => (
-                <button
-                  key={`nav-quiz-${quiz.id}`}
-                  onClick={() => handleNavClick(quiz.id, 'quiz')}
-                  role="menuitem"
-                  className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md truncate" // Adjusted hover for new bg
-                >
-                  <HelpCircle className="w-4 h-4 mr-1.5 inline-block text-purple-500 flex-shrink-0" />
-                  {quiz.title || 'Untitled Quiz'}
-                </button>
-              ))}
-            </>
-          )}
-            {(lessons.length === 0 && quizzes.length === 0) && (
-              <p className="text-xs text-gray-400 px-2 italic py-2">No content to navigate.</p>
-            )}
-        </div>
-      )}
-    </div>
-  );
+         {quizzes.length > 0 && (
+           <>
+             <p className="text-xs font-medium text-gray-400 dark:text-gray-500 px-2 pt-2">Quizzes</p>
+             {quizzes.map(quiz => (
+               <button
+                 key={`nav-quiz-${quiz.id}`}
+                 onClick={() => handleNavClick(quiz.id, 'quiz')}
+                 role="menuitem"
+                 className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md truncate"
+               >
+                 <HelpCircle className="w-4 h-4 mr-1.5 inline-block text-purple-500 flex-shrink-0" />
+                 {quiz.title || 'Untitled Quiz'}
+               </button>
+             ))}
+           </>
+         )}
+           {(lessons.length === 0 && quizzes.length === 0) && (
+             <p className="text-xs text-gray-400 px-2 italic py-2">No content to navigate.</p>
+           )}
+       </div>
+     )}
+   </div>
+ );
 };
 
-// Search Bar Component with Navigation Controls
 const SearchBar = ({ searchTerm, onSearchChange, resultCount, currentResultIndex, onNextResult, onPrevResult }) => {
-  const hasResults = resultCount > 0;
-  const currentDisplayIndex = hasResults ? currentResultIndex + 1 : 0; // 1-based index for display
+ const hasResults = resultCount > 0;
+ const currentDisplayIndex = hasResults ? currentResultIndex + 1 : 0;
 
-  return (
-    <div className="mb-6">
-        <div className="relative">
-          <input
-            type="search"
-            placeholder="Search course content..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            aria-label="Search course content"
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
-        </div>
-        {/* Search Results Navigation */}
-        {searchTerm && ( // Only show nav when there's a search term
-            <div className="mt-2 flex items-center justify-end text-sm text-gray-600 dark:text-gray-400">
-                {hasResults ? (
-                    <>
-                        <span className="mr-3"> {/* Added margin */}
-                            Result {currentDisplayIndex} of {resultCount}
-                        </span>
-                        <button
-                            onClick={onPrevResult}
-                            disabled={currentResultIndex <= 0}
-                            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500" // Added focus style
-                            aria-label="Previous search result"
-                        >
-                            <ArrowUp size={16} />
-                        </button>
-                        <button
-                            onClick={onNextResult}
-                            disabled={currentResultIndex >= resultCount - 1}
-                            className="ml-1 p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500" // Added focus style
-                            aria-label="Next search result"
-                        >
-                            <ArrowDown size={16} />
-                        </button>
-                    </>
-                ) : (
-                    <span>No results found for "{searchTerm}"</span>
-                )}
-            </div>
-        )}
-    </div>
-  );
+ return (
+   <div className="mb-6">
+       <div className="relative">
+         <input
+           type="search"
+           placeholder="Search course content..."
+           value={searchTerm}
+           onChange={(e) => onSearchChange(e.target.value)}
+           className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+           aria-label="Search course content"
+         />
+         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
+       </div>
+       {searchTerm && (
+           <div className="mt-2 flex items-center justify-end text-sm text-gray-600 dark:text-gray-400">
+               {hasResults ? (
+                   <>
+                       <span className="mr-3">
+                           Result {currentDisplayIndex} of {resultCount}
+                       </span>
+                       <button
+                           onClick={onPrevResult}
+                           disabled={currentResultIndex <= 0}
+                           className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500"
+                           aria-label="Previous search result"
+                       >
+                           <ArrowUp size={16} />
+                       </button>
+                       <button
+                           onClick={onNextResult}
+                           disabled={currentResultIndex >= resultCount - 1}
+                           className="ml-1 p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-blue-500"
+                           aria-label="Next search result"
+                       >
+                           <ArrowDown size={16} />
+                       </button>
+                   </>
+               ) : (
+                   <span>No results found for "{searchTerm}"</span>
+               )}
+           </div>
+       )}
+   </div>
+ );
 };
 
-// Scroll Progress Bar (no changes needed)
 const ScrollProgress = () => {
-  const [scrollPercentage, setScrollPercentage] = useState(0);
+ const [scrollPercentage, setScrollPercentage] = useState(0);
 
-  const handleScroll = useCallback(() => {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scrolled = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-    // Clamp value between 0 and 100
-    setScrollPercentage(Math.min(100, Math.max(0, scrolled)));
-  }, []);
+ const handleScroll = useCallback(() => {
+   const scrollTop = window.scrollY;
+   const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+   const scrolled = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+   setScrollPercentage(Math.min(100, Math.max(0, scrolled)));
+ }, []);
 
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true }); // Use passive listener
-    // Recalculate on mount and resize
-    const handleResize = () => handleScroll();
-    window.addEventListener('resize', handleResize, { passive: true });
-    handleScroll(); // Initial calculation
+ useEffect(() => {
+   window.addEventListener('scroll', handleScroll, { passive: true });
+   const handleResize = () => handleScroll();
+   window.addEventListener('resize', handleResize, { passive: true });
+   handleScroll();
 
-    return () => {
-        window.removeEventListener('scroll', handleScroll);
-        window.removeEventListener('resize', handleResize);
-    }
-  }, [handleScroll]);
+   return () => {
+       window.removeEventListener('scroll', handleScroll);
+       window.removeEventListener('resize', handleResize);
+   }
+ }, [handleScroll]);
 
-  return (
-    <div className="fixed top-0 left-0 w-full h-1 z-[101] bg-gray-200 dark:bg-gray-700"> {/* Ensure higher z-index */}
-      <div
-        className="h-1 bg-blue-600 dark:bg-blue-400 transition-width duration-100 ease-linear" // Changed transition property
-        style={{ width: `${scrollPercentage}%` }}
-      />
-    </div>
-  );
+ return (
+   <div className="fixed top-0 left-0 w-full h-1 z-[101] bg-gray-200 dark:bg-gray-700">
+     <div
+       className="h-1 bg-blue-600 dark:bg-blue-400 transition-width duration-100 ease-linear"
+       style={{ width: `${scrollPercentage}%` }}
+     />
+   </div>
+ );
 };
 
-// Theme Toggle Button (no changes needed)
 const ThemeToggle = ({ theme, onToggle }) => {
-  return (
-    <button
-      onClick={onToggle}
-      className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900" // Added focus style
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-    >
-      {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-    </button>
-  );
+ return (
+   <button
+     onClick={onToggle}
+     className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
+     aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+   >
+     {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+   </button>
+ );
 };
 
 // --- Main Component: EnrolledCourseStudyPage ---
 
 const EnrolledCourseStudyPage = () => {
+ const { user, token, logout } = useContext(AuthContext);
+ const [modalQuiz, setModalQuiz] = useState(null);
+ const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+ const [completionTimestamps, setCompletionTimestamps] = useState({});
+ const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
-  const [modalQuiz, setModalQuiz] = useState(null);
+ const openQuizModal = useCallback((quiz) => {
+   setModalQuiz(quiz);
+   setIsQuizModalOpen(true);
+ }, []);
 
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isCollabActive, setIsCollabActive] = useState(false);
-  const [completionTimestamps, setCompletionTimestamps] = useState({});
-  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+ const closeQuizModal = useCallback(() => {
+   setIsQuizModalOpen(false);
+   setModalQuiz(null);
+ }, []);
 
-  const openQuizModal = useCallback((quiz) => {
-    setModalQuiz(quiz);
-    setIsQuizModalOpen(true);
-  }, []);
+ const [roomId, setRoomId] = useState(null);
+ const [myId, setMyId] = useState(null);
+ const { enrollmentId } = useParams();
+ const navigate = useNavigate();
+ const location = useLocation();
+const [shareInvites, setShareInvites] = useState([]);
 
-  const closeQuizModal = useCallback(() => {
-    setIsQuizModalOpen(false);
-    setModalQuiz(null);
-  }, []);
-  const { enrollmentId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { token, logout, user } = useContext(AuthContext);
+useEffect(() => {
+  if (!enrollmentId) return;
 
-  
-  // --- State ---
-  const [courseData, setCourseData] = useState(null);
-  const [lessons, setLessons] = useState([]);
-  const [quizzes, setQuizzes] = useState([]); // Store all quizzes
-  const [completedLessons, setCompletedLessons] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  apiClient
+    .get('/enrollments/share-invites/', { params: { enrollment: enrollmentId } })
+    .then(res => {
+      // DRF may paginate under `results`
+      setShareInvites(res.data.results || res.data);
+    })
+    .catch(err => {
+      console.error('Failed to load share invites:', err);
+    });
+}, [enrollmentId]);
 
-    // ── Teacher-invite state ───────────────────────────────────────────
-  const [availableGuides,   setAvailableGuides]    = useState([]);
-  const [teacherSearchTerm, setTeacherSearchTerm]  = useState("");
-  const [selectedTeacherId, setSelectedTeacherId]  = useState(null);
-  const [selectedTeacherName, setSelectedTeacherName] = useState("");
-  // ──────────────────────────────────────────────────────────────────
 
-    // ── Collab state ───────────────────────────────────────
-  const [roomId, setRoomId]                     = useState(null);
-  const [myId,   setMyId]                       = useState(null);
-  const [otherId, setOtherId]                    = useState(null);
-  const [allowTeacherScroll, setAllowTeacherScroll] = useState(false);
-  const [isDrawingMode,       setIsDrawingMode]       = useState(false);
-  // ─────────────────────────────────────────────────────
 
-  const isTeacher = user && selectedTeacherId && user.id === selectedTeacherId;
-  const allowScroll = isTeacher ? false : allowTeacherScroll;
-  useCollabCursor(roomId, myId, otherId, allowScroll);
+// ─── track all strokes from Firebase ─────────────────────────────────
+ const [allStrokes, setAllStrokes] = useState([]);
+ useEffect(() => {
+   const drawingsRef = ref(db, `sessions/${roomId}/drawings`);
+   const unsubscribe = onValue(drawingsRef, snap => {
+     const val = snap.val() || {};
+     // turn { key: {…} } into [ { id:key, …stroke } ]
+     const arr = Object.entries(val).map(([id, s]) => ({ id, ...s }));
+     setAllStrokes(arr);
+   });
+   return () => unsubscribe();
+ }, [roomId]);
 
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+ // ─── assign each user a stable color ────────────────────────────────
+ const COLORS = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4'];
+ const userColors = useMemo(() => {
+   const ids = Array.from(new Set([myId, ...allStrokes.map(s => s.userId)]));
+   return ids.reduce((map, id, i) => {
+     map[id] = COLORS[i % COLORS.length];
+     return map;
+   }, {});
+ }, [myId, allStrokes]);
 
-  // Search State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchMatches, setSearchMatches] = useState([]); // Stores DOM elements of matches
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1); // -1 means no active match
+ 
+ // --- State ---
+ const [courseData, setCourseData] = useState(null);
+ const [lessons, setLessons] = useState([]);
+ const [quizzes, setQuizzes] = useState([]);
+ const [completedLessons, setCompletedLessons] = useState(new Set());
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState("");
 
-  const mainContentRef = useRef(null); // Ref for the main content area to search within
+ // --- REVISED COLLABORATION STATE ---
 
-  const handleInviteUser = (invitedUser) => {
-      if (!user || !invitedUser || !courseData) {
-        console.error("Cannot invite user: missing current user, invited user, or course data.");
-        return;
-      }
+ const [otherId, setOtherId] = useState(null);
+ const [otherUserId, setOtherUserId] = useState(null); // Raw user ID of the other person
+ const [isCollabActive, setIsCollabActive] = useState(false);
+ const [isDrawingMode, setIsDrawingMode] = useState(false); // This line is already here
+ const [allowTeacherScroll, setAllowTeacherScroll] = useState(true); // Simplified for peer-to-peer
+ const isTeacher = false; // Simplified for peer-to-peer
 
-      const collabRoomId = `course-${courseData.id}-user-${user.id}-with-${invitedUser.id}`;
-      const inviteUrl = `${window.location.origin}${location.pathname}?collabSession=${collabRoomId}`;
+// === ADD THESE LINES HERE ===
+ const [drawingTool, setDrawingTool] = useState('pen');
+ const [drawingColor, setDrawingColor] = useState('#FFC107');
+ const [drawingLineWidth, setDrawingLineWidth] = useState(4);
+// =============================
 
-      console.log(`Sending invite to user ID: ${invitedUser.id}`);
-      console.log(`Invite URL: ${inviteUrl}`);
+ // --- FIXED: Call hooks at the top level ---
+ const { addDrawingStroke, setDrawingCanvas } = useCollaboration(roomId, myId, user?.username);
+ useCollabCursor(roomId, myId, otherId, allowTeacherScroll);
 
-      const payload = {
-        target_user_id: invitedUser.id,
-        invite_url: inviteUrl,
-        course_title: courseData.title
-      };
 
-      apiClient.post('/notifications/user-notifications/create-collab-invite/', payload)
-        .then(response => {
-          alert(`Invitation sent to ${invitedUser.username}!`);
-          setRoomId(collabRoomId);
-          setIsCollabActive(true);
-          setIsInviteModalOpen(false);
-        })
-        .catch(error => {
-          console.error("Failed to send invite:", error);
-          alert("Error: Could not send the invitation. Please check the console.");
-        });
-    };
+ const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+ // Search State
+ const [searchTerm, setSearchTerm] = useState("");
+ const [searchMatches, setSearchMatches] = useState([]);
+ const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+
+ const mainContentRef = useRef(null);
+
+ const onDeleteLast = async () => {
+  // 1) read children at `sessions/${roomId}/drawings`
+  const snapshot = await get(ref(db, `sessions/${roomId}/drawings`));
+  const all = snapshot.val() || {};
+  // 2) filter by your userId
+  const keys = Object.keys(all).filter(k => all[k].userId === myId);
+  const lastKey = keys[keys.length - 1];
+  if (lastKey) {
+    await remove(ref(db, `sessions/${roomId}/drawings/${lastKey}`));
+  }
+};
+
+ const handleHighlightText = useCallback(() => {
+    // Set a special tool mode to disable canvas drawing.
+    setDrawingTool('text');
+    const selection = window.getSelection();
+
+    // Check if the user has selected any text.
+    if (selection && !selection.isCollapsed) {
+        // Create a span to wrap the selection.
+        const span = document.createElement('span');
+        // Apply the NEW CSS class from your module file.
+        span.className = styles.markerHighlight; 
+        try {
+            // Get the selected text range and wrap it with our new span
+            const range = selection.getRangeAt(0);
+            range.surroundContents(span);
+        } catch (e) {
+            console.error("Highlight failed: ", e);
+            // This can happen if the selection crosses complex HTML boundaries.
+            alert("This text can't be highlighted automatically. Try highlighting smaller sections.");
+        }
+        // Clear the browser's text selection so the user can see the result.
+        selection.removeAllRanges();
+    } else {
+        alert("To highlight text, first select it with your mouse, then click the 'T' button again.");
+    }
+ }, []);
+
+// === ADD THIS ENTIRE FUNCTION HERE ===
+const onClearAll = useCallback(async () => {
+  if (window.confirm('Are you sure you want to clear ALL drawings for everyone?')) {
+      if (!roomId) return;
+      const drawingsRef = ref(db, `sessions/${roomId}/drawings`);
+      await remove(drawingsRef);
+  }
+}, [roomId]);
+// =====================================
+
+const handleInviteUser = async (invitedUser) => {
+ if (!user || !invitedUser || !courseData) return;
+
+ try {
+   const res = await apiClient.post(`/enrollments/share-invites/`, {
+     enrollment: enrollmentId,
+     invited_user: invitedUser.id,
+   });
+
+   const invite = res.data;
+   const newRoomId = invite.token;
+
+   // Immediately update the URL for the inviter, so reloads work.
+
+const tokenLink = `${location.pathname}?shared_token=${newRoomId}`;
+navigate(tokenLink, { replace: true });
+
+   await apiClient.post('/notifications/user-notifications/create-collab-invite/', {
+     target_user_id: invitedUser.id,
+     invite_url: tokenLink,
+     course_title: courseData.title,
+   });
+   
+   console.log(`[COLLAB] Invite sent. Activating session for inviter. Room: ${newRoomId}, Other User: ${invitedUser.id}`);
+   setRoomId(newRoomId);
+   setOtherUserId(invitedUser.id);
+   setIsCollabActive(true);
+   
+   setIsInviteModalOpen(false);
+ } catch (err) {
+   console.error("Could not create ShareInvite:", err);
+   alert("Failed to invite user. Please try again.");
+ }
+};
+
   // --- Theme Management ---
   useEffect(() => {
     if (theme === 'dark') {
@@ -614,186 +617,119 @@ const EnrolledCourseStudyPage = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = useCallback(() => { // Wrap in useCallback
+  const toggleTheme = useCallback(() => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   }, []);
 
-  // --- Data Fetching ---
-  useEffect(() => {
+// Setup myId and otherId
+useEffect(() => {
+  // Dump the full user so you can see what fields you have
+  console.log('[COLLAB_ID] user object is:', user);
 
-    // ======================= ADD THIS BLOCK =======================
-    const queryParams = new URLSearchParams(location.search);
-    const sessionToJoin = queryParams.get('collabSession');
+  // Try user.id first; if that's null, use user.username
+  const identity = user?.id ?? user?.username;
+  console.log('[COLLAB_ID] resolved identity →', identity);
 
-    if (sessionToJoin) {
-      console.log(`Joining collaboration session from URL: ${sessionToJoin}`);
-      setRoomId(sessionToJoin);
+  if (identity && !myId) {
+    console.log(`[COLLAB_ID] Setting myId: ${identity}`);
+    setMyId(identity);
+  }
+  if (otherUserId && !otherId) {
+    console.log(`[COLLAB_ID] Setting otherId from otherUserId: ${otherUserId}`);
+    setOtherId(otherUserId);
+  }
+}, [user, otherUserId, myId, otherId]);
+
+// Main data fetching and session activation logic
+useEffect(() => {
+  let isMounted = true;
+  setLoading(true);
+  setError("");
+
+  if (!enrollmentId || !token) {
+    setError(!enrollmentId ? "Enrollment ID missing." : "Authentication required.");
+    setLoading(false);
+    if (!token) navigate('/login');
+    return;
+  }
+
+  const sharedToken = new URLSearchParams(location.search).get("shared_token");
+
+  // If a shared token is in the URL, this user is the invitee.
+  if (sharedToken && !roomId) {
+      console.log(`[COLLAB] Shared token found. Setting up session for invitee. Room: ${sharedToken}`);
+      setRoomId(sharedToken);
       setIsCollabActive(true);
-      navigate(location.pathname, { replace: true });
-    }
-    // ==============================================================
-    
-    let isMounted = true;
-    setLoading(true);
-    setError("");
+  }
 
-    if (!enrollmentId || !token) {
-      setError(!enrollmentId ? "Enrollment ID missing." : "Authentication required.");
-      setLoading(false);
-      if (!token) navigate('/login');
-      return;
-    }
+  const fetchCourseData = async () => {
+    try {
+      const tokenQuery = sharedToken ? `?shared_token=${sharedToken}` : "";
+      const enrollmentRes = await apiClient.get(`/enrollments/${enrollmentId}${tokenQuery}`);
+      if (!isMounted) return;
 
-    const fetchCourseData = async () => {
-      try {
-        // Fetch Enrollment Details (includes course snapshot with basic lesson/quiz lists)
-        const enrollmentRes = await apiClient.get(`/enrollments/${enrollmentId}/`);
-        if (!isMounted) return;
+      const enrollment = enrollmentRes.data;
+      const course = enrollment.course_snapshot || enrollment.course;
+      if (!course) throw new Error("Course data not found.");
+      setCourseData(course);
 
-        const enrollment = enrollmentRes.data;
-        const course = enrollment?.course_snapshot || enrollment?.course;
+      const lessonsData = await Promise.all(
+        (course.lessons || []).map(lsn =>
+          apiClient.get(`/lessons/${lsn.permalink || lsn.id}/`)
+            .then(res => ({ ...res.data.lesson, id: res.data.lesson.id || lsn.id }))
+            .catch(() => ({ ...lsn, title: `${lsn.title} (Error)`, content: null, id: lsn.id }))
+        )
+      );
 
-        if (!course) throw new Error("Course data not found in enrollment.");
-        setCourseData(course);
+      const sortFn = (a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || String(a.id).localeCompare(String(b.id));
+      lessonsData.sort(sortFn);
+      setLessons(lessonsData);
 
-        // ——— Collaboration room/user IDs ———
-        // 1) the two UIDs we need:
-        const studentUid = user.id;               // your signed-in Firebase Auth UID
-        // enrollment has the teacher field
-        // use the invited teacher’s UID (set elsewhere in your UI)
-        const teacherUid = selectedTeacherId;
-        if (!teacherUid) {
-          console.warn("⚠️ No teacher selected—skipping collaboration setup");
+      const quizzesData = lessonsData.flatMap(lesson => lesson.quizzes || []);
+      quizzesData.sort(sortFn);
+      setQuizzes(quizzesData);
+
+      const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/${tokenQuery}`);
+      if (!isMounted) return;
+
+      const tsMap = {};
+      completions.forEach(c => tsMap[c.lesson.id] = c.completed_at);
+      setCompletionTimestamps(tsMap);
+      setCompletedLessons(new Set(Object.keys(tsMap).map(id => parseInt(id, 10))));
+
+      // If this user is an invitee, find out who invited them.
+      if (sharedToken && enrollment.share_invite) {
+        const invite = enrollment.share_invite;
+        const inviterId = invite.invited_by?.id || invite.invited_by;
+        if (inviterId) {
+            console.log(`[COLLAB] Inviter identified: ${inviterId}. Setting as otherUserId.`);
+            setOtherUserId(inviterId);
         } else {
-          // now you can safely build roomId, myId, otherId…
-          const rid = `enrollment-${studentUid}-${teacherUid}`;
-          setRoomId(rid);
-
-          const myRoleId = user.id === teacherUid
-            ? `teacher-${teacherUid}`
-            : `student-${studentUid}`;
-          setMyId(myRoleId);
-
-          const otherRoleId = user.id === teacherUid
-            ? `student-${studentUid}`
-            : `teacher-${teacherUid}`;
-          setOtherId(otherRoleId);
+            console.warn('[COLLAB] Could not identify inviter from API response.', invite);
         }
-
-        // 2) roomId must match your security rules: "enrollment-<STUDENT_UID>-<TEACHER_UID>"
-        const rid = `enrollment-${studentUid}-${teacherUid}`;
-        setRoomId(rid);
-
-        // 3) make our per-user node IDs:
-        const myRoleId = user.id === teacherUid
-          ? `teacher-${teacherUid}`
-          : `student-${studentUid}`;
-        setMyId(myRoleId);
-
-        const otherRoleId = user.id === teacherUid
-          ? `student-${studentUid}`
-          : `teacher-${teacherUid}`;
-        setOtherId(otherRoleId);
-        // ————————————————————————————————————
-
-
-
-        const lessonList = course.lessons || [];
-
-        
-        // Fetch Detailed Lesson Content (assuming API provides full content)
-        // Adjust endpoint/logic if only IDs are provided initially
-        const lessonDetailPromises = lessonList.map(lesson =>
-          apiClient.get(`/lessons/${lesson.permalink || lesson.id}/`) // Use permalink or ID
-            .then(res => ({...res.data.lesson, id: res.data.lesson.id || lesson.id})) // Ensure ID is present
-            .catch(err => {
-              console.warn(`Failed to fetch lesson ${lesson.permalink || lesson.id}:`, err);
-              return { ...lesson, title: `${lesson.title || 'Lesson'} (Error Loading)`, content: null, id: lesson.id || lesson.permalink };
-            })
-        );
-
-        // Fetch Detailed Quiz Content (assuming API provides full content)
-        // Adjust endpoint/logic if necessary
-        const detailedLessons = await Promise.all(lessonDetailPromises);
-        const detailedQuizzes = detailedLessons.flatMap(lesson => lesson.quizzes || []);
-
-
-        if (!isMounted) return;
-
-        // Sort lessons/quizzes if needed (e.g., by an 'order' field from API)
-        // FIX: Ensure localeCompare is only called on strings
-        const sortContent = (a, b) => {
-            const orderDiff = (a.order ?? Infinity) - (b.order ?? Infinity);
-            if (orderDiff !== 0) return orderDiff;
-            // Convert IDs to strings before comparing
-            const idA = String(a.id ?? '');
-            const idB = String(b.id ?? '');
-            return idA.localeCompare(idB);
-        };
-
-        detailedLessons.sort(sortContent);
-        detailedQuizzes.sort(sortContent);
-
-
-        setLessons(detailedLessons);
-        setQuizzes(detailedQuizzes); // Store all detailed quizzes
-
-        // Fetch or determine Completion Status
-        // Example: Assuming completion status comes with lesson details
-        const initialCompleted = new Set(
-        );
-        // Or fetch separately if needed:
-        // const completionRes = await apiClient.get(`/enrollments/${enrollmentId}/completion/`);
-        // const initialCompleted = new Set(completionRes.data.completed_lesson_ids);
-        setCompletedLessons(initialCompleted);
-
-
-        const { data: completions } = await apiClient.get(
-          `/lessons/enrollments/${enrollmentId}/completions/`
-        );
-        const tsMap = {};
-        
-        completions.forEach(c => {
-          // c.lesson.id comes from SimpleLessonCompletionSerializer
-          tsMap[c.lesson.id] = c.completed_at;
-        });
-        setCompletionTimestamps(tsMap);
-
-        // build your completedLessons set from the same data:
-        setCompletedLessons(new Set(Object.keys(tsMap).map(idStr => parseInt(idStr, 10))));
-      } catch (err) {
-        console.error("Error fetching course study data:", err);
-        if (isMounted) {
-          if (err.response?.status === 404) {
-            setError("Enrollment or course not found.");
-          } else if (err.response?.status === 401 || err.response?.status === 403) {
-            setError("Unauthorized. Please log in again.");
-            logout(); // Call logout
-            // navigate('/login'); // Redirect may be too abrupt
-          } else {
-             // Check if the error message indicates the localeCompare issue specifically
-             if (err instanceof TypeError && err.message.includes('localeCompare is not a function')) {
-                 setError(`Failed to sort course content. Please check if lesson/quiz IDs are valid strings or numbers.`);
-             } else {
-                 setError(`Failed to load course content: ${err.message || "An unexpected error occurred."}`);
-             }
-          }
-        }
-      } finally {
-        if (isMounted) setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching course data:", err);
+      if (!isMounted) return;
+      if (err.response?.status === 404) setError("Enrollment or course not found.");
+      else if ([401, 403].includes(err.response?.status)) {
+        setError("Unauthorized. Please log in again.");
+        logout();
+      } else setError(`Failed to load course: ${err.message}`);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
 
-    fetchCourseData();
+  fetchCourseData();
 
-    return () => { isMounted = false; };
-  }, [enrollmentId, token, navigate, logout, location]); // Dependencies for fetching
+  return () => { isMounted = false; };
+}, [enrollmentId, token, navigate, logout, location.search]); // location.search is critical
 
   // --- Search Logic ---
   useEffect(() => {
-    // Clear previous highlights and state when search term is empty
     if (!searchTerm) {
-      if (searchMatches.length > 0) { // Only clear if there were previous matches
+      if (searchMatches.length > 0) {
           searchMatches.forEach(el => el.classList.remove('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900'));
           setSearchMatches([]);
           setCurrentMatchIndex(-1);
@@ -801,187 +737,132 @@ const EnrolledCourseStudyPage = () => {
       return;
     }
 
-    // Debounce search execution
     const handler = setTimeout(() => {
         if (mainContentRef.current) {
-            // Remove previous active styles before finding new matches
-            document.querySelectorAll('.active-search-match').forEach(el => el.classList.remove('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900'));
-
-            // Find all elements marked by highlightSearchTerm
-            const matches = Array.from(mainContentRef.current.querySelectorAll('.search-match-highlight'));
-            setSearchMatches(matches);
-            const newIndex = matches.length > 0 ? 0 : -1;
-            setCurrentMatchIndex(newIndex);
-
-            if (newIndex !== -1) {
-                // Scroll to and highlight the first match
-                matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                matches[0].classList.add('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900'); // Add active style
-            }
+          document.querySelectorAll('.active-search-match').forEach(el => el.classList.remove('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900'));
+          const matches = Array.from(mainContentRef.current.querySelectorAll('.search-match-highlight'));
+          setSearchMatches(matches);
+          const newIndex = matches.length > 0 ? 0 : -1;
+          setCurrentMatchIndex(newIndex);
+          if (newIndex !== -1) {
+            matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            matches[0].classList.add('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900');
+          }
         }
-    }, 300); // 300ms delay after typing stops
+    }, 300);
 
-    return () => clearTimeout(handler); // Cleanup timeout
+    return () => clearTimeout(handler);
 
-  }, [searchTerm, lessons, quizzes]); // Re-run search if content or term changes
+  }, [searchTerm, lessons, quizzes]);
 
 
   // --- Event Handlers ---
 
-  // Mark Lesson as Complete (wrapped in useCallback)
   const handleMarkComplete = useCallback(async (lessonId) => {
     const lesson = lessons.find(l => l.id === lessonId);
     const lessonIdentifier = lesson?.permalink || lesson?.id;
     if (!lessonIdentifier || completedLessons.has(lessonId)) return;
 
-    setCompletedLessons(prev => new Set(prev).add(lessonId)); // Optimistic update
+    setCompletedLessons(prev => new Set(prev).add(lessonId));
 
     try {
       const res = await apiClient.post(
         `/lessons/${lessonIdentifier}/complete/`, 
         {}
       );
-
       if (res.status === 201 && res.data.completed_at) {
         setCompletionTimestamps(prev => ({
           ...prev,
           [lessonId]: res.data.completed_at
         }));
       }
-      // Success - state already updated
     } catch (err) {
       console.error("Error marking lesson complete:", err);
-      setCompletedLessons(prev => { // Revert on error
+      setCompletedLessons(prev => {
         const newSet = new Set(prev);
         newSet.delete(lessonId);
         return newSet;
       });
-      alert(`Failed to mark lesson complete: ${err.response?.data?.detail || err.message}`); // Consider better notification
+      alert(`Failed to mark lesson complete: ${err.response?.data?.detail || err.message}`);
       if (err.response?.status === 401 || err.response?.status === 403) {
           setError("Session expired. Please log in again.");
           logout();
       }
     }
-  }, [lessons, completedLessons, logout]); // Dependencies
+  }, [lessons, completedLessons, logout]);
 
-  // Handle navigation from FloatingNav (wrapped in useCallback)
   const handleNavigate = useCallback((targetId) => {
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Optional: Highlight effect
       element.classList.add('transition-all', 'duration-1000', 'ring-2', 'ring-offset-2', 'ring-indigo-500', 'dark:ring-offset-gray-900');
       setTimeout(() => {
         element.classList.remove('ring-2', 'ring-offset-2', 'ring-indigo-500', 'dark:ring-offset-gray-900');
       }, 1500);
 
-        // If the target is a lesson, attempt to expand it if collapsed
         if (targetId.startsWith('lesson-')) {
-            const lessonComp = element; // element is the section
-            // Check if the content div has max-height: 0px (indicates collapsed)
+            const lessonComp = element;
             const contentDiv = lessonComp.querySelector(':scope > div[style*="max-height: 0px"]');
              if (contentDiv) {
-                 // Simulate a click on the header to toggle expansion
-                 const header = lessonComp.querySelector(':scope > div:first-child');
-                 header?.click();
+                const header = lessonComp.querySelector(':scope > div:first-child');
+                header?.click();
              }
         }
-         // If the target is a quiz, ensure its parent lesson is expanded
-        else if (targetId.startsWith('quiz-')) {
-            const quizComp = element;
-            const lessonComp = quizComp.closest('section[id^="lesson-"]'); // Find parent lesson section
-            if (lessonComp) {
-                const contentDiv = lessonComp.querySelector(':scope > div[style*="max-height: 0px"]');
-                if (contentDiv) {
-                   const header = lessonComp.querySelector(':scope > div:first-child');
-                   header?.click();
-                }
-            }
-        }
+       else if (targetId.startsWith('quiz-')) {
+           const quizComp = element;
+           const lessonComp = quizComp.closest('section[id^="lesson-"]');
+           if (lessonComp) {
+               const contentDiv = lessonComp.querySelector(':scope > div[style*="max-height: 0px"]');
+               if (contentDiv) {
+                  const header = lessonComp.querySelector(':scope > div:first-child');
+                  header?.click();
+               }
+           }
+       }
     }
-  }, []); // No dependencies needed if it only interacts with DOM
+  }, []);
 
-  // Search Result Navigation (wrapped in useCallback)
   const navigateSearchResults = useCallback((direction) => {
       if (searchMatches.length === 0) return;
-
       let nextIndex = currentMatchIndex + direction;
-
-      // Handle boundary conditions (no wrap around for now)
-      // if (nextIndex >= searchMatches.length) nextIndex = searchMatches.length - 1;
-      // if (nextIndex < 0) nextIndex = 0;
-       // Wrap around logic:
        if (nextIndex >= searchMatches.length) {
            nextIndex = 0;
        } else if (nextIndex < 0) {
            nextIndex = searchMatches.length - 1;
        }
 
-
-      // Remove highlight from current match if valid index
       if (currentMatchIndex >= 0 && searchMatches[currentMatchIndex]) {
           searchMatches[currentMatchIndex].classList.remove('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900');
       }
 
-      // Scroll to and highlight the next match
       const nextMatchElement = searchMatches[nextIndex];
       if (nextMatchElement) {
           nextMatchElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          nextMatchElement.classList.add('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900'); // Add active style
+          nextMatchElement.classList.add('active-search-match', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'dark:ring-offset-gray-900');
           setCurrentMatchIndex(nextIndex);
       }
-  }, [searchMatches, currentMatchIndex]); // Dependencies
+  }, [searchMatches, currentMatchIndex]);
 
   const handleNextResult = useCallback(() => navigateSearchResults(1), [navigateSearchResults]);
   const handlePrevResult = useCallback(() => navigateSearchResults(-1), [navigateSearchResults]);
 
+    const lessonsToDisplay = lessons;
 
-  // --- Filtering and Data Preparation ---
-    // Filter lessons based on search term (only needed if you want to hide non-matching lessons entirely)
-    // Current implementation relies on highlighting within visible lessons.
-    // If filtering is desired:
-    /*
-    const filteredLessons = useMemo(() => {
-      if (!searchTerm) return lessons;
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      return lessons.filter(lesson => {
-          const titleMatch = lesson.title?.toLowerCase().includes(lowerSearchTerm);
-          const contentMatch = extractTextFromHtml(lesson.content)?.toLowerCase().includes(lowerSearchTerm);
-          const assocQuiz = quizzes.find(q => q.lesson_id === lesson.id);
-          const quizTitleMatch = assocQuiz?.title?.toLowerCase().includes(lowerSearchTerm);
-          const quizDescMatch = extractTextFromHtml(assocQuiz?.description)?.toLowerCase().includes(lowerSearchTerm);
-          return titleMatch || contentMatch || quizTitleMatch || quizDescMatch;
-      });
-    }, [lessons, quizzes, searchTerm]);
-    */
-    // If not filtering, just use the original 'lessons' array for mapping
-    const lessonsToDisplay = lessons; // Or use filteredLessons if implementing filtering
-
-
-    // Find associated quiz for each lesson (assuming quiz object has lesson_id)
     const lessonsWithQuizzes = useMemo(() => {
-        // Use lessonsToDisplay (which is either all lessons or filtered lessons)
         return lessonsToDisplay.map(lesson => {
-            // Adjust 'lesson_id' if your quiz data uses a different field name
             const associatedQuiz = quizzes.find(quiz => quiz.lesson === lesson.id);
             return {
                 ...lesson,
-                associatedQuiz: associatedQuiz // Add the found quiz (or undefined)
+                associatedQuiz: associatedQuiz
             };
         });
-    // Depend on the array being mapped and the quizzes array
     }, [lessonsToDisplay, quizzes]);
 
-    console.log('fetched quizzes:', quizzes)
 
-  // --- WebRTC Screen-Sharing Integration ---
+  // --- WebRTC Screen-Sharing (Original Logic Preserved) ---
   useEffect(() => {
-    // This effect sets up the screen-sharing session. It should be triggered
-    // by a user action (e.g., clicking a "Share Screen" button), not automatically on load.
-    // For this integration, we follow the instructions to add the logic.
     const setupWebRTC = async () => {
       try {
-        // A roomID must be present to establish a session
         if (!roomId) {
             console.log("WebRTC setup skipped: No room ID.");
             return;
@@ -994,21 +875,17 @@ const EnrolledCourseStudyPage = () => {
 
         peerConnection.onicecandidate = event => {
             if (event.candidate) {
-                // In a real app, you would send this candidate to the other peer via your signaling server (Firebase).
                 console.log('New ICE candidate:', event.candidate);
                 writeTo(`sessions/${roomId}/iceCandidates`, event.candidate.toJSON());
             }
         };
         
-        // This part is for the "caller" side. The "callee" would listen for an offer.
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
 
-        // Send the offer to the other peer via your signaling server (Firebase).
         console.log('SDP Offer created:', offer);
         writeTo(`sessions/${roomId}/offer`, { sdp: offer.sdp, type: offer.type });
 
-        // Listen for an answer from the other peer via Firebase.
         subscribeTo(`sessions/${roomId}/answer`, answer => {
             if (answer && !peerConnection.currentRemoteDescription) {
                 console.log('Received SDP answer:', answer);
@@ -1017,7 +894,6 @@ const EnrolledCourseStudyPage = () => {
             }
         });
         
-        // Listen for ICE candidates from the remote peer.
         subscribeTo(`sessions/${roomId}/remoteIceCandidates`, candidate => {
             if (candidate) {
                 console.log('Received remote ICE candidate:', candidate);
@@ -1030,30 +906,19 @@ const EnrolledCourseStudyPage = () => {
       }
     };
 
-    // In a real-world scenario, you would NOT call this automatically.
-    // You would have a button that triggers setupWebRTC.
-    // For the purpose of integrating the code as requested:
-    // setupWebRTC().catch(console.error);
-
-    // Note: The original request implies this runs automatically. A proper implementation
-    // would require a UI element to trigger `setupWebRTC`. The logic is placed here as instructed.
-    if (roomId) { // Only attempt setup if there's a room.
+    if (roomId) {
         console.log("WebRTC logic is available and can be triggered.");
-        // To run it automatically (as per original instructions), uncomment the line below.
-        // setupWebRTC().catch(console.error);
     }
 
-  }, [roomId]); // Dependency on roomId ensures this re-evaluates if the room changes.
+  }, [roomId]);
 
 
   // --- Render ---
-// 1) aggregate all custom CSS strings from each lesson
 const allCustomCss = lessons
-  .map(l => l.custom_css || '')
-  .filter(s => !!s)
-  .join('\n');
+ .map(l => l.custom_css || '')
+ .filter(s => !!s)
+ .join('\n');
 
-// 2) pick a default accent color (falls back if none set)
 const defaultAccent = lessons[0]?.accent_color || '#3498db';
 
   if (loading) {
@@ -1071,17 +936,17 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
         <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
         <p className="text-red-600 dark:text-red-400 text-center mb-4">{error}</p>
         <button
-            onClick={() => navigate(-1)} // Go back
+            onClick={() => navigate(-1)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md"
         >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Go Back
+          <ArrowLeft className="w-4 h-4 mr-2" /> Go Back
         </button>
       </div>
     );
   }
 
   if (!courseData) {
-      return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Course data could not be loaded.</div>;
+    return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Course data could not be loaded.</div>;
   }
 
   return (
@@ -1095,13 +960,11 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
       {allCustomCss && (
         <style type="text/css">{allCustomCss}</style>
       )}
-      {/* this is the only bit you need to swap out: */}
       <style type="text/css">{`
         :root { --accent-color: ${defaultAccent}; }
       `}</style>
     </Helmet>
       <ScrollProgress />
-        {/* FROM STEP 5: Add the new modal here */}
         <CollaborationInviteModal
             isOpen={isInviteModalOpen}
             onClose={() => setIsInviteModalOpen(false)}
@@ -1110,78 +973,57 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
             enrollmentId={enrollmentId}
         />
 
-        {/* KEEP your DrawingOverlay here for when a session is active */}
-        {roomId && myId && (
-            <DrawingOverlay
-                roomId={roomId}
-                userId={myId}
-                isDrawingMode={isDrawingMode}
-            />
-        )}
+      {isCollabActive && roomId && myId && (
+        <DrawingOverlay
+          isDrawingMode={isDrawingMode}
+          onStroke={addDrawingStroke}
+          setCanvasRef={setDrawingCanvas}
+          strokes={allStrokes}
+          userColors={userColors}
+          onDeleteLast={onDeleteLast}
+          onClearAll={onClearAll}
+          onHighlightText={handleHighlightText} // <-- ADD THIS LINE
+          tool={drawingTool}
+          setTool={setDrawingTool}
+          color={drawingColor}
+          setColor={setDrawingColor}
+          lineWidth={drawingLineWidth}
+          setLineWidth={setDrawingLineWidth}
+        />
+      )}
+
 
     <div className={styles.lessonTemplate}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
-        {/* Increased padding-bottom to avoid overlap with floating button */}
-        <div className="w-full mx-auto px-4 pt-8 pb-32 max-w-full md:max-w-4xl">{/* Adjusted pb for mobile */}
+        <div className="w-full mx-auto px-4 pt-8 pb-32 max-w-full md:max-w-4xl">
 
-          {/* Header */}
-          <header className="mb-8 flex flex-col sm:flex-row justify-between items-start"> {/* Stack on small screens */}
-              <div className="mb-4 sm:mb-0"> {/* Add bottom margin on small screens */}
+          <header className="mb-8 flex flex-col sm:flex-row justify-between items-start">
+              <div className="mb-4 sm:mb-0">
                 <button
-                    onClick={() => navigate('/my-learning')} // Navigate to a specific known route
+                    onClick={() => navigate('/my-learning')}
                     className="mb-2 inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Back to My Learning
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Back to My Learning
                 </button>
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100">{courseData.title}</h1>
                 {courseData.description && (
                   <div className="mt-2 text-gray-600 dark:text-gray-400 prose dark:prose-invert max-w-none break-words whitespace-normal" dangerouslySetInnerHTML={{ __html: sanitizeHtml(courseData.description)}}></div>
                 )}
               </div>
-              <div className="flex-shrink-0 self-start sm:self-center"> {/* Align self start on small */}
+              <div className="flex-shrink-0 self-start sm:self-center">
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />
               </div>
           </header>
 
- 
-  {/* ======================= INSERT CODE FOR STEP 4 HERE ======================= */}
+  <CollaborationZoneSection
+  isCollabActive={isCollabActive}
+  isTeacher={isTeacher}
+  isDrawingMode={isDrawingMode}
+  setIsDrawingMode={setIsDrawingMode}
+  setIsInviteModalOpen={setIsInviteModalOpen}
+  shareInvites={shareInvites}  
+/>
 
-
-  <div className="p-4 mb-6 bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-lg shadow-sm">
-      <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 flex items-center mb-3">
-          <Users className="w-5 h-5 mr-2" />
-          Collaboration Zone
-      </h3>
-      {!isCollabActive ? (
-          <>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Invite another enrolled user to share this page in real-time.
-              </p>
-              <button
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite User
-              </button>
-          </>
-      ) : (
-          <>
-              <p className="text-sm text-green-600 dark:text-green-400 mb-3">
-                  ✓ Live session active!
-              </p>
-              <button
-                  onClick={() => setIsDrawingMode(prev => !prev)}
-                  className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${isDrawingMode ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-              >
-                  <Pencil className="w-4 h-4 mr-2"/>
-                  {isDrawingMode ? 'Stop Drawing' : 'Start Drawing'}
-              </button>
-          </>
-      )}
-  </div>
-
-          {/* Search Bar and Controls */}
           <SearchBar
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -1191,15 +1033,11 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
             onPrevResult={handlePrevResult}
           />
 
-          {/* Main Content Area - Add ref here */}
           <main ref={mainContentRef}>
             {lessonsWithQuizzes.length === 0 && !searchTerm && (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-6">This course currently has no lessons or quizzes.</p>
             )}
-              {/* Message when search yields no results is handled by SearchBar now */}
 
-
-            {/* Render Lessons (which now include their quizzes) */}
             {lessonsWithQuizzes.map(lesson => (
               <LessonSection
                 key={lesson.id}
@@ -1213,12 +1051,9 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
               />
             ))}
 
-            {/* Note: Standalone QuizSection rendering is removed as quizzes are now shown within lessons */}
-
           </main>
         </div>
 
-        {/* Floating Navigation */}
         <FloatingNav lessons={lessons} quizzes={quizzes} onNavigate={handleNavigate} />
       </div>
       </div>
@@ -1242,35 +1077,29 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
             </div>
           </div>
         )}
-       {/* Add some basic styles for the active search highlight */}
-       <style>{`
+      <style>{`
         .search-match-highlight {
           transition: background-color 0.3s ease-in-out;
-          border-radius: 3px; /* Slightly more rounding */
-          padding: 0.1em 0; /* Add slight vertical padding */
-          margin: -0.1em 0; /* Counteract padding */
+          border-radius: 3px;
+          padding: 0.1em 0;
+          margin: -0.1em 0;
         }
         .active-search-match {
-          /* Ring styles are applied via JS */
-          /* Add a subtle background color transition */
           transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-          box-shadow: 0 0 0 2px theme('colors.blue.500'); /* Use Tailwind theme color */
+          box-shadow: 0 0 0 2px theme('colors.blue.500');
         }
-        /* Ensure ring is visible over prose elements */
         .prose .active-search-match {
             position: relative;
             z-index: 1;
         }
-        /* Tailwind Prose adjustments for mark tags */
         .prose :where(mark):not(:where([class~="not-prose"] *)) {
-            background-color: transparent; /* Let the inner mark handle color */
+            background-color: transparent;
             color: inherit;
             padding: 0;
             border-radius: 0;
         }
-        /* Style for embedded iframe */
         .aspect-w-16.aspect-h-9 iframe {
-            border-radius: 0.375rem; /* md rounded corners */
+            border-radius: 0.375rem;
         }
        `}</style>
     </>

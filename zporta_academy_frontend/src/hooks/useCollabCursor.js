@@ -20,6 +20,7 @@ function throttle(fn, ms) {
  * allowRemoteScroll: boolean // if true, forcibly scroll to other’s scrollY
  */
 export function useCollabCursor(roomId, myId, otherId, allowRemoteScroll) {
+  //alert(`[useCollabCursor HOOK] called with roomId=${roomId} myId=${myId} otherId=${otherId}`);
   const cursorElRef = useRef(null);
   const [remotePos, setRemotePos] = useState({ x: 0, y: 0, scrollY: 0 });
 
@@ -41,19 +42,28 @@ export function useCollabCursor(roomId, myId, otherId, allowRemoteScroll) {
   // 2) Broadcast our own mousemove + scroll (throttled)
   useEffect(() => {
     if (!roomId || !myId) return;
+    alert(`[useCollabCursor] INIT → roomId=${roomId}, myId=${myId}`);
+    writeTo(`sessions/${roomId}/cursors/${myId}`, {
+      x: null,
+      y: null,
+      scrollY: window.scrollY,
+      connectedAt: Date.now()
+    });
+    
     const sendPosition = (e) => {
       const normX = e.clientX / window.innerWidth;
       const normY = e.clientY / window.innerHeight;
-      writeTo(`collabRooms/${roomId}/cursors/${myId}`, {
-        x: normX,
-        y: normY,
-        scrollY: window.scrollY,
-      });
+      const path = `sessions/${roomId}/cursors/${myId}`;
+      console.log('[COLLAB] writeTo', path, { x: normX, y: normY, scrollY: window.scrollY });
+      //alert(`[useCollabCursor] WRITE → ${path}\n` + `x=${normX.toFixed(2)}, y=${normY.toFixed(2)}, scrollY=${window.scrollY}`);
+
+      writeTo(path, { x: normX, y: normY, scrollY: window.scrollY })
+        .catch(err => console.error('[COLLAB] WRITE ERROR', err));
     };
     const throttled = throttle(sendPosition, 50);
 
     const onScroll = () => {
-      writeTo(`collabRooms/${roomId}/cursors/${myId}`, {
+      writeTo(`sessions/${roomId}/cursors/${myId}`, {
         x: null,
         y: null,
         scrollY: window.scrollY,
@@ -67,12 +77,14 @@ export function useCollabCursor(roomId, myId, otherId, allowRemoteScroll) {
       window.removeEventListener("scroll", onScroll);
     };
   }, [roomId, myId]);
-
+  console.log('[CollabCursor] init', { roomId, myId, otherId, allowRemoteScroll });
   // 3) Listen to the other user’s cursor updates
   useEffect(() => {
     if (!roomId || !otherId) return;
-    const path = `collabRooms/${roomId}/cursors/${otherId}`;
+    const path = `sessions/${roomId}/cursors/${otherId}`;
+    console.log('[COLLAB] subscribing to', path);
     const unsub = subscribeTo(path, (data) => {
+      console.log('[COLLAB] got remote cursor data:', data);
       if (!data) return;
       const { x, y, scrollY } = data;
       if (x !== null && y !== null) {
@@ -80,7 +92,9 @@ export function useCollabCursor(roomId, myId, otherId, allowRemoteScroll) {
       } else {
         setRemotePos((prev) => ({ ...prev, scrollY }));
       }
-    });
+    },
+     err => console.error('[COLLAB] SUBSCRIBE ERROR', err)
+  );
     return () => unsub();
   }, [roomId, otherId]);
 
