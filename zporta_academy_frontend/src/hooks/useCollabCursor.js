@@ -42,7 +42,7 @@ export function useCollabCursor(roomId, myId, otherId, allowRemoteScroll) {
   // 2) Broadcast our own mousemove + scroll (throttled)
   useEffect(() => {
     if (!roomId || !myId) return;
-    alert(`[useCollabCursor] INIT → roomId=${roomId}, myId=${myId}`);
+    //alert(`[useCollabCursor] INIT → roomId=${roomId}, myId=${myId}`);
     writeTo(`sessions/${roomId}/cursors/${myId}`, {
       x: null,
       y: null,

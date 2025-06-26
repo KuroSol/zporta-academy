@@ -184,18 +184,29 @@ class SessionNoteSerializer(serializers.ModelSerializer):
         fields = ['id', 'session', 'user', 'note', 'highlight_data', 'created_at']
         read_only_fields = ['id', 'user', 'created_at']
 class ShareInviteSerializer(serializers.ModelSerializer):
-    # WRITE: accept a PK
+    # writeable by PK
     invited_user = serializers.PrimaryKeyRelatedField(
-      queryset=User.objects.all()
+        queryset=User.objects.all(),
+        write_only=True
     )
-    # READ: show the full user object at the same key
-    invited_user = SimpleUserSerializer(read_only=False)
-    invited_by   = SimpleUserSerializer(read_only=True)
+    # read‐only nested data
+    invited_user_info = SimpleUserSerializer(
+        source='invited_user',
+        read_only=True
+    )
+    # automatically set by your view’s perform_create(invited_by=…)
+    invited_by = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
+    )
+    invited_by_info = SimpleUserSerializer(
+        source='invited_by',
+        read_only=True
+    )
 
     class Meta:
         model = ShareInvite
         fields = [
-          'id','enrollment','invited_user','invited_by',
-          'token','created_at'
+          'id','enrollment','invited_user','invited_user_info',
+          'invited_by','invited_by_info','token','created_at'
         ]
-        read_only_fields = ['id','invited_by','token','created_at']
+        read_only_fields = ['id','token','created_at']
