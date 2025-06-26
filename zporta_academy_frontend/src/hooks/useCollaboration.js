@@ -1,270 +1,228 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getDatabase, ref, onValue, set, push, remove, onDisconnect } from 'firebase/database';
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  push,
+  remove,
+  onDisconnect
+} from 'firebase/database';
 
 // WebRTC STUN servers for NAT traversal. Using public Google servers.
 const servers = {
   iceServers: [
-    {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    },
+    { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
   ],
   iceCandidatePoolSize: 10,
 };
 
 /**
- * A comprehensive React hook to manage a real-time collaboration session.
- * This hook handles WebRTC screen sharing, cursor tracking, and drawing, all
- * synchronized via Firebase Realtime Database.
- *
- * @param {string} roomId The unique ID for the collaboration session.
- * @param {string} userId The ID of the current user.
- * @param {string} userName The display name of the current user.
- * @returns {object} The state and methods for the collaboration session.
+ * A React hook for real-time collaboration:
+ * - screen share (WebRTC)
+ * - cursor tracking
+ * - drawing
+ * - now: remote scroll sync
  */
 export const useCollaboration = (roomId, userId, userName) => {
-  //alert(`[useCollaboration HOOK] called with roomId=${roomId} userId=${userId}`);
   const db = getDatabase();
+  // ← NEW: scroll channel
+  const scrollRef = ref(db, `sessions/${roomId}/scroll`);
+
   const peerConnection = useRef(null);
-  const localStream = useRef(null);
-  const remoteStream = useRef(new MediaStream());
+  const localStream    = useRef(null);
+  const remoteStream   = useRef(new MediaStream());
   const drawingCanvasRef = useRef(null);
 
   const [isSessionCreator, setIsSessionCreator] = useState(false);
-  const [remoteUser, setRemoteUser] = useState(null);
-  const [peerCursors, setPeerCursors] = useState({});
-  const [isSharing, setIsSharing] = useState(false);
+  const [remoteUser, setRemoteUser]           = useState(null);
+  const [peerCursors, setPeerCursors]         = useState({});
+  const [isSharing, setIsSharing]             = useState(false);
 
-  const sessionRef = ref(db, `sessions/${roomId}`);
+  const sessionRef      = ref(db, `sessions/${roomId}`);
   const participantsRef = ref(db, `sessions/${roomId}/participants`);
-  const offerRef = ref(db, `sessions/${roomId}/offer`);
-  const answerRef = ref(db, `sessions/${roomId}/answer`);
-  const cursorsRef = ref(db, `sessions/${roomId}/cursors`);
-  const drawingsRef = ref(db, `sessions/${roomId}/drawings`);
-  const iceCandidatesRef = (peerId) => ref(db, `sessions/${roomId}/iceCandidates/${peerId}`);
+  const offerRef        = ref(db, `sessions/${roomId}/offer`);
+  const answerRef       = ref(db, `sessions/${roomId}/answer`);
+  const cursorsRef      = ref(db, `sessions/${roomId}/cursors`);
+  const drawingsRef     = ref(db, `sessions/${roomId}/drawings`);
+  const iceCandidatesRef = peerId => ref(db, `sessions/${roomId}/iceCandidates/${peerId}`);
 
-  // ====================================================================
-  // == Main Setup and Teardown Effect
-  // ====================================================================
+  // ─── 1) Main setup & teardown ───────────────────────────────────────
   useEffect(() => {
     if (!roomId || !userId) return;
 
-    const setupSession = async () => {
-      // 1. Initialize Peer Connection
+    const setup = async () => {
+      // A) WebRTC peer
       peerConnection.current = new RTCPeerConnection(servers);
 
-      // 2. Register Presence
-      //alert(`[useCollaboration] PARTICIPANT REGISTER → sessions/${roomId}/participants/${userId}`);
-  
-      const currentUserRef = ref(db, `sessions/${roomId}/participants/${userId}`);
-      await set(currentUserRef, true);
-      onDisconnect(currentUserRef).remove();
+      // B) announce ourselves in `participants`
+      const meRef = ref(db, `sessions/${roomId}/participants/${userId}`);
+      await set(meRef, true);
+      onDisconnect(meRef).remove();
 
-      // 3. Determine Role (Caller or Callee)
-      onValue(participantsRef, (snapshot) => {
-        const participants = snapshot.val() || {};
-        const otherUsers = Object.keys(participants).filter(id => id !== userId);
-        setRemoteUser(otherUsers.length > 0 ? otherUsers[0] : null);
-
-        // If you are the only one, you are the creator/caller
-        if (otherUsers.length === 0) {
-          setIsSessionCreator(true);
-        }
+      // C) detect caller vs callee
+      onValue(participantsRef, snap => {
+        const parts = snap.val() || {};
+        const others = Object.keys(parts).filter(id => id !== userId);
+        setRemoteUser(others[0] || null);
+        if (others.length === 0) setIsSessionCreator(true);
       }, { onlyOnce: true });
 
-      // 4. Set up WebRTC event handlers
-      peerConnection.current.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-          remoteStream.current.addTrack(track);
-        });
+      // D) WebRTC track handler
+      peerConnection.current.ontrack = e => {
+        e.streams[0].getTracks().forEach(t => remoteStream.current.addTrack(t));
       };
 
-      // 5. Set up Firebase Listeners
-      const unsubscribes = [
-        // Listen for Cursors
-        onValue(cursorsRef, (snapshot) => {
-            const allCursors = snapshot.val() || {};
-            // Filter out the current user's cursor
-            const otherCursors = Object.entries(allCursors)
-                .filter(([id]) => id !== userId)
-                .reduce((acc, [id, data]) => ({ ...acc, [id]: data }), {});
-            setPeerCursors(otherCursors);
+      // E) cursors & drawings listeners
+      const unsub = [
+        // cursors → peerCursors
+        onValue(cursorsRef, snap => {
+          const all = snap.val() || {};
+          const others = Object.entries(all)
+            .filter(([id]) => id !== userId)
+            .reduce((acc, [id, d]) => ({ ...acc, [id]: d }), {});
+          setPeerCursors(others);
         }),
-        // Listen for Drawing
-        onValue(drawingsRef, (snapshot) => {
-          const allStrokes = snapshot.val();
-          if (allStrokes && drawingCanvasRef.current) {
-             const ctx = drawingCanvasRef.current.getContext('2d');
-             ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
-             Object.values(allStrokes).forEach(replayStroke);
+        // drawings → replayStroke
+        onValue(drawingsRef, snap => {
+          const all = snap.val() || {};
+          if (drawingCanvasRef.current) {
+            const ctx = drawingCanvasRef.current.getContext('2d');
+            ctx.clearRect(0, 0, drawingCanvasRef.current.width, drawingCanvasRef.current.height);
+            Object.values(all).forEach(replayStroke);
           }
-        }),
+        })
       ];
 
       return () => {
-        // Cleanup on unmount
-        unsubscribes.forEach(unsub => unsub());
+        unsub.forEach(u => u());
         hangUp();
         remove(ref(db, `sessions/${roomId}/participants/${userId}`));
-        if (isSessionCreator) {
-            // If the session creator leaves, clear the entire session
-            remove(sessionRef);
-        }
+        if (isSessionCreator) remove(sessionRef);
       };
     };
 
-    const cleanupPromise = setupSession();
-    return () => {
-        cleanupPromise.then(cleanup => cleanup && cleanup());
-    };
-
+    const cleanupPromise = setup();
+    return () => cleanupPromise.then(cb => cb && cb());
   }, [roomId, userId]);
 
-  // ====================================================================
-  // == WebRTC Signaling Logic
-  // ====================================================================
+  // ─── 2) Signaling (offer/answer & ICE) ──────────────────────────────
   useEffect(() => {
-    if (!peerConnection.current || !remoteUser) return;
+    const pc = peerConnection.current;
+    if (!pc || remoteUser === null) return;
 
     if (isSessionCreator) {
-        // CALLER: Listen for an answer
-        onValue(answerRef, (snapshot) => {
-            const answer = snapshot.val();
-            if (answer && !peerConnection.current.currentRemoteDescription) {
-                const answerDescription = new RTCSessionDescription(answer);
-                peerConnection.current.setRemoteDescription(answerDescription);
-            }
-        });
-        // Listen for Callee's ICE candidates
-        onValue(iceCandidatesRef('callee'), (snapshot) => {
-            snapshot.forEach((childSnapshot) => {
-                const candidate = childSnapshot.val();
-                if (candidate) {
-                    peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-                }
-            });
-        });
+      // A) listen for answer
+      onValue(answerRef, snap => {
+        const ans = snap.val();
+        if (ans && !pc.currentRemoteDescription) {
+          pc.setRemoteDescription(new RTCSessionDescription(ans));
+        }
+      });
+      // B) listen for callee ICE
+      onValue(iceCandidatesRef('callee'), snap =>
+        snap.forEach(cS => pc.addIceCandidate(new RTCIceCandidate(cS.val())))
+      );
     } else {
-        // CALLEE: Listen for an offer
-        onValue(offerRef, async (snapshot) => {
-            const offer = snapshot.val();
-            if (offer && !peerConnection.current.remoteDescription) {
-                await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await peerConnection.current.createAnswer();
-                await peerConnection.current.setLocalDescription(answer);
-                await set(answerRef, { type: answer.type, sdp: answer.sdp });
-            }
-        });
-         // Listen for Caller's ICE candidates
-        onValue(iceCandidatesRef('caller'), (snapshot) => {
-             snapshot.forEach((childSnapshot) => {
-                const candidate = childSnapshot.val();
-                if (candidate) {
-                    peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-                }
-            });
-        });
+      // A) listen for offer → create answer
+      onValue(offerRef, async snap => {
+        const off = snap.val();
+        if (off && !pc.remoteDescription) {
+          await pc.setRemoteDescription(new RTCSessionDescription(off));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await set(answerRef, answer);
+        }
+      });
+      // B) listen for caller ICE
+      onValue(iceCandidatesRef('caller'), snap =>
+        snap.forEach(cS => pc.addIceCandidate(new RTCIceCandidate(cS.val())))
+      );
     }
-
   }, [isSessionCreator, remoteUser]);
 
-
-  // ====================================================================
-  // == Core Functions
-  // ====================================================================
-
-  /**
-   * Starts sharing the user's screen.
-   */
+  // ─── 3) Remote SCREEN‐SHARE starter & hangup ─────────────────────────
   const startScreenShare = useCallback(async () => {
     if (!peerConnection.current || !isSessionCreator) return;
-
     localStream.current = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-    localStream.current.getTracks().forEach((track) => {
-      peerConnection.current.addTrack(track, localStream.current);
-    });
+    localStream.current.getTracks().forEach(t => peerConnection.current.addTrack(t, localStream.current));
     setIsSharing(true);
-
-    // Set up ICE candidate listener
-    peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) {
-            push(iceCandidatesRef('caller'), event.candidate.toJSON());
-        }
+    peerConnection.current.onicecandidate = e => {
+      if (e.candidate) push(iceCandidatesRef('caller'), e.candidate.toJSON());
     };
-
-    // Create and set offer
     const offer = await peerConnection.current.createOffer();
     await peerConnection.current.setLocalDescription(offer);
-    await set(offerRef, { type: offer.type, sdp: offer.sdp });
-
+    await set(offerRef, offer);
   }, [isSessionCreator]);
 
-  /**
-   * Stops the screen sharing session.
-   */
   const hangUp = useCallback(() => {
-    localStream.current?.getTracks().forEach((track) => track.stop());
+    localStream.current?.getTracks().forEach(t => t.stop());
     peerConnection.current?.close();
     setIsSharing(false);
-    // Clean up Firebase session data
-    if (isSessionCreator) {
-        remove(sessionRef);
-    }
+    if (isSessionCreator) remove(sessionRef);
   }, [isSessionCreator]);
 
-  /**
-   * Broadcasts the current user's cursor position.
-   */
+  // ─── 4) Cursor broadcasting ─────────────────────────────────────────
   const updateCursor = useCallback((x, y) => {
     if (!roomId || !userId) return;
-    const cursorData = { x, y, name: userName };
-    set(ref(db, `sessions/${roomId}/cursors/${userId}`), cursorData);
+    set(ref(db, `sessions/${roomId}/cursors/${userId}`), { x, y, name: userName });
   }, [roomId, userId, userName]);
 
-  /**
-   * Broadcasts a completed drawing stroke.
-   */
-  const addDrawingStroke = useCallback((stroke) => {
-      if(!roomId) return;
-      //alert(`[useCollaboration] DRAWING PUSH → sessions/${roomId}/drawings by ${userId}`);
-      push(drawingsRef, { ...stroke, userId });
+  // ─── 5) Drawing strokes ─────────────────────────────────────────────
+  const addDrawingStroke = useCallback(stroke => {
+    if (!roomId) return;
+    push(drawingsRef, { ...stroke, userId });
   }, [roomId, userId]);
 
-  /**
-   * Sets the reference to the drawing canvas element.
-   */
-  const setDrawingCanvas = useCallback((canvas) => {
-      drawingCanvasRef.current = canvas;
+  const setDrawingCanvas = useCallback(c => {
+    drawingCanvasRef.current = c;
   }, []);
 
-  /**
-   * Replays a single stroke on the canvas.
-   */
-  const replayStroke = (stroke) => {
-      if (!drawingCanvasRef.current || !stroke || !stroke.points || stroke.points.length < 2) return;
-      const ctx = drawingCanvasRef.current.getContext('2d');
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.lineWidth;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-      }
-      ctx.stroke();
+  const replayStroke = stroke => {
+    if (!drawingCanvasRef.current || !stroke.points?.length) return;
+    const ctx = drawingCanvasRef.current.getContext('2d');
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth   = stroke.lineWidth;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    for (let i = 1; i < stroke.points.length; i++) {
+      ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+    }
+    ctx.stroke();
   };
 
+  // ─── 6) Remote‐scroll listener (incoming) ───────────────────────────
+  useEffect(() => {
+    if (!roomId) return;
+    const unsub = onValue(scrollRef, snap => {
+      const d = snap.val();
+      if (d && typeof d.x === 'number' && typeof d.y === 'number') {
+        window.scrollTo(d.x, d.y);
+      }
+    });
+    return () => unsub();
+  }, [roomId]);
+
+  // ─── 7) Broadcast our scroll (guests only) ──────────────────────────
+  const updateScroll = useCallback((x, y) => {
+    if (!roomId) return;
+    set(scrollRef, { x, y });
+  }, [roomId]);
+
   return {
-    // State
-    remoteStream: remoteStream.current,
+    // state
+    remoteStream   : remoteStream.current,
     peerCursors,
     isSharing,
     isSessionCreator,
     remoteUser,
-    // Methods
+    // methods
     startScreenShare,
     hangUp,
     updateCursor,
     addDrawingStroke,
     setDrawingCanvas,
+    updateScroll,   // ← NEW
   };
 };

@@ -1,19 +1,64 @@
-/* EnrolledCourseDetail.module.css */
+/* EnrolledCourseDetail.module.css (Extended Version) */
 
 :root {
-  /* this will be set via Helmet in the component */
+  /* This will be set via Helmet in the component */
   --accent-color: #3498db;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --info-color: #3498db;
+  --danger-color: #e74c3c;
 }
 
-/* wrapper for everything in this page */
+/* --- NEW CURSOR STYLES --- */
+.cursorOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; /* Allows clicks to go through */
+  z-index: 11000; /* On top of everything */
+}
+
+.remoteCursor {
+  position: absolute;
+  transition: top 0.05s linear, left 0.05s linear;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.remoteCursor svg {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.cursorName {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+/* --- END NEW CURSOR STYLES --- */
+
+
+/* --- EXISTING STYLES (from your file) --- */
 .lessonTemplate {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
   padding: 10px;
 }
-
-/* headings use the accent color */
 .lessonTemplate h2,
 .lessonTemplate h3 {
   color: var(--accent-color);
@@ -21,115 +66,148 @@
   border-bottom: 2px solid var(--accent-color);
   padding-bottom: 5px;
 }
+.lessonTemplate strong { color: var(--accent-color); }
 
-/* bold text */
-.lessonTemplate strong {
-  color: var(--accent-color);
-}
-
-/* dialogue box */
-.lessonTemplate .dialogueSection {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 25px;
+/* --- REFINED & INTERACTIVE BOXES --- */
+.lessonTemplate .dialogueSection { 
+  background: #f9f9f9; 
+  padding: 20px; 
+  border-radius: 12px; 
+  margin-bottom: 25px; 
   box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added transition */
 }
-.lessonTemplate .dialogueSection p {
-  margin-bottom: 12px;
-  line-height: 1.7;
+.lessonTemplate .dialogueSection:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.07);
 }
+.lessonTemplate .dialogueSection p { margin-bottom: 12px; line-height: 1.7; }
 
-/* idioms table */
-.lessonTemplate .idiomsTableContainer {
-  overflow-x: auto;
-  margin-bottom: 25px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+.lessonTemplate .explanationSection { 
+  background: #eef7ff; 
+  padding: 20px; 
+  border-radius: 12px; 
+  margin-bottom: 20px; 
+  line-height: 1.75; 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added transition */
 }
-.lessonTemplate .idiomsTable {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 600px;
+.lessonTemplate .explanationSection:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.07);
 }
+.lessonTemplate .explanationSection .explanationText { margin: 5px 0 15px; padding-left: 15px; border-left: 3px solid var(--accent-color); color: #555; font-size: 0.95em; }
+/* --- END REFINED BOXES --- */
+
+.lessonTemplate .idiomsTableContainer { overflow-x: auto; margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; }
+.lessonTemplate .idiomsTable { width: 100%; border-collapse: collapse; min-width: 600px; }
 .lessonTemplate .idiomsTable th,
-.lessonTemplate .idiomsTable td {
-  border: 1px solid #dfe6e9;
-  padding: 12px 15px;
-  text-align: left;
-  vertical-align: top;
-}
-.lessonTemplate .idiomsTable thead {
-  background: var(--accent-color);
-  color: #fff;
-}
-.lessonTemplate .idiomsTable tbody tr:nth-child(even) {
-  background: #f4f6f7;
-}
-.lessonTemplate .idiomsTable tbody tr:hover {
-  background: #e9ecef;
-}
+.lessonTemplate .idiomsTable td { border: 1px solid #dfe6e9; padding: 12px 15px; text-align: left; vertical-align: top; }
+.lessonTemplate .idiomsTable thead { background: var(--accent-color); color: #fff; }
+.lessonTemplate .idiomsTable tbody tr:nth-child(even) { background: #f4f6f7; }
+.lessonTemplate .idiomsTable tbody tr:hover { background: #e9ecef; }
 
-/* explanation */
-.lessonTemplate .explanationSection {
-  background: #eef7ff;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  line-height: 1.75;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+.lessonTemplate table thead th { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+.lessonTemplate table thead { background-color: var(--accent-color); }
+.lessonTemplate table tr:nth-child(even) { border-left: 4px solid var(--accent-color); }
+.lessonTemplate .callout { border-left: 4px solid var(--accent-color); }
+
+/* --- NEW: STYLES FOR CODE BLOCKS --- */
+.lessonTemplate pre {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  padding: 1.5em;
+  border-radius: 8px;
+  overflow-x: auto;
+  white-space: pre;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  margin: 2em 0;
 }
-.lessonTemplate .explanationSection .explanationText {
-  margin: 5px 0 15px;
-  padding-left: 15px;
-  border-left: 3px solid var(--accent-color);
+.lessonTemplate code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  background: #e7e7e7;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 85%;
+}
+.lessonTemplate pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+/* Custom scrollbar for code blocks */
+.lessonTemplate pre::-webkit-scrollbar { height: 8px; }
+.lessonTemplate pre::-webkit-scrollbar-track { background: #2d2d2d; }
+.lessonTemplate pre::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; }
+.lessonTemplate pre::-webkit-scrollbar-thumb:hover { background-color: #777; }
+/* --- END CODE BLOCK STYLES --- */
+
+
+/* --- NEW: STYLES FOR BLOCKQUOTES --- */
+.lessonTemplate blockquote {
+  border-left: 5px solid var(--accent-color);
+  margin: 1.5em 0;
+  padding: 0.5em 20px;
+  background-color: #f8f9fa;
+  font-style: italic;
   color: #555;
-  font-size: 0.95em;
 }
-
-/* Make ALL table headers use the accent as their background */
-.lessonTemplate table thead th {
-  background-color: var(--accent-color);
-  color: #fff;            /* ensure text is readable */
-  border-color: var(--accent-color); /* if you have borders */
+.lessonTemplate blockquote p {
+  margin: 0;
 }
-
-/* If you need the whole thead (span-across) to pick up accent */
-.lessonTemplate table thead {
-  background-color: var(--accent-color);
+.lessonTemplate blockquote footer {
+  font-style: normal;
+  font-weight: 600;
+  margin-top: 1em;
+  color: #333;
 }
+/* --- END BLOCKQUOTE STYLES --- */
 
-/* If you want alternating row borders or highlights in accent */
-.lessonTemplate table tr:nth-child(even) {
-  border-left: 4px solid var(--accent-color);
+/* --- NEW: STYLES FOR ALERT BOXES --- */
+.alert {
+  padding: 15px 20px;
+  margin: 1em 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-
-/* Example: callout boxes also picking up accent border */
-.lessonTemplate .callout {
-  border-left: 4px solid var(--accent-color);
-  /* background: rgba(var(--accent-color-rgb), .1); */ /* if you compute an RGB var */
+.alertSuccess {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
 }
-
-/* Old text highlight style - can be removed or kept for other uses */
-.textHighlight {
-  background-color: rgba(255, 193, 7, 0.5); /* #FFC107 with 50% transparency */
-  border-radius: 2px;
-  padding: 0.1em 0;
-  margin: -0.1em 0;
+.alertWarning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeeba;
 }
+.alertInfo {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+}
+/* --- END ALERT BOX STYLES --- */
 
-/* NEW, IMPROVED TEXT HIGHLIGHT STYLE
-  This style uses a thick, offset underline to simulate a real marker stroke over the text.
-*/
+
+/* --- REFINED MARKER HIGHLIGHT STYLE --- */
 .markerHighlight {
   text-decoration: underline;
-  text-decoration-color: rgba(255, 193, 7, 0.6); /* Accent color #FFC107 at 60% opacity */
-  text-decoration-thickness: 0.9em; /* Makes the "underline" thick like a marker */
-  text-underline-offset: -0.4em; /* Moves the line up over the text */
-  text-decoration-skip-ink: none; /* Ensures the line is continuous and doesn't break for letters like 'g' or 'p' */
-  background-color: transparent !important; /* IMPORTANT: Ensures no background color is applied */
+  text-decoration-color: rgba(255, 193, 7, 0.6);
+  text-decoration-thickness: 0.9em;
+  text-underline-offset: -0.4em;
+  text-decoration-skip-ink: none;
+  background-color: transparent !important;
   cursor: pointer;
+  transition: text-decoration-color 0.3s ease; /* Added transition */
 }
+.markerHighlight:hover {
+  text-decoration-color: rgba(255, 152, 0, 0.7); /* A slightly darker color on hover */
+}
+/* --- END REFINED HIGHLIGHT STYLE --- */
+
 
 /* responsive tweaks */
 @media (max-width: 768px) {
@@ -137,9 +215,7 @@
   .lessonTemplate h3 { font-size: 1.5em; }
   .lessonTemplate .dialogueSection,
   .lessonTemplate .explanationSection { padding: 15px; }
-  .lessonTemplate .explanationSection .explanationText {
-    margin-left: 15px; padding-left: 10px;
-  }
+  .lessonTemplate .explanationSection .explanationText { margin-left: 15px; padding-left: 10px; }
   .lessonTemplate .idiomsTable th,
   .lessonTemplate .idiomsTable td { padding: 10px; font-size: 0.9em; }
 }

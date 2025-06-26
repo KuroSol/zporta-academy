@@ -510,7 +510,12 @@ useEffect(() => {
 // =============================
 
  // --- FIXED: Call hooks at the top level ---
- const { addDrawingStroke, setDrawingCanvas } = useCollaboration(roomId, myId, user?.username);
+ const {
+   addDrawingStroke,
+   setDrawingCanvas,
+   peerCursors,
+   updateCursor,    // ← grab this too!
+ } = useCollaboration(roomId, myId, user?.username);
  useCollabCursor(roomId, myId, otherId, allowTeacherScroll);
 
 
@@ -963,37 +968,59 @@ const defaultAccent = lessons[0]?.accent_color || '#3498db';
       <style type="text/css">{`
         :root { --accent-color: ${defaultAccent}; }
       `}</style>
-    </Helmet>
-      <ScrollProgress />
-        <CollaborationInviteModal
-            isOpen={isInviteModalOpen}
-            onClose={() => setIsInviteModalOpen(false)}
-            onInviteUser={handleInviteUser}
-            courseTitle={courseData?.title}
-            enrollmentId={enrollmentId}
-        />
+</Helmet>
 
-      {isCollabActive && roomId && myId && (
-        <DrawingOverlay
-          isDrawingMode={isDrawingMode}
-          onStroke={addDrawingStroke}
-          setCanvasRef={setDrawingCanvas}
-          strokes={allStrokes}
-          userColors={userColors}
-          onDeleteLast={onDeleteLast}
-          onClearAll={onClearAll}
-          onHighlightText={handleHighlightText} // <-- ADD THIS LINE
-          tool={drawingTool}
-          setTool={setDrawingTool}
-          color={drawingColor}
-          setColor={setDrawingColor}
-          lineWidth={drawingLineWidth}
-          setLineWidth={setDrawingLineWidth}
-        />
-      )}
+<ScrollProgress />
 
+<CollaborationInviteModal
+  isOpen={isInviteModalOpen}
+  onClose={() => setIsInviteModalOpen(false)}
+  onInviteUser={handleInviteUser}
+  courseTitle={courseData?.title}
+  enrollmentId={enrollmentId}
+/>
 
-    <div className={styles.lessonTemplate}>
+{isCollabActive && roomId && myId && (
+  <div
+    className={styles.collabContainer}
+    onMouseMove={e => updateCursor(e.clientX, e.clientY)}
+  >
+    <DrawingOverlay
+      isDrawingMode={isDrawingMode}
+      onStroke={addDrawingStroke}
+      setCanvasRef={setDrawingCanvas}
+      strokes={allStrokes}
+      userColors={userColors}
+      onDeleteLast={onDeleteLast}
+      onClearAll={onClearAll}
+      onHighlightText={handleHighlightText}
+      tool={drawingTool}
+      setTool={setDrawingTool}
+      color={drawingColor}
+      setColor={setDrawingColor}
+      lineWidth={drawingLineWidth}
+      setLineWidth={setDrawingLineWidth}
+    />
+
+    {peerCursors && Object.keys(peerCursors).length > 0 && (
+      <div className={styles.cursorOverlay}>
+        {Object.entries(peerCursors).map(([id, { x, y, name }]) => (
+          <div
+            key={id}
+            className={styles.remoteCursor}
+            style={{ left: `${x}px`, top: `${y}px` }}
+          >
+            <Users size={20} style={{ color: userColors[id] }} />
+            <span className={styles.cursorName}>{name || id}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
+<div className={styles.lessonTemplate}>
+
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
         <div className="w-full mx-auto px-4 pt-8 pb-32 max-w-full md:max-w-4xl">
 
