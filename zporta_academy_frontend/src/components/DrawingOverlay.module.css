@@ -3,42 +3,69 @@
  * Styles for the drawing canvas and the new floating toolbar.
  */
 
+/* --- Canvas Overlay Style (Preserved & Refined) --- */
 .canvasOverlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9998; /* Below the toolbar */
-  touch-action: none; /* Prevents scrolling on touch devices while drawing */
+  /* width and height are set by JS via the resize observer */
+  z-index: 10;
+  pointer-events: none; /* Default to none, JS will enable when drawing */
+  touch-action: none;   /* Prevents scrolling on touch devices while drawing */
 }
 
+
+/*
+================================================================================
+| STYLES: Revised Floating Toolbar                                            |
+|------------------------------------------------------------------------------|
+| ✨ GOAL: A modern, floating UI that is responsive and stylish.                |
+| It uses position:fixed to stay at the bottom and backdrop-filter for a       |
+| "glassmorphism" effect. It is designed to be mobile-friendly.               |
+================================================================================
+*/
 .drawingToolbar {
   position: fixed;
-  top: 50%;
-  left: 16px;
-  transform: translateY(-50%);
-  background-color: rgba(27, 39, 53, 0.8); /* #1B2735 with transparency */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 12px;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+  justify-content: center;
   align-items: center;
-  gap: 16px;
-  z-index: 10000; /* Above everything */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  gap: 8px; /* Space between groups */
+  
+  background-color: rgba(25, 35, 45, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 10000;
+  width: max-content; /* Toolbar width fits its content */
+  max-width: 95vw; /* Prevents toolbar from being wider than the screen */
+}
+
+.toolGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 12px;
 }
 
 .toolButton {
-  background-color: rgba(44, 62, 80, 0.7);
-  color: #ecf0f1;
+  background-color: transparent;
+  color: #e0e0e0;
   border: none;
-  border-radius: 10px;
-  width: 48px;
-  height: 48px;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,84 +74,127 @@
 }
 
 .toolButton:hover {
-  background-color: rgba(52, 73, 94, 0.9);
-  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.toolButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: transparent !important;
+  color: #909090 !important;
 }
 
 .toolButton.active {
-  background-color: #FFC107; /* Accent color */
-  color: #1B2735; /* Main color */
-  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+  background-color: #3b82f6; /* A nice, calm blue */
+  color: white;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.dangerButton:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Close button is separate from groups */
+.closeButton {
+  background-color: rgba(239, 68, 68, 0.5);
+  border-radius: 50%; /* Make the close button a circle */
+  margin-left: 4px; /* Give it some space */
+}
+.closeButton:hover {
+  background-color: #dc2626; /* Red-600 */
 }
 
 .separator {
-  width: 80%;
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.2);
-  margin: 4px 0;
+  width: 1px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
-.colorPickerContainer {
-  position: relative;
+
+/* --- Color and Line Width Styles --- */
+.colorSwatchButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin: 4px; /* Match height of tool buttons */
+}
+.colorSwatchButton:hover {
+  transform: scale(1.1);
 }
 
 .colorPalette {
   position: absolute;
-  left: 120%;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: calc(100% + 12px); /* Appears above the toolbar */
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #2c3e50;
   border-radius: 12px;
   padding: 10px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* More colors fit better */
   gap: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 10001; /* Ensure it's above the toolbar */
 }
 
-.colorSwatch {
+.colorPaletteSwatch {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: none;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, outline 0.2s;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.colorPaletteSwatch:hover {
+  transform: scale(1.1);
 }
 
-.colorSwatch:hover {
-  transform: scale(1.15);
+.lineWidthSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  transition: opacity .2s;
+  cursor: pointer;
 }
 
-.colorSwatch.active {
-  border-color: #ffffff;
-}
-
-.lineWidthContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: white;
-  font-family: monospace;
-}
-
-.lineWidthPreview {
-  width: 24px;
-  height: 24px;
-  background-color: transparent;
+.lineWidthSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #e0e0e0;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  cursor: pointer;
+  border: 2px solid #2c3e50;
 }
 
-.lineWidthDot {
-  background-color: white;
+.lineWidthSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #e0e0e0;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid #2c3e50;
 }
 
-.lineWidthControls {
-  display: flex;
-  gap: 8px;
+/* --- Zoom Styles --- */
+.zoomText {
+  color: #e0e0e0;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+  font-size: 12px;
+  width: 45px; /* Wider to prevent layout shift */
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
 }

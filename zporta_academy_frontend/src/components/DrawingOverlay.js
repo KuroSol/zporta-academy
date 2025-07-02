@@ -1,135 +1,81 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './DrawingOverlay.module.css';
-import { Pencil, Eraser, Undo2, Trash2, Palette, Minus, Plus, Highlighter, Type } from 'lucide-react';
+import { Pencil, Eraser, Undo2, Trash2, Highlighter, ZoomIn, ZoomOut, X, Type } from 'lucide-react';
 
-// --- Toolbar UI Component ---
+// The DrawingToolbar component itself doesn't need changes to its logic.
 const DrawingToolbar = ({
   tool, setTool,
   color, setColor,
   lineWidth, setLineWidth,
   onDeleteLast, onClearAll,
-  onHighlightText, // Callback for text highlighting
+  onHighlightText,
+  onStopDrawing,
+  zoom, setZoom,
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const colors = ['#FFC107', '#FF3B30', '#4CD964', '#007AFF', '#AF52DE', '#FFFFFF'];
+  const colors = ['#FFC107', '#FF3B30', '#4CD964', '#007AFF', '#AF52DE', '#FFFFFF', '#000000'];
 
-  const handleWidthChange = (delta) => {
-    setLineWidth(prev => Math.max(1, Math.min(50, prev + delta)));
+  const handleZoom = (direction) => {
+    const zoomStep = 0.1;
+    const minZoom = 0.5;
+    const maxZoom = 2.0;
+    setZoom(prevZoom => {
+        const newZoom = prevZoom + direction * zoomStep;
+        return Math.max(minZoom, Math.min(maxZoom, newZoom));
+    });
   };
 
-  const selectTool = (newTool) => {
-    setTool(newTool);
-    if (newTool === 'highlighter') {
-        setLineWidth(20);
-    } else if (newTool === 'pen') {
-        setLineWidth(4);
-    }
+  const selectToolAndClosePicker = (newTool) => {
+      setTool(newTool);
+      setShowColorPicker(false);
   };
-
-  // This logic is updated with a safety check to prevent crashing.
-  const handleTextToolClick = () => {
-    // If we are already in text mode, execute the highlight
-    if (tool === 'text') {
-        // SAFETY CHECK: Only call onHighlightText if it's a valid function.
-        if (typeof onHighlightText === 'function') {
-            onHighlightText();
-        } else {
-            console.error("onHighlightText prop is not a function. Please pass it from the parent component.");
-        }
-        setTool('pen'); // Switch back to pen tool after highlighting
-    } else {
-        // Otherwise, enter text selection mode
-        setTool('text');
-    }
+  
+  const handleHighlightClick = () => {
+    if (onHighlightText) onHighlightText();
+    setShowColorPicker(false);
   };
 
   return (
-    <div className={styles.drawingToolbar}>
-      {/* This button now toggles the text highlight mode */}
-      <button
-        onClick={handleTextToolClick}
-        className={`${styles.toolButton} ${tool === 'text' ? styles.active : ''}`}
-        title="Highlight Selected Text"
-      >
-        <Type size={24} />
-      </button>
-
-      <div className={styles.separator} />
-
-      {/* The rest of the drawing tools */}
-      <button
-        onClick={() => selectTool('highlighter')}
-        className={`${styles.toolButton} ${tool === 'highlighter' ? styles.active : ''}`}
-        title="Highlighter Brush"
-      >
-        <Highlighter size={24} />
-      </button>
-      <button
-        onClick={() => selectTool('pen')}
-        className={`${styles.toolButton} ${tool === 'pen' ? styles.active : ''}`}
-        title="Pen"
-      >
-        <Pencil size={24} />
-      </button>
-      <button
-        onClick={() => selectTool('eraser')}
-        className={`${styles.toolButton} ${tool === 'eraser' ? styles.active : ''}`}
-        title="Eraser"
-      >
-        <Eraser size={24} />
-      </button>
-
-      <div className={styles.separator} />
-
-      <div className={styles.colorPickerContainer}>
-        <button
-          onClick={() => setShowColorPicker(prev => !prev)}
-          className={styles.toolButton}
-          title="Change Color"
-        >
-          <Palette size={24} style={{ color }} />
-        </button>
-        {showColorPicker && (
-          <div className={styles.colorPalette}>
-            {colors.map(c => (
-              <button
-                key={c}
-                onClick={() => { setColor(c); setShowColorPicker(false); }}
-                className={`${styles.colorSwatch} ${color === c ? styles.active : ''}`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
+      <div className={styles.drawingToolbar}>
+          <div className={styles.toolGroup}>
+              <button onClick={() => selectToolAndClosePicker('pen')} className={`${styles.toolButton} ${tool === 'pen' ? styles.active : ''}`} title="Pen"><Pencil size={20} /></button>
+              <button onClick={() => selectToolAndClosePicker('highlighter')} className={`${styles.toolButton} ${tool === 'highlighter' ? styles.active : ''}`} title="Highlighter"><Highlighter size={20} /></button>
+              <button onClick={handleHighlightClick} className={styles.toolButton} title="Highlight Selected Text"><Type size={20} /></button>
+              <button onClick={() => selectToolAndClosePicker('eraser')} className={`${styles.toolButton} ${tool === 'eraser' ? styles.active : ''}`} title="Eraser"><Eraser size={20} /></button>
           </div>
-        )}
+          <div className={styles.separator} />
+          <div className={styles.toolGroup}>
+              <div className="relative">
+                  <button onClick={() => setShowColorPicker(p => !p)} className={styles.colorSwatchButton} style={{ backgroundColor: color }} title="Change Color" />
+                  {showColorPicker && (
+                      <div className={styles.colorPalette}>
+                          {colors.map(c => ( <button key={c} onClick={() => { setColor(c); setShowColorPicker(false); }} className={styles.colorPaletteSwatch} style={{ backgroundColor: c, outlineColor: color === c ? 'white' : 'transparent' }} /> ))}
+                      </div>
+                  )}
+              </div>
+              <input type="range" min="1" max="50" value={lineWidth} onChange={(e) => setLineWidth(Number(e.target.value))} className={styles.lineWidthSlider} title={`Line Width: ${lineWidth}px`} />
+          </div>
+          <div className={styles.separator} />
+          <div className={styles.toolGroup}>
+              <button onClick={onDeleteLast} className={styles.toolButton} title="Undo Last Stroke"><Undo2 size={20} /></button>
+              <button onClick={onClearAll} className={`${styles.toolButton} ${styles.dangerButton}`} title="Clear All Drawings"><Trash2 size={20} /></button>
+          </div>
+          <div className={styles.separator} />
+          <div className={styles.toolGroup}>
+              <button onClick={() => handleZoom(-1)} disabled={zoom <= 0.5} className={styles.toolButton} title="Zoom Out"><ZoomOut size={20} /></button>
+              <span className={styles.zoomText} title="Current Zoom Level">{(zoom * 100).toFixed(0)}%</span>
+              <button onClick={() => handleZoom(1)} disabled={zoom >= 2.0} className={styles.toolButton} title="Zoom In"><ZoomIn size={20} /></button>
+          </div>
+          <button onClick={onStopDrawing} className={`${styles.toolButton} ${styles.closeButton}`} title="Stop Drawing"><X size={20} /></button>
       </div>
-
-      <div className={styles.lineWidthContainer}>
-        <div className={styles.lineWidthPreview}>
-           <div className={styles.lineWidthDot} style={{ width: `${lineWidth}px`, height: `${lineWidth}px`, backgroundColor: color, opacity: tool === 'highlighter' ? 0.4 : 1.0 }}></div>
-        </div>
-        <span>{lineWidth}px</span>
-        <div className={styles.lineWidthControls}>
-          <button onClick={() => handleWidthChange(-1)} className={styles.toolButton} style={{width: 24, height: 24}}><Minus size={14} /></button>
-          <button onClick={() => handleWidthChange(1)} className={styles.toolButton} style={{width: 24, height: 24}}><Plus size={14} /></button>
-        </div>
-      </div>
-
-
-      <div className={styles.separator} />
-
-      <button onClick={onDeleteLast} className={styles.toolButton} title="Undo Last Stroke">
-        <Undo2 size={24} />
-      </button>
-      <button onClick={onClearAll} className={styles.toolButton} title="Clear All Drawings">
-         <Trash2 size={24} />
-      </button>
-    </div>
   );
 };
 
 
-// --- Main Canvas Logic Component ---
+// Main Component Logic
 export default function DrawingOverlay({
+  contentRef,
   isDrawingMode,
   onStroke,
   setCanvasRef,
@@ -138,12 +84,12 @@ export default function DrawingOverlay({
   onDeleteLast,
   onClearAll,
   onHighlightText,
-  tool,
-  color,
-  lineWidth,
-  setTool,
-  setColor,
-  setLineWidth,
+  tool, setTool,
+  color, setColor,
+  lineWidth, setLineWidth,
+  onStopDrawing,
+  zoom, 
+  setZoom,
 }) {
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
@@ -151,121 +97,150 @@ export default function DrawingOverlay({
 
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !strokes) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
 
-    if (strokes && strokes.length > 0) {
-        strokes.forEach(stroke => {
-            if (!stroke.points || stroke.points.length === 0) return;
-            const strokeColor = userColors[stroke.userId] || stroke.color || 'black';
-            if (stroke.tool === 'highlighter') {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.globalAlpha = 0.4;
-                ctx.lineCap = 'butt';
-            } else if (stroke.tool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.globalAlpha = 1.0;
-                ctx.lineCap = 'round';
-            } else { // Pen
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.globalAlpha = 1.0;
-                ctx.lineCap = 'round';
-            }
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = stroke.lineWidth;
-            ctx.beginPath();
-            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-            stroke.points.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
-            ctx.stroke();
-        });
-    }
+    strokes.forEach(stroke => {
+        if (!stroke.points || stroke.points.length === 0) return;
+        const strokeColor = userColors[stroke.userId] || stroke.color || 'black';
+        
+        if (stroke.tool === 'highlighter') {
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.globalAlpha = 0.5;
+            ctx.lineCap = 'butt';
+        } else if (stroke.tool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.globalAlpha = 1.0;
+            ctx.lineCap = 'round';
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1.0;
+            ctx.lineCap = 'round';
+        }
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = stroke.lineWidth;
+        
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length - 2; i++) {
+            const p1 = stroke.points[i];
+            const p2 = stroke.points[i+1];
+            const xc = (p1.x + p2.x) / 2;
+            const yc = (p1.y + p2.y) / 2;
+            ctx.quadraticCurveTo(p1.x, p1.y, xc, yc);
+        }
+        if (stroke.points.length > 1) {
+            const lastPoint = stroke.points[stroke.points.length - 1];
+            ctx.lineTo(lastPoint.x, lastPoint.y);
+        }
+        ctx.stroke();
+    });
+
     ctx.globalAlpha = 1.0;
     ctx.globalCompositeOperation = 'source-over';
   }, [strokes, userColors]);
 
+  // This useEffect handles resizing the canvas to match the content area.
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    setCanvasRef?.(canvas);
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      redrawCanvas();
+    const contentContainer = contentRef.current;
+    if (!canvas || !contentContainer) return;
+    if (setCanvasRef) setCanvasRef(canvas);
+    
+    // This function resizes the canvas and redraws content.
+    // It's wrapped in requestAnimationFrame to prevent observer loops.
+    const handleResize = () => {
+        window.requestAnimationFrame(() => {
+            if (!contentContainer || !canvas) return;
+            const newWidth = contentContainer.scrollWidth;
+            const newHeight = contentContainer.scrollHeight;
+            
+            if (canvas.width !== newWidth || canvas.height !== newHeight) {
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                redrawCanvas();
+            }
+        });
     };
-    window.addEventListener('resize', resize);
-    resize();
-    return () => window.removeEventListener('resize', resize);
-  }, [setCanvasRef, redrawCanvas]);
-  
-  useEffect(() => {
-      redrawCanvas();
-  }, [strokes, redrawCanvas]);
+    
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(contentContainer);
+    
+    handleResize(); // Initial setup
 
+    return () => {
+        observer.disconnect();
+    };
+  }, [contentRef, setCanvasRef, redrawCanvas]);
+
+  // Redraw whenever the strokes data changes
+  useEffect(() => { redrawCanvas(); }, [strokes, redrawCanvas]);
+
+  // This function calculates the correct coordinates for a mouse or touch event.
+  // It now correctly accounts for the parent's zoom.
   const getEventCoords = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    
+    // FIX: We divide by the zoom factor to translate the viewport coordinates
+    // (which are scaled) back to the canvas's un-scaled coordinate system.
+    return { 
+      x: (clientX - rect.left) / zoom, 
+      y: (clientY - rect.top) / zoom 
+    };
   };
 
   const startStroke = useCallback(e => {
-    if (!isDrawingMode || tool === 'text') return; 
+    if (!isDrawingMode) return; 
+    e.preventDefault();
     isDrawing.current = true;
     currentPath.current = [getEventCoords(e)];
-  }, [isDrawingMode, tool]);
-
+  }, [isDrawingMode, zoom]);
+  
   const drawStroke = useCallback((e) => {
-    if (!isDrawing.current || !isDrawingMode || tool === 'text') return;
+    if (!isDrawing.current || !isDrawingMode) return;
     e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    redrawCanvas();
     const newPoint = getEventCoords(e);
     currentPath.current.push(newPoint);
-    if (tool === 'highlighter') {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 0.4;
-        ctx.lineCap = 'butt';
-    } else if (tool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.globalAlpha = 1.0;
-        ctx.lineCap = 'round';
-    } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1.0;
-        ctx.lineCap = 'round';
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.beginPath();
-    if(currentPath.current.length > 0) {
-        ctx.moveTo(currentPath.current[0].x, currentPath.current[0].y);
-        for (let i = 1; i < currentPath.current.length; i++) {
-            ctx.lineTo(currentPath.current[i].x, currentPath.current[i].y);
-        }
+
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    
+    if (currentPath.current.length > 1) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = tool === 'highlighter' ? 'butt' : 'round';
+        ctx.globalAlpha = tool === 'highlighter' ? 0.5 : 1.0;
+        ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : (tool === 'highlighter' ? 'multiply' : 'source-over');
+        
+        const prevPoint = currentPath.current[currentPath.current.length - 2];
+        
+        ctx.beginPath();
+        ctx.moveTo(prevPoint.x, prevPoint.y);
+        ctx.lineTo(newPoint.x, newPoint.y);
         ctx.stroke();
     }
-  }, [isDrawingMode, tool, color, lineWidth, redrawCanvas]);
+  }, [isDrawingMode, tool, color, lineWidth, zoom]);
 
   const endStroke = useCallback(() => {
-    if (!isDrawing.current || !isDrawingMode || tool === 'text') return;
+    if (!isDrawing.current || !isDrawingMode) return;
     isDrawing.current = false;
-    if (currentPath.current.length > 1 && onStroke) {
-      onStroke({
-        tool: tool,
-        color: color,
-        lineWidth: lineWidth,
-        points: [...currentPath.current],
-      });
+    redrawCanvas(); 
+    const canvas = canvasRef.current;
+    if (currentPath.current.length > 1 && onStroke && canvas) {
+      onStroke({ tool, color, lineWidth, points: currentPath.current });
     }
     currentPath.current = [];
-  }, [isDrawingMode, onStroke, tool, color, lineWidth]);
-
+  }, [isDrawingMode, onStroke, tool, color, lineWidth, redrawCanvas]);
 
   return (
     <>
-      {isDrawingMode && (
+      {isDrawingMode && createPortal(
          <DrawingToolbar
             tool={tool} setTool={setTool}
             color={color} setColor={setColor}
@@ -273,13 +248,20 @@ export default function DrawingOverlay({
             onDeleteLast={onDeleteLast}
             onClearAll={onClearAll}
             onHighlightText={onHighlightText}
-          />
+            onStopDrawing={onStopDrawing}
+            zoom={zoom} setZoom={setZoom}
+          />,
+          document.body
       )}
      
       <canvas
         ref={canvasRef}
         className={styles.canvasOverlay}
-        style={{ pointerEvents: (isDrawingMode && tool !== 'text') ? 'auto' : 'none' }}
+        style={{ 
+          // FIX: The canvas itself is no longer transformed. The parent handles scaling.
+          pointerEvents: isDrawingMode ? 'auto' : 'none',
+          touchAction: 'none' 
+        }}
         onMouseDown={startStroke}
         onMouseMove={drawStroke}
         onMouseUp={endStroke}
