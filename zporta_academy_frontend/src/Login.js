@@ -1,202 +1,221 @@
 import React, { useState, useContext, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom'; // Keep Link
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import apiClient from './api';
-import styles from './Login.module.css'; // <-- Import the CSS module
-// import { requestPermissionAndGetToken } from './firebase'; // No longer directly used here
-// import { v4 as uuidv4 } from 'uuid'; // No longer directly used here
+import styles from './Login.module.css';
 
 // --- Placeholder for AI Image ---
-const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png'; // Example image (Replace with your actual AI-generated image URL)
-
-// detect iOS device (can be moved to a utility file if used elsewhere)
-// const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-// Chrome on iOS userAgent substring (can be moved to a utility file)
-// const isIosChrome = isIOS && /CriOS/.test(navigator.userAgent);
-
-
-// helper: are we running as an installed PWA? (can be moved to a utility file)
-// export const isStandalonePWA = () => { // This is also in App.js, consider a shared utility
-//   if (isIOS) {
-//     return !!window.navigator.standalone;
-//   }
-//   return window.matchMedia('(display-mode: standalone)').matches;
-// };
+const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png';
 
 const Login = () => {
     const { login } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // State for all form inputs
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState(''); // 'error' or 'success'
+    const [emailForMagicLink, setEmailForMagicLink] = useState('');
 
+    // State for UI feedback
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'error', 'success', or 'info'
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Reusable message utility
     const showMessage = (text, type = 'error') => {
         setMessage(text);
         setMessageType(type);
-    }
+    };
+
+    // --- Magic Link Token Handling ---
+    // This effect runs when the component loads to check if a magic link token is in the URL
+    useEffect(() => {
+        const token = searchParams.get('token');
+        if (token) {
+            const handleMagicTokenLogin = async () => {
+                setIsLoading(true);
+                showMessage("Verifying your login link...", 'info');
+                try {
+                    // Store the token so the API client can use it for the next call
+                    localStorage.setItem('token', token);
+                    // Fetch the user's profile using the token
+                    const profileResponse = await apiClient.get('/users/profile/');
+                    
+                    // Use the main login function from context to set the user state
+                    login(profileResponse.data, token);
+                    
+                    // Redirect to the home page upon success
+                    navigate('/home');
+                } catch (error) {
+                    localStorage.removeItem('token'); // Clean up on failure
+                    showMessage("Login failed. The link may be invalid or expired.", 'error');
+                    // Remove the token from the URL to avoid loops
+                    navigate('/login', { replace: true }); 
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            handleMagicTokenLogin();
+        }
+    }, [searchParams, login, navigate]);
+
 
     // --- Google Sign-In Logic ---
     const handleGoogleResponse = useCallback(async (response) => {
         const token = response.credential;
+        setIsLoading(true);
+        showMessage('Verifying with Google...', 'info');
         try {
-            showMessage(''); // Clear message
             const apiResponse = await apiClient.post('/users/google-login/', { token });
-            const data = apiResponse.data;
-            console.log("🔍 Google login response:", data);
-            if (data.token && data.user) {
-                login(data.user, data.token); // AuthContext login
-                showMessage("Google login successful!", 'success');
-                // FCM registration will be handled by App.js's useFCM hook upon login state change
-            } else {
-                showMessage("Google verification successful, but login failed. Please check backend configuration.");
-            }
+            login(apiResponse.data.user, apiResponse.data.token);
+            navigate('/home');
         } catch (error) {
-            console.error("Google login error:", error.response ? error.response.data : error.message);
-            const errorMsg = error.response?.data?.error || error.response?.data?.detail || "Google login failed.";
-            showMessage(errorMsg);
+            const errorMsg = error.response?.data?.error || "Google login failed. Please try again.";
+            showMessage(errorMsg, 'error');
+            setIsLoading(false);
         }
-    }, [login]); // login from AuthContext
+    }, [login, navigate]);
 
     useEffect(() => {
-      const initializeAndRenderButton = () => {
-          if (window.google && window.google.accounts && window.google.accounts.id) {
-              console.log("Login: Google library ready. Initializing and rendering button.");
-              try {
-                  window.google.accounts.id.initialize({
-                      client_id: "805972576303-q8o7etck8qjrjiapfre4df9j7oocl37s.apps.googleusercontent.com",
-                      callback: handleGoogleResponse,
-                      ux_mode: "popup",
-                  });
-
-                  const buttonContainer = document.getElementById("google-login-button");
-                  if (buttonContainer) {
-                      buttonContainer.innerHTML = '';
-                      window.google.accounts.id.renderButton(buttonContainer, {
-                          theme: "outline",
-                          size: "large",
-                          type: "standard",
-                          text: "signin_with",
-                          shape: "rectangular",
-                          width: "300"
-                      });
-                      console.log("Login: Google button rendered.");
-                  } else {
-                      console.error("Login: google-login-button container not found in DOM.");
-                  }
-              } catch (error) {
-                  console.error("Login: Error initializing/rendering Google Sign-In:", error);
-                  showMessage("Failed to initialize Google Sign-In.");
-              }
-          } else {
-              console.error("Login: Google library not available when initAndRender was called.");
-              showMessage("Failed to initialize Google Sign-In library.");
-          }
-      };
-
-      if (document.getElementById('google-jssdk')) {
-          console.log("Login: Google script tag found.");
-          if (window.google && window.google.accounts && window.google.accounts.id) {
-               console.log("Login: Google library already ready. Initializing/Rendering button.");
-               initializeAndRenderButton();
-          } else {
-               console.log("Login: Google script tag found, but library not ready. Waiting for its onload.");
-          }
-      } else {
-          console.log("Login: Google script tag not found. Loading script.");
-          const script = document.createElement("script");
-          script.id = 'google-jssdk';
-          script.src = "https://accounts.google.com/gsi/client";
-          script.async = true;
-          script.defer = true;
-          script.onload = () => {
-              console.log("Login: Google script finished loading via onload.");
-              initializeAndRenderButton();
-          };
-          script.onerror = () => {
-              console.error("Login: Failed to load Google API script.");
-              showMessage("Failed to load Google API script.");
-          };
-          document.body.appendChild(script);
-      }
-
-      return () => {
-           console.log("Login component unmounting/effect re-running.");
-      };
+        // This logic remains the same to render the Google button
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            window.google.accounts.id.initialize({
+                client_id: "805972576303-q8o7etck8qjrjiapfre4df9j7oocl37s.apps.googleusercontent.com",
+                callback: handleGoogleResponse,
+            });
+            const buttonContainer = document.getElementById("google-login-button");
+            if (buttonContainer) {
+                buttonContainer.innerHTML = '';
+                window.google.accounts.id.renderButton(buttonContainer, {
+                    theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "rectangular"
+                });
+            }
+        }
     }, [handleGoogleResponse]);
 
 
-    // --- Standard Username/Password Login Handler ---
+    // --- Standard Username/Password Login ---
     const handleLogin = async (e) => {
         e.preventDefault();
-        showMessage(''); // Clear message
-
+        setIsLoading(true);
+        showMessage('Logging in...', 'info');
         try {
             const response = await apiClient.post('/users/login/', { username, password });
-            const data = response.data;
-            console.log("🔍 Standard login response:", data);
-            login(data, data.token); // AuthContext login
-            showMessage("Login successful!", 'success');
-            // FCM registration will be handled by App.js's useFCM hook upon login state change
-            // The direct FCM call previously here has been removed.
+            login(response.data, response.data.token);
+            navigate('/home');
         } catch (error) {
-            console.error('Error during standard login:', error);
-            const backendError = error.response?.data?.error ||
-                                 error.response?.data?.detail ||
-                                 (error.response?.data?.non_field_errors ? error.response.data.non_field_errors.join(' ') : null) ||
-                                 'Login failed. Please check credentials.';
-            showMessage(backendError);
+            const errorMsg = error.response?.data?.error || 'Login failed. Please check your credentials.';
+            showMessage(errorMsg, 'error');
+            setIsLoading(false);
+        }
+    };
+
+    // --- Magic Link Request Handler ---
+    const handleMagicLinkRequest = async (e) => {
+        e.preventDefault();
+        if (!emailForMagicLink) {
+            showMessage("Please enter your email address.", 'error');
+            return;
+        }
+        setIsLoading(true);
+        showMessage('Sending login link...', 'info');
+        try {
+            await apiClient.post('/users/magic-link-request/', { email: emailForMagicLink });
+            showMessage("Success! If an account exists, a login link has been sent to your email.", 'success');
+        } catch (error) {
+            // For security, always show a success-like message
+            showMessage("Success! If an account exists, a login link has been sent to your email.", 'success');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className={styles.loginPageContainer}>
             <div className={styles.loginBox}>
+                {/* Left Panel with Image and Welcome Text */}
                 <div className={styles.imagePanel}>
-                    <img src={aiImageUrl} alt="Educational Platform Visual" />
-                    <h2>Welcome Back!</h2>
-                    <p>Log in to continue your learning journey with ZPorta Academy.</p>
+                    <img src={aiImageUrl} alt="A visual representation of collaborative learning" />
+                    <h2>Welcome to Zporta Academy</h2>
+                    <p>Your journey into collaborative learning starts here. Log in to explore and create.</p>
                 </div>
+
+                {/* Right Panel with Login Forms */}
                 <div className={styles.formPanel}>
-                    <h2>Login to Your Account</h2>
+                    <h2>Sign In</h2>
+                    <p className={styles.subtitle}>Choose your preferred method to continue.</p>
+
+                    {/* Message Display Area */}
                     {message && (
-                        <p className={`${styles.message} ${messageType === 'success' ? styles.success : styles.error}`}>
+                        <div className={`${styles.message} ${styles[messageType]}`}>
                             {message}
-                        </p>
-                     )}
-                    <form onSubmit={handleLogin}>
+                        </div>
+                    )}
+
+                    {/* Standard Login Form */}
+                    <form onSubmit={handleLogin} className={styles.formSection}>
                         <div className={styles.formGroup}>
-                            <label htmlFor="login-username" className={styles.label}>Username or Email</label>
+                            <label htmlFor="login-username">Username or Email</label>
                             <input
                                 id="login-username"
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
-                                autoComplete="username"
+                                disabled={isLoading}
                                 className={styles.input}
+                                autoComplete="username"
                             />
                         </div>
                         <div className={styles.formGroup}>
-                            <label htmlFor="login-password" className={styles.label}>Password</label>
+                            <label htmlFor="login-password">Password</label>
                             <input
                                 id="login-password"
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                autoComplete="current-password"
+                                disabled={isLoading}
                                 className={styles.input}
+                                autoComplete="current-password"
                             />
                         </div>
-                        <Link to="/password-reset" className={styles.forgotPasswordLink}>Forgot your password?</Link>
-                        <button type="submit" className={styles.submitButton}>Login</button>
+                        <button type="submit" className={styles.submitButton} disabled={isLoading}>
+                            {isLoading ? 'Please wait...' : 'Login with Password'}
+                        </button>
+                        <Link to="/password-reset" className={styles.subtleLink}>Forgot Password?</Link>
                     </form>
-                    <div className={styles.separator}>Or</div>
-                    <div id="google-login-button" className={styles.googleButtonContainer}>
-                        {/* Google button is rendered here by the script */}
+
+                    <div className={styles.separator}><span>Or</span></div>
+
+                    {/* Passwordless & Social Logins */}
+                    <div className={styles.alternativeLogins}>
+                        {/* Magic Link */}
+                        <form onSubmit={handleMagicLinkRequest} className={styles.magicLinkForm}>
+                             <div className={styles.formGroup}>
+                                <label htmlFor="magic-email">Continue with a Login Link</label>
+                                <div className={styles.magicLinkInputGroup}>
+                                    <input
+                                        id="magic-email"
+                                        type="email"
+                                        value={emailForMagicLink}
+                                        onChange={(e) => setEmailForMagicLink(e.target.value)}
+                                        placeholder="Enter your email"
+                                        disabled={isLoading}
+                                        className={styles.input}
+                                    />
+                                    <button type="submit" className={styles.magicLinkButton} disabled={isLoading}>Send</button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        {/* Google Login */}
+                        <div id="google-login-button" className={styles.googleButtonContainer}></div>
                     </div>
+
                     <p className={styles.registerLink}>
-                        Don't have an account? <Link to="/register">Register here</Link>
+                        New to the academy? <Link to="/register">Create an account</Link>
                     </p>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, GoogleLoginView, LoginView, ProfileView,  PasswordResetView, PasswordResetConfirmView, ChangePasswordView, PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView 
+from .views import RegisterView, GoogleLoginView, LoginView, ProfileView,  PasswordResetView, PasswordResetConfirmView, ChangePasswordView, PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView , MagicLinkRequestView, MagicLinkLoginView 
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
@@ -13,5 +13,7 @@ urlpatterns = [
     path('guides/', GuideProfileListView.as_view(), name='guide-profile-list'),
     path("learning-score/", UserLearningScoreView.as_view(), name="user-learning-score"),
     path('score/', MyScoreView.as_view(), name='user-my-score'),
+    path('magic-link-request/', MagicLinkRequestView.as_view(), name='magic_link_request'),
+    path('magic-link-login/<uidb64>/<token>/', MagicLinkLoginView.as_view(), name='magic_link_login'),
 ]
 

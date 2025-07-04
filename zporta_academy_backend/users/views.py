@@ -1,23 +1,25 @@
 # users/views.py
 from django.shortcuts import get_object_or_404
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from rest_framework import generics, permissions
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
-from rest_framework.authtoken.models import Token # <--- Make sure Token is imported
+from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login as django_login
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from django.db import IntegrityError # <--- ADD THIS IMPORT
+from django.db import IntegrityError
 from .models import Profile
-from .serializers import ProfileSerializer # Import other serializers as needed
+from .serializers import ProfileSerializer
 from rest_framework import status
-# ... (other imports like PasswordResetSerializer etc.)
-from django.utils.http import urlsafe_base64_decode
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
 from .serializers import PasswordResetConfirmSerializer
 from .serializers import ChangePasswordSerializer
 from .serializers import PublicProfileSerializer
@@ -28,7 +30,7 @@ import math
 from subjects.models import Subject
 from quizzes.models import Quiz
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q # Ensure Q is imported
+from django.db.models import Q
 
 
 
@@ -113,23 +115,33 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
+        credential = request.data.get('username') # This field will contain either username or email
         password = request.data.get('password')
-        user = authenticate(username=username, password=password)
 
-        if user:
-            token, created = Token.objects.get_or_create(user=user)
-            # Ensure profile exists before accessing it
-            profile, profile_created = Profile.objects.get_or_create(user=user)
-            return Response({
-                'token': token.key,
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'role': profile.role,
-                'active_guide': profile.active_guide,
-            }, status=HTTP_200_OK)
+        if not credential or not password:
+            return Response({'error': 'Username/Email and password are required.'}, status=HTTP_400_BAD_REQUEST)
 
+        # Try to find a user with either a matching username or email (case-insensitive)
+        user_q = User.objects.filter(Q(username__iexact=credential) | Q(email__iexact=credential))
+
+        if user_q.exists():
+            user = user_q.first()
+            # If a user is found, we must use their actual username to authenticate
+            authenticated_user = authenticate(username=user.username, password=password)
+            
+            if authenticated_user:
+                token, created = Token.objects.get_or_create(user=authenticated_user)
+                profile, profile_created = Profile.objects.get_or_create(user=authenticated_user)
+                return Response({
+                    'token': token.key,
+                    'id': authenticated_user.id,
+                    'username': authenticated_user.username,
+                    'email': authenticated_user.email,
+                    'role': profile.role,
+                    'active_guide': profile.active_guide,
+                }, status=HTTP_200_OK)
+
+        # If no user is found, or if authentication fails, return a generic error
         return Response({'error': 'Invalid credentials'}, status=HTTP_400_BAD_REQUEST)
 
 
@@ -236,7 +248,85 @@ class RegisterView(APIView):
              print(f"Unexpected Registration Error: {e}")
              return Response({"error": "An unexpected error occurred during registration."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class MagicLinkRequestView(APIView):
+    """
+    Handles the request for a magic login link.
+    A user provides their email, and if they exist, a one-time login link is sent.
+    """
+    permission_classes = [AllowAny]
 
+    def post(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email field is required."}, status=HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            # For security, don't reveal if the email exists or not.
+            return Response({"detail": "If an account with that email exists, a login link has been sent."}, status=HTTP_200_OK)
+
+        # We can reuse the default_token_generator for this. It's secure and temporary.
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # This link points to a special page on your frontend
+        magic_link = f"https://zportaacademy.com/magic-login/{uid}/{token}"
+
+        subject = "Your Zporta Academy Login Link"
+        body = f"""
+Hello,
+
+You requested a special link to log in to your Zporta Academy account.
+
+Click the link below to log in instantly:
+{magic_link}
+
+This link is for one-time use and will expire shortly. If you did not request this, please ignore this email.
+
+Thanks,
+The Zporta Academy Team
+        """
+
+        try:
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email])
+        except Exception as e:
+            print(f"Error sending magic link email: {e}")
+            return Response({"error": "There was a problem sending the email. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"detail": "If an account with that email exists, a login link has been sent."}, status=HTTP_200_OK)
+
+class MagicLinkLoginView(APIView):
+    """
+    Validates the magic link token and logs the user in.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token, *args, **kwargs):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            # Token is valid. Log the user in and create a new session token for the API.
+            
+            # Invalidate the token so it can't be used again
+            user.save() # This updates the last_login field, which helps invalidate the token
+
+            # Generate a new DRF token for the frontend to use
+            drf_token, _ = Token.objects.get_or_create(user=user)
+
+            # Redirect the user to their dashboard with the new token
+            # The frontend will need to grab this token from the URL to use it.
+            redirect_url = f"https://zportaacademy.com/login-success?token={drf_token.key}"
+            return HttpResponseRedirect(redirect_url)
+        else:
+            # The link is invalid or expired
+            # Redirect to a failure page on the frontend
+            return HttpResponseRedirect("https://zportaacademy.com/login-failed")
+        
 # Google Login View (Corrected)
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -334,7 +424,6 @@ class GoogleLoginView(APIView):
              # Catch other potential errors during the process
              print(f"Unexpected error during Google login: {e}") # Log the error
              return Response({"error": "An unexpected error occurred during Google login."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 # Password Reset Views (Keep as they are or update if needed)
 class PasswordResetView(APIView):

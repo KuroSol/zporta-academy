@@ -1,248 +1,295 @@
-/* Define some base variables for easier theming */
+/* Define modern color palette and variables */
 :root {
-    --primary-color: #007bff; /* A standard, trustworthy blue */
-    --primary-hover: #0056b3;
-    --secondary-color: #6c757d; /* A neutral gray */
-    --light-bg: #f8f9fa; /* Very light gray for background */
-    --white: #ffffff;
-    --text-dark: #343a40;
-    --text-light: #f8f9fa;
-    --border-color: #ced4da;
-    --error-color: #dc3545;
-    --success-color: #28a745;
-    --panel-bg: var(--white); /* Background for the form panel */
-    --image-panel-bg: linear-gradient(135deg, #e6f2ff 0%, #b3d7ff 100%); /* Light blue gradient for image panel */
-    --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    --border-radius: 8px;
+    --primary-color: #4A90E2; /* A friendly, modern blue */
+    --primary-hover: #357ABD;
+    --secondary-color: #50E3C2; /* A vibrant accent color */
+    --text-dark: #333;
+    --text-light-DEPRECATED: #5a6168; /* This is being replaced by direct color values below */
+    --text-white: #fff;
+    --bg-light: #f7f9fc;
+    --bg-white: #ffffff;
+    --border-color: #dfe3e8;
+    --error-color: #D0021B;
+    --success-color: #7ED321;
+    --info-color: #4A90E2;
+    --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    --border-radius: 12px;
 }
 
 .loginPageContainer {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Full viewport height */
-    background-color: var(--light-bg); /* Light background for the whole page */
-    padding: 20px;
+    min-height: 100vh;
+    background-color: var(--bg-light);
+    padding: 2rem;
+    font-family: 'Inter', sans-serif; /* Assumes Inter is loaded */
 }
 
 .loginBox {
     display: flex;
     width: 100%;
-    max-width: 900px; /* Max width of the login box */
-    background-color: var(--panel-bg);
+    max-width: 1000px;
+    background-color: var(--bg-white);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    overflow: hidden; /* Keep contents within rounded corners */
+    overflow: hidden;
 }
 
+/* --- Left Image Panel --- */
 .imagePanel {
-    flex-basis: 45%; /* Adjust ratio as needed */
-    background: var(--image-panel-bg);
+    flex-basis: 45%;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e0ecf7 100%);
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Center content vertically */
-    align-items: center; /* Center content horizontally */
-    padding: 40px;
-    color: var(--primary-color); /* Match text color to theme */
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
     text-align: center;
 }
 
 .imagePanel img {
-    max-width: 80%; /* Control image size */
+    max-width: 85%;
     height: auto;
-    margin-bottom: 20px;
-    opacity: 0.9; /* Slightly transparent */
-    /* Consider border-radius if you want rounded image corners */
+    margin-bottom: 2rem;
 }
 
 .imagePanel h2 {
-    margin-bottom: 10px;
-    font-size: 1.5rem;
-    color: var(--primary-hover); /* Darker blue for heading */
+    font-size: 1.75rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1rem;
 }
 
 .imagePanel p {
-    font-size: 0.95rem;
-    color: var(--primary-color);
+    font-size: 1rem;
+    color: #5a6168; /* Direct color set */
+    line-height: 1.6;
 }
 
-
+/* --- Right Form Panel --- */
 .formPanel {
-    flex-basis: 55%; /* Adjust ratio as needed */
-    padding: 40px 50px; /* More horizontal padding */
+    flex-basis: 55%;
+    padding: 3rem 3.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
 }
 
 .formPanel h2 {
-    text-align: center;
-    margin-bottom: 25px;
+    font-size: 2rem;
+    font-weight: 700;
     color: var(--text-dark);
-    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: #5a6168; /* Direct color set */
+    margin-bottom: 2rem;
+}
+
+.formSection {
+    margin-bottom: 1.5rem;
 }
 
 .formGroup {
-    margin-bottom: 20px;
+    margin-bottom: 1.25rem;
 }
 
-.label {
+.formGroup label {
     display: block;
-    margin-bottom: 8px;
+    font-size: 0.875rem;
     font-weight: 500;
-    color: var(--secondary-color);
-    font-size: 0.9rem;
+    color: #5a6168; /* Direct color set */
+    margin-bottom: 0.5rem;
 }
 
 .input {
     width: 100%;
-    padding: 12px 15px;
+    padding: 0.875rem 1rem;
     border: 1px solid var(--border-color);
-    border-radius: calc(var(--border-radius) / 2); /* Slightly less rounded */
+    border-radius: 8px;
     font-size: 1rem;
-    box-sizing: border-box;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Subtle glow on focus */
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
-.forgotPasswordLink {
-    display: block;
-    text-align: right;
-    margin-top: -10px; /* Pull closer to password input */
-    margin-bottom: 20px;
-    font-size: 0.85rem;
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-.forgotPasswordLink:hover {
-    text-decoration: underline;
+.input:disabled {
+    background-color: #f2f2f2;
+    cursor: not-allowed;
 }
 
 .submitButton {
     width: 100%;
-    padding: 12px 15px;
+    padding: 1rem;
     background-color: var(--primary-color);
-    color: var(--white);
+    color: var(--text-white);
     border: none;
-    border-radius: calc(var(--border-radius) / 2);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 0.5rem;
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+}
+
+.submitButton:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.submitButton:disabled {
+    background-color: #a0c7f1;
+    cursor: wait;
+}
+
+.subtleLink {
+    display: block;
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    margin-top: 0.75rem;
+}
+
+.subtleLink:hover {
+    text-decoration: underline;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--border-color);
+    margin: 1.5rem 0;
+}
+
+.separator span {
+    padding: 0 1rem;
+    color: #5a6168; /* Direct color set */
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.alternativeLogins {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.magicLinkForm {
+    width: 100%;
+}
+
+.magicLinkInputGroup {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.magicLinkInputGroup .input {
+    flex-grow: 1;
+}
+
+.magicLinkButton {
+    padding: 0.875rem 1.25rem;
+    background-color: var(--secondary-color);
+    color: var(--text-white);
+    border: none;
+    border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    margin-bottom: 20px; /* Space before separator */
 }
 
-.submitButton:hover {
-    background-color: var(--primary-hover);
+.magicLinkButton:hover:not(:disabled) {
+    background-color: #45c4a8;
 }
 
-.separator {
-    text-align: center;
-    margin: 20px 0;
-    color: var(--secondary-color);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
+.magicLinkButton:disabled {
+    background-color: #a0e3d4;
+    cursor: wait;
 }
-
-/* Lines on either side of the "OR" text */
-.separator::before,
-.separator::after {
-    content: '';
-    flex-grow: 1;
-    height: 1px;
-    background-color: var(--border-color);
-    margin: 0 10px;
-}
-
 
 .googleButtonContainer {
     display: flex;
-    justify-content: center; /* Center the Google button */
-    width: 100%; /* Ensure it takes full width for centering */
-    margin-bottom: 25px; /* Space before message/register link */
-    /* The Google button itself has styling, we just position its container */
+    justify-content: center;
+    width: 100%;
 }
 
-/* Target the div Google creates inside our container for finer control if needed */
-.googleButtonContainer > div {
-     /* width: 100% !important; /* Example: Force Google button width if needed */
-}
-
-
-.message {
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 0.9rem;
-    padding: 10px;
-    border-radius: calc(var(--border-radius) / 2);
-}
-
-.message.error {
-    color: var(--error-color);
-    background-color: rgba(220, 53, 69, 0.1); /* Light red background */
-    border: 1px solid rgba(220, 53, 69, 0.2);
-}
-
-.message.success {
-    color: var(--success-color);
-    background-color: rgba(40, 167, 69, 0.1); /* Light green background */
-     border: 1px solid rgba(40, 167, 69, 0.2);
-}
-
+/* --- THIS STYLE IS FIXED FOR ALIGNMENT AND COLOR --- */
 .registerLink {
     text-align: center;
+    padding-top: 2rem;
+    margin-top: 1rem;
     font-size: 0.9rem;
-    color: var(--secondary-color);
+    color: #5a6168; /* Direct color set */
 }
 
 .registerLink a {
     color: var(--primary-color);
+    font-weight: 600;
     text-decoration: none;
-    font-weight: 500;
 }
 
 .registerLink a:hover {
     text-decoration: underline;
 }
 
-/* --- Responsive Adjustments --- */
-@media (max-width: 768px) {
+/* Message Styles */
+.message {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.message.error {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+    color: var(--error-color);
+}
+
+.message.success {
+    background-color: #e8f5e9;
+    border-color: #a5d6a7;
+    color: #388E3C;
+}
+
+.message.info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: var(--primary-color);
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 900px) {
     .loginBox {
-        flex-direction: column; /* Stack panels vertically */
-        max-width: 450px; /* Adjust max-width for smaller screens */
+        flex-direction: column;
+        max-width: 450px;
     }
-
     .imagePanel {
-        flex-basis: auto; /* Reset basis */
-        height: 200px; /* Fixed height or adjust as needed */
-        padding: 20px; /* Reduce padding */
-        border-radius: var(--border-radius) var(--border-radius) 0 0; /* Adjust rounding */
+        display: none; /* Hide image panel on smaller screens for a focused view */
     }
-
-     .imagePanel img {
-        max-width: 40%; /* Smaller image */
-        margin-bottom: 10px;
-    }
-
-     .imagePanel h2 {
-        font-size: 1.2rem;
-     }
-      .imagePanel p {
-        font-size: 0.85rem;
-     }
-
-
     .formPanel {
-        flex-basis: auto; /* Reset basis */
-        padding: 30px; /* Reduce padding */
-        border-radius: 0 0 var(--border-radius) var(--border-radius); /* Adjust rounding */
+        padding: 2.5rem 2rem;
     }
 }
