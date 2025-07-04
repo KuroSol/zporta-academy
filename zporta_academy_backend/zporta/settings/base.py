@@ -69,9 +69,9 @@ ASGI_APPLICATION = 'zporta.asgi.application'
 
  # For dev you can use the in-memory layer; swap in Redis for production
 CHANNEL_LAYERS = {
-     "default": {
-         "BACKEND": "channels.layers.InMemoryChannelLayer"
-     }
+      "default": {
+          "BACKEND": "channels.layers.InMemoryChannelLayer"
+      }
  }
 
 MIDDLEWARE = [
@@ -123,13 +123,26 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+# --- Email Settings for Google Workspace ---
+# For this to work, you must generate an "App Password" for your Google Account.
+# Using your regular password will not work if you have 2-Step Verification enabled (which is recommended).
+#
+# How to generate an App Password:
+# 1. Go to your Google Account: https://myaccount.google.com/
+# 2. Go to the "Security" tab on the left.
+# 3. Under "How you sign in to Google," click on "2-Step Verification." You must have this enabled.
+# 4. At the bottom of the "2-Step Verification" page, click on "App passwords".
+# 5. Give the app a name (e.g., "Django Zporta") and click "Create".
+# 6. Google will generate a 16-character password. Copy this password.
+# 7. Use this generated password for the EMAIL_HOST_PASSWORD in your .env file.
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='email-smtp.ap-northeast-1.amazonaws.com')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', cast=int, default=587)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None) # Added default=None
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None) # Added default=None
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.com')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None) # Your full Google Workspace email (e.g., user@yourdomain.com)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None) # The 16-character App Password you generated
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.com') # Should be the same as EMAIL_HOST_USER for best results
 
 
 AUTH_PASSWORD_VALIDATORS = [
