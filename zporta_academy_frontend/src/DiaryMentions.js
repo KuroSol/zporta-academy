@@ -11,6 +11,7 @@ import {
 import CustomEditor from './components/Editor/CustomEditor';
 import './DiaryList.css';
 import './DiaryManagement.css';
+import './DiaryMentions.css';
 import { AuthContext } from './context/AuthContext'; // Use ./ to look inside the current 'src' directory for the 'context' folder
 import apiClient from './api'; // Use ./ to look inside the current 'src' directory for 'api.js'
 
@@ -97,6 +98,34 @@ const DiaryMentions = () => {
     }
   // Add token and logout to dependency array
   }, [token, logout]); // Using logout from context in error handlers below requires it here
+
+ // ----------------------------------------------------------------
+ // Lock background scroll when either modal is open
+ // ----------------------------------------------------------------
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (modalOpen || manageCommentsModalOpen) {
+      html.style.overflowY = 'hidden';
+      html.style.height     = '100%';
+      body.style.overflowY = 'hidden';
+      body.style.height     = '100%';
+    } else {
+      html.style.overflowY = '';
+      html.style.height     = '';
+      body.style.overflowY = '';
+      body.style.height     = '';
+    }
+
+    return () => {
+      html.style.overflowY = '';
+      html.style.height     = '';
+      body.style.overflowY = '';
+      body.style.height     = '';
+    };
+  }, [modalOpen, manageCommentsModalOpen]);
+
 
   // ----------------------------------------------------------------
   // Helper Functions

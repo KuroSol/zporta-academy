@@ -1,30 +1,63 @@
-import React from 'react';
-import styles from './Modal.module.css'; // Make sure this path is correct
+// src/components/Modal/Modal.js
+import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import styles from './Modal.module.css';
+import { FaTimes } from 'react-icons/fa';
 
-const Modal = ({ children, isOpen, onClose }) => {
-    if (!isOpen) {
-        return null;
+/**
+ * A reusable, accessible, and responsive modal component.
+ *
+ * @param {object} props
+ * @param {boolean} props.isOpen - Controls if the modal is visible.
+ * @param {function} props.onClose - Function to call when the modal should be closed.
+ * @param {string} [props.title] - Optional title for the modal header.
+ * @param {React.ReactNode} props.children - The content to display inside the modal.
+ * @param {string} [props.size='medium'] - Size of the modal: 'small', 'medium', 'large', 'fullscreen'.
+ */
+const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
+  // Lock/unlock background scroll by toggling no-scroll on html/body
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (isOpen) {
+      html.classList.add(styles['no-scroll']);
+      body.classList.add(styles['no-scroll']);
+    } else {
+      html.classList.remove(styles['no-scroll']);
+      body.classList.remove(styles['no-scroll']);
     }
 
-    // Function to handle overlay click without closing if content is clicked
-    const handleOverlayClick = (e) => {
-         // Only close if the overlay itself (the background) is clicked
-         if (e.target === e.currentTarget) {
-             onClose();
-         }
+    return () => {
+      html.classList.remove(styles['no-scroll']);
+      body.classList.remove(styles['no-scroll']);
     };
+  }, [isOpen]);
 
-    return (
-        <div className={styles.modalOverlay} onClick={handleOverlayClick}> {/* Close on overlay click */}
-            <div className={styles.modalContent}> {/* Removed stopPropagation */}
-                <button className={styles.closeButton} onClick={onClose}>
-                    &times; {/* Close icon */}
-                </button>
-                {/* Render the content passed to the modal (e.g., CreateLesson form) */}
-                {children}
-            </div>
+  if (!isOpen) return null;
+
+  const contentClass = `${styles.modalContent} ${styles[size] || styles.medium}`;
+
+  return ReactDOM.createPortal(
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={contentClass} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          {title && <h2 className={styles.modalTitle}>{title}</h2>}
+          <button
+            onClick={onClose}
+            className={styles.closeButton}
+            aria-label="Close modal"
+          >
+            <FaTimes />
+          </button>
         </div>
-    );
+        <div className={styles.modalBody}>
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 };
 
 export default Modal;

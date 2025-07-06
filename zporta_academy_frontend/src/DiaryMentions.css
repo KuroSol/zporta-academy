@@ -39,6 +39,25 @@
 /* --- Modal Specific Styles for DiaryMentions --- */
 /* Base .modal-overlay, .modal-content, .modal-header, .modal-body, .modal-actions from DiaryManagement.css */
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;                     /* shorthand for top:0; right:0; bottom:0; left:0 */
+  z-index: 10000;               /* ensure it sits above everything */
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;             /* allow scrolling *inside* the overlay, not the page behind */
+}
+
+/* 2) Constrain the modal content itself so it scrolls internally */
+.modal-content {
+  max-height: 90vh;             /* prevent it from growing beyond viewport */
+  overflow-y: auto;             /* scroll overflow inside the modal only */
+}
+body.modal-open {
+  overflow: hidden;
+}
 /* Modal Title in DiaryMentions */
 .modal-content .modal-header h2 {
   color: var(--zporta-dark-blue); /* Consistent modal title color */

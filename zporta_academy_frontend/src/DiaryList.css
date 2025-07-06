@@ -28,7 +28,9 @@
 
   --zporta-font-family: 'Inter', sans-serif;
 }
-
+body.modal-open {
+  overflow: hidden !important;
+}
 /* --- Base Container Styling --- */
 .diary-list-container {
   padding: var(--zporta-spacing-lg);
