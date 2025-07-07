@@ -16,6 +16,7 @@ import DrawingOverlay from './DrawingOverlay';
 import CollaborationZoneSection from './CollaborationZoneSection';
 import { ref, onValue, get, remove } from 'firebase/database';
 import { subscribeTo, writeTo, db } from '../firebase';
+import StudyNoteSection from './StudyNoteSection';
 import rangy from 'rangy';
 import 'rangy/lib/rangy-classapplier';
 import 'rangy/lib/rangy-serializer';
@@ -886,6 +887,9 @@ const EnrolledCourseStudyPage = () => {
 
       <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} />
       
+      {/* The StudyNoteSection is moved here, outside of the transformed div, so it positions relative to the viewport. */}
+      <StudyNoteSection enrollmentId={enrollmentId} />
+
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }}
@@ -948,7 +952,6 @@ const EnrolledCourseStudyPage = () => {
             </header>
 
             <CollaborationZoneSection isCollabActive={isCollabActive} isTeacher={isTeacher} isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode} setIsInviteModalOpen={setIsInviteModalOpen} shareInvites={shareInvites} />
-            
             <div className="my-8">
               <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} resultCount={searchMatches.length} currentResultIndex={currentMatchIndex} onNextResult={handleNextResult} onPrevResult={handlePrevResult} />
             </div>

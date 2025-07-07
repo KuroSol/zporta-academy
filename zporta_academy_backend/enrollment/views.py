@@ -1,30 +1,100 @@
 # enrollment/views.py
 import uuid
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import viewsets
-from rest_framework.generics import ListAPIView
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Enrollment
-from .serializers import EnrollmentSerializer
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.contenttypes.models import ContentType
-from courses.models import Course
-from .utils import lock_course_and_content
 from django.db.models import Q
-from lessons.models       import LessonCompletion
-from lessons.serializers  import SimpleLessonCompletionSerializer
-from .models import ShareInvite
-from .serializers import ShareInviteSerializer
 from django.http import Http404
-from .models import CollaborationSession, SessionStroke, SessionNote
+from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django_filters.rest_framework import DjangoFilterBackend
+
+from courses.models import Course
+from lessons.models import LessonCompletion
+from lessons.serializers import SimpleLessonCompletionSerializer
+from .models import Enrollment, CollaborationSession, SessionStroke, SessionNote, ShareInvite
 from .serializers import (
+    EnrollmentSerializer,
     CollaborationSessionSerializer,
     SessionStrokeSerializer,
     SessionNoteSerializer,
+    ShareInviteSerializer,
 )
+from .utils import lock_course_and_content
 
+# This view handles the specific logic for the floating study notes widget.
+class SessionNoteView(APIView):
+    """
+    Handles all CRUD operations for a user's study note for a specific enrollment.
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, enrollment_pk):
+        """
+        READ operation.
+        Retrieves the study note for the current user and enrollment.
+        """
+        enrollment = get_object_or_404(Enrollment, pk=enrollment_pk, user=request.user)
+        
+        # --- THIS IS THE FIX ---
+        # When getting or creating a session, provide a default, unique session_id.
+        session, _ = CollaborationSession.objects.get_or_create(
+            enrollment=enrollment,
+            defaults={'session_id': f'notes_{enrollment.id}_{uuid.uuid4().hex}'}
+        )
+        # --- END OF FIX ---
+        
+        note = SessionNote.objects.filter(session=session, user=request.user).first()
+        
+        if note:
+            serializer = SessionNoteSerializer(note)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response({'note': '', 'highlight_data': None}, status=status.HTTP_200_OK)
+
+    def post(self, request, enrollment_pk):
+        """
+        CREATE / UPDATE operation.
+        Creates or updates a study note for the user.
+        """
+        enrollment = get_object_or_404(Enrollment, pk=enrollment_pk, user=request.user)
+
+        # --- APPLY THE SAME FIX HERE ---
+        session, _ = CollaborationSession.objects.get_or_create(
+            enrollment=enrollment,
+            defaults={'session_id': f'notes_{enrollment.id}_{uuid.uuid4().hex}'}
+        )
+        # --- END OF FIX ---
+        
+        note_content = request.data.get('note', '')
+        
+        note, created = SessionNote.objects.update_or_create(
+            session=session,
+            user=request.user,
+            defaults={'note': note_content}
+        )
+        
+        serializer = SessionNoteSerializer(note)
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=status_code)
+
+    def delete(self, request, enrollment_pk):
+        """
+        DELETE operation.
+        Deletes the study note for the current user and enrollment.
+        """
+        enrollment = get_object_or_404(Enrollment, pk=enrollment_pk, user=request.user)
+        
+        try:
+            session = CollaborationSession.objects.get(enrollment=enrollment)
+            note = SessionNote.objects.get(session=session, user=request.user)
+            note.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except (CollaborationSession.DoesNotExist, SessionNote.DoesNotExist):
+            return Response(status=status.HTTP_204_NO_CONTENT)
 class EnrollmentViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing enrollments with support for one-time share tokens.

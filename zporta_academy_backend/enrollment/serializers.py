@@ -178,11 +178,25 @@ class SessionStrokeSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'created_at']
 
 class SessionNoteSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    """
+    Serializes a SessionNote instance.
+    The user is automatically set to the current authenticated user and is read-only.
+    """
+    # The user field is populated automatically from the request context.
+    # It is not expected in the request payload from the frontend.
+    #user = serializers.PrimaryKeyRelatedField(
+     #   read_only=True, 
+      #  default=serializers.CurrentUserDefault()
+    #)
+    user = SimpleUserSerializer(read_only=True)
     class Meta:
         model = SessionNote
+        # These are the fields that will be sent to and from the frontend.
         fields = ['id', 'session', 'user', 'note', 'highlight_data', 'created_at']
+        # The 'id', 'user', and 'created_at' fields are read-only because they
+        # are set by the server, not the client.
         read_only_fields = ['id', 'user', 'created_at']
+
 class ShareInviteSerializer(serializers.ModelSerializer):
     # writeable by PK
     invited_user = serializers.PrimaryKeyRelatedField(
