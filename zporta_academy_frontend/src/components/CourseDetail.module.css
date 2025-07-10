@@ -1,415 +1,476 @@
-/* Container for the entire course detail page */
+/*
+ * CourseDetail.module.css
+ * A complete, modern redesign for a better study experience.
+ * This file is designed to work with the JS scaling logic.
+ */
+
+/* --- Global & Scaling --- */
+.scaleWrapper {
+  width: 100%;
+  padding: 20px 10px; /* Provides some space on very small screens */
+  box-sizing: border-box;
+  transition: height 0.2s ease-in-out;
+}
+
 .courseDetailContainer {
-  max-width: 900px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  font-family: Arial, sans-serif;
+  width: 1000px; /* The fixed design width */
+  background: #f9fafb; /* A very light grey background */
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+  border: 1px solid #e5e7eb;
+  padding: 40px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #374151; /* Darker grey for text */
+  box-sizing: border-box;
 }
 
-/* Main Course Title */
-.courseTitle {
-  font-size: 32px;
-  color: #2c3e50; /* Dark gray-blue */
-  margin-bottom: 20px;
+/* --- Loading & Error States --- */
+.loadingMessage, .errorMessage {
   text-align: center;
-}
-
-/* Optional small info block for subject/tags under the title */
-.courseInfo {
-  margin-bottom: 20px;
-  font-size: 16px;
-  color: #555;
-}
-
-/* Cover image styling */
-
-  .courseImage {
-    width: 100%;
-    height: 400px;
-    object-fit: contain;
-    object-position: center;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    background-color: #f0f0f0; /* optional “empty” background */
-  }
-  
-
-
-
-
-/* Course description text */
-.courseDescription {
-  font-size: 18px;
-  line-height: 1.8;
-  color: #555;
-  margin-bottom: 30px;
-}
-
-/* Price styling for premium courses */
-.coursePrice {
+  padding: 80px 20px;
   font-size: 20px;
-  color: #2c3e50;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* Container for Edit & Delete buttons (creator only) */
-.courseActions {
+  color: #6b7280;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;    /* space above */
-  margin-bottom: 30px; /* space below */
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+.errorMessage {
+  color: #ef4444;
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Admin buttons styling */
-.courseActions button {
-  padding: 10px 20px;
+/* --- Read-Only View --- */
+.courseTitle {
+  font-size: 42px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 24px;
+  letter-spacing: -1px;
+}
+
+.courseImage {
+  width: 100%;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  background-color: #e5e7eb;
+}
+.courseImagePlaceholder {
+  width: 100%;
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background-color: #f3f4f6;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: #9ca3af;
+  font-size: 20px;
+  border: 2px dashed #d1d5db;
+}
+
+.courseMeta {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.metaItem {
   font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  outline: none; /* remove default focus outline */
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.metaItem strong {
+  color: #111827;
+  font-weight: 600;
+  width: 80px; /* Align values */
+}
+.tagContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.tag {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 14px;
 }
 
-.courseActions button:focus {
-  /* subtle focus style for accessibility */
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+.courseDescription {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 40px;
 }
 
-/* Specific styles for the Edit button */
-.courseDetailEditBtn {
-  background-color: #0275d8; /* Blue shade */
-  color: #fff;
+.contentSection {
+  margin-top: 40px;
 }
-.courseDetailEditBtn:hover {
-  background-color: #025aa5;
-}
-
-/* Specific styles for the Delete button */
-.courseDeleteBtn {
-  background-color: #d9534f; /* Red shade */
-  color: #fff;
-}
-.courseDeleteBtn:hover {
-  background-color: #c9302c;
-}
-
-/* Lessons Section Title */
 .sectionTitle {
-  font-size: 24px;
-  color: #6B8E23; /* Olive Drab */
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 20px;
-  border-bottom: 2px solid #6B8E23;
-  padding-bottom: 5px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 12px;
 }
 
-/* Lessons List */
-.lessonsList {
+.contentList {
   list-style: none;
   padding: 0;
-  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-
-.lessonItem {
+.contentItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  transition: background 0.3s ease;
+  background: #ffffff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
-
-.lessonItem:hover {
-  background: #eef3f7;
+.contentItem:hover {
+  border-color: #9ca3af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
-
-/* Study button inside each lesson item */
-.studyBtn {
-  background: #2c3e50;
+.contentItem span {
+    font-weight: 500;
+    font-size: 17px;
+    color: #374151;
+}
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #4f46e5;
   color: white;
+  font-weight: 600;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background-color 0.2s ease;
 }
-.studyBtn:hover {
-  background: #34495e;
+.actionButton:hover {
+  background: #4338ca;
 }
 
-/* Detach button inside each lesson item (creator only) */
-.detachBtn {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-left: 10px;
-  transition: background 0.3s ease;
-}
-.detachBtn:hover {
-  background: #c0392b;
-}
-
-/* Enrollment section for non-creators */
 .enrollSection {
   text-align: center;
-  margin-top: 30px;
+  margin-top: 50px;
+  padding-top: 30px;
+  border-top: 1px solid #e5e7eb;
 }
-
-/* Enroll or Buy button styling */
-.enrollSection .btn {
-  background: #F8B703;
+.enrollButton {
+  background: #10b981;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 16px 40px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
-  transition: background 0.3s ease;
+  font-size: 20px;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
-.enrollSection .btn:hover {
-  background: #dea602;
+.enrollButton:hover {
+  background: #059669;
+  transform: scale(1.03);
+}
+.enrolledButton {
+  background: #6b7280;
+  color: #e5e7eb;
+  border: none;
+  padding: 16px 40px;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+.enrollMessage {
+  margin-top: 15px;
+  font-size: 15px;
+  color: #6b7280;
 }
 
-/* Disabled enrolled button */
-.enrollSection .btn.enrolled {
-  background: #ccc;
-  color: #666;
-  cursor: default;
+.manageButtonContainer {
+    text-align: center;
+    margin-top: 40px;
 }
-
-/* Message styling (e.g., success/failure) */
-.message {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #333;
-}
-
-/* Edit Course Form (displayed in edit mode) */
-.editCourseForm {
-  background: #f9f9f9;
-  padding: 20px;
-  border: 1px solid #ddd;
+.manageButton {
+  background-color: #374151;
+  color: white;
+  font-weight: 600;
+  border: none;
+  padding: 14px 28px;
   border-radius: 8px;
-  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.manageButton:hover {
+    background-color: #1f2937;
 }
 
+/* --- Edit Mode & Forms --- */
+.editCourseForm {
+  background: #ffffff;
+  padding: 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
 .editCourseForm h2 {
-  margin-bottom: 15px;
-  color: #2c3e50;
+  font-size: 32px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 30px;
+  color: #111827;
 }
 
 .formGroup {
-  margin-bottom: 15px;
+  margin-bottom: 25px;
 }
 .formGroup label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 16px;
 }
-.formGroup input,
-.formGroup textarea {
+.inputField, .dropdown {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 12px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.inputField:focus, .dropdown:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    outline: none;
+}
+.dropdown option:disabled {
+    color: #9ca3af;
+    background-color: #f3f4f6;
+}
+.disabledOption {
+    color: #9ca3af;
+    background-color: #f3f4f6;
 }
 
-/* Form actions for Save/Cancel in edit mode */
 .formActions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 30px;
+}
+.saveBtn, .cancelBtn {
+  flex-grow: 1;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
 }
 .saveBtn {
-  background: #2C3E50;
+  background-color: #4f46e5;
   color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
 }
 .saveBtn:hover {
-  background: #34495e;
+  background-color: #4338ca;
 }
 .cancelBtn {
-  background: #ccc;
-  color: #333;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
+  background-color: #e5e7eb;
+  color: #374151;
 }
 .cancelBtn:hover {
-  background: #b3b3b3;
+  background-color: #d1d5db;
 }
-
-/* Add Lesson Section (for creators) */
-.addLessonSection {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-.addLessonSection h3 {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #2c3e50;
-}
-
-/* Lesson dropdown */
-.dropdown {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
-/* Add Lesson button */
-.addBtn {
-  background: #2C3E50;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-.addBtn:hover {
-  background: #34495e;
-}
-
-/* Error messages */
-.error {
-  color: red;
-  margin-top: 10px;
-}
-
-/* Responsive Adjustments for smaller screens */
-@media (max-width: 600px) {
-  .courseTitle {
-    font-size: 28px;
-  }
-  .courseDescription {
-    font-size: 16px;
-  }
-  .studyBtn,
-  .enrollSection .btn,
-  .addBtn,
-  .detachBtn {
+.formError {
+    color: #ef4444;
     font-size: 14px;
-    padding: 10px 18px;
-  }
-  .courseActions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .courseActions button {
-    width: 100%;
-  }
+    margin-top: 8px;
 }
 
-/* --- NEW Styles --- */
-
-/* Badge for Draft Status */
-.draftBadge {
-  font-size: 0.7em;
-  font-weight: bold;
-  color: #ff8c00; /* Dark Orange */
-  margin-left: 8px;
-  vertical-align: middle;
-  border: 1px solid #ff8c00;
-  padding: 2px 5px;
-  border-radius: 4px;
+/* --- Creator Action Cards --- */
+.courseStatusActions, .addContentSection, .dangerZone {
+    margin-top: 40px;
+    padding: 25px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
 }
-
-/* Badge for Locked Status */
-.lockedBadge {
-  color: #d9534f; /* Red shade */
-  font-size: 18px; /* Match existing locked style */
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-/* Container for all creator actions */
-.creatorActionsSection {
-  border-top: 2px solid #eee;
-  margin-top: 30px;
-  padding-top: 20px;
-}
-
-/* Sections within creator actions */
-.courseStatusActions,
-.courseContentActions,
-.addContentSection {
-  margin-bottom: 30px;
-  padding: 15px;
-  background-color: #f8f9fa; /* Light grey background */
-  border: 1px solid #e9ecef; /* Slightly darker border */
-  border-radius: 8px;
-}
-
-.courseStatusActions h4,
-.courseContentActions h4,
-.addContentSection h4 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #495057; /* Darker grey for headings */
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: 8px;
+.courseStatusActions h4, .addContentSection h4, .dangerZone h4 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #111827;
 }
 .addContentSection h5 {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  color: #6c757d; /* Medium grey for sub-headings */
+    font-size: 17px;
+    color: #374151;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+.addContentSection h5:first-of-type {
+    margin-top: 0;
+}
+.sectionDivider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 30px 0;
 }
 
-/* Status Management Buttons */
-.publishBtn,
-.unpublishBtn {
+.publishBtn, .unpublishBtn {
   padding: 10px 20px;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
-  margin-right: 10px; /* Add spacing */
+  transition: all 0.2s ease;
 }
-
 .publishBtn {
-  background-color: #5cb85c; /* Green */
+  background-color: #10b981;
   color: white;
 }
 .publishBtn:hover:not(:disabled) {
-  background-color: #4cae4c;
+  background-color: #059669;
 }
-
 .unpublishBtn {
-  background-color: #f0ad4e; /* Orange */
+  background-color: #f59e0b;
   color: white;
 }
 .unpublishBtn:hover:not(:disabled) {
-  background-color: #ec971f;
+  background-color: #d97706;
+}
+.publishBtn:disabled, .unpublishBtn:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
 }
 
-.publishBtn:disabled,
-.unpublishBtn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+.attachedContentList ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.attachedItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+}
+.detachBtn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #6b7280;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.detachBtn:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+.addContentForm {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.addContentForm .dropdown {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+.addBtn {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+.addBtn:hover {
+  background-color: #4338ca;
+}
+.addBtn:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+}
+.noContentMessage {
+    color: #6b7280;
+    font-style: italic;
+    font-size: 15px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    text-align: center;
 }
 
+.dangerZone {
+    border-color: #fca5a5;
+    background-color: #fef2f2;
+}
+.dangerZone h4 {
+    color: #b91c1c;
+}
+.courseDeleteBtn {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+.courseDeleteBtn:hover {
+  background-color: #dc2626;
+}
+.warningText {
+    font-size: 14px;
+    color: #991b1b;
+    margin-top: 10px;
+}

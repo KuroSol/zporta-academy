@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useContext, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useRef, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext'; // Adjust path if needed
 import apiClient from '../api'; // Adjust path if needed
 import { Helmet } from 'react-helmet';
 import {
-  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown, Users, Share2, Pencil, UserPlus, BookOpen
+  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown, Users, Share2, UserPlus, BookOpen, Eraser, Undo, Radio, Pen, Square, Circle as CircleIcon, MessageSquare
 } from 'lucide-react';
 import QuizCard from './QuizCard';
 import styles from './EnrolledCourseDetail.module.css';
@@ -12,14 +13,319 @@ import CollaborationInviteModal from './CollaborationInviteModal';
 
 // --- Collaboration, Firebase, and other imports ---
 import { useCollaboration } from '../hooks/useCollaboration';
-import DrawingOverlay from './DrawingOverlay';
 import CollaborationZoneSection from './CollaborationZoneSection';
-import { ref, onValue, get, remove } from 'firebase/database';
-import { subscribeTo, writeTo, db } from '../firebase';
+import { ref, onValue, get, remove, set } from 'firebase/database';
+import { db } from '../firebase';
 import StudyNoteSection from './StudyNoteSection';
 import rangy from 'rangy';
 import 'rangy/lib/rangy-classapplier';
 import 'rangy/lib/rangy-serializer';
+
+
+// ==================================================================
+// --- FloatingToolbar Component (Centralized Toolbar) ---
+// ==================================================================
+const FloatingToolbar = ({ activeTool, onToolClick, onUndoClick }) => {
+    const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+
+    return createPortal(
+        <div className={`${styles.floatingToolbarContainer} ${!isToolbarOpen ? styles.collapsed : ''}`}>
+            <div className={styles.toolbarContent}>
+                <button onClick={() => onToolClick('laser')} className={`${styles.stylerToolBtn} ${activeTool === 'laser' ? styles.active : ''}`} title="Laser Pointer">
+                    <Radio size={18} />
+                </button>
+                <div className={styles.separator}></div>
+                <button onClick={() => onToolClick('highlight')} className={`${styles.stylerToolBtn} ${activeTool === 'highlight' ? styles.active : ''}`} title="Highlight">
+                    <Pen size={18} />
+                </button>
+                <button onClick={() => onToolClick('box')} className={`${styles.stylerToolBtn} ${activeTool === 'box' ? styles.active : ''}`} title="Box">
+                    <Square size={18} />
+                </button>
+                <button onClick={() => onToolClick('circle')} className={`${styles.stylerToolBtn} ${activeTool === 'circle' ? styles.active : ''}`} title="Circle">
+                    <CircleIcon size={18} />
+                </button>
+                <button onClick={() => onToolClick('note')} className={`${styles.stylerToolBtn} ${activeTool === 'note' ? styles.active : ''}`} title="Add Note">
+                    <MessageSquare size={18} />
+                </button>
+                 <div className={styles.separator}></div>
+                <button onClick={() => onToolClick('eraser')} className={`${styles.stylerToolBtn} ${activeTool === 'eraser' ? styles.active : ''}`} title="Eraser">
+                    <Eraser size={18} />
+                </button>
+                <button onClick={onUndoClick} className={styles.stylerToolBtn} title="Undo">
+                    <Undo size={18} />
+                </button>
+            </div>
+            <button onClick={() => setIsToolbarOpen(!isToolbarOpen)} className={styles.toolbarToggle}>
+                {isToolbarOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+            </button>
+        </div>,
+        document.body
+    );
+};
+
+// ==================================================================
+// --- Confirmation Modal Component (NEW) ---
+// ==================================================================
+const ConfirmationModal = ({ onConfirm, onCancel, message }) => {
+    return createPortal(
+        <div className={styles.confirmationModalOverlay}>
+            <div className={styles.confirmationModal}>
+                <p className={styles.confirmationModalMessage}>{message}</p>
+                <div className={styles.confirmationModalActions}>
+                    <button onClick={onConfirm}>Yes, Delete</button>
+                    <button onClick={onCancel}>Cancel</button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
+
+// ==================================================================
+// --- HighlightableEditor Component (Formerly TextStyler) ---
+// ==================================================================
+const HighlightableEditor = forwardRef(({ htmlContent, enrollmentId, roomId, activeTool }, ref) => {
+    const editorRef = useRef(null);
+    const overlayRef = useRef(null);
+    const isUpdatingFromFirebase = useRef(false);
+    const [isNoteOpen, setIsNoteOpen] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [confirmDelete, setConfirmDelete] = useState(null); 
+
+    useEffect(() => {
+        rangy.init();
+    }, []);
+
+    const saveState = useCallback(() => {
+        if (isUpdatingFromFirebase.current || !editorRef.current) return;
+        const currentState = editorRef.current.innerHTML;
+        setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
+        if (roomId) {
+            set(ref(db, `sessions/${roomId}/content`), currentState);
+        } else {
+           apiClient.post(
+             `/enrollments/${enrollmentId}/notes/`,
+             { highlight_data: currentState }
+           ).catch(err => console.error('DB save failed', err));
+        }
+    }, [roomId, enrollmentId]);
+    
+    useEffect(() => {
+        if (!roomId) return;
+        const contentRef = ref(db, `sessions/${roomId}/content`);
+        const unsubscribe = onValue(contentRef, (snapshot) => {
+            const remoteHtml = snapshot.val();
+            if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
+                isUpdatingFromFirebase.current = true;
+                editorRef.current.innerHTML = remoteHtml;
+                setHistory(prev => [...prev.slice(-29), remoteHtml]);
+                setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
+            }
+        });
+        return () => unsubscribe();
+    }, [roomId]);
+
+    useEffect(() => {
+        if (htmlContent) {
+            if (roomId) {
+                const contentRef = ref(db, `sessions/${roomId}/content`);
+                get(contentRef).then((snapshot) => {
+                    if (editorRef.current) {
+                        const initialHtml = snapshot.exists() ? snapshot.val() : htmlContent;
+                        editorRef.current.innerHTML = initialHtml;
+                        setHistory([initialHtml]);
+                    }
+                });
+            } else {
+                 if (editorRef.current) {
+                    editorRef.current.innerHTML = htmlContent;
+                    setHistory([htmlContent]);
+                }
+            }
+        }
+    }, [htmlContent, roomId]);
+
+    const undo = useCallback(() => {
+        if (history.length > 1) {
+            const newHistory = history.slice(0, -1);
+            const lastState = newHistory[newHistory.length - 1];
+            setHistory(newHistory);
+            if (editorRef.current) {
+                editorRef.current.innerHTML = lastState;
+                saveState();
+            }
+        }
+    }, [history, saveState]);
+    
+    useImperativeHandle(ref, () => ({
+        undo: undo
+    }));
+
+    const openNote = useCallback((popup) => {
+        if (overlayRef.current) overlayRef.current.style.display = 'block';
+        popup.style.display = 'block';
+        setIsNoteOpen(true);
+        popup.focus();
+    }, []);
+
+    const closeOpenNote = useCallback(() => {
+        const openPopup = editorRef.current?.querySelector(`.${styles.stylerNotePopup}[style*="display: block"]`);
+        if (openPopup) openPopup.style.display = 'none';
+        if (overlayRef.current) overlayRef.current.style.display = 'none';
+        setIsNoteOpen(false);
+    }, []);
+
+    const applyNote = useCallback((range) => {
+        const noteAnchor = document.createElement('span');
+        noteAnchor.className = styles.stylerNoteAnchor;
+        noteAnchor.appendChild(range.extractContents());
+        
+        const icon = document.createElement('span');
+        icon.className = styles.stylerNoteIcon;
+        icon.textContent = 'i';
+        noteAnchor.appendChild(icon);
+        
+        const notePopup = document.createElement('div');
+        notePopup.className = styles.stylerNotePopup;
+        notePopup.setAttribute('contenteditable', 'true');
+        notePopup.innerText = 'Type your note...';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = styles.stylerNoteDeleteBtn;
+        deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        deleteBtn.setAttribute('title', 'Delete note');
+        deleteBtn.setAttribute('contenteditable', 'false');
+        notePopup.appendChild(deleteBtn);
+
+        noteAnchor.appendChild(notePopup);
+        range.insertNode(noteAnchor);
+    }, []);
+
+    const applyStyle = useCallback((style, range) => {
+        if (style === 'note') {
+            applyNote(range);
+            return;
+        }
+        const classMap = {
+            highlight: styles.stylerHighlight,
+            box: styles.stylerBox,
+            circle: styles.stylerCircle,
+        };
+        const styleClassName = classMap[style];
+        if (styleClassName) {
+            const classApplier = rangy.createClassApplier(styleClassName, { elementTagName: 'span', normalize: true });
+            classApplier.toggleRange(range);
+        }
+    }, [applyNote]);
+
+    const eraseStyle = useCallback((range) => {
+        const classAppliers = [
+            rangy.createClassApplier(styles.stylerHighlight, { elementTagName: 'span' }),
+            rangy.createClassApplier(styles.stylerBox, { elementTagName: 'span' }),
+            rangy.createClassApplier(styles.stylerCircle, { elementTagName: 'span' })
+        ];
+        classAppliers.forEach(applier => applier.undoToRange(range));
+    }, []);
+
+    useEffect(() => {
+        const editor = editorRef.current;
+        const overlay = overlayRef.current;
+        if (!editor) return;
+
+        const handleMouseUp = () => {
+            if (isNoteOpen || !activeTool || activeTool === 'laser') return;
+            const selection = rangy.getSelection();
+            if (selection && !selection.isCollapsed) {
+                const range = selection.getRangeAt(0);
+                if (activeTool === 'eraser') {
+                    eraseStyle(range);
+                } else {
+                    applyStyle(activeTool, range);
+                }
+                saveState();
+                window.getSelection().removeAllRanges();
+            }
+        };
+
+        const handleClick = (event) => {
+            const deleteBtn = event.target.closest(`.${styles.stylerNoteDeleteBtn}`);
+            if (deleteBtn) {
+                event.stopPropagation();
+                const noteAnchor = deleteBtn.closest(`.${styles.stylerNoteAnchor}`);
+                if (noteAnchor) {
+                    setConfirmDelete(noteAnchor);
+                }
+                return;
+            }
+
+            const icon = event.target.closest(`.${styles.stylerNoteIcon}`);
+            if (icon) {
+                const popup = icon.parentElement.querySelector(`.${styles.stylerNotePopup}`);
+                if (popup) popup.style.display === 'block' ? closeOpenNote() : openNote(popup);
+            }
+        };
+        
+        editor.addEventListener('input', saveState);
+        editor.addEventListener('mouseup', handleMouseUp);
+        editor.addEventListener('click', handleClick);
+        if (overlay) overlay.addEventListener('click', closeOpenNote);
+
+        return () => {
+            editor.removeEventListener('input', saveState);
+            editor.removeEventListener('mouseup', handleMouseUp);
+            editor.removeEventListener('click', handleClick);
+            if (overlay) overlay.removeEventListener('click', closeOpenNote);
+        };
+    }, [activeTool, isNoteOpen, saveState, applyStyle, eraseStyle, openNote, closeOpenNote]);
+    
+    const handleDeleteConfirm = useCallback(() => {
+        if (confirmDelete && confirmDelete.parentNode) {
+            const icon = confirmDelete.querySelector(`.${styles.stylerNoteIcon}`);
+            const popup = confirmDelete.querySelector(`.${styles.stylerNotePopup}`);
+            if (icon) icon.remove();
+            if (popup) popup.remove();
+
+            const parent = confirmDelete.parentNode;
+            while (confirmDelete.firstChild) {
+                parent.insertBefore(confirmDelete.firstChild, confirmDelete);
+            }
+            parent.removeChild(confirmDelete);
+            
+            parent.normalize();
+            saveState();
+        }
+        setConfirmDelete(null);
+        closeOpenNote();
+    }, [confirmDelete, saveState, closeOpenNote]);
+
+    const handleDeleteCancel = useCallback(() => {
+        setConfirmDelete(null);
+        closeOpenNote();
+    }, [closeOpenNote]);
+
+    return (
+        <div className={styles.stylerWrapper}>
+            {confirmDelete && (
+                <ConfirmationModal
+                    message="Are you sure you want to delete this note?"
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={handleDeleteCancel}
+                />
+            )}
+            <div ref={overlayRef} className={styles.stylerOverlay}></div>
+            <div
+                ref={editorRef}
+                className={`${styles.stylerEditor} ${activeTool === 'laser' ? styles.laserActive : ''}`}
+                contentEditable={false} 
+            />
+        </div>
+    );
+});
+// ==================================================================
+// --- End of HighlightableEditor Component ---
+// ==================================================================
+
 
 // --- Helper Functions ---
 const sanitizeHtml = (htmlString) => {
@@ -28,7 +334,6 @@ const sanitizeHtml = (htmlString) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     doc.querySelectorAll('script, [onload], [onerror], [onclick], [onmouseover], [onfocus], [onblur]').forEach(el => el.remove());
-    doc.querySelectorAll('[contenteditable="true"]').forEach(el => el.removeAttribute('contenteditable'));
     return doc.body.innerHTML;
   } catch (error) {
     console.error("Error sanitizing HTML:", error);
@@ -75,8 +380,8 @@ const QuizSection = React.memo(({ quiz, searchTerm, onOpenQuiz }) => {
   }, [searchTerm]);
 
   const sanitizedDescription = useMemo(() => sanitizeHtml(quiz.description), [quiz.description]);
-  const highlightedTitle = useMemo(() => highlightSearchTerm(quiz.title || 'Untitled Quiz'), [quiz.title, searchTerm, highlightSearchTerm]);
-  const highlightedDescription = useMemo(() => highlightSearchTerm(sanitizedDescription), [sanitizedDescription, searchTerm, highlightSearchTerm]);
+  const highlightedTitle = useMemo(() => highlightSearchTerm(quiz.title || 'Untitled Quiz'), [quiz.title, highlightSearchTerm]);
+  const highlightedDescription = useMemo(() => highlightSearchTerm(sanitizedDescription), [sanitizedDescription, highlightSearchTerm]);
 
   return (
     <section
@@ -104,8 +409,9 @@ const QuizSection = React.memo(({ quiz, searchTerm, onOpenQuiz }) => {
     </section>
   );
 });
-
-const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, completedAt, onMarkComplete, onOpenQuiz, searchTerm }) => {
+const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, completedAt,
+  onMarkComplete, onOpenQuiz, searchTerm, dbHtml, roomId, enrollmentId,
+  activeTool, activeLessonId, editorRef }) => {
   const highlightSearchTerm = useCallback((text) => {
     if (!searchTerm || !text) return text;
     const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -114,14 +420,14 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
   }, [searchTerm]);
 
   const sanitizedContent = useMemo(() => sanitizeHtml(lesson.content), [lesson.content]);
-  const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, searchTerm, highlightSearchTerm]);
-  const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, searchTerm, highlightSearchTerm]);
+  const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, highlightSearchTerm]);
+  const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, highlightSearchTerm]);
   const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
 
   return (
     <section
       id={`lesson-${lesson.id}`}
-      className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+      className="mb-6 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
       aria-labelledby={`lesson-title-${lesson.id}`}
     >
       <div className="flex justify-between items-center mb-4">
@@ -171,10 +477,13 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
         )}
 
         {lesson.content_type === 'text' && lesson.content && (
-          <div
-            className="content-text max-w-none prose dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: highlightedContent }}
-          />
+           <HighlightableEditor 
+              ref={editorRef}
+              htmlContent={dbHtml ?? highlightedContent}
+              roomId={roomId}
+              enrollmentId={enrollmentId}
+              activeTool={activeTool}
+           />
         )}
         {lesson.content_type === 'text' && !lesson.content && (
           <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">This text lesson has no content.</p>
@@ -297,7 +606,6 @@ const FloatingIndexButton = ({ onClick, lessonCount, completedCount }) => {
         <button 
             onClick={onClick}
             id="course-index-button"
-            // MODIFIED: Using CSS module for positioning, combined with Tailwind for looks.
             className={`${styles.floatingIndexButton} flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800`}
             aria-label="Open course index"
         >
@@ -427,7 +735,8 @@ const ThemeToggle = ({ theme, onToggle }) => {
 
 
 // --- Main Component: EnrolledCourseStudyPage ---
-const EnrolledCourseStudyPage = () => {
+function EnrolledCourseStudyPage() {
+  const [dbHtml, setDbHtml] = useState(null);
   const { user, token, logout } = useContext(AuthContext);
   const [modalQuiz, setModalQuiz] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -435,9 +744,6 @@ const EnrolledCourseStudyPage = () => {
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState(null);
   const [isIndexModalOpen, setIsIndexModalOpen] = useState(false);
-
-  const [highlights, setHighlights] = useState([]);
-  const highlightApplier = useRef(null);
 
   const openQuizModal = useCallback((quiz) => {
     setModalQuiz(quiz);
@@ -457,34 +763,23 @@ const EnrolledCourseStudyPage = () => {
   const [shareInvites, setShareInvites] = useState([]);
   
   const mainContentRef = useRef(null);
+  const editorRefs = useRef({});
 
+  useEffect(() => {
+    apiClient
+      .get(`/enrollments/${enrollmentId}/notes/`)
+      .then(res => {
+        const { highlight_data } = res.data;
+        if (highlight_data) setDbHtml(highlight_data);
+      })
+      .catch(console.error);
+  }, [enrollmentId]);
   useEffect(() => {
     if (!enrollmentId) return;
     apiClient.get('/enrollments/share-invites/', { params: { enrollment: enrollmentId } })
       .then(res => setShareInvites(res.data.results || res.data))
       .catch(err => console.error('Failed to load share invites:', err));
   }, [enrollmentId]);
-
-  const [allStrokes, setAllStrokes] = useState([]);
-  useEffect(() => {
-    if (!roomId) return;
-    const drawingsRef = ref(db, `sessions/${roomId}/drawings`);
-    const unsubscribe = onValue(drawingsRef, snap => {
-      const val = snap.val() || {};
-      const arr = Object.entries(val).map(([id, s]) => ({ id, ...s }));
-      setAllStrokes(arr);
-    });
-    return () => unsubscribe();
-  }, [roomId]);
-
-  const COLORS = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4'];
-  const userColors = useMemo(() => {
-    const ids = Array.from(new Set([myId, ...allStrokes.map(s => s.userId)]));
-    return ids.reduce((map, id, i) => {
-      map[id] = COLORS[i % COLORS.length];
-      return map;
-    }, {});
-  }, [myId, allStrokes]);
 
   const [courseData, setCourseData] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -493,130 +788,30 @@ const EnrolledCourseStudyPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [otherId, setOtherId] = useState(null);
-  const [otherUserId, setOtherUserId] = useState(null); 
   const [isCollabActive, setIsCollabActive] = useState(false);
-  const [isDrawingMode, setIsDrawingMode] = useState(false); 
-  const isTeacher = false;
   
   const [zoom, setZoom] = useState(1.0);
-  const [drawingTool, setDrawingTool] = useState('pen');
-  const [drawingColor, setDrawingColor] = useState('#FFC107');
-  const [drawingLineWidth, setDrawingLineWidth] = useState(4);
 
-  const { addDrawingStroke, addTextHighlight, setDrawingCanvas, peerCursors, updateCursor, updateScroll, isSessionCreator, claimControl } = useCollaboration(roomId, myId, user?.username);
-  const [controlOwner, setControlOwner] = useState(null);
-
-  useEffect(() => {
-    const contentEl = mainContentRef.current;
-    if (!contentEl || controlOwner !== myId) return;
-
-    const mouseHandler = (e) => {
-      const rect = contentEl.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / zoom;
-      const y = (e.clientY - rect.top) / zoom;
-      
-      if (contentEl.clientWidth > 0 && contentEl.clientHeight > 0) {
-        const normX = x / (contentEl.clientWidth / zoom);
-        const normY = y / (contentEl.clientHeight / zoom);
-        updateCursor(normX, normY);
-      }
-    };
-
-    const scrollHandler = () => {
-      updateScroll(window.scrollX, window.scrollY);
-    };
-
-    window.addEventListener('mousemove', mouseHandler);
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-
-    return () => {
-      window.removeEventListener('mousemove', mouseHandler);
-      window.removeEventListener('scroll', scrollHandler);
-    };
-  }, [controlOwner, myId, updateCursor, updateScroll, zoom]);
-
-  useEffect(() => {
-    if (!roomId) return;
-    const ctrlRef = ref(db, `sessions/${roomId}/controlOwner`);
-    const unsub = onValue(ctrlRef, snap => {
-      const newOwner = snap.val();
-      setControlOwner(newOwner);
-      if (!newOwner && isSessionCreator) {
-        claimControl(myId);
-      }
-    });
-    return () => unsub();
-  }, [roomId, isSessionCreator, myId, claimControl]);
-
+  const { peerCursors, updateCursor } = useCollaboration(roomId, myId, user?.username);
+  
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [searchTerm, setSearchTerm] = useState("");
   const [searchMatches, setSearchMatches] = useState([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+  const [activeTool, setActiveTool] = useState(null);
 
-  const onDeleteLast = async () => {
-    if (!roomId) return;
-    const snapshot = await get(ref(db, `sessions/${roomId}/drawings`));
-    const all = snapshot.val() || {};
-    const keys = Object.keys(all).filter(k => all[k].userId === myId);
-    const lastKey = keys[keys.length - 1];
-    if (lastKey) {
-      await remove(ref(db, `sessions/${roomId}/drawings/${lastKey}`));
-    }
+  const handleToolClick = (tool) => {
+      setActiveTool(prev => prev === tool ? null : tool);
   };
 
-  useEffect(() => {
-    rangy.init();
-    highlightApplier.current = rangy.createClassApplier("highlight", { elementTagName: "span", normalize: true });
-  }, []);
-
-  useEffect(() => {
-    if (!roomId) return;
-    const highlightsRef = ref(db, `sessions/${roomId}/highlights`);
-    const unsubscribe = onValue(highlightsRef, (snapshot) => {
-      const highlightsData = snapshot.val() || {};
-      const highlightsArray = Object.values(highlightsData);
-      setHighlights(highlightsArray);
-    });
-    return () => unsubscribe();
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!mainContentRef.current || !highlightApplier.current) return;
-    const allRanges = rangy.createRange(mainContentRef.current);
-    highlightApplier.current.undoToRange(allRanges);
-    highlights.forEach(h => {
-      try {
-        rangy.deserializeRange(h.serialized, mainContentRef.current);
-      } catch (e) {
-        console.error("Failed to apply highlight:", h, e);
-      }
-    });
-  }, [highlights, lessons]);
-
-  const handleHighlightText = useCallback(() => {
-    const selection = rangy.getSelection();
-    if (selection.isCollapsed) {
-      alert("Please select some text to highlight.");
-      return;
+  const handleUndo = useCallback(() => {
+    if (activeLessonId && editorRefs.current[activeLessonId]) {
+        editorRefs.current[activeLessonId].undo();
+    } else {
+        console.warn("Could not find an active editor to undo.");
     }
-    try {
-      const serializedRange = rangy.serializeRange(selection.getRangeAt(0), true, mainContentRef.current);
-      addTextHighlight({ serialized: serializedRange });
-    } catch (e) {
-      console.error("Could not serialize highlight:", e);
-      alert("Sorry, this text cannot be highlighted.");
-    }
-    selection.removeAllRanges();
-  }, [addTextHighlight]);
+  }, [activeLessonId]);
 
-  const onClearAll = useCallback(async () => {
-    if (window.confirm('Are you sure you want to clear ALL drawings for everyone?')) {
-      if (!roomId) return;
-      const drawingsRef = ref(db, `sessions/${roomId}/drawings`);
-      await remove(drawingsRef);
-    }
-  }, [roomId]);
 
   const handleInviteUser = async (invitedUser) => {
     if (!user || !invitedUser || !courseData) return;
@@ -635,7 +830,6 @@ const EnrolledCourseStudyPage = () => {
         course_title: courseData.title,
       });
       setRoomId(newRoomId);
-      setOtherUserId(invitedUser.id);
       setIsCollabActive(true);
       setIsInviteModalOpen(false);
     } catch (err) {
@@ -655,8 +849,7 @@ const EnrolledCourseStudyPage = () => {
   useEffect(() => {
     const identity = user?.id ?? user?.username;
     if (identity && !myId) setMyId(identity);
-    if (otherUserId && !otherId) setOtherId(otherUserId);
-  }, [user, otherUserId, myId, otherId]);
+  }, [user, myId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -714,11 +907,6 @@ const EnrolledCourseStudyPage = () => {
             setActiveLessonId(lessonsData[0].id);
         }
 
-        if (sharedToken && enrollment.share_invite) {
-          const invite = enrollment.share_invite;
-          const inviterId = invite.invited_by?.id || invite.invited_by;
-          if (inviterId) setOtherUserId(inviterId);
-        }
       } catch (err) {
         console.error("Error fetching course data:", err);
         if (!isMounted) return;
@@ -783,7 +971,7 @@ const EnrolledCourseStudyPage = () => {
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [searchTerm, lessons, quizzes]);
+  }, [searchTerm, lessons, quizzes, searchMatches]);
 
   const handleMarkComplete = useCallback(async (lessonId) => {
     const lesson = lessons.find(l => l.id === lessonId);
@@ -844,10 +1032,45 @@ const EnrolledCourseStudyPage = () => {
     }));
   }, [lessons, quizzes]);
 
-  // WebRTC useEffect remains unchanged...
-
   const allCustomCss = lessons.map(l => l.custom_css || '').filter(s => !!s).join('\n');
   const defaultAccent = lessons[0]?.accent_color || '#3498db';
+  
+  const userColors = useMemo(() => {
+    const colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4'];
+    const colorMap = {};
+    const users = Object.keys(peerCursors);
+    if(myId) users.push(myId);
+    
+    Array.from(new Set(users)).forEach((uid, index) => {
+        colorMap[uid] = colors[index % colors.length];
+    });
+    return colorMap;
+  }, [peerCursors, myId]);
+
+  const hasTextLessons = useMemo(() => lessons.some(l => l.content_type === 'text'), [lessons]);
+
+  useEffect(() => {
+    const contentEl = mainContentRef.current;
+    if (!contentEl || !isCollabActive) return;
+
+    const mouseHandler = (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        if (activeTool === 'laser') {
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            if (contentEl.clientWidth > 0 && contentEl.clientHeight > 0) {
+                const normX = x / contentEl.clientWidth;
+                const normY = y / contentEl.clientHeight;
+                updateCursor(normX, normY);
+            }
+        } else {
+            updateCursor(null, null);
+        }
+    };
+    
+    contentEl.addEventListener('mousemove', mouseHandler);
+    return () => contentEl.removeEventListener('mousemove', mouseHandler);
+  }, [isCollabActive, updateCursor, zoom, activeTool]);
 
   if (loading) {
     return (
@@ -887,59 +1110,36 @@ const EnrolledCourseStudyPage = () => {
 
       <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} />
       
-      {/* The StudyNoteSection is moved here, outside of the transformed div, so it positions relative to the viewport. */}
       <StudyNoteSection enrollmentId={enrollmentId} />
 
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
         <div
           style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }}
         >
-          <div ref={mainContentRef} className={`${styles.lessonTemplate} relative mx-auto px-4 pt-8 pb-32`}>
+          <div ref={mainContentRef} className={`${styles.lessonTemplate} relative mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-32 ${activeTool === 'laser' ? styles.laserActive : ''}`}>
             {isCollabActive && roomId && myId && (
-              <>
-                <DrawingOverlay
-                  contentRef={mainContentRef} 
-                  isDrawingMode={isDrawingMode}
-                  onStroke={addDrawingStroke}
-                  setCanvasRef={setDrawingCanvas}
-                  strokes={allStrokes}
-                  userColors={userColors}
-                  onDeleteLast={onDeleteLast}
-                  onClearAll={onClearAll}
-                  onHighlightText={handleHighlightText}
-                  tool={drawingTool}
-                  setTool={setDrawingTool}
-                  color={drawingColor}
-                  setColor={setDrawingColor}
-                  lineWidth={drawingLineWidth}
-                  setLineWidth={setDrawingLineWidth}
-                  onStopDrawing={() => setIsDrawingMode(false)}
-                  zoom={zoom}
-                  setZoom={setZoom}
-                />
-                <div className={styles.cursorOverlay}>
-                  {peerCursors && Object.entries(peerCursors).map(([id, { x, y, name }]) => {
-                    const contentEl = mainContentRef.current;
-                    if (!contentEl) return null;
-                    const absoluteX = x * contentEl.clientWidth;
-                    const absoluteY = y * contentEl.clientHeight;
-                    return (
-                      <div key={id} className={styles.remoteCursor} style={{ left: `${absoluteX}px`, top: `${absoluteY}px` }}>
-                        <Users size={20} style={{ color: userColors[id] || '#FFFFFF' }} />
-                        <span className={styles.cursorName}>{name || '...'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
+              <div className={styles.cursorOverlay}>
+                {peerCursors && Object.entries(peerCursors).map(([id, { x, y, name }]) => {
+                  const contentEl = mainContentRef.current;
+                  if (!contentEl || !x || !y) return null;
+                  const absoluteX = x * contentEl.clientWidth;
+                  const absoluteY = y * contentEl.clientHeight;
+                  return (
+                    <div key={id} className={styles.remoteCursor} style={{ left: `${absoluteX}px`, top: `${absoluteY}px` }}>
+                      <Users size={20} style={{ color: userColors[id] || '#FFFFFF' }} />
+                      <span className={styles.cursorName}>{name || '...'}</span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
-            <header className="mb-8 flex flex-row justify-between items-start">
+            <header className="mb-8 flex flex-col sm:flex-row justify-between items-start">
               <div className="flex-1">
                 <button onClick={() => navigate('/my-learning')} className="mb-2 inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline">
                   <ArrowLeft className="w-4 h-4 mr-1" /> Back to My Learning
                 </button>
-                <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">
                   {courseData.title}
                 </h1>
                 {courseData.description && (
@@ -951,7 +1151,7 @@ const EnrolledCourseStudyPage = () => {
               </div>
             </header>
 
-            <CollaborationZoneSection isCollabActive={isCollabActive} isTeacher={isTeacher} isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode} setIsInviteModalOpen={setIsInviteModalOpen} shareInvites={shareInvites} />
+            <CollaborationZoneSection isCollabActive={isCollabActive} setIsInviteModalOpen={setIsInviteModalOpen} shareInvites={shareInvites}/>
             <div className="my-8">
               <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} resultCount={searchMatches.length} currentResultIndex={currentMatchIndex} onNextResult={handleNextResult} onPrevResult={handlePrevResult} />
             </div>
@@ -962,22 +1162,37 @@ const EnrolledCourseStudyPage = () => {
                   This course currently has no lessons or quizzes.
                 </p>
               )}
-              {lessonsWithQuizzes.map(lesson => (
-                <LessonSection
-                  key={lesson.id}
-                  lesson={lesson}
-                  associatedQuiz={lesson.associatedQuiz}
-                  isCompleted={completedLessons.has(lesson.id)}
-                  completedAt={completionTimestamps[lesson.id]}
-                  onMarkComplete={handleMarkComplete}
-                  onOpenQuiz={openQuizModal}
-                  searchTerm={searchTerm}
-                />
-              ))}
+                  {lessonsWithQuizzes.map(lesson => (
+                    <LessonSection
+                      key={lesson.id}
+                      lesson={lesson}
+                      associatedQuiz={lesson.associatedQuiz}
+                      isCompleted={completedLessons.has(lesson.id)}
+                      completedAt={completionTimestamps[lesson.id]}
+                      onMarkComplete={handleMarkComplete}
+                      onOpenQuiz={openQuizModal}
+                      searchTerm={searchTerm}
+                      dbHtml={dbHtml}
+                      roomId={roomId}
+                      enrollmentId={enrollmentId}
+                      userId={myId}
+                      activeTool={activeTool}
+                      activeLessonId={activeLessonId}
+                      editorRef={el => (editorRefs.current[lesson.id] = el)}
+                    />
+                  ))}
             </main>
           </div>
         </div>
       </div>
+      
+        {hasTextLessons && (
+            <FloatingToolbar
+                activeTool={activeTool}
+                onToolClick={handleToolClick}
+                onUndoClick={handleUndo}
+            />
+        )}
 
         <FloatingIndexButton 
             onClick={() => setIsIndexModalOpen(true)}

@@ -39,42 +39,57 @@ class SessionNoteView(APIView):
         """
         enrollment = get_object_or_404(Enrollment, pk=enrollment_pk, user=request.user)
         
-        # --- THIS IS THE FIX ---
-        # When getting or creating a session, provide a default, unique session_id.
+        # This part is fine, it creates a session container if one doesn't exist
         session, _ = CollaborationSession.objects.get_or_create(
             enrollment=enrollment,
             defaults={'session_id': f'notes_{enrollment.id}_{uuid.uuid4().hex}'}
         )
-        # --- END OF FIX ---
         
         note = SessionNote.objects.filter(session=session, user=request.user).first()
         
         if note:
+            # The serializer will correctly include 'highlight_data' if it exists
             serializer = SessionNoteSerializer(note)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
+        # Return empty data if no note exists yet
         return Response({'note': '', 'highlight_data': None}, status=status.HTTP_200_OK)
 
     def post(self, request, enrollment_pk):
         """
         CREATE / UPDATE operation.
-        Creates or updates a study note for the user.
+        Creates or updates a study note AND/OR highlight data for the user.
         """
         enrollment = get_object_or_404(Enrollment, pk=enrollment_pk, user=request.user)
 
-        # --- APPLY THE SAME FIX HERE ---
         session, _ = CollaborationSession.objects.get_or_create(
             enrollment=enrollment,
             defaults={'session_id': f'notes_{enrollment.id}_{uuid.uuid4().hex}'}
         )
-        # --- END OF FIX ---
         
-        note_content = request.data.get('note', '')
+        # Get both note and highlight data from the request
+        note_content = request.data.get('note', None)
+        highlight_content = request.data.get('highlight_data', None)
+
+        # Prepare a dictionary of fields to update
+        defaults = {}
+        if note_content is not None:
+            defaults['note'] = note_content
+        if highlight_content is not None:
+            defaults['highlight_data'] = highlight_content
         
+        # Ensure there is actually data to save
+        if not defaults:
+            return Response(
+                {"detail": "No 'note' or 'highlight_data' provided."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Use the defaults dictionary to update or create the record
         note, created = SessionNote.objects.update_or_create(
             session=session,
             user=request.user,
-            defaults={'note': note_content}
+            defaults=defaults
         )
         
         serializer = SessionNoteSerializer(note)
@@ -94,7 +109,9 @@ class SessionNoteView(APIView):
             note.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except (CollaborationSession.DoesNotExist, SessionNote.DoesNotExist):
+            # It's already gone, so succeed silently
             return Response(status=status.HTTP_204_NO_CONTENT)
+
 class EnrollmentViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing enrollments with support for one-time share tokens.

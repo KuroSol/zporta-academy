@@ -1,4 +1,4 @@
-/* EnrolledCourseDetail.module.css (Extended Version) */
+/* EnrolledCourseDetail.module.css (Fully Responsive & Modernized) */
 
 :root {
   /* This will be set via Helmet in the component */
@@ -9,30 +9,28 @@
   --danger-color: #e74c3c;
 }
 
-/* --- NEW CURSOR STYLES --- */
+/* --- LIVE CURSOR STYLES --- */
 .cursorOverlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 12; /* Above the drawing canvas, below the toolbar */
-  pointer-events: none; /* Allows clicks to go through to the content below */
-  overflow: hidden; /* Prevents cursors from appearing outside the content area */
+  z-index: 12;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-/* * Each remote cursor is positioned absolutely within the .cursorOverlay.
- * Its `left` and `top` are now relative to the content, not the viewport.
- */
 .remoteCursor {
   position: absolute;
   display: flex;
   align-items: center;
-  transition: top 0.1s linear, left 0.1s linear; /* Smooths out cursor movement */
+  transition: top 0.1s linear, left 0.1s linear;
 }
 
 .remoteCursor svg {
   animation: pulse 2s infinite ease-in-out;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
 @keyframes pulse {
@@ -51,25 +49,31 @@
   white-space: nowrap;
   font-family: sans-serif;
 }
-/* --- END NEW CURSOR STYLES --- */
+/* --- END CURSOR STYLES --- */
 
 
-/* --- MOBILE-FIRST LAYOUT FIX --- */
-/* This is the final and most robust solution. We create a single,
-   mobile-sized layout that is consistent for ALL users. */
+/* --- RESPONSIVE MAIN LAYOUT --- */
 .lessonTemplate {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.6;
+  line-height: 1.7;
   color: #333;
   box-sizing: border-box;
-
-  /* Force a narrow, non-responsive width like a mobile app screen. */
-  width: 420px;
-  max-width: 420px;
-
-  /* This will center the container on larger screens automatically. */
+  
+  /* Responsive width */
+  width: 100%;
+  max-width: 900px; /* Comfortable reading width on desktops */
+  
+  /* Centering */
   margin-left: auto;
   margin-right: auto;
+  padding: 1rem; /* Padding for mobile */
+}
+
+/* Increase padding on larger screens */
+@media (min-width: 768px) {
+  .lessonTemplate {
+    padding: 2rem;
+  }
 }
 
 
@@ -83,33 +87,25 @@
 .lessonTemplate strong { color: var(--accent-color); }
 
 /* --- REFINED & INTERACTIVE BOXES --- */
-.lessonTemplate .dialogueSection { 
-  background: #f9f9f9; 
-  padding: 20px; 
-  border-radius: 12px; 
-  margin-bottom: 25px; 
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added transition */
-}
-.lessonTemplate .dialogueSection:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.07);
-}
-.lessonTemplate .dialogueSection p { margin-bottom: 12px; line-height: 1.7; }
-
+.lessonTemplate .dialogueSection,
 .lessonTemplate .explanationSection { 
-  background: #eef7ff; 
-  padding: 20px; 
+  padding: 1rem; 
   border-radius: 12px; 
-  margin-bottom: 20px; 
-  line-height: 1.75; 
+  margin-bottom: 1.5rem; 
   box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added transition */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.lessonTemplate .dialogueSection { background: #f9f9f9; }
+.lessonTemplate .explanationSection { background: #eef7ff; }
+
+.lessonTemplate .dialogueSection:hover,
 .lessonTemplate .explanationSection:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.07);
 }
+
+.lessonTemplate .dialogueSection p { margin-bottom: 12px; line-height: 1.7; }
 .lessonTemplate .explanationSection .explanationText { margin: 5px 0 15px; padding-left: 15px; border-left: 3px solid var(--accent-color); color: #555; font-size: 0.95em; }
 /* --- END REFINED BOXES --- */
 
@@ -126,7 +122,7 @@
 .lessonTemplate table tr:nth-child(even) { border-left: 4px solid var(--accent-color); }
 .lessonTemplate .callout { border-left: 4px solid var(--accent-color); }
 
-/* --- NEW: STYLES FOR CODE BLOCKS --- */
+/* --- CODE BLOCKS --- */
 .lessonTemplate pre {
   background-color: #2d2d2d;
   color: #f8f8f2;
@@ -150,15 +146,12 @@
   padding: 0;
   font-size: inherit;
 }
-/* Custom scrollbar for code blocks */
 .lessonTemplate pre::-webkit-scrollbar { height: 8px; }
 .lessonTemplate pre::-webkit-scrollbar-track { background: #2d2d2d; }
 .lessonTemplate pre::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; }
 .lessonTemplate pre::-webkit-scrollbar-thumb:hover { background-color: #777; }
-/* --- END CODE BLOCK STYLES --- */
 
-
-/* --- NEW: STYLES FOR BLOCKQUOTES --- */
+/* --- BLOCKQUOTES --- */
 .lessonTemplate blockquote {
   border-left: 5px solid var(--accent-color);
   margin: 1.5em 0;
@@ -167,18 +160,15 @@
   font-style: italic;
   color: #555;
 }
-.lessonTemplate blockquote p {
-  margin: 0;
-}
+.lessonTemplate blockquote p { margin: 0; }
 .lessonTemplate blockquote footer {
   font-style: normal;
   font-weight: 600;
   margin-top: 1em;
   color: #333;
 }
-/* --- END BLOCKQUOTE STYLES --- */
 
-/* --- NEW: STYLES FOR ALERT BOXES --- */
+/* --- ALERT BOXES --- */
 .alert {
   padding: 15px 20px;
   margin: 1em 0;
@@ -188,38 +178,23 @@
   align-items: center;
   gap: 15px;
 }
-.alertSuccess {
-  color: #155724;
-  background-color: #d4edda;
-  border-color: #c3e6cb;
-}
-.alertWarning {
-  color: #856404;
-  background-color: #fff3cd;
-  border-color: #ffeeba;
-}
-.alertInfo {
-  color: #0c5460;
-  background-color: #d1ecf1;
-  border-color: #bee5eb;
-}
-/* --- END ALERT BOX STYLES --- */
+.alertSuccess { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+.alertWarning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+.alertInfo { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
 
-/* MODIFIED: This rule is no longer needed and has been replaced by .floatingIndexButton */
-/*
-#course-index-button {
-    right: 5.25rem !important;
-}
-*/
-
-/* NEW: Style for the floating button to control its position */
+/* --- FLOATING BUTTON --- */
 .floatingIndexButton {
   position: fixed;
-  bottom: 3rem; /* Increased value to move the button higher up */
-  right: 3rem;  /* Increased value to move the button away from the corner */
+  bottom: 1.5rem;
+  right: 1.5rem;
   z-index: 100;
 }
-
+@media (min-width: 768px) {
+  .floatingIndexButton {
+    bottom: 3rem;
+    right: 3rem;
+  }
+}
 
 /* --- REFINED MARKER HIGHLIGHT STYLE --- */
 .markerHighlight {
@@ -230,9 +205,309 @@
   text-decoration-skip-ink: none;
   background-color: transparent !important;
   cursor: pointer;
-  transition: text-decoration-color 0.3s ease; /* Added transition */
+  transition: text-decoration-color 0.3s ease;
   border-radius: 2px;
 }
 .markerHighlight:hover {
-  text-decoration-color: rgba(255, 152, 0, 0.7); /* A slightly darker color on hover */
+  text-decoration-color: rgba(255, 152, 0, 0.7);
+}
+
+/* ================================================================== */
+/* --- TextStyler Component Styles (Floating & Collapsible) --- */
+/* ================================================================== */
+
+.stylerWrapper {
+    position: relative;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.floatingToolbarContainer {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+}
+
+.toolbarContent {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    background-color: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s ease, transform 0.3s ease, max-width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    transform-origin: bottom;
+    opacity: 1;
+    transform: scaleY(1);
+    max-width: 500px;
+    overflow: hidden;
+}
+
+.floatingToolbarContainer.collapsed .toolbarContent {
+    opacity: 0;
+    transform: scaleY(0);
+    max-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin-right: 0;
+    pointer-events: none;
+}
+
+.stylerToolBtn {
+    background-color: transparent;
+    color: #e5e7eb;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stylerToolBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.stylerToolBtn.active {
+    background-color: #4f46e5;
+    color: white;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+}
+
+.separator {
+    width: 1px;
+    height: 28px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin: auto 4px;
+}
+
+.toolbarToggle {
+    background-color: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e5e7eb;
+    width: 44px;
+    height: 30px;
+    border-radius: 12px 12px 0 0;
+    margin-left: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.floatingToolbarContainer.collapsed .toolbarToggle {
+    margin-left: 0;
+}
+
+.stylerEditor {
+    padding: 1.5rem;
+    min-height: 250px;
+    font-size: 1rem;
+    line-height: 1.8;
+    outline: none;
+    color: #1f2937;
+}
+
+.stylerEditor.editing {
+    box-shadow: inset 0 0 0 2px var(--accent-color);
+}
+
+.stylerEditor.laserActive {
+    cursor: crosshair;
+}
+
+.stylerEditor[contenteditable="false"] {
+    background-color: #f9fafb;
+    color: #4b5563;
+}
+
+/* --- Annotation Styles --- */
+.stylerHighlight { background-color: #fef08a; border-radius: 3px; }
+.stylerBox { border: 2px solid #fca5a5; border-radius: 5px; padding: 0 2px; }
+.stylerCircle { position: relative; padding: 0.1em 0.2em; }
+.stylerCircle::before {
+    content: '';
+    position: absolute;
+    top: -0.4em;
+    left: -0.1em;
+    right: -0.1em;
+    bottom: -0.4em;
+    border: 2px solid #818cf8;
+    border-radius: 50%;
+}
+
+/* --- Note Styles (MODIFIED) --- */
+.stylerNoteAnchor {
+    position: relative;
+    background-color: #e0e7ff;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* --- MODIFIED: Icon is smaller and raised to be less intrusive --- */
+.stylerNoteIcon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 16px;
+    margin-left: 3px;
+    user-select: none;
+    transition: transform 0.2s;
+    vertical-align: super; /* Lifts the icon up */
+    position: relative;
+    top: -1px; /* Fine-tune the vertical position */
+}
+
+.stylerNoteAnchor:hover .stylerNoteIcon {
+    transform: scale(1.1);
+}
+
+.stylerNotePopup {
+    display: none;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    background-color: #fffbeb;
+    border: 1px solid #facc15;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    font-size: 14px;
+    line-height: 1.5;
+    color: #422006;
+    z-index: 10;
+    padding-top: 32px;
+}
+
+/* --- NEW: Delete button for notes --- */
+.stylerNoteDeleteBtn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #a16207; /* amber-700 */
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s ease;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.stylerNoteDeleteBtn:hover {
+    color: #ef4444; /* red-500 */
+    background-color: rgba(0,0,0,0.05);
+    transform: scale(1.1);
+}
+
+
+/* --- Overlay Style --- */
+.stylerOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.2);
+    z-index: 5;
+}
+
+/* --- NEW: Confirmation Modal Styles --- */
+.confirmationModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(17, 24, 39, 0.6); /* gray-900 with opacity */
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* High z-index to be on top */
+}
+
+.confirmationModal {
+    background-color: white;
+    padding: 24px 28px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.confirmationModalMessage {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    color: #1f2937; /* gray-800 */
+    line-height: 1.6;
+}
+
+.confirmationModalActions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.confirmationModalActions button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.confirmationModalActions button:first-child { /* Yes, Delete button */
+    background-color: #ef4444; /* red-500 */
+    color: white;
+}
+.confirmationModalActions button:first-child:hover {
+    background-color: #dc2626; /* red-600 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+.confirmationModalActions button:last-child { /* Cancel button */
+    background-color: #e5e7eb; /* gray-200 */
+    color: #374151; /* gray-700 */
+}
+.confirmationModalActions button:last-child:hover {
+    background-color: #d1d5db; /* gray-300 */
 }
