@@ -13,8 +13,6 @@ import { Users, UserPlus, Pencil } from 'lucide-react';
 */
 export default function CollaborationZoneSection({
   isCollabActive,
-  isDrawingMode,
-  setIsDrawingMode,
   setIsInviteModalOpen,
   shareInvites = [],
 }) {
@@ -54,15 +52,7 @@ export default function CollaborationZoneSection({
             )}
             
             {/* The "Start Drawing" button appears when a session is active but drawing is not yet turned on */}
-            {(hasSharedToken || isCollabActive) && !isDrawingMode && (
-                <button 
-                    onClick={() => setIsDrawingMode(true)} 
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800"
-                >
-                    <Pencil className="w-4 h-4" />
-                    <span>Start Drawing</span>
-                </button>
-            )}
+
             
             {/* The "Stop Drawing" button has been moved to the main toolbar (`DrawingOverlay`),
                 so no button is needed here when isDrawingMode is true. This simplifies the UI. */}

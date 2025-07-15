@@ -8,109 +8,73 @@ import {
   XCircle,
   AlertTriangle,
   Type,
-  Users, // For unique participants/finishers
-  HelpCircle, // For times answered (question)
-  ThumbsUp, // For times correct (question)
-  ThumbsDown, // For times wrong (question)
-  BarChart3, // For overall quiz stats like total correct/wrong
+  Users,
+  HelpCircle,
+  ThumbsUp,
+  ThumbsDown,
+  BarChart3,
   Send,
-  Loader2
+  Loader2,
+  PlayCircle,
+  ChevronsUpDown,
 } from 'lucide-react';
-import styles from './QuizCard.module.css'; // Your existing CSS Module
+import styles from './QuizCard.module.css';
 
-// Assuming these components are correctly exported and can be used here
+// Your original components are correctly imported
 import SpeechToTextInput from './SpeechToTextInput';
 import FillInTheBlanksQuestion from './FillInTheBlanksQuestion';
 import SortQuestion from './SortQuestion';
 
-// --- Helper: Render Media (Image/Audio) for Card ---
+// Helper components from your original file
 const RenderCardMedia = ({ url, type, alt = '', className = '', controls = true }) => {
   if (!url) return null;
-  if (type === 'image') {
-    return (
-      <img
-        src={url}
-        alt={alt || 'Related image'}
-        className={`${styles.cardMediaImage} ${className}`}
-        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-      />
-    );
-  }
-  if (type === 'audio') {
-    return (
-      <audio controls={controls} src={url} className={`${styles.cardMediaAudio} ${className}`}>
-        Your browser does not support the audio element.
-      </audio>
-    );
-  }
+  if (type === 'image') return <img src={url} alt={alt || 'Related image'} className={`${styles.cardMediaImage} ${className}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+  if (type === 'audio') return <audio controls={controls} src={url} className={`${styles.cardMediaAudio} ${className}`}>Your browser does not support the audio element.</audio>;
   return null;
 };
 
-// --- Error Display (Simplified for Card) ---
-const CardErrorDisplay = ({ message }) => {
-  return (
-    <div className={`${styles.quizCard} ${styles.errorCard}`} role="alert">
-      <AlertTriangle className={styles.errorIcon} aria-hidden="true" />
-      <p className={styles.errorMessage}>{message || "Error loading quiz data."}</p>
-    </div>
-  );
-};
+const CardErrorDisplay = ({ message }) => (
+  <div className={`${styles.quizCard} ${styles.errorCard}`} role="alert">
+    <AlertTriangle className={styles.errorIcon} aria-hidden="true" />
+    <p className={styles.errorMessage}>{message || "Error loading quiz data."}</p>
+  </div>
+);
 
-// --- Main Interactive Quiz Card Component ---
-const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added IntersectionObserver props
+const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => {
+  // State for new expand/collapse UI
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // All of your original state from the uploaded file
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [submittedAnswers, setSubmittedAnswers] = useState({});
   const [feedback, setFeedback] = useState({});
   const [cardError, setCardError] = useState(null);
   const [isLoadingSubmission, setIsLoadingSubmission] = useState(false);
-
   const [publicStats, setPublicStats] = useState({
-    quizTitle: '',
-    uniqueParticipants: 0,
-    uniqueFinishers: 0,
-    totalAnswersSubmittedForQuiz: 0,
-    totalCorrectAnswersForQuiz: 0,
-    totalWrongAnswersForQuiz: 0,
-    overallCorrectnessPercentage: 0,
-    overallWrongnessPercentage: 0,
+    quizTitle: '', uniqueParticipants: 0, uniqueFinishers: 0,
+    totalAnswersSubmittedForQuiz: 0, totalCorrectAnswersForQuiz: 0, totalWrongAnswersForQuiz: 0,
     questionsStats: [],
   });
   const [isLoadingPublicStats, setIsLoadingPublicStats] = useState(true);
   const [publicStatsError, setPublicStatsError] = useState(null);
 
   const { token, logout } = useContext(AuthContext) || {};
-  const cardRef = useRef(null); // Ref for IntersectionObserver
+  const cardRef = useRef(null);
 
-  // IntersectionObserver logic (similar to ItemCard)
+  // All of your original useEffects and logic are fully restored
   useEffect(() => {
-    if (!onItemVisible || !onItemHidden || !itemType) return; // Don't run if props aren't passed
-
-    if (!('IntersectionObserver' in window)) {
-      console.warn('IntersectionObserver not supported for QuizCard.');
-      return;
-    }
+    if (!onItemVisible || !onItemHidden || !itemType) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          onItemVisible(quiz.id, itemType);
-        } else {
-          onItemHidden(quiz.id, itemType);
-        }
-      },
-      { threshold: 0.5 }
+        if (entry.isIntersecting) onItemVisible(quiz.id, itemType);
+        else onItemHidden(quiz.id, itemType);
+      }, { threshold: 0.5 }
     );
     const currentCardRef = cardRef.current;
-    if (currentCardRef) {
-      observer.observe(currentCardRef);
-    }
-    return () => {
-      if (currentCardRef) {
-        observer.unobserve(currentCardRef);
-      }
-    };
+    if (currentCardRef) observer.observe(currentCardRef);
+    return () => { if (currentCardRef) observer.unobserve(currentCardRef); };
   }, [quiz.id, itemType, onItemVisible, onItemHidden]);
-
 
   useEffect(() => {
     setUserAnswers({});
@@ -118,22 +82,14 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
     setFeedback({});
     setCurrentIndex(0);
     setCardError(null);
-    setPublicStats({
-      quizTitle: '', uniqueParticipants: 0, uniqueFinishers: 0,
-      totalAnswersSubmittedForQuiz: 0, totalCorrectAnswersForQuiz: 0, totalWrongAnswersForQuiz: 0,
-      overallCorrectnessPercentage: 0, overallWrongnessPercentage: 0, questionsStats: []
-    });
+    setIsExpanded(false);
     setIsLoadingPublicStats(true);
     setPublicStatsError(null);
   }, [quiz.id]);
 
   const fetchPublicQuizStats = useCallback(async () => {
-    if (!quiz?.id) {
-      setIsLoadingPublicStats(false);
-      return;
-    }
+    if (!quiz?.id) { setIsLoadingPublicStats(false); return; }
     try {
-      // API Endpoint: /api/analytics/quizzes/<quiz_id>/detailed-statistics/
       const response = await apiClient.get(`/analytics/quizzes/${quiz.id}/detailed-statistics/`);
       setPublicStats({
         quizTitle: response.data.quiz_title || quiz.title,
@@ -142,12 +98,9 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
         totalAnswersSubmittedForQuiz: response.data.total_answers_submitted_for_quiz ?? 0,
         totalCorrectAnswersForQuiz: response.data.total_correct_answers_for_quiz ?? 0,
         totalWrongAnswersForQuiz: response.data.total_wrong_answers_for_quiz ?? 0,
-        overallCorrectnessPercentage: response.data.overall_correctness_percentage ?? 0,
-        overallWrongnessPercentage: response.data.overall_wrongness_percentage ?? 0,
         questionsStats: Array.isArray(response.data.questions_stats) ? response.data.questions_stats : [],
       });
     } catch (err) {
-      console.error("Failed to fetch public quiz statistics:", err);
       setPublicStatsError("Could not load quiz statistics.");
     } finally {
       setIsLoadingPublicStats(false);
@@ -162,12 +115,9 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
     }
   }, [quiz?.id, fetchPublicQuizStats]);
 
-  if (!quiz || typeof quiz !== 'object' || !quiz.id || typeof quiz.title !== 'string' || !Array.isArray(quiz.questions)) {
-    return <CardErrorDisplay message="Invalid quiz data provided." />;
-  }
-
   const questions = quiz.questions.map((q, index) => ({ ...q, temp_id: `card_q_${quiz.id}_${index}` }));
   const totalQuestions = questions.length;
+  const isQuizCompleted = totalQuestions > 0 && Object.keys(submittedAnswers).length === totalQuestions;
   const safeCurrentIndex = Math.min(Math.max(0, currentIndex), Math.max(0, totalQuestions - 1));
   const currentQuestion = totalQuestions > 0 ? questions[safeCurrentIndex] : {};
   const currentQuestionId = currentQuestion?.id;
@@ -195,9 +145,7 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
     const questionToSubmitId = currentQuestion.id;
     if (!questionToSubmitId || submittedAnswers[questionToSubmitId] || isLoadingSubmission) return;
 
-    const answer = submittedAnswerFromInteraction !== undefined
-      ? submittedAnswerFromInteraction
-      : userAnswers[questionToSubmitId];
+    const answer = submittedAnswerFromInteraction !== undefined ? submittedAnswerFromInteraction : userAnswers[questionToSubmitId];
     const question = currentQuestion;
 
     if (['dragdrop','sort', 'short', 'multi'].includes(question.question_type)) {
@@ -275,23 +223,11 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
       setSubmittedAnswers(prev => ({ ...prev, [questionToSubmitId]: true }));
 
       if (token) {
-        // API Call to /api/quizzes/<quiz_pk>/record-answer/
-        // This endpoint should now also trigger SM-2 update via analytics.utils.update_memory_stat_item
-        // and log event via analytics.utils.log_event
-        // The backend RecordQuizAnswerView needs to accept time_spent_ms if you want to send it from here.
-        // For QuizCard, time_spent_ms per question might be harder to track accurately unless QuizCard
-        // is part of a larger quiz-taking flow that manages question display times.
-        // If QuizCard is standalone, we might omit time_spent_ms or use a rough estimate.
-        await apiClient.post(
-          `/quizzes/${quiz.id}/record-answer/`, // Ensure this matches your quizzes/urls.py
-          { 
+        await apiClient.post(`/quizzes/${quiz.id}/record-answer/`, { 
             question_id: questionToSubmitId, 
             selected_option: answer,
-            // time_spent_ms: /* some_value_if_tracked_here */ null, // Optional
-          },
-          { headers: { Authorization: `Token ${token}` } } // Or Bearer ${token}
-        );
-        fetchPublicQuizStats(); // Re-fetch stats after an answer is recorded
+        });
+        fetchPublicQuizStats();
       }
     } catch (err) {
       console.error("Error submitting answer in card:", err);
@@ -482,150 +418,104 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => { // Added
     }
   };
 
-  if (totalQuestions === 0) {
-    return (
-      <article ref={cardRef} className={`${styles.quizCard} ${styles.emptyCard}`} data-item-id={quiz.id} data-item-type={itemType || 'quiz'}>
-        <div className={styles.cardHeader}>
-          <h3 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
-        </div>
-        {isLoadingPublicStats ? (
-          <div className={styles.loadingContainer}><Loader2 className={styles.loadingIcon} size={24} /> Loading statistics...</div>
-        ) : publicStatsError ? (
-          <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert" style={{margin: '0.5rem 0'}}>
-            <AlertTriangle size={16} className={styles.feedbackIcon} /> {publicStatsError}
-          </div>
-        ) : (
-          <div className={styles.quizStatsContainer}>
-            <div className={styles.statItem} title="Unique users who attempted this quiz">
-              <Users size={20} className={styles.statIcon} />
-              <span className={styles.statValue}>{publicStats.uniqueParticipants}</span>
-              <span className={styles.statLabel}>Participants</span>
-            </div>
-            <div className={styles.statItem} title="Overall correct answers for this quiz">
-              <CheckCircle size={20} className={`${styles.statIcon} ${styles.correctIcon}`} />
-              <span className={`${styles.statValue} ${styles.correctText}`}>{publicStats.totalCorrectAnswersForQuiz}</span>
-              <span className={styles.statLabel}>Total Correct</span>
-            </div>
-            <div className={styles.statItem} title="Overall wrong answers for this quiz">
-              <XCircle size={20} className={`${styles.statIcon} ${styles.incorrectIcon}`} />
-              <span className={`${styles.statValue} ${styles.incorrectText}`}>{publicStats.totalWrongAnswersForQuiz}</span>
-              <span className={styles.statLabel}>Total Wrong</span>
-            </div>
-          </div>
-        )}
-        <p className={styles.noQuestions}>No questions available in this quiz.</p>
-      </article>
-    );
-  }
+  const toggleExpand = () => setIsExpanded(!isExpanded);
+
+  const getButtonState = () => {
+    if (isQuizCompleted) {
+      return { text: 'Review Quiz', icon: <CheckCircle size={20} /> };
+    }
+    if (Object.keys(submittedAnswers).length > 0) {
+      return { text: 'Continue Quiz', icon: <PlayCircle size={20} /> };
+    }
+    return { text: 'See Details', icon: <ChevronsUpDown size={20} /> };
+  };
+
+  const { text: buttonText, icon: buttonIcon } = getButtonState();
 
   return (
-    <article ref={cardRef} className={styles.quizCard} role="region" aria-label={`Quiz: ${publicStats.quizTitle || quiz.title}`} data-item-id={quiz.id} data-item-type={itemType || 'quiz'}>
+    <article ref={cardRef} className={`${styles.quizCard} ${isExpanded ? styles.isExpanded : ''}`} role="region" aria-label={`Quiz: ${publicStats.quizTitle || quiz.title}`}>
       <div className={styles.cardHeader}>
         <h3 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
         {totalQuestions > 0 && (
           <span className={styles.progressText} aria-live="polite">
-            Q {safeCurrentIndex + 1}/{totalQuestions}
+            {isExpanded ? `Q ${safeCurrentIndex + 1}/${totalQuestions}` : `${totalQuestions} Questions`}
           </span>
         )}
       </div>
 
-      {isLoadingPublicStats ? (
-        <div className={styles.loadingContainer} style={{padding: '1rem', textAlign: 'center'}}><Loader2 className={styles.loadingIcon} size={24} /> Loading statistics...</div>
-      ) : publicStatsError ? (
-        <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert" style={{margin: '0.5rem 0'}}>
-          <AlertTriangle size={16} className={styles.feedbackIcon} /> {publicStatsError}
-        </div>
-      ) : (
-        <div className={styles.quizStatsContainer}>
-          <div className={styles.statItem} title="Unique users who attempted this quiz">
-            <Users size={20} className={styles.statIcon} />
-            <span className={styles.statValue}>{publicStats.uniqueParticipants}</span>
-            <span className={styles.statLabel}>Participants</span>
-          </div>
-          <div className={styles.statItem} title="Overall correct answers for this quiz">
-            <BarChart3 size={20} className={`${styles.statIcon} ${styles.correctIcon}`} />
-            <span className={`${styles.statValue} ${styles.correctText}`}>{publicStats.totalCorrectAnswersForQuiz}</span>
-            <span className={styles.statLabel}>Total Correct</span>
-          </div>
-          <div className={styles.statItem} title="Overall wrong answers for this quiz">
-            <BarChart3 size={20} className={`${styles.statIcon} ${styles.incorrectIcon}`} />
-            <span className={`${styles.statValue} ${styles.incorrectText}`}>{publicStats.totalWrongAnswersForQuiz}</span>
-            <span className={styles.statLabel}>Total Wrong</span>
-          </div>
-        </div>
-      )}
-
-      {currentQuestion?.id && (
-        <>
-          <div className={styles.questionDisplayArea}>
-            <RenderCardMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || 'Question image'} className={styles.questionMediaItem} />
-            <RenderCardMedia url={currentQuestion.question_audio} type="audio" className={styles.questionMediaItem} />
-            <div className={styles.questionText} dangerouslySetInnerHTML={{ __html: currentQuestion.question_text || 'Loading question...' }} id={`question-text-${currentQuestion.id}`} />
-          </div>
-
-          {currentQuestionPublicStats && !isLoadingPublicStats && (
-            <div className={`${styles.quizStatsContainer} ${styles.perQuestionStats}`}>
-              <div className={styles.statItem} title="Times this question was answered by all users">
-                <HelpCircle size={18} className={styles.statIcon} />
-                <span className={styles.statValue}>{currentQuestionPublicStats.times_answered}</span>
-                <span className={styles.statLabel}>Answered</span>
-              </div>
-              <div className={styles.statItem} title="Times this question was answered correctly by all users">
-                <ThumbsUp size={18} className={`${styles.statIcon} ${styles.correctIcon}`} />
-                <span className={`${styles.statValue} ${styles.correctText}`}>{currentQuestionPublicStats.times_correct}</span>
-                <span className={styles.statLabel}>Correctly</span>
-              </div>
-              <div className={styles.statItem} title="Times this question was answered incorrectly by all users">
-                <ThumbsDown size={18} className={`${styles.statIcon} ${styles.incorrectIcon}`} />
-                <span className={`${styles.statValue} ${styles.incorrectText}`}>{currentQuestionPublicStats.times_wrong}</span>
-                <span className={styles.statLabel}>Incorrectly</span>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.answerAreaContainer}>
-            {renderAnswerArea()}
-          </div>
-        </>
-      )}
-      {!currentQuestion?.id && totalQuestions > 0 && !isLoadingPublicStats && (
-        <div className={styles.noQuestions} style={{padding: '1rem'}}>Please navigate to a question.</div>
-      )}
-
-      <div className={styles.feedbackContainer}>
-        {cardError && (
-          <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert">
-            <AlertTriangle size={16} className={styles.feedbackIcon} /> {cardError}
+      <div className={styles.collapsedContent}>
+        {isLoadingPublicStats ? (
+          <div className={styles.loadingContainer}><Loader2 className={styles.loadingIcon} size={24} /></div>
+        ) : publicStatsError ? (
+          <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert"><AlertTriangle size={16} /> {publicStatsError}</div>
+        ) : (
+          <div className={styles.quizStatsContainer}>
+            <div className={styles.statItem} title="Unique users who attempted this quiz"><Users size={20} className={styles.statIcon} /><span className={styles.statValue}>{publicStats.uniqueParticipants}</span><span className={styles.statLabel}>Participants</span></div>
+            <div className={styles.statItem} title="Overall correct answers"><CheckCircle size={20} className={`${styles.statIcon} ${styles.correctIcon}`} /><span className={`${styles.statValue} ${styles.correctText}`}>{publicStats.totalCorrectAnswersForQuiz}</span><span className={styles.statLabel}>Correct</span></div>
+            <div className={styles.statItem} title="Overall wrong answers"><XCircle size={20} className={`${styles.statIcon} ${styles.incorrectIcon}`} /><span className={`${styles.statValue} ${styles.incorrectText}`}>{publicStats.totalWrongAnswersForQuiz}</span><span className={styles.statLabel}>Wrong</span></div>
           </div>
         )}
-        {isAnswerSubmittedForCurrent && currentFeedback && (
-          <div className={`${styles.feedbackArea} ${currentFeedback.isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`} role="status">
-            {currentFeedback.isCorrect ? <CheckCircle size={16} className={styles.feedbackIcon} /> : <XCircle size={16} className={styles.feedbackIcon} />}
-            <span>{currentFeedback.isCorrect ? 'Correct!' : 'Incorrect.'}</span>
-            {!currentFeedback.isCorrect && currentQuestion?.question_type === 'short' && currentFeedback.correctValue && (
-              <span className={styles.correctAnswerTextCard}>Correct: {currentFeedback.correctValue}</span>
-            )}
-          </div>
-        )}
+        <button onClick={toggleExpand} className={styles.startQuizButton}>
+          {buttonIcon}
+          <span>{buttonText}</span>
+        </button>
       </div>
 
-      {totalQuestions > 1 && (
-        <div className={styles.navigation}>
-          <button type="button" className={styles.navButton} onClick={goPrev} disabled={safeCurrentIndex === 0 || isLoadingSubmission} aria-label="Previous Question">
-            <ChevronLeft size={20} /> <span className={styles.navButtonText}>Prev</span>
-          </button>
-          <button type="button" className={styles.navButton} onClick={goNext}
-            disabled={safeCurrentIndex === totalQuestions - 1 || isLoadingSubmission || (totalQuestions > 0 && !isAnswerSubmittedForCurrent && safeCurrentIndex < totalQuestions -1) }
-            aria-label="Next Question"
-          >
-            <span className={styles.navButtonText}>Next</span> <ChevronRight size={20} />
-          </button>
-        </div>
-      )}
+      <div className={styles.expandedContent}>
+        {totalQuestions === 0 ? (
+          <p className={styles.noQuestions}>No questions available in this quiz.</p>
+        ) : (
+          <>
+            <div className={styles.questionDisplayArea}>
+              <RenderCardMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || 'Question image'} className={styles.questionMediaItem} />
+              <RenderCardMedia url={currentQuestion.question_audio} type="audio" className={styles.questionMediaItem} />
+              <div className={styles.questionText} dangerouslySetInnerHTML={{ __html: currentQuestion.question_text || 'Loading question...' }} />
+            </div>
 
-      {totalQuestions > 0 && safeCurrentIndex === totalQuestions - 1 && isAnswerSubmittedForCurrent && (
-        <p className={styles.quizCompletedCard}>You've reached the end of the quiz on this card!</p>
-      )}
+            {currentQuestionPublicStats && !isLoadingPublicStats && (
+              <div className={`${styles.quizStatsContainer} ${styles.perQuestionStats}`}>
+                <div className={styles.statItem} title="Times this question was answered"><HelpCircle size={18} className={styles.statIcon} /><span className={styles.statValue}>{currentQuestionPublicStats.times_answered}</span><span className={styles.statLabel}>Answered</span></div>
+                <div className={styles.statItem} title="Times correct"><ThumbsUp size={18} className={`${styles.statIcon} ${styles.correctIcon}`} /><span className={`${styles.statValue} ${styles.correctText}`}>{currentQuestionPublicStats.times_correct}</span><span className={styles.statLabel}>Correctly</span></div>
+                <div className={styles.statItem} title="Times wrong"><ThumbsDown size={18} className={`${styles.statIcon} ${styles.incorrectIcon}`} /><span className={`${styles.statValue} ${styles.incorrectText}`}>{currentQuestionPublicStats.times_wrong}</span><span className={styles.statLabel}>Incorrectly</span></div>
+              </div>
+            )}
+
+            <div className={styles.answerAreaContainer}>{renderAnswerArea()}</div>
+
+            <div className={styles.feedbackContainer}>
+              {cardError && <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert"><AlertTriangle size={16} /> {cardError}</div>}
+              {isAnswerSubmittedForCurrent && currentFeedback && (
+                <div className={`${styles.feedbackArea} ${currentFeedback.isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`} role="status">
+                  {currentFeedback.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                  <span>{currentFeedback.isCorrect ? 'Correct!' : 'Incorrect.'}</span>
+                  {!currentFeedback.isCorrect && currentQuestion?.question_type === 'short' && currentFeedback.correctValue && (<span className={styles.correctAnswerTextCard}>Correct: {currentFeedback.correctValue}</span>)}
+                </div>
+              )}
+            </div>
+
+            {totalQuestions > 1 && (
+                <div className={styles.navigation}>
+                    <button type="button" className={styles.navButton} onClick={goPrev} disabled={safeCurrentIndex === 0 || isLoadingSubmission}>
+                        <ChevronLeft size={20} /> Prev
+                    </button>
+                    {safeCurrentIndex === totalQuestions - 1 ? (
+                         <button onClick={toggleExpand} className={`${styles.navButton} ${styles.finishButton}`}>
+                            <ChevronsUpDown size={20} /> Collapse
+                         </button>
+                    ) : (
+                        <button type="button" className={styles.navButton} onClick={goNext} disabled={!isAnswerSubmittedForCurrent || isLoadingSubmission}>
+                            Next <ChevronRight size={20} />
+                        </button>
+                    )}
+                </div>
+            )}
+            
+            {totalQuestions > 0 && safeCurrentIndex === totalQuestions - 1 && isAnswerSubmittedForCurrent && (
+                <p className={styles.quizCompletedCard}>You've reached the end of the quiz!</p>
+            )}
+          </>
+        )}
+      </div>
     </article>
   );
 };

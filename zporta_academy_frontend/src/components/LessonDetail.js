@@ -605,7 +605,7 @@ const LessonDetail = () => {
     // --- Prepare Data for Rendering ---
     const { lesson, seo } = lessonData; // Destructure lesson and SEO data
     // pull out our styling hooks:
-    const accent = lesson.accent_color || '#3498db';
+    const accent = lesson.accent_color || '#222E3B';
     const extraCss = lesson.custom_css || '';
     // Determine if the logged-in user is the owner of the lesson
     const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();

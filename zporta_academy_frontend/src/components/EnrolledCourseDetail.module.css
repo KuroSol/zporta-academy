@@ -2,10 +2,10 @@
 
 :root {
   /* This will be set via Helmet in the component */
-  --accent-color: #3498db;
+  --accent-color: #222E3B;
   --success-color: #2ecc71;
   --warning-color: #f39c12;
-  --info-color: #3498db;
+  --info-color: #222E3B;
   --danger-color: #e74c3c;
 }
 

@@ -35,6 +35,8 @@ urlpatterns = [
     path('api/analytics/', include('analytics.urls')), # Corrected line
     path('api/study/', include('learning.urls')),
 
+    path('api/feed/', include('feed.urls')),
+
 ]
 
 if settings.DEBUG:

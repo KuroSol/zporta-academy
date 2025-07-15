@@ -30,7 +30,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [selectedTemplateRef, setSelectedTemplateRef] = useState(null); // ID of selected admin-defined template
 
     const [template, setTemplate] = useState('modern'); // Built-in template choice (e.g., 'modern', 'minimal')
-    const [accentColor, setAccentColor] = useState('#3498db'); // Lesson accent color
+    const [accentColor, setAccentColor] = useState('#222E3B'); // Lesson accent color
     const [customCSS, setCustomCSS] = useState(''); // Lesson-specific custom CSS
 
     const navigate = useNavigate();
@@ -120,7 +120,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         } else if (!selectedTemplateRef) {
             // Optionally reset customCSS or accentColor if "None" is selected for admin template
             // setCustomCSS(''); // Or revert to a default
-            // setAccentColor('#3498db'); // Or revert to a default
+            // setAccentColor('#222E3B'); // Or revert to a default
         }
     }, [selectedTemplateRef, lessonTemplates]);
 

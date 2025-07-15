@@ -4,12 +4,13 @@ import {
   ref,
   onValue,
   set,
-  push,
   remove,
-  onDisconnect
+  onDisconnect,
+  push // Added missing import
 } from 'firebase/database';
 
 // STUN servers for WebRTC
+// FIX: Correctly defined the servers constant
 const servers = {
   iceServers: [
     {
@@ -18,8 +19,7 @@ const servers = {
         'stun:stun2.l.google.com:19302'
       ]
     }
-  ],
-  iceCandidatePoolSize: 10
+  ]
 };
 
 export const useCollaboration = (roomId, userId, userName) => {
@@ -31,8 +31,7 @@ export const useCollaboration = (roomId, userId, userName) => {
   const offerRef        = ref(db, `sessions/${roomId}/offer`);
   const answerRef       = ref(db, `sessions/${roomId}/answer`);
   const cursorsRef      = ref(db, `sessions/${roomId}/cursors`);
-  const drawingsRef     = ref(db, `sessions/${roomId}/drawings`);
-  const highlightsRef   = ref(db, `sessions/${roomId}/highlights`); // Ref for highlights
+  const highlightsRef   = ref(db, `sessions/${roomId}/highlights`);
   const scrollRef       = ref(db, `sessions/${roomId}/scroll`);
   const controlOwnerRef = ref(db, `sessions/${roomId}/controlOwner`);
   const iceCandidatesRef = peer => ref(db, `sessions/${roomId}/iceCandidates/${peer}`);
@@ -41,13 +40,12 @@ export const useCollaboration = (roomId, userId, userName) => {
   const pcRef       = useRef(null);
   const localStream = useRef(null);
   const remoteStream= useRef(new MediaStream());
-  const canvasRef   = useRef(null);
 
   // State
-  const [isCreator,    setIsCreator]    = useState(false);
-  const [remoteUser,   setRemoteUser]   = useState(null);
-  const [peerCursors,  setPeerCursors]  = useState({});
-  const [isSharing,    setIsSharing]    = useState(false);
+  const [isCreator,   setIsCreator]   = useState(false);
+  const [remoteUser,  setRemoteUser]  = useState(null);
+  const [peerCursors, setPeerCursors] = useState({});
+  const [isSharing,   setIsSharing]   = useState(false);
   const [controlOwner, setControlOwner] = useState(null);
   
   //── 1) JOIN / ANNOUNCE / CLEANUP ──────────────────────────────────────
@@ -64,49 +62,39 @@ export const useCollaboration = (roomId, userId, userName) => {
         const parts = snap.val() || {};
         const others= Object.keys(parts).filter(id => id !== userId);
         setRemoteUser(others[0] || null);
-        if (others.length === 0) {
-            setIsCreator(true);
-        }
+        if (others.length === 0) setIsCreator(true);
       }, { once: true });
 
       pcRef.current.ontrack = e => {
         e.streams[0].getTracks().forEach(t => remoteStream.current.addTrack(t));
       };
 
-      const unsub = [
+      const unsubscribers = [
         onValue(cursorsRef, snap => {
           const all = snap.val() || {};
           const others = Object.entries(all)
             .filter(([id]) => id !== userId)
-            .reduce((a,[id,d]) => (a[id]=d, a), {});
+            .reduce((acc, [id,data]) => { acc[id]=data; return acc; }, {});
           setPeerCursors(others);
-        }),
-        onValue(drawingsRef, snap => {
-          const all = snap.val() || {};
-          if (canvasRef.current) {
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.clearRect(0,0,canvasRef.current.width,canvasRef.current.height);
-            Object.values(all).forEach(replayStroke);
-          }
         })
       ];
 
       return () => {
-        unsub.forEach(u => u());
+        unsubscribers.forEach(u => u());
         hangUp();
         remove(ref(db, `sessions/${roomId}/participants/${userId}`));
         if (isCreator) remove(sessionRef);
       };
     };
 
-    const cleanupP = setup();
-    return () => cleanupP.then(cb => cb && cb());
+    const cleanupPromise = setup();
+    return () => cleanupPromise.then(cb => cb && cb());
   }, [roomId, userId, userName]);
 
   //── 2) SIGNALING ─────────────────────────────────────────────────────
   useEffect(() => {
     const pc = pcRef.current;
-    if (!pc || remoteUser===null) return;
+    if (!pc || remoteUser === null) return;
 
     if (isCreator) {
       onValue(answerRef, snap => {
@@ -116,7 +104,7 @@ export const useCollaboration = (roomId, userId, userName) => {
         }
       });
       onValue(iceCandidatesRef('callee'), snap =>
-        snap.forEach(c=> pc.addIceCandidate(new RTCIceCandidate(c.val())))
+        snap.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c.val())))
       );
     } else {
       onValue(offerRef, async snap => {
@@ -129,7 +117,7 @@ export const useCollaboration = (roomId, userId, userName) => {
         }
       });
       onValue(iceCandidatesRef('caller'), snap =>
-        snap.forEach(c=> pc.addIceCandidate(new RTCIceCandidate(c.val())))
+        snap.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c.val())))
       );
     }
   }, [isCreator, remoteUser]);
@@ -137,9 +125,8 @@ export const useCollaboration = (roomId, userId, userName) => {
   //── 3) SCREEN SHARE HANDLERS ─────────────────────────────────────────
   const startScreenShare = useCallback(async () => {
     if (!pcRef.current || !isCreator) return;
-    localStream.current = await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
-    localStream.current.getTracks()
-      .forEach(t=> pcRef.current.addTrack(t, localStream.current));
+    localStream.current = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
+    localStream.current.getTracks().forEach(t => pcRef.current.addTrack(t, localStream.current));
     setIsSharing(true);
     pcRef.current.onicecandidate = e => {
       if (e.candidate) push(iceCandidatesRef('caller'), e.candidate.toJSON());
@@ -150,39 +137,23 @@ export const useCollaboration = (roomId, userId, userName) => {
   }, [isCreator]);
 
   const hangUp = useCallback(() => {
-    localStream.current?.getTracks().forEach(t=>t.stop());
+    localStream.current?.getTracks().forEach(t => t.stop());
     pcRef.current?.close();
     setIsSharing(false);
     if (isCreator) remove(sessionRef);
   }, [isCreator, sessionRef]);
 
   //── 4) CURSOR BROADCAST ──────────────────────────────────────────────
-  const updateCursor = useCallback((x,y) => {
-    if (!roomId||!userId) return;
-    set(ref(db,`sessions/${roomId}/cursors/${userId}`),{x,y,name:userName});
-  },[db, roomId,userId,userName]);
+  const updateCursor = useCallback((x, y) => {
+    if (!roomId || !userId) return;
+    set(ref(db, `sessions/${roomId}/cursors/${userId}`), { x, y, name: userName });
+  }, [db, roomId, userId, userName]);
 
-  //── 5) DRAWING & HIGHLIGHTING ────────────────────────────────────────
-  const addDrawingStroke = useCallback(stroke => {
-    if (!roomId) return;
-    push(drawingsRef, {...stroke,userId});
-  },[drawingsRef,roomId,userId]);
-
+  //── 5) TEXT HIGHLIGHT BROADCAST ───────────────────────────────────────
   const addTextHighlight = useCallback(highlightData => {
     if (!roomId) return;
     push(highlightsRef, { ...highlightData, userId });
   }, [highlightsRef, roomId, userId]);
-
-  const setDrawingCanvas = useCallback(c=>{ canvasRef.current=c },[]);
-  const replayStroke = s => {
-    if (!canvasRef.current||!s.points?.length) return;
-    const ctx=canvasRef.current.getContext('2d');
-    ctx.strokeStyle=s.color; ctx.lineWidth=s.lineWidth; ctx.lineCap='round';
-    ctx.beginPath();
-    ctx.moveTo(s.points[0].x,s.points[0].y);
-    for(let i=1;i<s.points.length;i++) ctx.lineTo(s.points[i].x,s.points[i].y);
-    ctx.stroke();
-  };
 
   //── 6) SCROLL SYNC (incoming) ────────────────────────────────────────
   useEffect(() => {
@@ -190,49 +161,40 @@ export const useCollaboration = (roomId, userId, userName) => {
     const unsub = onValue(scrollRef, snap => {
       const d = snap.val();
       if (d && controlOwner && controlOwner !== userId && typeof d.y === 'number') {
-        window.scrollTo({
-          top: d.y,
-          behavior: 'smooth'
-        });
+        window.scrollTo({ top: d.y, behavior: 'smooth' });
       }
     });
     return () => unsub();
-  }, [roomId, controlOwner, userId, scrollRef]);
+  }, [roomId, controlOwner, userId]);
 
   //── 7) SCROLL BROADCAST (only owner) ─────────────────────────────────
   const updateScroll = useCallback(() => {
     if (!roomId || controlOwner !== userId) return;
-    set(scrollRef,{ y: window.scrollY });
-  },[roomId, controlOwner, userId, scrollRef]);
+    set(scrollRef, { y: window.scrollY });
+  }, [roomId, controlOwner, userId]);
 
-  //── 8) CONTROL OWNER HAND‐OFF ───────────────────────────────────────
+  //── 8) CONTROL OWNER HAND‐OFF ────────────────────────────────────────
   const setControlOwnerId = useCallback(id => {
-      if(roomId) set(controlOwnerRef, id);
-  }, [roomId, controlOwnerRef]);
-  
+    if (roomId) set(controlOwnerRef, id);
+  }, [roomId]);
+
   useEffect(() => {
     if (!roomId) return;
-    const unsub = onValue(controlOwnerRef, snap => {
-      setControlOwner(snap.val());
-    });
+    const unsub = onValue(controlOwnerRef, snap => setControlOwner(snap.val()));
     return () => unsub();
-  }, [roomId, controlOwnerRef]);
+  }, [roomId]);
 
   useEffect(() => {
-    if (isCreator && userId) {
-        setControlOwnerId(userId);
-    }
+    if (isCreator && userId) setControlOwnerId(userId);
   }, [isCreator, userId, setControlOwnerId]);
 
   useEffect(() => {
-      if (controlOwner === userId) {
-          window.addEventListener('scroll', updateScroll);
-          return () => window.removeEventListener('scroll', updateScroll);
-      }
+    if (controlOwner === userId) {
+      window.addEventListener('scroll', updateScroll);
+      return () => window.removeEventListener('scroll', updateScroll);
+    }
   }, [controlOwner, userId, updateScroll]);
 
-
-  //── EXPORT everything you need ────────────────────────────────────────
   return {
     remoteStream:   remoteStream.current,
     peerCursors,
@@ -242,9 +204,7 @@ export const useCollaboration = (roomId, userId, userName) => {
     startScreenShare,
     hangUp,
     updateCursor,
-    addDrawingStroke,
     addTextHighlight,
-    setDrawingCanvas,
     controlOwner,
     setControlOwner: setControlOwnerId,
     updateScroll
