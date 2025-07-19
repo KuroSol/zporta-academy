@@ -115,7 +115,7 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => {
     }
   }, [quiz?.id, fetchPublicQuizStats]);
 
-  const questions = quiz.questions.map((q, index) => ({ ...q, temp_id: `card_q_${quiz.id}_${index}` }));
+  const questions = (quiz.questions || []).map((q, index) => ({ ...q, temp_id: `card_q_${quiz.id}_${index}` }));
   const totalQuestions = questions.length;
   const isQuizCompleted = totalQuestions > 0 && Object.keys(submittedAnswers).length === totalQuestions;
   const safeCurrentIndex = Math.min(Math.max(0, currentIndex), Math.max(0, totalQuestions - 1));
