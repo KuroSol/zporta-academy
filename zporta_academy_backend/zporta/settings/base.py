@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'learning.apps.LearningConfig',
     'channels',
     'feed',
+    'explorer',
 ]
 
 ASGI_APPLICATION = 'zporta.asgi.application'

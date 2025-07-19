@@ -473,3 +473,55 @@
      gap: 2rem; /* 32px */
   }
 }
+
+/* zporta_academy_frontend/src/components/Explorer.module.css */
+/* Add these new styles to your existing file. */
+
+/* --- Instagram-Style Search Bar --- */
+.globalSearchContainer {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.75rem; /* Left padding for icon */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  background-color: var(--color-background-container-subtle);
+  transition: all var(--transition-duration) var(--transition-timing);
+  -webkit-appearance: none; /* Removes default iOS styling */
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  background-color: var(--color-background-container);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  pointer-events: none; /* Make icon non-interactive */
+}
+
+/* --- Search Results Container --- */
+.searchResultsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.categoryHeader {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}

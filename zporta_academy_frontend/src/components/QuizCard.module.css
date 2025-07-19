@@ -1,239 +1,341 @@
-/* QuizCard.module.css (Zporta Theme) */
+/* zporta_academy_frontend/src/components/QuizCard.module.css */
+/* A complete, modern, mobile-first redesign for your QuizCard. */
 
-/* --- Zporta Academy Color Scheme --- */
 :root {
-  --zporta-dark-blue: #222E3B; /* CORRECT: Your primary dark blue */
-  --zporta-gold: #E3AF0C;     /* CORRECT: Your primary gold/yellow */
-  --zporta-white: #FFFFFF;     /* Correct: White for text and backgrounds */
+  /* Zporta Academy Theme */
+  --zporta-dark-blue: #222E3B;
+  --zporta-gold: #E3AF0C;
+  --zporta-white: #FFFFFF;
 
-  /* --- Base Variables using Zporta Theme --- */
+  /* UI Variables */
   --primary-color: var(--zporta-dark-blue);
-  --primary-color-hover: #1a222c; /* Darker shade of the new blue */
-  
   --accent-color: var(--zporta-gold);
-  --accent-color-hover: #c99b0a; /* Darker shade of the new gold */
-  --accent-color-light: #fef8e7; /* A very light yellow for backgrounds on hover */
-
-  --correct-color: #16a34a; /* Green for correct is universal and clear */
+  --text-on-primary: var(--zporta-white);
+  --text-on-accent: var(--zporta-dark-blue);
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --bg-card: #ffffff;
+  --bg-subtle: #f5f5f7;
+  --border-color: #e1e1e6;
+  --correct-color: #16a34a;
   --correct-bg: #f0fdf4;
-  --correct-border: #86efac;
-  --incorrect-color: #dc2626; /* Red for incorrect */
+  --incorrect-color: #dc2626;
   --incorrect-bg: #fee2e2;
-  --incorrect-border: #fca5a5;
-
-  --text-primary: #ffffff;
-  --text-secondary: #4b5563;
-  --text-on-primary: var(--zporta-white); /* White text on dark blue buttons */
-  --text-on-accent: var(--zporta-dark-blue); /* Dark blue text on gold for contrast */
-  
-  --bg-light: var(--zporta-white);
-  --bg-subtle: #f8f9fa;
-  --border-color: #dee2e6;
-  --border-radius: 0.75rem;
-  --shadow-md: 0 4px 6px -1px rgba(34, 46, 59, 0.1), 0 2px 4px -2px rgba(34, 46, 59, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(34, 46, 59, 0.1), 0 4px 6px -4px rgba(34, 46, 59, 0.1);
-  --transition-speed: 0.3s;
-  --font-sans: 'Inter', sans-serif;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --transition: 0.2s ease-in-out;
 }
 
-/* --- Main Card Container --- */
 .quizCard {
-  font-family: var(--font-sans);
-  background: var(--bg-light);
-  border-radius: var(--border-radius);
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-card);
+  border-radius: var(--radius);
   border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  transition: box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
   width: 100%;
+  margin-bottom: 1.5rem;
   overflow: hidden;
-}
-.quizCard:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
+  transition: all var(--transition);
 }
 
-/* --- Card Header (Always Visible) --- */
 .cardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-subtle);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+
 .cardTitle {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   line-height: 1.4;
 }
-.progressText {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  background-color: #e9ecef; /* A light neutral gray to complement the dark blue */
-  padding: 0.3rem 0.75rem;
-  border-radius: 99px;
-  white-space: nowrap;
-  margin-left: 1rem;
+
+.expandButton {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+.quizCard.isExpanded .expandButton {
+  transform: rotate(180deg);
 }
 
-/* --- Collapsed Content --- */
+.cardBody {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--transition);
+}
+.quizCard:not(.isExpanded) .cardBody {
+  grid-template-rows: 1fr;
+}
+.quizCard.isExpanded .cardBody {
+  grid-template-rows: 1fr;
+}
+
+.collapsedContent, .expandedContent {
+  overflow: hidden;
+}
+
 .collapsedContent {
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease;
+  border-top: 1px solid var(--border-color);
 }
 .quizCard.isExpanded .collapsedContent {
-  opacity: 0;
-  visibility: hidden;
   display: none;
 }
+
+.expandedContent {
+  padding: 1rem 1.25rem;
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+.quizCard.isExpanded .expandedContent {
+  display: flex;
+}
+
+/* --- Stats --- */
+.quizStatsContainer {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  text-align: center;
+  gap: 1rem;
+}
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-secondary);
+}
+.statIcon { margin-bottom: 0.25rem; }
+.statValue { font-weight: 600; font-size: 1.1rem; color: var(--text-primary); }
+.statLabel { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.correctIcon, .correctText { color: var(--correct-color); }
+.incorrectIcon, .incorrectText { color: var(--incorrect-color); }
+.perQuestionStats { padding: 0.5rem 0; background-color: var(--bg-subtle); border-radius: var(--radius); }
+
+/* --- Buttons --- */
 .startQuizButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  background-color: var(--accent-color);
+  gap: 0.5rem;
+  background-color: var(--primary-color);
   color: var(--text-on-primary);
   border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-speed) ease;
+  transition: all var(--transition);
   width: 100%;
 }
 .startQuizButton:hover {
-  background-color: var(--accent-color-hover);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  background-color: var(--accent-color);
+  color: var(--text-on-accent);
 }
 
-/* --- Expanded Content --- */
-.expandedContent {
-  padding: 0 1.25rem 1.25rem 1.25rem;
-  display: grid;
-  gap: 1.25rem;
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.5s ease-in-out, opacity 0.4s ease-in-out, padding 0.5s ease-in-out;
-  visibility: hidden;
+/* --- Expanded View Content --- */
+.questionHeader {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
-.quizCard.isExpanded .expandedContent {
-  max-height: 2000px;
-  opacity: 1;
-  visibility: visible;
-  padding-top: 1.25rem;
-}
-
-/* --- Stats Containers --- */
-.quizStatsContainer {
-  display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  gap: 0.5rem;
-}
-.statItem { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.25rem; flex: 1; }
-.statIcon { color: var(--text-secondary); }
-.statValue { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
-.statLabel { font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); }
-.correctIcon, .correctText { color: var(--correct-color); }
-.incorrectIcon, .incorrectText { color: var(--incorrect-color); }
-
-.perQuestionStats {
-  background-color: var(--bg-subtle);
-  border-radius: var(--border-radius);
-  padding: 0.75rem;
-  margin-top: 0.5rem;
-}
-.perQuestionStats .statIcon { width: 18px; height: 18px; }
-.perQuestionStats .statValue { font-size: 1.1rem; }
-
-/* --- Question Display Area --- */
 .questionDisplayArea {
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 1.25rem;
   text-align: center;
 }
-.questionText { font-size: 1.1rem; line-height: 1.6; color: var(--text-primary); }
-.questionMediaItem { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: var(--border-radius); margin-bottom: 1rem; }
+.questionMediaItem {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+.questionText {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
 
-/* --- Answer Area --- */
-.answerAreaContainer { margin-top: 0.5rem; }
-.optionsList { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
-
+/* --- Answer Options --- */
+.optionsList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
 .optionButton {
-  display: flex; align-items: center; width: 100%; padding: 0.8rem 1rem;
-  font-size: 0.95rem; text-align: left; color: var(--text-primary);
-  background-color: var(--bg-light); border: 2px solid var(--border-color);
-  border-radius: var(--border-radius); cursor: pointer;
-  transition: all 0.2s ease-in-out; position: relative;
-  min-height: 52px; gap: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 0.95rem;
+  text-align: left;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
 }
 .optionButton.interactive:hover {
   border-color: var(--accent-color);
-  background-color: var(--accent-color-light);
+  background-color: var(--bg-subtle);
 }
-.optionButton.selected { border-color: var(--accent-color); background-color: var(--accent-color-light); }
+.optionButton.selected {
+  border-color: var(--primary-color);
+  background-color: var(--bg-subtle);
+}
+.optionButton.correct { border-color: var(--correct-color); }
+.optionButton.selectedCorrect { background-color: var(--correct-bg); border-color: var(--correct-color); }
+.optionButton.selectedIncorrect { background-color: var(--incorrect-bg); border-color: var(--incorrect-color); }
 .optionButton.disabled { opacity: 0.6; cursor: not-allowed; background-color: var(--bg-subtle); }
-.optionButton.correct { border-color: var(--correct-border) !important; background-color: var(--correct-bg) !important; }
-.optionButton.selectedCorrect { border-color: var(--correct-color) !important; background-color: var(--correct-bg) !important; color: var(--correct-color) !important; font-weight: 700; }
-.optionButton.selectedIncorrect { border-color: var(--incorrect-color) !important; background-color: var(--incorrect-bg) !important; color: var(--incorrect-color) !important; font-weight: 700; }
-.optionFeedbackIcon { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); }
-.optionMediaContainer { flex-shrink: 0; }
-.optionMediaImage_Small { width: 44px; height: 44px; object-fit: cover; border-radius: 4px; }
-.optionTextContainer { flex-grow: 1; }
 
-/* Short Answer, Drag/Drop, Sort Styles */
-.shortAnswerInteractiveArea { display: flex; flex-direction: column; gap: 0.8rem; }
-.inputAndMicWrapper { display: flex; align-items: center; gap: 0.6rem; position: relative; }
-.inputIconDecorator { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); }
-.shortAnswerInputCard { flex-grow: 1; padding: 0.8rem 0.8rem 0.8rem 2.75rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); font-size: 1rem; }
-.micButtonCard { padding: 0.6rem; border: 1px solid var(--primary-color); border-radius: var(--border-radius); cursor: pointer; }
-.submitButton.cardSubmitButton {
-  background-color: var(--accent-color); color: var(--text-on-accent); border: none; padding: 0.8rem 1.5rem;
-  border-radius: var(--border-radius); font-size: 1rem; font-weight: 600; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; align-self: center; margin-top: 0.75rem;
+.optionFeedbackIcon { margin-left: auto; }
+.optionFeedbackIcon svg { display: block; }
+
+/* --- NEW: Styles for Media in Options --- */
+.optionMediaContainer {
+  flex-shrink: 0;
 }
-.submitButton.cardSubmitButton:hover:not(:disabled) { background-color: var(--accent-color-hover); }
-.answerAreaContainer :global(.fillInTheBlanksContainer), .answerAreaContainer :global(.sortQuestionContainer) { padding: 0.5rem 0; }
-.answerAreaContainer :global(.sentenceContainer) { font-size: 1.05rem; line-height: 2.2; }
-.answerAreaContainer :global(.fillBlankDropZone) { min-width: 95px; padding: 0.3rem 0.6rem; background-color: var(--accent-color-light); border: 1px dashed var(--accent-color); }
-.answerAreaContainer :global(.draggableWord) { padding: 0.45rem 0.9rem; background-color: var(--bg-light); border: 1px solid var(--accent-color); color: var(--text-on-accent); }
-.answerAreaContainer :global(.wordBank) { padding: 0.75rem; min-height: 65px; background-color: var(--bg-subtle); border-radius: var(--border-radius); }
+.optionMediaImage_Small {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: calc(var(--radius) / 2);
+}
+.optionAudioControl_Small {
+  height: 30px;
+  max-width: 150px; /* Prevents audio player from getting too wide */
+}
+.optionTextContainer {
+  flex-grow: 1;
+}
+
+/* --- NEW: Styles for Short Answer / Mic Input --- */
+.shortAnswerInteractiveArea {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.inputAndMicWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.inputIconDecorator {
+  position: absolute;
+  left: 1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.shortAnswerInputCard {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 3rem; /* Padding for icon */
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--bg-subtle);
+  transition: all var(--transition);
+}
+.shortAnswerInputCard:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background-color: var(--bg-card);
+}
+.micButtonCard {
+  margin-left: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-card);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.micButtonCard:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
 
 /* --- Feedback & Navigation --- */
-.feedbackContainer { min-height: 44px; display: flex; align-items: center; justify-content: center; margin-top: 1rem; }
-.feedbackArea { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; width: 100%; border-radius: var(--border-radius); font-weight: 600; }
+.feedbackContainer {
+  min-height: 44px; /* Prevents layout shift */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.feedbackArea {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  border-radius: var(--radius);
+  font-weight: 500;
+}
 .feedbackCorrect { background-color: var(--correct-bg); color: var(--correct-color); }
 .feedbackIncorrect { background-color: var(--incorrect-bg); color: var(--incorrect-color); }
 .feedbackError { background-color: var(--incorrect-bg); color: var(--incorrect-color); }
-.correctAnswerTextCard { font-weight: 500; font-size: 0.85em; margin-left: 0.6rem; }
 
-.navigation { display: flex; justify-content: space-between; align-items: center; padding-top: 1.25rem; border-top: 1px solid var(--border-color); margin-top: 1.25rem; }
-.navButton { display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border-color); background-color: var(--bg-light); color: var(--text-primary); padding: 0.6rem 1.2rem; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-.navButton:hover:not(:disabled) { border-color: var(--text-primary); background-color: var(--bg-subtle); }
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.navButton:hover:not(:disabled) { background-color: var(--bg-subtle); }
 .navButton:disabled { opacity: 0.5; cursor: not-allowed; }
-.navButton:last-child { background-color: var(--primary-color); border-color: var(--primary-color); color: var(--zporta-white); }
-.navButton:last-child:hover:not(:disabled) { background-color: var(--primary-color-hover); border-color: var(--primary-color-hover); }
-.finishButton { background-color: var(--correct-color); border-color: var(--correct-color); color: var(--zporta-white); }
-.finishButton:hover { background-color: #15803d; border-color: #15803d; }
-.quizCompletedCard { text-align: center; font-weight: 600; color: var(--correct-color); padding: 0.75rem; margin-top: 1rem; background-color: var(--correct-bg); border-radius: var(--border-radius); border: 1px solid var(--correct-border); }
+.finishButton { background-color: var(--correct-color); color: var(--zporta-white); border-color: var(--correct-color); }
 
-/* --- Loading / Error States --- */
-.loadingContainer { display: flex; justify-content: center; align-items: center; padding: 2rem; color: var(--text-secondary); }
+/* --- Skeleton Loader --- */
+.skeleton { min-height: 150px; }
+.skeletonHeader, .skeletonContent {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite linear;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- Other States --- */
+.errorText, .unsupportedType, .noQuestions {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-secondary);
+}
+.loadingContainer { display: flex; justify-content: center; align-items: center; padding: 2rem; }
 .loadingIcon { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.errorCard { /* your existing error styles */ }
-.errorText { color: var(--incorrect-color); }
-.unsupportedType { font-style: italic; color: var(--text-secondary); text-align: center; padding: 1rem; }

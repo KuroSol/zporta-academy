@@ -34,7 +34,7 @@ urlpatterns = [
     path('api/', include('analytics.urls')),
     path('api/analytics/', include('analytics.urls')), # Corrected line
     path('api/study/', include('learning.urls')),
-
+    path('api/explorer/', include('explorer.urls')),
     path('api/feed/', include('feed.urls')),
 
 ]
