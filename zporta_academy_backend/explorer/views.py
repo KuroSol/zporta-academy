@@ -1,5 +1,5 @@
 # zporta_academy_backend/explorer/views.py
-# (This file contains the fix for the FieldError)
+# This version includes a much deeper search for quizzes, looking into questions and answers.
 
 from django.db.models import Q
 from rest_framework.views import APIView
@@ -39,21 +39,32 @@ class ExplorerSearchView(APIView):
         # Lesson search: title or content
         lesson_query = Q(title__icontains=query) | Q(content__icontains=query)
         
-        # Quiz search: title or content (FIXED: was 'description')
-        quiz_query = Q(title__icontains=query) | Q(content__icontains=query)
+        # --- NEW: Deeper Quiz Search ---
+        # This now searches the quiz title, its content, and also looks inside all
+        # associated questions' text and their multiple-choice options.
+        quiz_query = (
+            Q(title__icontains=query) |
+            Q(content__icontains=query) |
+            Q(questions__question_text__icontains=query) |
+            Q(questions__option1__icontains=query) |
+            Q(questions__option2__icontains=query) |
+            Q(questions__option3__icontains=query) |
+            Q(questions__option4__icontains=query) |
+            Q(questions__correct_answer__icontains=query) # For short answer questions
+        )
         
         # Guide (User) search: username or profile bio
         guide_query = Q(username__icontains=query) | Q(profile__bio__icontains=query)
 
 
         # --- Execute Queries ---
-        # We also filter for public/visible content where applicable
-        courses = Course.objects.filter(course_query, is_draft=False)[:10] # Limit results
+        courses = Course.objects.filter(course_query, is_draft=False)[:10]
         lessons = Lesson.objects.filter(lesson_query)[:10]
-        quizzes = Quiz.objects.filter(quiz_query)[:10]
-        # FIXED: Changed is_guide to profile__is_guide to correctly query the related Profile model
+        
+        # Use .distinct() to prevent duplicate quizzes in results
+        quizzes = Quiz.objects.filter(quiz_query).distinct()[:10]
+        
         guides = User.objects.filter(guide_query, profile__active_guide=True)[:10]
-
 
         # --- Serialize Data ---
         return Response({
