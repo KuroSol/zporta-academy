@@ -71,3 +71,18 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     else:
         instance.profile.save()
+
+# users/models.py or create a new app like 'preferences'
+class UserPreference(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
+    # Multiselect fields (or ManyToMany)
+    languages_spoken = models.JSONField(default=list)  # e.g., ['en', 'ja']
+    interested_subjects = models.ManyToManyField('subjects.Subject', blank=True)
+    interested_tags = models.ManyToManyField('tags.Tag', blank=True)
+
+    # Optional
+    location = models.CharField(max_length=255, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+
+    updated_at = models.DateTimeField(auto_now=True)

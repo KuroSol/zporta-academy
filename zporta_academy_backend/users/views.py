@@ -31,6 +31,13 @@ from subjects.models import Subject
 from quizzes.models import Quiz
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from users.models import UserPreference
+import pytz
+import geoip2.database
+from django.utils import timezone
+
+from users.utils import enrich_user_preference
+
 
 
 
@@ -131,6 +138,7 @@ class LoginView(APIView):
             
             if authenticated_user:
                 token, created = Token.objects.get_or_create(user=authenticated_user)
+                enrich_user_preference(authenticated_user, request)
                 profile, profile_created = Profile.objects.get_or_create(user=authenticated_user)
                 return Response({
                     'token': token.key,

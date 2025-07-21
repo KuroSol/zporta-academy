@@ -1,6 +1,7 @@
 import os
 from django.conf import settings
 from django.db.models.signals import post_save, post_delete 
+from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import receiver
 from django.contrib.auth.models import User
@@ -9,6 +10,10 @@ from posts.models import Post
 from courses.models import Course
 from lessons.models import Lesson
 from quizzes.models import Quiz
+
+from tags.models import Tag
+from analytics.models import ActivityEvent
+from users.models import UserPreference
 
 
 def update_profile_to_both(user):
@@ -74,3 +79,32 @@ def delete_profile_image_on_delete(sender, instance, **kwargs):
         os.remove(instance.image.path)
 
 
+@receiver(post_save, sender=ActivityEvent)
+def update_user_preferences_from_event(sender, instance, **kwargs):
+    user = instance.user
+    if not user or not user.is_authenticated:
+        return
+
+    pref, _ = UserPreference.objects.get_or_create(user=user)
+
+    if instance.event_type != 'quiz_answer_submitted':
+        return
+
+    # Use content_type + object_id to get the real object (should be a Question)
+    model_class = instance.content_type.model_class()
+    try:
+        obj = model_class.objects.get(pk=instance.object_id)
+    except model_class.DoesNotExist:
+        return
+
+    # Get the Quiz from the Question (since event is logged on a Question)
+    if hasattr(obj, 'quiz') and isinstance(obj.quiz, Quiz):
+        quiz = obj.quiz
+        # ✅ Add subject if exists
+        if quiz.subject:
+            pref.interested_subjects.add(quiz.subject)
+        # ✅ Add tags if present
+        for tag in quiz.tags.all():
+            pref.interested_tags.add(tag)
+
+    pref.save()
