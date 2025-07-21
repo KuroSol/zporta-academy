@@ -62,7 +62,7 @@ class Quiz(models.Model):
     title           = models.CharField(max_length=200)
     content         = models.TextField(blank=True, help_text="Main explanation or content about the quiz.")
     is_locked       = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
-
+    
     lesson          = models.ForeignKey('lessons.Lesson', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     subject         = models.ForeignKey('subjects.Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     course          = models.ForeignKey('courses.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
@@ -70,6 +70,18 @@ class Quiz(models.Model):
     created_at      = models.DateTimeField(auto_now_add=True)
     quiz_type       = models.CharField(max_length=10, choices=TYPE_CHOICES, default='free')
     permalink       = models.SlugField(max_length=255, unique=True, blank=True)
+
+    # ✅ Add these two lines from the incoming GitHub version
+    languages = models.JSONField(
+        default=list, 
+        blank=True, 
+        help_text="Languages detected in the quiz content, e.g., ['en', 'ja']"
+    )
+    detected_location = models.CharField(
+        max_length=255, 
+        blank=True, 
+        help_text="A location detected from the content, if any."
+    )
 
     seo_title       = models.CharField(max_length=60, blank=True)
     seo_description = models.TextField(max_length=160, blank=True)

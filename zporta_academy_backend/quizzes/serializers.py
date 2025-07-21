@@ -162,10 +162,12 @@ class QuizSerializer(serializers.ModelSerializer):
             'tag_names', 'questions', 'attempt_count', 'correct_count', 'wrong_count',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
+            'languages', 'detected_location',
         ]
         read_only_fields = [
             'id', 'permalink', 'created_by', 'created_at', 'is_locked', 'tags',
             'attempt_count', 'correct_count', 'wrong_count',
+            'languages', 'detected_location',
         ]
         extra_kwargs = {
             'title':   {'required': True, 'allow_blank': False},

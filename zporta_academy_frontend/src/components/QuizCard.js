@@ -40,8 +40,8 @@ const CardErrorDisplay = ({ message }) => (
   </div>
 );
 
-const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType }) => {
-  // State for new expand/collapse UI
+const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType, isLoading: isLoadingProp }) => {
+ // State for new expand/collapse UI
   const [isExpanded, setIsExpanded] = useState(false);
 
   // All of your original state from the uploaded file
