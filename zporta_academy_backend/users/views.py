@@ -130,29 +130,52 @@ class LoginView(APIView):
 
         # Try to find a user with either a matching username or email (case-insensitive)
         user_q = User.objects.filter(Q(username__iexact=credential) | Q(email__iexact=credential))
-
         if user_q.exists():
             user = user_q.first()
-            # If a user is found, we must use their actual username to authenticate
-            authenticated_user = authenticate(username=user.username, password=password)
-            
+            authenticated_user = authenticate(
+                username=user.username,
+                password=password
+            )
+
             if authenticated_user:
-                token, created = Token.objects.get_or_create(user=authenticated_user)
+                # 1) Get token & bump preference
+                token, _ = Token.objects.get_or_create(
+                    user=authenticated_user
+                )
                 enrich_user_preference(authenticated_user, request)
-                profile, profile_created = Profile.objects.get_or_create(user=authenticated_user)
+
+                # 2) Load profile & preference
+                profile, _ = Profile.objects.get_or_create(
+                    user=authenticated_user
+                )
+                pref, _ = UserPreference.objects.get_or_create(
+                    user=authenticated_user
+                )
+
+                # 3) Build preference payload
+                pref_data = {
+                    'languages_spoken': [
+                        s.id for s in pref.interested_subjects.all()
+                    ],
+                    'location':         pref.location,
+                    'bio':              pref.bio,
+                    'interested_tags':  [
+                        t.id for t in pref.interested_tags.all()
+                    ],
+                }
+
                 return Response({
-                    'token': token.key,
-                    'id': authenticated_user.id,
-                    'username': authenticated_user.username,
-                    'email': authenticated_user.email,
-                    'role': profile.role,
-                    'active_guide': profile.active_guide,
+                    'token':       token.key,
+                    'id':          authenticated_user.id,
+                    'username':    authenticated_user.username,
+                    'email':       authenticated_user.email,
+                    'role':        profile.role,
+                    'active_guide':profile.active_guide,
+                    'preferences': pref_data,
                 }, status=HTTP_200_OK)
 
-        # If no user is found, or if authentication fails, return a generic error
-        return Response({'error': 'Invalid credentials'}, status=HTTP_400_BAD_REQUEST)
-
-
+        return Response({'error': 'Invalid credentials'},
+                        status=HTTP_400_BAD_REQUEST)
 
 
 class GuideProfileListView(generics.ListAPIView):
@@ -198,23 +221,28 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        # Ensure profile exists before accessing it
-        profile, created = Profile.objects.get_or_create(user=user)
-        serializer = ProfileSerializer(profile, context={"request": request})
+        user    = request.user
+        profile, _ = Profile.objects.get_or_create(user=user)
+        serializer = ProfileSerializer(profile,
+                                       context={'request': request})
 
-        # Return both profile and user details
-        return Response(serializer.data, status=HTTP_200_OK)
+        # ← this block needs to be indented here
+        pref, _ = UserPreference.objects.get_or_create(user=user)
+        pref_payload = {
+            'languages_spoken': [
+                s.id for s in pref.interested_subjects.all()
+            ],
+            'location':         pref.location,
+            'bio':              pref.bio,
+            'interested_tags':  [
+                t.id for t in pref.interested_tags.all()
+            ],
+        }
 
-    def put(self, request):
-        # Ensure profile exists before accessing it
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        data = serializer.data
+        data['preferences'] = pref_payload
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Profile updated successfully!", "profile": serializer.data}, status=HTTP_200_OK)
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(data, status=HTTP_200_OK)
 
 # Register View
 class RegisterView(APIView):
