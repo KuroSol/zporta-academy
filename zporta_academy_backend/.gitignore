@@ -30,3 +30,6 @@ zporta/firebase_credentials.json # This is correct for your backend credentials
 Thumbs.db
 .vscode/
 .idea/
+
+zporta_academy_backend/analytics_ai_models/question_difficulty_predictor_v1.joblib
+zporta_academy_backend/ml_models/lid.176.bin
