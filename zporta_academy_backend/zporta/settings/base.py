@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'django_ckeditor_5',
     'courses',
     'lessons',
-    'quizzes',
+    'quizzes.apps.QuizzesConfig',
     'tags',
     'subjects',
     'seo',

@@ -1,40 +1,25 @@
 import os
+import re
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from rake_nltk import Rake
-import nltk
-
 from .models import Quiz, Tag
 
-# --- NLTK Setup ---
-nltk.download('punkt')
-nltk.download('stopwords')
+from langdetect import detect_langs, LangDetectException
 
-# --- Language Detection: FastText if available ---
-USE_FASTTEXT = False
-model = None
+# --- Script-based Regex Patterns ---
+PERSIAN_REGEX = re.compile(r'[\u067E\u0686\u0698\u06AF]')
+KANA_REGEX    = re.compile(r'[\u3040-\u30FF]')
+CJK_REGEX     = re.compile(r'[\u4E00-\u9FFF]')
+ARABIC_REGEX  = re.compile(r'[\u0600-\u06FF]')
+THAI_REGEX    = re.compile(r'[\u0E00-\u0E7F]')
 
-try:
-    if not settings.DEBUG:
-        import fasttext
-        model_path = os.path.join(settings.BASE_DIR, "lid.176.bin")
-        if os.path.exists(model_path):
-            model = fasttext.load_model(model_path)
-            USE_FASTTEXT = True
-        else:
-            print("[FastText] Model file not found. Using langdetect fallback.")
-            from langdetect import detect_langs
-    else:
-        from langdetect import detect_langs
-except Exception as e:
-    print(f"[LangDetect Init Fallback] {e}")
-    from langdetect import detect_langs
+# --- Fallback languages for statistical detection ---
+ALLOWED_LANGUAGES = {'en', 'fr', 'it', 'es', 'de', 'pt', 'ru', 'hi', 'bn', 'ko'}
 
 
-# --- Helper: Extract full text from quiz object ---
 def extract_text_from_quiz(quiz):
     parts = [quiz.title or "", quiz.content or ""]
     for q in quiz.questions.all():
@@ -42,13 +27,27 @@ def extract_text_from_quiz(quiz):
         for opt in (q.option1, q.option2, q.option3, q.option4):
             if opt:
                 parts.append(opt)
-    text = " ".join(parts)
-    return BeautifulSoup(text, "html.parser").get_text().replace("\n", " ").strip()
+    raw = " ".join(parts)
+    return BeautifulSoup(raw, "html.parser").get_text(separator=" ").strip()
 
 
-# --- Signal: Analyze quiz content after save ---
+def fallback_detect(text):
+    try:
+        langs = detect_langs(text)
+    except LangDetectException:
+        return []
+    detected = []
+    for lp in langs:
+        if lp.lang in ALLOWED_LANGUAGES and lp.prob >= 0.2:
+            detected.append(lp.lang)
+    if not detected and langs:
+        detected.append(langs[0].lang)
+    return detected[:3]
+
+
 @receiver(post_save, sender=Quiz)
 def analyze_quiz_content(sender, instance, created, **kwargs):
+    # Skip raw fixture loads
     if kwargs.get('raw', False):
         return
 
@@ -56,46 +55,44 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
     if not full_text:
         return
 
+    # 1) Script-based overrides
+    if PERSIAN_REGEX.search(full_text):
+        detected = ['fa']
+    elif KANA_REGEX.search(full_text):
+        detected = ['ja']
+    elif THAI_REGEX.search(full_text):
+        detected = ['th']
+    elif ARABIC_REGEX.search(full_text):
+        detected = ['ar']
+    elif CJK_REGEX.search(full_text):
+        detected = ['zh']
+    else:
+        # 2) Statistical fallback for Latin-based languages
+        detected = fallback_detect(full_text)
+
+    # Prepare update if languages have changed
     update_kwargs = {}
+    if detected and instance.languages != detected:
+        update_kwargs['languages'] = detected
 
-    # —— 1) Language Detection ——
+    # 3) Keyword tagging via RAKE (unchanged)
+    new_tags = []
     try:
-        if USE_FASTTEXT:
-            langs = set()
-            for sentence in full_text.split("."):
-                sentence = sentence.strip()
-                if sentence:
-                    label, prob = model.predict(sentence)
-                    if prob[0] >= 0.4:
-                        langs.add(label[0].replace("__label__", ""))
-            detected = list(langs)[:3]
-        else:
-            langs_detect = detect_langs(full_text)
-            detected = [lp.lang for lp in langs_detect[:3] if lp.prob >= 0.4]
-
-        if detected and instance.languages != detected:
-            update_kwargs['languages'] = detected
-    except Exception as e:
-        print(f"[Language Detection] failed for Quiz {instance.pk}: {e}")
-
-    # —— 2) Keyword Tagging via RAKE ——
-    try:
-        rake = Rake()  # uses punkt + English stopwords
+        from rake_nltk import Rake
+        rake = Rake()
         rake.extract_keywords_from_text(full_text)
-        phrases = rake.get_ranked_phrases_with_scores()
-        existing = set(t.name for t in instance.tags.all())
-        new = []
-        for score, phrase in phrases:
-            if score > 4 and 1 < len(phrase.split()) < 4:
-                name = phrase.lower().strip()
-                if 2 < len(name) < 50 and name not in existing:
-                    tag, _ = Tag.objects.get_or_create(name=name)
-                    new.append(tag)
-        if new:
-            instance.tags.add(*new)
+        for score, phrase in rake.get_ranked_phrases_with_scores():
+            phrase = phrase.lower().strip()
+            if score > 4 and 1 < len(phrase.split()) < 4 and 2 < len(phrase) < 50:
+                if not instance.tags.filter(name=phrase).exists():
+                    tag, _ = Tag.objects.get_or_create(name=phrase)
+                    new_tags.append(tag)
+        if new_tags:
+            instance.tags.add(*new_tags)
     except Exception as e:
         print(f"[RAKE Tagging] failed for Quiz {instance.pk}: {e}")
 
-    # —— 3) Save Language Updates if Detected ——
+    # 4) Apply language updates
     if update_kwargs:
         Quiz.objects.filter(pk=instance.pk).update(**update_kwargs)
+    
