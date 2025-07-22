@@ -10,11 +10,12 @@ from .models import Quiz, Tag
 from langdetect import detect_langs, LangDetectException
 
 # --- Script-based Regex Patterns ---
-PERSIAN_REGEX = re.compile(r'[\u067E\u0686\u0698\u06AF]')
+# Persian unique letters: peh (067E), tcheh (0686), jeh (0698), gaf (06AF), keheh (06A9), farsi yeh (06CC)
+PERSIAN_REGEX = re.compile(r'[\u067E\u0686\u0698\u06AF\u06A9\u06CC]')
 KANA_REGEX    = re.compile(r'[\u3040-\u30FF]')
+THAI_REGEX    = re.compile(r'[\u0E00-\u0E7F]')
 CJK_REGEX     = re.compile(r'[\u4E00-\u9FFF]')
 ARABIC_REGEX  = re.compile(r'[\u0600-\u06FF]')
-THAI_REGEX    = re.compile(r'[\u0E00-\u0E7F]')
 
 # --- Fallback languages for statistical detection ---
 ALLOWED_LANGUAGES = {'en', 'fr', 'it', 'es', 'de', 'pt', 'ru', 'hi', 'bn', 'ko'}
@@ -62,10 +63,10 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
         detected = ['ja']
     elif THAI_REGEX.search(full_text):
         detected = ['th']
-    elif ARABIC_REGEX.search(full_text):
-        detected = ['ar']
     elif CJK_REGEX.search(full_text):
         detected = ['zh']
+    elif ARABIC_REGEX.search(full_text):
+        detected = ['ar']
     else:
         # 2) Statistical fallback for Latin-based languages
         detected = fallback_detect(full_text)
@@ -95,4 +96,3 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
     # 4) Apply language updates
     if update_kwargs:
         Quiz.objects.filter(pk=instance.pk).update(**update_kwargs)
-    
