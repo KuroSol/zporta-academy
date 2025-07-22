@@ -26,12 +26,68 @@ def enrich_user_preference(user, request):
         city = response.city.name
         timezone_str = response.location.time_zone
 
+        # Save user's timezone if available
         if timezone_str:
             now_local = timezone.now().astimezone(pytz.timezone(timezone_str))
             print(f"[Login] {user.username} local time: {now_local}")
-            pref.timezone = timezone_str  # ✅ now it's defined
+            pref.timezone = timezone_str
 
+        # Save location string
         pref.location = f"{city}, {country}" if city else country
+
+        # 🌍 Auto-detect language based on country
+        country_to_lang = {
+            "Japan": "ja",
+            "France": "fr",
+            "Germany": "de",
+            "Italy": "it",
+            "Spain": "es",
+            "Portugal": "pt",
+            "China": "zh",
+            "Taiwan": "zh",
+            "Korea, Republic of": "ko",
+            "Vietnam": "vi",
+            "Thailand": "th",
+            "Russia": "ru",
+            "Ukraine": "uk",
+            "India": "hi",
+            "Pakistan": "ur",
+            "Iran": "fa",
+            "Turkey": "tr",
+            "Saudi Arabia": "ar",
+            "United Arab Emirates": "ar",
+            "Kuwait": "ar",
+            "Egypt": "ar",
+            "Morocco": "ar",
+            "Tunisia": "ar",
+            "Indonesia": "id",
+            "Philippines": "tl",
+            "Malaysia": "ms",
+            "Bangladesh": "bn",
+            "Brazil": "pt",
+            "Argentina": "es",
+            "Mexico": "es",
+            "Colombia": "es",
+            "Chile": "es",
+            "Peru": "es",
+            "Venezuela": "es",
+            "Canada": "fr",  # fallback — could be 'fr' or 'en', but we always add 'en' anyway
+            "United States": "en",
+            "United Kingdom": "en",
+            "Australia": "en",
+            "South Africa": "en",
+            # Add more countries as needed
+        }
+
+        detected_lang = country_to_lang.get(country)
+
+        # Always include English; add local lang if found
+        if detected_lang and detected_lang != "en":
+            pref.languages_spoken = list(set(["en", detected_lang]))
+        else:
+            pref.languages_spoken = ["en"]
+
         pref.save()
+
     except Exception as e:
         print(f"[GeoIP ERROR] {e}")
