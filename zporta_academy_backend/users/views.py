@@ -425,7 +425,7 @@ class GoogleLoginView(APIView):
                 user=user,
                 defaults={"role": "explorer"} # Set default role if profile is newly created
             )
-
+            enrich_user_preference(user, request)
             # --- Generate or Get Application Token ---
             app_token, token_created = Token.objects.get_or_create(user=user)
 
