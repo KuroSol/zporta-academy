@@ -28,7 +28,32 @@ def get_personalized_quizzes(user, limit=10):
             qs = qs | Quiz.objects.filter(language__in=prefs.languages.all())
         if prefs.regions.exists():
             qs = qs | Quiz.objects.filter(region__in=prefs.regions.all())
-    return qs.distinct().order_by('-created_at')[:limit]
+    suggestions = []
+
+    for quiz in qs.distinct().order_by('-created_at')[:limit]:
+        memory = MemoryStat.objects.filter(
+            user=user,
+            content_type=ContentType.objects.get_for_model(Quiz),
+            object_id=quiz.id
+        ).first()
+
+        if memory:
+            is_first_time = memory.repetitions == 0
+            explanation = "📚 Review recommended" if not is_first_time else "🆕 First time learning this quiz"
+        else:
+            explanation = "🔍 Based on your interests or subject"
+
+        if memory and memory.ai_insights:
+            ai_diff = memory.ai_insights.get("difficulty_prediction", {})
+            if isinstance(ai_diff, dict):
+                explanation += f" · AI thinks this is a **{ai_diff.get('predicted_class', '?')}** quiz"
+
+        suggestions.append({
+            "quiz": quiz,
+            "why": explanation,
+        })
+
+    return suggestions  # Change serializer or flatten in the vie
 
 def get_review_queue(user, limit=10):
     """

@@ -221,6 +221,14 @@ def update_memory_stat_item(user, learnable_item, quality_of_recall, time_spent_
         logger.error(f"Failed to save MemoryStat for User {user.id}, Item {content_type.model}#{learnable_item.pk}. Error: {e}", exc_info=True)
         return None
 
+# --- Difficulty Labeling Function ---
+def classify_difficulty(correctness_rate, avg_time_sec):
+    if correctness_rate >= 90 and avg_time_sec < 10:
+        return 'easy'
+    elif correctness_rate <= 40 and avg_time_sec > 30:
+        return 'hard'
+    return 'medium'
+
 # --- Analytics Reporting (Using Pandas, Numpy) ---
 def generate_question_performance_report(days_history=30):
     if not QUIZ_MODEL_AVAILABLE or not QuizzesQuestion:
@@ -279,6 +287,12 @@ def generate_question_performance_report(days_history=30):
         average_time_spent_seconds=('time_spent_ms', lambda x: np.mean(x) / 1000 if pd.Series(x).notna().any() else 0),
         correctness_rate=('is_correct', lambda x: np.mean(x) * 100 if pd.Series(x).notna().any() else 0)
     ).reset_index()
+
+    # Add AI difficulty label using accuracy and time
+    report['difficulty_label'] = report.apply(
+        lambda row: classify_difficulty(row['correctness_rate'], row['average_time_spent_seconds']),
+        axis=1
+    )
 
     report['average_time_spent_seconds'] = report['average_time_spent_seconds'].round(2)
     report['correctness_rate'] = report['correctness_rate'].round(2)

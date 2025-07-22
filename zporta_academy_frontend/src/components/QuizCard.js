@@ -434,6 +434,12 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType, isLoading: isLo
 
   return (
     <article ref={cardRef} className={`${styles.quizCard} ${isExpanded ? styles.isExpanded : ''}`} role="region" aria-label={`Quiz: ${publicStats.quizTitle || quiz.title}`}>
+      {quiz?.why && (
+          <div className={styles.whyThisCard}>
+            <span className={styles.whyThisLabel}>Why this quiz?</span>
+            <span className={styles.whyThisText}>{quiz.why}</span>
+          </div>
+        )}
       <div className={styles.cardHeader}>
         <h3 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
         {totalQuestions > 0 && (
