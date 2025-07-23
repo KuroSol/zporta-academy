@@ -494,9 +494,6 @@ return (
           <span className={styles.creatorName}>
             {quiz.created_by.username}
           </span>
-          <span className={styles.creatorStats}>
-            👥 {publicStats.uniqueParticipants} participants
-          </span>
         </div>
       </Link>
     )}
