@@ -381,3 +381,66 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+/* QuizCard.module.css */
+
+.creatorInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.creatorAvatarHexagon {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  clip-path: polygon(
+    50% 0%, 
+    93.3% 25%, 
+    93.3% 75%, 
+    50% 100%, 
+    6.7% 75%, 
+    6.7% 25%
+  );
+  border: 2px solid var(--zporta-border);
+  background-color: var(--zporta-background);
+  transition: transform 0.2s ease;
+}
+
+.creatorAvatarHexagon:hover {
+  transform: scale(1.05);
+}
+
+.creatorAvatarPlaceholder {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--zporta-secondary);
+  color: var(--zporta-background);
+  clip-path: polygon(
+    50% 0%, 
+    93.3% 25%, 
+    93.3% 75%, 
+    50% 100%, 
+    6.7% 75%, 
+    6.7% 25%
+  );
+}
+
+.creatorMeta {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: var(--zporta-text);
+}
+
+.creatorName {
+  font-weight: 600;
+}
+
+.creatorStats {
+  font-size: 0.75rem;
+  color: var(--zporta-secondary);
+}

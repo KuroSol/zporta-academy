@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';                
 import apiClient from '../api'; // Use your actual API client
 import { AuthContext } from '../context/AuthContext'; // Use your actual AuthContext
 import {
@@ -24,6 +25,26 @@ import SpeechToTextInput from './SpeechToTextInput';
 import FillInTheBlanksQuestion from './FillInTheBlanksQuestion';
 import SortQuestion from './SortQuestion';
 
+const DEFAULT_AVATAR =
+  "https://zportaacademy.com/media/managed_images/zpacademy.png";
+
+function resolveAvatarUrl(user) {
+  let url = user?.profile_image_url?.trim() || "";
+  // if it’s relative, prefix your API root:
+  if (url && !url.startsWith("http")) {
+    url = `${process.env.REACT_APP_API_BASE_URL}${url}`;
+  }
+  return url || DEFAULT_AVATAR;
+}
+
+const getSourceLabel = (source) => {
+  switch (source) {
+    case 'review':       return '🧠 Review';
+    case 'personalized': return '🎯 Personalized';
+    case 'explore':      return '🌍 Explore';
+    default:             return '';
+  }
+};
 // Helper components from your original file
 const RenderCardMedia = ({ url, type, alt = '', className = '', controls = true }) => {
   if (!url) return null;
@@ -439,99 +460,252 @@ const QuizCard = ({
 
   const { text: buttonText, icon: buttonIcon } = getButtonState();
 
-  return (
-    <article ref={cardRef} className={`${styles.quizCard} ${isExpanded ? styles.isExpanded : ''}`} role="region" aria-label={`Quiz: ${publicStats.quizTitle || quiz.title}`}>
-      {quiz?.why && (
-          <div className={styles.whyThisCard}>
-            <span className={styles.whyThisLabel}>Why this quiz?</span>
-            <span className={styles.whyThisText}>{quiz.why}</span>
-          </div>
-        )}
+return (
+  <article
+    ref={cardRef}
+    className={`${styles.quizCard} ${isExpanded ? styles.isExpanded : ''}`}
+    role="region"
+    aria-label={`Quiz: ${publicStats.quizTitle || quiz.title}`}
+  >
+    {/* “Why this quiz?” banner */}
+    {quiz?.why && (
+      <div className={styles.whyThisCard}>
+        <span className={styles.whyThisLabel}>Why this quiz?</span>
+        <span className={styles.whyThisText}>{quiz.why}</span>
+      </div>
+    )}
+
+    {/* AUTHOR STRIP */}
+    {quiz.created_by && (
+      <Link
+        to={`/guide/${quiz.created_by.username}`}
+        className={styles.creatorInfo}
+      >
+        <img
+          src={resolveAvatarUrl(quiz.created_by)}
+          alt={`${quiz.created_by.username}’s avatar`}
+          className={styles.creatorAvatarHexagon}
+          onError={e => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = DEFAULT_AVATAR;
+          }}
+        />
+        <div className={styles.creatorMeta}>
+          <span className={styles.creatorName}>
+            {quiz.created_by.username}
+          </span>
+          <span className={styles.creatorStats}>
+            👥 {publicStats.uniqueParticipants} participants
+          </span>
+        </div>
+      </Link>
+    )}
+
+    {/* CARD HEADER */}
     {!isFeedView && (
-    <div className={styles.cardHeader}>
-        <h3 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
+      <div className={styles.cardHeader}>
+        <h3
+          className={styles.cardTitle}
+          dangerouslySetInnerHTML={{
+            __html: publicStats.quizTitle || quiz.title || 'Quiz'
+          }}
+        />
         {totalQuestions > 0 && (
           <span className={styles.progressText} aria-live="polite">
-            {isExpanded ? `Q ${safeCurrentIndex + 1}/${totalQuestions}` : `${totalQuestions} Questions`}
+            {isExpanded
+              ? `Q ${safeCurrentIndex + 1}/${totalQuestions}`
+              : `${totalQuestions} Questions`}
           </span>
         )}
       </div>
-)}
-      <div className={styles.collapsedContent}>
-        {isLoadingPublicStats ? (
-          <div className={styles.loadingContainer}><Loader2 className={styles.loadingIcon} size={24} /></div>
-        ) : publicStatsError ? (
-          <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert"><AlertTriangle size={16} /> {publicStatsError}</div>
-        ) : (
-          <div className={styles.quizStatsContainer}>
-            <div className={styles.statItem} title="Unique users who attempted this quiz"><Users size={20} className={styles.statIcon} /><span className={styles.statValue}>{publicStats.uniqueParticipants}</span><span className={styles.statLabel}>Participants</span></div>
-            <div className={styles.statItem} title="Overall correct answers"><CheckCircle size={20} className={`${styles.statIcon} ${styles.correctIcon}`} /><span className={`${styles.statValue} ${styles.correctText}`}>{publicStats.totalCorrectAnswersForQuiz}</span><span className={styles.statLabel}>Correct</span></div>
-            <div className={styles.statItem} title="Overall wrong answers"><XCircle size={20} className={`${styles.statIcon} ${styles.incorrectIcon}`} /><span className={`${styles.statValue} ${styles.incorrectText}`}>{publicStats.totalWrongAnswersForQuiz}</span><span className={styles.statLabel}>Wrong</span></div>
+    )}
+
+    {/* SUBJECT + SOURCE BADGES */}
+    <p className={styles.cardSubtitle}>
+      <span className={styles.itemTypeLabel}>Quiz | </span>
+      <span className={styles.subjectTag}>{quiz.subject || 'General'}</span>
+    </p>
+
+    {/* COLLAPSED CONTENT */}
+    <div className={styles.collapsedContent}>
+      {isLoadingPublicStats ? (
+        <div className={styles.loadingContainer}>
+          <Loader2 className={styles.loadingIcon} size={24} />
+        </div>
+      ) : publicStatsError ? (
+        <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert">
+          <AlertTriangle size={16} /> {publicStatsError}
+        </div>
+      ) : (
+        <div className={styles.quizStatsContainer}>
+          <div
+            className={styles.statItem}
+            title="Unique users who attempted this quiz"
+          >
+            <Users size={20} className={styles.statIcon} />
+            <span className={styles.statValue}>
+              {publicStats.uniqueParticipants}
+            </span>
+            <span className={styles.statLabel}>Participants</span>
           </div>
-        )}
-        <button onClick={toggleExpand} className={styles.startQuizButton}>
-          {buttonIcon}
-          <span>{buttonText}</span>
-        </button>
-      </div>
+          <div
+            className={styles.statItem}
+            title="Overall correct answers"
+          >
+            <CheckCircle
+              size={20}
+              className={`${styles.statIcon} ${styles.correctIcon}`}
+            />
+            <span className={`${styles.statValue} ${styles.correctText}`}>
+              {publicStats.totalCorrectAnswersForQuiz}
+            </span>
+            <span className={styles.statLabel}>Correct</span>
+          </div>
+          <div
+            className={styles.statItem}
+            title="Overall wrong answers"
+          >
+            <XCircle
+              size={20}
+              className={`${styles.statIcon} ${styles.incorrectIcon}`}
+            />
+            <span className={`${styles.statValue} ${styles.incorrectText}`}>
+              {publicStats.totalWrongAnswersForQuiz}
+            </span>
+            <span className={styles.statLabel}>Wrong</span>
+          </div>
+        </div>
+      )}
+      <button onClick={toggleExpand} className={styles.startQuizButton}>
+        {buttonIcon}
+        <span>{buttonText}</span>
+      </button>
+    </div>
 
-      <div className={styles.expandedContent}>
-        {totalQuestions === 0 ? (
-          <p className={styles.noQuestions}>No questions available in this quiz.</p>
-        ) : (
-          <>
-            <div className={styles.questionDisplayArea}>
-              <RenderCardMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || 'Question image'} className={styles.questionMediaItem} />
-              <RenderCardMedia url={currentQuestion.question_audio} type="audio" className={styles.questionMediaItem} />
-              <div className={styles.questionText} dangerouslySetInnerHTML={{ __html: currentQuestion.question_text || 'Loading question...' }} />
+    {/* EXPANDED CONTENT */}
+    <div className={styles.expandedContent}>
+      {totalQuestions === 0 ? (
+        <p className={styles.noQuestions}>No questions available in this quiz.</p>
+      ) : (
+        <>
+          <div className={styles.questionDisplayArea}>
+            <RenderCardMedia
+              url={currentQuestion.question_image}
+              type="image"
+              alt={currentQuestion.question_image_alt || 'Question image'}
+              className={styles.questionMediaItem}
+            />
+            <RenderCardMedia
+              url={currentQuestion.question_audio}
+              type="audio"
+              className={styles.questionMediaItem}
+            />
+            <div
+              className={styles.questionText}
+              dangerouslySetInnerHTML={{
+                __html: currentQuestion.question_text || 'Loading question...'
+              }}
+            />
+          </div>
+
+          {currentQuestionPublicStats && !isLoadingPublicStats && (
+            <div className={`${styles.quizStatsContainer} ${styles.perQuestionStats}`}>
+              <div className={styles.statItem} title="Times this question was answered">
+                <HelpCircle size={18} className={styles.statIcon} />
+                <span className={styles.statValue}>
+                  {currentQuestionPublicStats.times_answered}
+                </span>
+                <span className={styles.statLabel}>Answered</span>
+              </div>
+              <div className={styles.statItem} title="Times correct">
+                <ThumbsUp size={18} className={`${styles.statIcon} ${styles.correctIcon}`} />
+                <span className={`${styles.statValue} ${styles.correctText}`}>
+                  {currentQuestionPublicStats.times_correct}
+                </span>
+                <span className={styles.statLabel}>Correctly</span>
+              </div>
+              <div className={styles.statItem} title="Times wrong">
+                <ThumbsDown size={18} className={`${styles.statIcon} ${styles.incorrectIcon}`} />
+                <span className={`${styles.statValue} ${styles.incorrectText}`}>
+                  {currentQuestionPublicStats.times_wrong}
+                </span>
+                <span className={styles.statLabel}>Incorrectly</span>
+              </div>
             </div>
+          )}
 
-            {currentQuestionPublicStats && !isLoadingPublicStats && (
-              <div className={`${styles.quizStatsContainer} ${styles.perQuestionStats}`}>
-                <div className={styles.statItem} title="Times this question was answered"><HelpCircle size={18} className={styles.statIcon} /><span className={styles.statValue}>{currentQuestionPublicStats.times_answered}</span><span className={styles.statLabel}>Answered</span></div>
-                <div className={styles.statItem} title="Times correct"><ThumbsUp size={18} className={`${styles.statIcon} ${styles.correctIcon}`} /><span className={`${styles.statValue} ${styles.correctText}`}>{currentQuestionPublicStats.times_correct}</span><span className={styles.statLabel}>Correctly</span></div>
-                <div className={styles.statItem} title="Times wrong"><ThumbsDown size={18} className={`${styles.statIcon} ${styles.incorrectIcon}`} /><span className={`${styles.statValue} ${styles.incorrectText}`}>{currentQuestionPublicStats.times_wrong}</span><span className={styles.statLabel}>Incorrectly</span></div>
+          <div className={styles.answerAreaContainer}>
+            {renderAnswerArea()}
+          </div>
+
+          <div className={styles.feedbackContainer}>
+            {cardError && (
+              <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert">
+                <AlertTriangle size={16} /> {cardError}
               </div>
             )}
+            {isAnswerSubmittedForCurrent && currentFeedback && (
+              <div
+                className={`${styles.feedbackArea} ${currentFeedback.isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`}
+                role="status"
+              >
+                {currentFeedback.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                <span>{currentFeedback.isCorrect ? 'Correct!' : 'Incorrect.'}</span>
+                {!currentFeedback.isCorrect &&
+                  currentQuestion.question_type === 'short' &&
+                  currentFeedback.correctValue && (
+                    <span className={styles.correctAnswerTextCard}>
+                      Correct: {currentFeedback.correctValue}
+                    </span>
+                  )}
+              </div>
+            )}
+          </div>
 
-            <div className={styles.answerAreaContainer}>{renderAnswerArea()}</div>
-
-            <div className={styles.feedbackContainer}>
-              {cardError && <div className={`${styles.feedbackArea} ${styles.feedbackError}`} role="alert"><AlertTriangle size={16} /> {cardError}</div>}
-              {isAnswerSubmittedForCurrent && currentFeedback && (
-                <div className={`${styles.feedbackArea} ${currentFeedback.isCorrect ? styles.feedbackCorrect : styles.feedbackIncorrect}`} role="status">
-                  {currentFeedback.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                  <span>{currentFeedback.isCorrect ? 'Correct!' : 'Incorrect.'}</span>
-                  {!currentFeedback.isCorrect && currentQuestion?.question_type === 'short' && currentFeedback.correctValue && (<span className={styles.correctAnswerTextCard}>Correct: {currentFeedback.correctValue}</span>)}
-                </div>
+          {totalQuestions > 1 && (
+            <div className={styles.navigation}>
+              <button
+                type="button"
+                className={styles.navButton}
+                onClick={goPrev}
+                disabled={safeCurrentIndex === 0 || isLoadingSubmission}
+              >
+                <ChevronLeft size={20} /> Prev
+              </button>
+              {safeCurrentIndex === totalQuestions - 1 ? (
+                <button
+                  onClick={toggleExpand}
+                  className={`${styles.navButton} ${styles.finishButton}`}
+                >
+                  <ChevronsUpDown size={20} /> Collapse
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.navButton}
+                  onClick={goNext}
+                  disabled={!isAnswerSubmittedForCurrent || isLoadingSubmission}
+                >
+                  Next <ChevronRight size={20} />
+                </button>
               )}
             </div>
+          )}
 
-            {totalQuestions > 1 && (
-                <div className={styles.navigation}>
-                    <button type="button" className={styles.navButton} onClick={goPrev} disabled={safeCurrentIndex === 0 || isLoadingSubmission}>
-                        <ChevronLeft size={20} /> Prev
-                    </button>
-                    {safeCurrentIndex === totalQuestions - 1 ? (
-                         <button onClick={toggleExpand} className={`${styles.navButton} ${styles.finishButton}`}>
-                            <ChevronsUpDown size={20} /> Collapse
-                         </button>
-                    ) : (
-                        <button type="button" className={styles.navButton} onClick={goNext} disabled={!isAnswerSubmittedForCurrent || isLoadingSubmission}>
-                            Next <ChevronRight size={20} />
-                        </button>
-                    )}
-                </div>
+          {totalQuestions > 0 &&
+            safeCurrentIndex === totalQuestions - 1 &&
+            isAnswerSubmittedForCurrent && (
+              <p className={styles.quizCompletedCard}>
+                You've reached the end of the quiz!
+              </p>
             )}
-            
-            {totalQuestions > 0 && safeCurrentIndex === totalQuestions - 1 && isAnswerSubmittedForCurrent && (
-                <p className={styles.quizCompletedCard}>You've reached the end of the quiz!</p>
-            )}
-          </>
-        )}
-      </div>
-    </article>
-  );
+        </>
+      )}
+    </div>
+  </article>
+);
+
+
 };
 
 export default QuizCard;
