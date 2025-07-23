@@ -129,3 +129,9 @@ class MemoryStat(models.Model):
             self.save(update_fields=['current_retention_estimate', 'updated_at'])
             return True
         return False
+    
+class FeedExposure(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    quiz = models.ForeignKey('quizzes.Quiz', on_delete=models.CASCADE)
+    source = models.CharField(max_length=50)  # e.g., review/personalized/explore
+    shown_at = models.DateTimeField(auto_now_add=True)

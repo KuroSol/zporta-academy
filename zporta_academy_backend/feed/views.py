@@ -1,4 +1,7 @@
 # feed/views.py
+from rest_framework.response import Response
+from .services import generate_user_feed
+
 from rest_framework import generics, permissions
 from .services import (
     get_explore_quizzes,
@@ -62,3 +65,11 @@ class UserPreferenceView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         pref, _ = UserPreference.objects.get_or_create(user=self.request.user)
         return pref
+    
+class UnifiedFeedView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = QuizFeedSerializer
+
+    def get(self, request):
+        data = generate_user_feed(request.user)
+        return Response(data)

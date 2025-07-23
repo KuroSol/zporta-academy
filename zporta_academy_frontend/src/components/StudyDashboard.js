@@ -1,4 +1,3 @@
-// StudyDashboard.js
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api';
@@ -12,7 +11,6 @@ export default function StudyDashboard() {
   const navigate = useNavigate();
 
   const [feedQuizzes, setFeedQuizzes] = useState([]);
-  const [recQuizzes, setRecQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -22,68 +20,87 @@ export default function StudyDashboard() {
       return;
     }
 
-    const loadQuizzes = async () => {
+    const loadFeed = async () => {
       setLoading(true);
       setError('');
       try {
-        // 1) load feed quizzes
-        const { data: feedData } = await apiClient.get('study/dashboard/');
-        const base = feedData.suggested_quizzes || [];
-        setFeedQuizzes(base);
-
-        // 2) attempt personal recs
-        try {
-          const { data: recData } = await apiClient.get('analytics/quiz-recommendations/');
-          setRecQuizzes(recData.recommended_quizzes.length ? recData.recommended_quizzes : base);
-        } catch {
-          // fallback
-          setRecQuizzes(base);
-        }
+        const { data } = await apiClient.get('feed/dashboard/');
+        setFeedQuizzes(data);
       } catch (e) {
         console.error(e);
-        setError('Could not load quizzes.');
+        setError('Could not load your study feed.');
       } finally {
         setLoading(false);
       }
     };
-    loadQuizzes();
+
+    loadFeed();
   }, [token, navigate]);
 
-  if (loading) return (<div className={styles.centeredMessage}><Loader /><p>Loading...</p></div>);
-  if (error) return (
-    <div className={`${styles.centeredMessage} ${styles.errorMessageContainer}`}>
-      <AlertTriangle /><p>{error}</p>
-      <button onClick={()=>window.location.reload()} className={styles.retryButton}><RefreshCw /> Retry</button>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className={styles.centeredMessage}>
+        <Loader />
+        <p>Loading your study feed...</p>
+      </div>
+    );
+  }
 
-  const renderQuiz = (quiz, source) => (
+  if (error) {
+    return (
+      <div className={`${styles.centeredMessage} ${styles.errorMessageContainer}`}>
+        <AlertTriangle />
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} className={styles.retryButton}>
+          <RefreshCw /> Retry
+        </button>
+      </div>
+    );
+  }
+
+  const getSourceLabel = (source) => {
+    switch (source) {
+      case 'review':
+        return '🧠 Review';
+      case 'personalized':
+        return '🎯 Personalized';
+      case 'explore':
+        return '🌍 Explore';
+      default:
+        return '';
+    }
+  };
+
+  const renderQuiz = (quiz) => (
     <article key={quiz.id} className={`${styles.feedItem} ${styles.quizFeedItemContainer}`}>
       <div className={styles.cardHeader}>
-        <div className={styles.cardIcon}><FileQuestion /></div>
+
         <div className={styles.cardHeaderText}>
           <h3 className={styles.cardTitle}>{quiz.title}</h3>
           <p className={styles.cardSubtitle}>
             <span className={styles.itemTypeLabel}>Quiz</span>
-            <span className={styles.subjectTag}>{quiz.subject?.name||'General'}</span>
-            <span className={styles.sourceTag}>{source}</span>
+            <span className={styles.questionCountTag}>{quiz.questions?.length||0} Questions</span>
+            <span className={styles.sourceTag}>{getSourceLabel(quiz.source)}</span>
           </p>
         </div>
-        <Link to={`/quizzes/${quiz.permalink}`} className={styles.cardAction}><span>Take Quiz</span><ArrowRight/></Link>
+        <Link to={`/quizzes/${quiz.permalink}`} className={styles.cardAction}>
+          <span>Take Quiz</span>
+          <ArrowRight />
+        </Link>
       </div>
-      <div className={styles.quizCardWrapper}><QuizCard quiz={quiz} isFeedView/></div>
+      <div className={styles.quizCardWrapper}>
+        <QuizCard quiz={quiz} isFeedView />
+      </div>
     </article>
   );
 
   return (
     <div className={styles.dashboardContainer}>
-      {user && <p className={styles.welcomeMessage}>Welcome back, {user.first_name||user.username}!</p>}
-      <section>
-        <h2 className={styles.sectionTitle}>Recommended For You</h2>
-        <div className={styles.feedContainer}>{recQuizzes.map(q=>renderQuiz(q,'Recommended'))}</div>
-      </section>
-      <h1 className={styles.pageTitle}>All Quizzes</h1>
-      <div className={styles.feedContainer}>{feedQuizzes.map(q=>renderQuiz(q,'Random'))}</div>
+      {user && <p className={styles.welcomeMessage}>Welcome back, {user.first_name || user.username}!</p>}
+      <h1 className={styles.pageTitle}>Your Study Feed</h1>
+      <div className={styles.feedContainer}>
+        {feedQuizzes.map((quiz) => renderQuiz(quiz))}
+      </div>
     </div>
   );
 }

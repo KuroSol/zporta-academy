@@ -8,6 +8,7 @@ from .views import (
     LanguageListView,
     RegionListView,
     UserPreferenceView,
+    UnifiedFeedView,
 )
 
 urlpatterns = [
@@ -21,4 +22,5 @@ urlpatterns = [
     path('preferences/languages/',  LanguageListView.as_view(),   name='pref-languages'),
     path('preferences/regions/',    RegionListView.as_view(),     name='pref-regions'),
     path('preferences/',            UserPreferenceView.as_view(), name='user-preference'),
+    path('dashboard/', UnifiedFeedView.as_view(), name='feed-dashboard'),
 ]

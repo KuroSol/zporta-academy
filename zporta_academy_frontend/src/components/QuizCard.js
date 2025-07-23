@@ -12,7 +12,6 @@ import {
   HelpCircle,
   ThumbsUp,
   ThumbsDown,
-  BarChart3,
   Send,
   Loader2,
   PlayCircle,
@@ -40,7 +39,15 @@ const CardErrorDisplay = ({ message }) => (
   </div>
 );
 
-const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType, isLoading: isLoadingProp }) => {
+
+const QuizCard = ({
+  quiz,
+  onItemVisible,
+  onItemHidden,
+  itemType,
+  isLoading: isLoadingProp,
+  isFeedView = false,    // <— add this
+}) => {
  // State for new expand/collapse UI
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -440,7 +447,8 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType, isLoading: isLo
             <span className={styles.whyThisText}>{quiz.why}</span>
           </div>
         )}
-      <div className={styles.cardHeader}>
+    {!isFeedView && (
+    <div className={styles.cardHeader}>
         <h3 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
         {totalQuestions > 0 && (
           <span className={styles.progressText} aria-live="polite">
@@ -448,7 +456,7 @@ const QuizCard = ({ quiz, onItemVisible, onItemHidden, itemType, isLoading: isLo
           </span>
         )}
       </div>
-
+)}
       <div className={styles.collapsedContent}>
         {isLoadingPublicStats ? (
           <div className={styles.loadingContainer}><Loader2 className={styles.loadingIcon} size={24} /></div>
