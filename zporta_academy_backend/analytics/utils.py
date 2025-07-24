@@ -14,7 +14,8 @@ import numpy as np
 from sklearn.dummy import DummyClassifier 
 from sklearn.model_selection import train_test_split 
 import joblib 
-
+from analytics.models import QuizAttempt
+from quizzes.models import Quiz
 from .models import ActivityEvent, MemoryStat 
 
 try:
@@ -88,6 +89,19 @@ def log_event(user, event_type, instance=None, metadata=None, related_object=Non
             event_type=event_type, content_type=ct, object_id=obj_id,
             metadata=metadata, timestamp=timezone.now()
         )
+        # NEW LOGIC TO CREATE QuizAttempt
+        if event_type == 'quiz_answer_submitted':
+            quiz_id = metadata.get('quiz_id')
+            is_correct = metadata.get('is_correct')
+            
+            if quiz_id is not None and is_correct is not None:
+                quiz_instance = Quiz.objects.filter(pk=quiz_id).first()
+                if quiz_instance:
+                    QuizAttempt.objects.create(
+                        user=user,
+                        quiz=quiz_instance,
+                        is_correct=is_correct
+                    )
         if PROFILE_MODEL_AVAILABLE and UserProfile and event_type == 'quiz_answer_submitted' and metadata.get('is_correct') and user and user.is_authenticated:
             try:
                 profile, _ = UserProfile.objects.get_or_create(user=user)

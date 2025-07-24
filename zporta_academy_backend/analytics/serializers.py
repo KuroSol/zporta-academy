@@ -197,3 +197,10 @@ class UserMemoryProfileResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     summary = serializers.DictField(help_text="Overall summary like total items tracked, average retention, etc.")
 
+class QuizAttemptOverviewSerializer(serializers.Serializer):
+    total_quizzes   = serializers.IntegerField()
+    total_correct   = serializers.IntegerField()
+    total_mistakes  = serializers.IntegerField()
+    quizzes_fixed   = serializers.IntegerField()
+    never_fixed     = serializers.IntegerField()
+    filters         = serializers.DictField(child=serializers.ListField(), read_only=True)

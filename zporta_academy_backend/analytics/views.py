@@ -4,13 +4,13 @@ from rest_framework import status, views, viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from django.db.models import Prefetch, Avg, Count, Q
+from django.db.models import Prefetch, Avg, Count, Q, Min, Max
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from datetime import timedelta, datetime
-
+from analytics.models import QuizAttempt
 from analytics.utils import update_memory_stat_item
-
+from users.models import UserPreference
 from .models import ActivityEvent, MemoryStat
 from .serializers import (
     ActivityEventSerializer,
@@ -21,6 +21,13 @@ from .serializers import (
     DetailedQuizAnalyticsSerializer 
 )
 from .utils import predict_overall_quiz_retention_days, log_event 
+
+from rest_framework.views import APIView
+from .serializers import QuizAttemptOverviewSerializer
+from .models import QuizAttempt
+from feed.models import UserPreference as FeedPreference
+from subjects.models import Subject
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +70,7 @@ class QuizDetailedAnalyticsView(views.APIView):
         question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
         
         unique_participants = ActivityEvent.objects.filter(
-            event_type='quiz_answer_submitted',
+            event_type='quiz_answer',
             content_type=question_ct, 
             metadata__quiz_id=quiz_id 
         ).values('user').distinct().count()
@@ -306,3 +313,65 @@ def log_content_interaction_time_view(request):
         metadata=metadata
     )
     return Response({"message": "Interaction time logged successfully."}, status=status.HTTP_201_CREATED)
+
+class QuizAttemptOverviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Get all quiz_answer_submitted events for this user
+        events = ActivityEvent.objects.filter(
+            user=user,
+            event_type='quiz_answer_submitted',
+            metadata__has_key='quiz_id',          # prevent missing keys
+        )
+
+        # Total distinct quizzes attempted
+        quiz_ids = events.values_list('metadata__quiz_id', flat=True).distinct()
+        total_quizzes = quiz_ids.count()
+
+        # Count correct and incorrect answers
+        total_correct = events.filter(metadata__is_correct=True).count()
+        total_mistakes = events.filter(metadata__is_correct=False).count()
+
+        # Group by quiz_id manually
+        quiz_attempt_map = {}  # {quiz_id: [True, False, True, ...]}
+        for e in events:
+            quiz_id = e.metadata.get("quiz_id")
+            is_correct = e.metadata.get("is_correct")
+            if quiz_id is None:
+                continue
+            quiz_attempt_map.setdefault(quiz_id, []).append(is_correct)
+
+        quizzes_fixed = 0
+        never_fixed = 0
+        for answers in quiz_attempt_map.values():
+            if True in answers and False in answers and answers[0] == False:
+                quizzes_fixed += 1
+            elif True not in answers and False in answers:
+                never_fixed += 1
+
+        # User preferences from users.models.UserPreference
+        prefs, _ = UserPreference.objects.get_or_create(user=user)
+        filters = {
+            'interested_subjects': list(
+                prefs.interested_subjects.values_list('name', flat=True)
+            ),
+            'interested_tags': list(
+                prefs.interested_tags.values_list('name', flat=True)
+            ),
+            'languages_spoken': prefs.languages_spoken or [],
+            'location': prefs.location or "",
+        }
+
+        data = {
+            'total_quizzes': total_quizzes,
+            'total_correct': total_correct,
+            'total_mistakes': total_mistakes,
+            'quizzes_fixed': quizzes_fixed,
+            'never_fixed': never_fixed,
+            'filters': filters,
+        }
+        serializer = QuizAttemptOverviewSerializer(data)
+        return Response(serializer.data)

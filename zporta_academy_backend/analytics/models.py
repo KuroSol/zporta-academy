@@ -135,3 +135,12 @@ class FeedExposure(models.Model):
     quiz = models.ForeignKey('quizzes.Quiz', on_delete=models.CASCADE)
     source = models.CharField(max_length=50)  # e.g., review/personalized/explore
     shown_at = models.DateTimeField(auto_now_add=True)
+
+class QuizAttempt(models.Model):
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    quiz        = models.ForeignKey('quizzes.Quiz', on_delete=models.CASCADE)
+    is_correct  = models.BooleanField()
+    attempted_at= models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-attempted_at']

@@ -3,11 +3,18 @@ import { Link } from "react-router-dom";
 import apiClient from "../api";
 import { AuthContext } from "../context/AuthContext";
 import styles from "./QuizAttempts.module.css"; // This CSS will be revamped
-
+import { Filter } from 'lucide-react';
 import {
   AlertCircle, Loader, Inbox, Brain, Zap, TrendingUp, CalendarCheck2, Star, Clock, HelpCircle, ListChecks, ChevronsRight, Smile, Meh, Frown, Target, BarChartHorizontalBig, BookOpenCheck, ThumbsUp
 } from 'lucide-react';
 
+// --- New helper for filter chips ---
+ const Chip = ({ label, onRemove }) => (
+   <span className={styles.chip}>
+     {label} <Filter size={14} onClick={onRemove} />
+   </span>
+ );
+ 
 // --- Helper Functions ---
 const formatDate = (isoString) => {
   if (!isoString) return "N/A";
@@ -185,8 +192,15 @@ const QuizInsightCard = ({ insight }) => {
 
 // --- Main Dashboard Component ---
 const QuizAttempts = () => {
+  const [errorOverview,  setErrorOverview]  = useState("");
+  const [loadingOverview, setLoadingOverview] = useState(false);
+  const [errorFilters,   setErrorFilters]   = useState("");
+  const [loadingFilters, setLoadingFilters] = useState(false);
   const [memoryProfile, setMemoryProfile] = useState(null);
   const [quizInsights, setQuizInsights] = useState([]);
+  const [attemptOverview, setAttemptOverview] = useState(null);
+  const [filters, setFilters] = useState({ subjects: [], languages: [], locations: [] });
+ 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingInsights, setLoadingInsights] = useState(true);
   const [errorProfile, setErrorProfile] = useState("");
@@ -194,32 +208,31 @@ const QuizAttempts = () => {
 
   const { token, logout } = useContext(AuthContext);
 
-  const fetchData = useCallback(async (endpoint, setData, setError, setLoading, type) => {
-    if (!token && (type === 'profile' || type === 'insights')) { // Only require token for profile/insights
-        setError("Please log in to view this information.");
+  const fetchData = useCallback(
+    async (endpoint, setData, setError, setLoading, type, params = {}) => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await apiClient.get(endpoint, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          params,
+        });
+        setData(response.data);
+      } catch (err) {
+        setError(err.message || "Error");
+      } finally {
         setLoading(false);
-        return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const response = await apiClient.get(endpoint, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setData(response.data);
-    } catch (err) {
-      console.error(`Failed to fetch ${type}:`, err);
-      const msg = err.response?.data?.message || err.response?.data?.detail || err.response?.data?.error || err.message || `Could not load ${type}.`;
-      setError(msg);
-      if (err.response?.status === 401 && logout) logout();
-    } finally {
-      setLoading(false);
-    }
-  }, [token, logout]);
+      }
+    },
+    [token, logout],
+  );
 
   useEffect(() => {
     fetchData("/analytics/user-memory-profile/", setMemoryProfile, setErrorProfile, setLoadingProfile, 'profile');
     fetchData("/analytics/quiz-retention-insights/", setQuizInsights, setErrorInsights, setLoadingInsights, 'insights');
+    fetchData("/analytics/quiz-attempt-overview/", setAttemptOverview, setErrorOverview, setLoadingOverview, 'overview');
+    fetchData("/analytics/quiz-attempt-overview/", data => setFilters(data.filters), setErrorFilters, setLoadingFilters, 'filters');
+ 
   }, [fetchData]);
 
   const renderSection = (title, items, type, isLoading, errorMsg, icon, noItemsInfo) => {
@@ -269,7 +282,63 @@ const QuizAttempts = () => {
       {errorProfile && !memoryProfile && (
           <div className={styles.fullPageError}><AlertCircle size={48} /> <p>{errorProfile}</p></div>
       )}
+     {/* 1️⃣ Attempt Overview */}
+     {attemptOverview && (
+       <section className={styles.dashboardSection}>
+         <h2 className={styles.sectionHeader}>
+           <BarChartHorizontalBig size={24}/> Quiz Attempt Overview
+         </h2>
+         <div className={styles.summaryGrid}>
+           <div className={styles.summaryCard}>
+             <BookOpenCheck className={styles.summaryIcon}/>
+             <span className={styles.summaryValue}>{attemptOverview.total_quizzes}</span>
+             <p className={styles.summaryLabel}>Total Quizzes</p>
+           </div>
+           <div className={styles.summaryCard}>
+             <ThumbsUp className={styles.summaryIcon}/>
+             <span className={styles.summaryValue}>{attemptOverview.total_correct}</span>
+             <p className={styles.summaryLabel}>Correct Answers</p>
+           </div>
+           <div className={styles.summaryCard}>
+             <Frown className={styles.summaryIcon}/>
+             <span className={styles.summaryValue}>{attemptOverview.total_mistakes}</span>
+             <p className={styles.summaryLabel}>Mistakes</p>
+           </div>
+           <div className={styles.summaryCard}>
+             <Smile className={styles.summaryIcon}/>
+             <span className={styles.summaryValue}>{attemptOverview.quizzes_fixed}</span>
+             <p className={styles.summaryLabel}>Fixed Quizzes</p>
+           </div>
+           <div className={styles.summaryCard}>
+             <Zap className={styles.summaryIcon}/>
+             <span className={styles.summaryValue}>{attemptOverview.never_fixed}</span>
+             <p className={styles.summaryLabel}>Never Fixed</p>
+           </div>
+         </div>
+       </section>
+     )}
 
+     {/* 2️⃣ Active Filters */}
+     <section className={styles.filterSection}>
+       <h2 className={styles.sectionHeader}>
+         <HelpCircle size={24}/> Your Filters
+       </h2>
+       <div className={styles.filterChips}>
+         {(filters.subjects || []).map(s => (
+           <Chip key={s.id} label={s.name} onRemove={() => {/* removeSubject(s.id) */}} />
+         ))}
+        {(filters.languages || []).map(l => (
+          <Chip key={l} label={l} onRemove={() => {/* removeLanguage(l) */}} />
+        ))}
+
+        {(filters.locations || []).map(loc => (
+          <Chip key={loc} label={loc} onRemove={() => {/* removeLocation(loc) */}} />
+        ))}
+         <button className={styles.editFiltersButton}>
+           Edit…
+         </button>
+       </div>
+     </section>
       {memoryProfile && (
         <>
           <section className={`${styles.dashboardSection} ${styles.highlightSection}`}>
