@@ -161,7 +161,7 @@ class QuizSerializer(serializers.ModelSerializer):
     )
 
     # Relational fields
-    subject    = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(), allow_null=True, required=False)
+    subject = serializers.SlugRelatedField(read_only=True, slug_field='name')
     course     = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), allow_null=True, required=False)
 
     class Meta:
