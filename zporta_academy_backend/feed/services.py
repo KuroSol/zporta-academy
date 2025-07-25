@@ -119,10 +119,16 @@ def generate_user_feed(user, limit=55):
     final_feed = []
     seen_ids = set()
 
-    # Helper function to avoid duplicates
+    # Avoid showing quizzes recently attempted
+    recently_attempted_quiz_ids = set(QuizAttempt.objects.filter(
+        user=user,
+        attempted_at__gte=timezone.now() - timedelta(minutes=10)
+    ).values_list('quiz_id', flat=True))
+
+    # Corrected helper function
     def add_to_feed(quizzes):
         for quiz in quizzes:
-            if quiz["id"] not in seen_ids:
+            if quiz["id"] not in seen_ids and quiz["id"] not in recently_attempted_quiz_ids:
                 final_feed.append(quiz)
                 seen_ids.add(quiz["id"])
                 if len(final_feed) >= limit:
@@ -162,7 +168,9 @@ def generate_user_feed(user, limit=55):
         if prefs.interested_tags.exists():
             cond |= Q(tags__in=prefs.interested_tags.all())
 
-    fallback_quizzes = Quiz.objects.filter(cond).exclude(id__in=seen_ids).order_by('?')[:remaining]
+    fallback_quizzes = Quiz.objects.filter(cond).exclude(
+        id__in=seen_ids.union(recently_attempted_quiz_ids)
+    ).order_by('?')[:remaining]
 
     for quiz in fallback_quizzes:
         log_quiz_feed_exposure(user, quiz, "explore")
