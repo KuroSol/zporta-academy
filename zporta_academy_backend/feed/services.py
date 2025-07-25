@@ -154,25 +154,35 @@ def generate_user_feed(user, limit=55):
     remaining = limit - len(final_feed)
     prefs = UserPreference.objects.filter(user=user).first()
     cond = Q()
-
     if prefs:
         if prefs.interested_subjects.exists():
             cond |= Q(subject__in=prefs.interested_subjects.all())
-
         for lang in prefs.languages_spoken:
             cond |= Q(languages__contains=[lang])
-
         if prefs.location:
             cond |= Q(detected_location__icontains=prefs.location)
-
         if prefs.interested_tags.exists():
             cond |= Q(tags__in=prefs.interested_tags.all())
 
-    fallback_quizzes = Quiz.objects.filter(cond).exclude(
-        id__in=seen_ids.union(recently_attempted_quiz_ids)
-    ).order_by('?')[:remaining]
+    # 1) Try to pull up to `remaining` quizzes matching their prefs, in random order
+    pref_quizzes = list(
+        Quiz.objects.filter(cond)
+            .exclude(id__in=seen_ids.union(recently_attempted_quiz_ids))
+            .order_by('?')[:remaining]
+    )
 
-    for quiz in fallback_quizzes:
+    # 2) If that didn’t fill the quota, top up with truly random quizzes
+    if len(pref_quizzes) < remaining:
+        exclude_ids = seen_ids.union(recently_attempted_quiz_ids)\
+                            .union({q.id for q in pref_quizzes})
+        extra = list(
+            Quiz.objects.exclude(id__in=exclude_ids)
+                .order_by('?')[:(remaining - len(pref_quizzes))]
+        )
+        pref_quizzes.extend(extra)
+
+    # 3) Log and append them
+    for quiz in pref_quizzes:
         log_quiz_feed_exposure(user, quiz, "explore")
         final_feed.append({
             **QuizSerializer(quiz).data,
