@@ -32,45 +32,70 @@ def get_explore_quizzes(user, limit=5):
     return suggestions
 
 # Fetch personalized quizzes
-def get_personalized_quizzes(user, limit=10):
+def get_personalized_quizzes(user, limit=50):
     prefs = UserPreference.objects.filter(user=user).first()
-    if not prefs:
+    # 1) Must have at least one subject
+    if not prefs or not prefs.interested_subjects.exists():
         return []
 
-    conditions = Q()
-    if prefs.interested_subjects.exists():
-        conditions |= Q(subject__in=prefs.interested_subjects.all())
-    for lang in prefs.languages_spoken:
-        conditions |= Q(languages__contains=[lang])
+    # Base queryset: subject match only
+    base_qs = Quiz.objects.filter(
+        subject__in=prefs.interested_subjects.all()
+    )
+
+    # 2) Figure out language buckets
+    # Primary “local” language (first in your array), fallback to English
+    local_lang = prefs.languages_spoken[0] if prefs.languages_spoken else "en"
+
+    local_qs   = base_qs.filter(languages__contains=[local_lang])
+    english_qs = base_qs.filter(languages__contains=["en"])
+    other_qs   = base_qs.exclude(id__in=local_qs).exclude(id__in=english_qs)
+
+    # 3) Decide how many from each bucket
+    cnt_local   = int(limit * 0.80)
+    cnt_english = int(limit * 0.15)
+    cnt_random  = limit - cnt_local - cnt_english  # ~5%
+
+    selected = []
+
+    # 4a) Take up to cnt_local from local_qs, BUT push location‐matches first
     if prefs.location:
-        conditions |= Q(detected_location__icontains=prefs.location)
-    if prefs.interested_tags.exists():
-        conditions |= Q(tags__in=prefs.interested_tags.all())
+        loc_match_qs = local_qs.filter(detected_location__icontains=prefs.location)
+        selected += list(loc_match_qs.order_by('-created_at')[:cnt_local])
 
-    quizzes = Quiz.objects.filter(conditions).distinct().order_by('-created_at')[:limit]
+        if len(selected) < cnt_local:
+            # fill remaining from the rest of local_qs
+            remaining = cnt_local - len(selected)
+            non_loc = local_qs.exclude(id__in=[q.id for q in selected])
+            selected += list(non_loc.order_by('-created_at')[:remaining])
+    else:
+        selected += list(local_qs.order_by('-created_at')[:cnt_local])
 
+    # 4b) Pull in English‐fallback (if primary wasn’t English)
+    if local_lang != "en" and cnt_english > 0:
+        en_candidates = english_qs.exclude(id__in=[q.id for q in selected])
+        selected += list(en_candidates.order_by('-created_at')[:cnt_english])
+
+    # 4c) And then sprinkle in cnt_random truly random quizzes
+    if cnt_random > 0:
+        random_candidates = other_qs.exclude(id__in=[q.id for q in selected]).order_by('?')[:cnt_random]
+        selected += list(random_candidates)
+
+    # 5) If we still haven’t hit “limit” (because some buckets were too small),
+    #    top up from any remaining subject‐matched quizzes.
+    if len(selected) < limit:
+        extra = base_qs.exclude(id__in=[q.id for q in selected]).order_by('?')[:(limit - len(selected))]
+        selected += list(extra)
+
+    # 6) Finally, serialize & add your “why” / source metadata
     suggestions = []
-    for quiz in quizzes:
-        already_attempted = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
-        memory = MemoryStat.objects.filter(
-            user=user,
-            content_type=ContentType.objects.get_for_model(Quiz),
-            object_id=quiz.id
-        ).first()
-
-        if already_attempted:
-            explanation = "🔄 Quiz available for review"
-        else:
-            explanation = "🔍 Based on your interests"
-
-        if memory:
-            explanation += " · 📚 Review recommended"
-
-        log_quiz_feed_exposure(user, quiz, "personalized")
+    for quiz in selected:
+        already = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
+        why = "🔍 Based on your interests" if not already else "🔄 Quiz available for review"
         suggestions.append({
             **QuizSerializer(quiz).data,
-            "why": explanation,
-            "source": "personalized"
+            "why": why,
+            "source": "personalized",
         })
 
     return suggestions

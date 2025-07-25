@@ -28,6 +28,7 @@ from .models import QuizAttempt
 from feed.models import UserPreference as FeedPreference
 from subjects.models import Subject
 
+from subjects.serializers import SubjectSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -352,17 +353,14 @@ class QuizAttemptOverviewView(APIView):
             elif True not in answers and False in answers:
                 never_fixed += 1
 
-        # User preferences from users.models.UserPreference
+        # Build exactly the three arrays the frontend expects
         prefs, _ = UserPreference.objects.get_or_create(user=user)
+        
+
         filters = {
-            'interested_subjects': list(
-                prefs.interested_subjects.values_list('name', flat=True)
-            ),
-            'interested_tags': list(
-                prefs.interested_tags.values_list('name', flat=True)
-            ),
-            'languages_spoken': prefs.languages_spoken or [],
-            'location': prefs.location or "",
+            'subjects': SubjectSerializer(prefs.interested_subjects.all(), many=True).data,
+            'languages': prefs.languages_spoken or [],
+            'locations': [prefs.location] if prefs.location else [],
         }
 
         data = {

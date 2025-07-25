@@ -36,7 +36,7 @@ urlpatterns = [
     path('api/study/', include('learning.urls')),
     path('api/explorer/', include('explorer.urls')),
     path('api/feed/', include('feed.urls')),
-
+    path('api/tags/', include('tags.urls')),
 ]
 
 if settings.DEBUG:
