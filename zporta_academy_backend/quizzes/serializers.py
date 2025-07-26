@@ -144,13 +144,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 # --- Main Quiz Serializer ---
 # This serializer now correctly handles both reading and writing nested questions.
 class QuizSerializer(serializers.ModelSerializer):
-    # This single field handles both reading and writing of nested questions.
     questions = QuestionSerializer(many=True, required=False)
     created_by = SimpleUserSerializer(read_only=True)
-    # Read-only analytics fields
     attempt_count = serializers.IntegerField(read_only=True)
     correct_count = serializers.IntegerField(read_only=True)
-    wrong_count   = serializers.IntegerField(read_only=True)
+    wrong_count = serializers.IntegerField(read_only=True)
 
     # Tagging fields
     tags = TagSerializer(many=True, read_only=True)
@@ -161,31 +159,51 @@ class QuizSerializer(serializers.ModelSerializer):
     )
 
     # Relational fields
-    subject = serializers.SlugRelatedField(read_only=True, slug_field='name')
-    course     = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), allow_null=True, required=False)
+    # Accept a numeric ID for subject and require it on input
+    subject = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(),
+        required=True
+    )
+    course = serializers.PrimaryKeyRelatedField(
+        queryset=Course.objects.all(),
+        allow_null=True,
+        required=False
+    )
 
     class Meta:
         model = Quiz
         fields = [
-            'id', 'title', 'content', 'lesson', 'subject', 'course', 'quiz_type',
-            'permalink', 'created_by', 'created_at', 'is_locked', 'tags',
-            'tag_names', 'questions', 'attempt_count', 'correct_count', 'wrong_count',
+            'id', 'title', 'content', 'lesson',
+            'subject', 'course', 'quiz_type',
+            'permalink', 'created_by', 'created_at', 'is_locked',
+            'tags', 'tag_names', 'questions',
+            'attempt_count', 'correct_count', 'wrong_count',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'languages', 'detected_location',
         ]
         read_only_fields = [
-            'id', 'permalink', 'created_by', 'created_at', 'is_locked', 'tags',
-            'attempt_count', 'correct_count', 'wrong_count',
+            'id', 'permalink', 'created_by', 'created_at',
+            'is_locked', 'tags', 'attempt_count',
+            'correct_count', 'wrong_count',
             'languages', 'detected_location',
         ]
         extra_kwargs = {
             'title':   {'required': True, 'allow_blank': False},
-            'subject': {'required': True},
+            'subject': {'required': True},  # require subject on input
             'content': {'required': False, 'allow_blank': True},
             'lesson':  {'required': False, 'allow_null': True},
             'course':  {'required': False, 'allow_null': True},
         }
+
+    def to_representation(self, instance):
+        """
+        Override the default representation to return the subject name
+        instead of the primary key.
+        """
+        rep = super().to_representation(instance)
+        rep['subject'] = instance.subject.name if instance.subject else None
+        return rep
 
     def _save_tags(self, quiz_instance, tag_names_list):
         # Your tag-saving logic is preserved.
