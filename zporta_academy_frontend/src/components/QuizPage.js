@@ -77,8 +77,22 @@ const QuizPage = () => {
     const permalink = `${username}/${subject}/${date}/${quizSlug}`;
     const navigate = useNavigate();
     const { user, token, logout } = useContext(AuthContext);
-    const isOwner = user?.username && quizData?.created_by && user.username === quizData.created_by;
+    // Determine the creator’s username (quizData.created_by may be a string or an object)
+    let quizCreatorUsername = null;
+    if (quizData?.created_by) {
+    if (typeof quizData.created_by === 'string') {
+        quizCreatorUsername = quizData.created_by;
+    } else {
+        // SimpleUserSerializer returns { id, username, avatar }
+        quizCreatorUsername = quizData.created_by.username;
+    }
+    }
+    const isOwner =
+    !!user?.username &&
+    !!quizCreatorUsername &&
+    user.username === quizCreatorUsername;
 
+    
     const fetchQuiz = useCallback(async () => {
         setLoading(true);
         setError(null);
