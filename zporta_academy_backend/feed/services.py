@@ -2,7 +2,6 @@
 
 from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 from datetime import timedelta
 
 from quizzes.models import Quiz
@@ -10,99 +9,151 @@ from analytics.models import MemoryStat, FeedExposure, QuizAttempt
 from quizzes.serializers import QuizSerializer
 from users.models import UserPreference
 
-# Utility to track quiz exposure for the user
+
 def log_quiz_feed_exposure(user, quiz, source):
+    """Record that we showed this quiz to the user in this feed."""
     FeedExposure.objects.create(user=user, quiz=quiz, source=source)
 
-# Fetch latest quizzes (explore)
-def get_explore_quizzes(user, limit=5):
-    quizzes = Quiz.objects.order_by('-created_at')[:limit]
 
+def _get_user_prefs(user):
+    """Fetch or None."""
+    return UserPreference.objects.filter(user=user).first()
+
+
+def _base_pool(user):
+    """
+    Core pool: only quizzes whose subject ∈ user.interested_subjects.
+    """
+    prefs = _get_user_prefs(user)
+    if not prefs or not prefs.interested_subjects.exists():
+        return Quiz.objects.none()
+    return Quiz.objects.filter(subject__in=prefs.interested_subjects.all())
+
+
+def _language_bucket_selection(pool_qs, limit, prefs):
+    """
+    From pool_qs, pick:
+      - 80% quizzes in prefs.languages_spoken[0]
+      - 15% quizzes in English
+      -  5% other languages
+    Ordered by -created_at (newest first) within each bucket.
+    """
+    if limit <= 0:
+        return []
+
+    primary_lang = prefs.languages_spoken[0] if prefs.languages_spoken else "en"
+    # Buckets
+    primary_qs = pool_qs.filter(languages__contains=[primary_lang])
+    english_qs = pool_qs.filter(languages__contains=["en"]).exclude(id__in=primary_qs)
+    other_qs   = pool_qs.exclude(id__in=primary_qs).exclude(id__in=english_qs)
+
+    # Counts
+    cnt_primary = int(limit * 0.80)
+    cnt_english = int(limit * 0.15)
+    cnt_other   = limit - cnt_primary - cnt_english
+
+    selected = list(primary_qs.order_by('-created_at')[:cnt_primary])
+    selected += list(english_qs.order_by('-created_at')[:cnt_english])
+    selected += list(other_qs.order_by('-created_at')[:cnt_other])
+
+    return selected
+
+
+def _location_reorder(quizzes, prefs):
+    """
+    Within `quizzes` (a list), reorder so that:
+      - first ~60% are those whose detected_location matches prefs.location
+      - then the other ~40%
+    If fewer than that, fill from the remainder.
+    """
+    if not prefs or not prefs.location or not quizzes:
+        return quizzes
+
+    lower_loc = prefs.location.lower()
+    same = [q for q in quizzes if q.detected_location and lower_loc in q.detected_location.lower()]
+    other = [q for q in quizzes if q not in same]
+
+    n_same = int(len(quizzes) * 0.60)
+    ordered = same[:n_same] + other[:len(quizzes) - n_same]
+
+    # In case of any missing (due to small pools), append them
+    for q in quizzes:
+        if q not in ordered:
+            ordered.append(q)
+
+    return ordered
+
+
+def get_explore_quizzes(user, limit=5):
+    """
+    “Explore” feed: newest quizzes, but STRICTLY in the user’s subjects + languages,
+    then reorder by location preference.
+    """
+    prefs = _get_user_prefs(user)
+    pool  = _base_pool(user)
+    if not prefs or not prefs.languages_spoken:
+        return []
+
+    # 1) Filter by language too
+    filtered = Quiz.objects.filter(
+        id__in=[q.id for q in pool]
+    )
+    filtered = filtered.filter(languages__contains=[prefs.languages_spoken[0]])
+    # fallback English if no primary-language items available
+    if filtered.count() < limit:
+        filtered = filtered | pool.filter(languages__contains=["en"])
+
+    # 2) Order by newest
+    newest = filtered.order_by('-created_at')[:limit]
+    # 3) Location reorder
+    ordered = _location_reorder(list(newest), prefs)
+
+    # 4) Serialize & expose
     suggestions = []
-    for quiz in quizzes:
-        already_attempted = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
-        explanation = "🌎 Latest quizzes to explore" if not already_attempted else "🔄 Quiz available for review"
-        
+    for quiz in ordered:
+        tried = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
+        why   = "🌎 Latest quizzes to explore" if not tried else "🔄 Quiz available for review"
         log_quiz_feed_exposure(user, quiz, "explore")
         suggestions.append({
             **QuizSerializer(quiz).data,
-            "why": explanation,
+            "why": why,
             "source": "explore"
         })
     return suggestions
 
-# Fetch personalized quizzes
+
 def get_personalized_quizzes(user, limit=50):
-    prefs = UserPreference.objects.filter(user=user).first()
-    # 1) Must have at least one subject
-    if not prefs or not prefs.interested_subjects.exists():
+    """
+    “Personalized” feed: subject → language distribution → location reorder.
+    """
+    prefs = _get_user_prefs(user)
+    pool  = _base_pool(user)
+    if not prefs or not prefs.languages_spoken:
         return []
 
-    # Base queryset: subject match only
-    base_qs = Quiz.objects.filter(
-        subject__in=prefs.interested_subjects.all()
-    )
+    # 1) Language bucket selection
+    lang_selected = _language_bucket_selection(pool, limit, prefs)
+    # 2) Location reorder
+    final_list = _location_reorder(lang_selected, prefs)
 
-    # 2) Figure out language buckets
-    # Primary “local” language (first in your array), fallback to English
-    local_lang = prefs.languages_spoken[0] if prefs.languages_spoken else "en"
-
-    local_qs   = base_qs.filter(languages__contains=[local_lang])
-    english_qs = base_qs.filter(languages__contains=["en"])
-    other_qs   = base_qs.exclude(id__in=local_qs).exclude(id__in=english_qs)
-
-    # 3) Decide how many from each bucket
-    cnt_local   = int(limit * 0.80)
-    cnt_english = int(limit * 0.15)
-    cnt_random  = limit - cnt_local - cnt_english  # ~5%
-
-    selected = []
-
-    # 4a) Take up to cnt_local from local_qs, BUT push location‐matches first
-    if prefs.location:
-        loc_match_qs = local_qs.filter(detected_location__icontains=prefs.location)
-        selected += list(loc_match_qs.order_by('-created_at')[:cnt_local])
-
-        if len(selected) < cnt_local:
-            # fill remaining from the rest of local_qs
-            remaining = cnt_local - len(selected)
-            non_loc = local_qs.exclude(id__in=[q.id for q in selected])
-            selected += list(non_loc.order_by('-created_at')[:remaining])
-    else:
-        selected += list(local_qs.order_by('-created_at')[:cnt_local])
-
-    # 4b) Pull in English‐fallback (if primary wasn’t English)
-    if local_lang != "en" and cnt_english > 0:
-        en_candidates = english_qs.exclude(id__in=[q.id for q in selected])
-        selected += list(en_candidates.order_by('-created_at')[:cnt_english])
-
-    # 4c) And then sprinkle in cnt_random truly random quizzes
-    if cnt_random > 0:
-        random_candidates = other_qs.exclude(id__in=[q.id for q in selected]).order_by('?')[:cnt_random]
-        selected += list(random_candidates)
-
-    # 5) If we still haven’t hit “limit” (because some buckets were too small),
-    #    top up from any remaining subject‐matched quizzes.
-    if len(selected) < limit:
-        extra = base_qs.exclude(id__in=[q.id for q in selected]).order_by('?')[:(limit - len(selected))]
-        selected += list(extra)
-
-    # 6) Finally, serialize & add your “why” / source metadata
+    # 3) Serialize & expose
     suggestions = []
-    for quiz in selected:
-        already = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
-        why = "🔍 Based on your interests" if not already else "🔄 Quiz available for review"
+    for quiz in final_list:
+        tried = QuizAttempt.objects.filter(user=user, quiz=quiz).exists()
+        why   = "🔍 Based on your interests" if not tried else "🔄 Quiz available for review"
         suggestions.append({
             **QuizSerializer(quiz).data,
             "why": why,
             "source": "personalized",
         })
-
     return suggestions
 
-# Fetch review queue for spaced repetition
+
 def get_review_queue(user, limit=50):
-    now = timezone.now()
+    """
+    “Review” feed: spaced-repetition items only.
+    """
+    now     = timezone.now()
     quiz_ct = ContentType.objects.get_for_model(Quiz)
 
     recent_ids = FeedExposure.objects.filter(
@@ -123,96 +174,67 @@ def get_review_queue(user, limit=50):
         if not quiz:
             continue
 
-        overdue_days = (now - stat.next_review_at).days
-        explanation = (
-            "🆕 First-time review" if stat.repetitions == 0 else
-            f"🔥 Very overdue! ({overdue_days} days late)" if overdue_days > 7 else
-            f"🧠 Review now ({overdue_days} days overdue)"
-        )
+        overdue = (now - stat.next_review_at).days
+        if stat.repetitions == 0:
+            why = "🆕 First-time review"
+        elif overdue > 7:
+            why = f"🔥 Very overdue! ({overdue} days late)"
+        else:
+            why = f"🧠 Review now ({overdue} days overdue)"
 
         log_quiz_feed_exposure(user, quiz, "review")
         suggestions.append({
             **QuizSerializer(quiz).data,
-            "why": explanation,
+            "why": why,
             "source": "review"
         })
-
     return suggestions
 
-# Main unified feed generator
+
 def generate_user_feed(user, limit=55):
+    """
+    Unified feed:
+      1) Review →
+      2) Personalized →
+      3) Explore →
+      4) Top-up using the same personalized logic (subject→language→location)
+    """
     final_feed = []
-    seen_ids = set()
+    seen_ids   = set()
+    ten_mins   = timezone.now() - timedelta(minutes=10)
 
-    # Avoid showing quizzes recently attempted
-    recently_attempted_quiz_ids = set(QuizAttempt.objects.filter(
-        user=user,
-        attempted_at__gte=timezone.now() - timedelta(minutes=10)
-    ).values_list('quiz_id', flat=True))
+    recently_tried = set(
+        QuizAttempt.objects.filter(
+            user=user,
+            attempted_at__gte=ten_mins
+        ).values_list('quiz_id', flat=True)
+    )
 
-    # Corrected helper function
-    def add_to_feed(quizzes):
-        for quiz in quizzes:
-            if quiz["id"] not in seen_ids and quiz["id"] not in recently_attempted_quiz_ids:
-                final_feed.append(quiz)
-                seen_ids.add(quiz["id"])
+    def add(items):
+        for itm in items:
+            if itm["id"] not in seen_ids and itm["id"] not in recently_tried:
+                final_feed.append(itm)
+                seen_ids.add(itm["id"])
                 if len(final_feed) >= limit:
                     return True
         return False
 
-    # Priority 1: Review quizzes
-    review_quizzes = get_review_queue(user, limit)
-    if add_to_feed(review_quizzes):
+    # 1) Review
+    if add(get_review_queue(user, limit)):
         return final_feed
 
-    # Priority 2: Personalized quizzes
-    personalized_quizzes = get_personalized_quizzes(user, limit)
-    if add_to_feed(personalized_quizzes):
+    # 2) Personalized
+    if add(get_personalized_quizzes(user, limit)):
         return final_feed
 
-    # Priority 3: Explore quizzes
-    explore_quizzes = get_explore_quizzes(user, limit)
-    if add_to_feed(explore_quizzes):
+    # 3) Explore
+    if add(get_explore_quizzes(user, limit)):
         return final_feed
 
-    # Priority 4: Random fallback based on preferences
+    # 4) Top-up: re-run personalized logic for the remaining slots
     remaining = limit - len(final_feed)
-    prefs = UserPreference.objects.filter(user=user).first()
-    cond = Q()
-    if prefs:
-        if prefs.interested_subjects.exists():
-            cond |= Q(subject__in=prefs.interested_subjects.all())
-        for lang in prefs.languages_spoken:
-            cond |= Q(languages__contains=[lang])
-        if prefs.location:
-            cond |= Q(detected_location__icontains=prefs.location)
-        if prefs.interested_tags.exists():
-            cond |= Q(tags__in=prefs.interested_tags.all())
-
-    # 1) Try to pull up to `remaining` quizzes matching their prefs, in random order
-    pref_quizzes = list(
-        Quiz.objects.filter(cond)
-            .exclude(id__in=seen_ids.union(recently_attempted_quiz_ids))
-            .order_by('?')[:remaining]
-    )
-
-    # 2) If that didn’t fill the quota, top up with truly random quizzes
-    if len(pref_quizzes) < remaining:
-        exclude_ids = seen_ids.union(recently_attempted_quiz_ids)\
-                            .union({q.id for q in pref_quizzes})
-        extra = list(
-            Quiz.objects.exclude(id__in=exclude_ids)
-                .order_by('?')[:(remaining - len(pref_quizzes))]
-        )
-        pref_quizzes.extend(extra)
-
-    # 3) Log and append them
-    for quiz in pref_quizzes:
-        log_quiz_feed_exposure(user, quiz, "explore")
-        final_feed.append({
-            **QuizSerializer(quiz).data,
-            "why": "🎲 A random pick based on your profile",
-            "source": "explore"
-        })
+    if remaining > 0:
+        topup = get_personalized_quizzes(user, remaining)
+        add(topup)
 
     return final_feed

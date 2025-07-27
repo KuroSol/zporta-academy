@@ -39,7 +39,39 @@ from django.utils import timezone
 from users.utils import enrich_user_preference
 
 
+class UserPreferenceUpdateView(APIView):
+    """Allow a user to update interested subjects, languages and location."""
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        pref, _ = UserPreference.objects.get_or_create(user=request.user)
+        return Response({
+            "interested_subjects": [s.id for s in pref.interested_subjects.all()],
+            "languages_spoken":   pref.languages_spoken,
+            "location":           pref.location or ""
+        })
+
+    def patch(self, request):
+        pref, _ = UserPreference.objects.get_or_create(user=request.user)
+        # update subjects
+        subject_ids = request.data.get("interested_subjects")
+        if subject_ids is not None:
+            subjects = Subject.objects.filter(id__in=subject_ids)
+            pref.interested_subjects.set(subjects)
+        # update languages
+        languages = request.data.get("languages_spoken")
+        if languages is not None:
+            pref.languages_spoken = languages
+        # update location
+        location = request.data.get("location")
+        if location is not None:
+            pref.location = location
+        pref.save()
+        return Response({
+            "interested_subjects": [s.id for s in pref.interested_subjects.all()],
+            "languages_spoken":   pref.languages_spoken,
+            "location":           pref.location or ""
+        }, status=status.HTTP_200_OK)
 
 # ... (Keep other views like UserLearningScoreView, ChangePasswordView, LoginView, etc.)
 class UserLearningScoreView(APIView):
