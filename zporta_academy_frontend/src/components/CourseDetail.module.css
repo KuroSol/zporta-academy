@@ -1,476 +1,494 @@
 /*
  * CourseDetail.module.css
- * A complete, modern redesign for a better study experience.
- * This file is designed to work with the JS scaling logic.
+ * A modern, fully responsive redesign for the course detail page.
+ * Uses Flexbox and Grid for layout and is mobile-first.
  */
 
-/* --- Global & Scaling --- */
-.scaleWrapper {
-  width: 100%;
-  padding: 20px 10px; /* Provides some space on very small screens */
-  box-sizing: border-box;
-  transition: height 0.2s ease-in-out;
+/* --- Global & Variables --- */
+:root {
+    --primary-color: #4F46E5; /* Indigo */
+    --primary-hover: #4338CA;
+    --success-color: #10B981; /* Emerald */
+    --success-hover: #059669;
+    --danger-color: #EF4444;  /* Red */
+    --danger-hover: #DC2626;
+    --warning-color: #F59E0B; /* Amber */
+    --warning-hover: #D97706;
+    --dark-color: #1F2937;    /* Cool Gray 800 */
+    --medium-color: #6B7280;  /* Cool Gray 500 */
+    --light-color: #F9FAFB;   /* Cool Gray 50 */
+    --border-color: #E5E7EB; /* Cool Gray 200 */
+    --white-color: #FFFFFF;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --border-radius: 8px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
+/* --- Base Containers --- */
 .courseDetailContainer {
-  width: 1000px; /* The fixed design width */
-  background: #f9fafb; /* A very light grey background */
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
-  border: 1px solid #e5e7eb;
-  padding: 40px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #374151; /* Darker grey for text */
-  box-sizing: border-box;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: var(--font-family);
+    color: var(--dark-color);
+    box-sizing: border-box;
 }
 
-/* --- Loading & Error States --- */
-.loadingMessage, .errorMessage {
-  text-align: center;
-  padding: 80px 20px;
-  font-size: 20px;
-  color: #6b7280;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
-.errorMessage {
-  color: #ef4444;
-}
-.spinner {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* --- Read-Only View --- */
-.courseTitle {
-  font-size: 42px;
-  font-weight: 800;
-  color: #111827;
-  text-align: center;
-  margin-bottom: 24px;
-  letter-spacing: -1px;
-}
-
-.courseImage {
-  width: 100%;
-  height: 450px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  background-color: #e5e7eb;
-}
-.courseImagePlaceholder {
-  width: 100%;
-  height: 350px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  background-color: #f3f4f6;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  color: #9ca3af;
-  font-size: 20px;
-  border: 2px dashed #d1d5db;
-}
-
-.courseMeta {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-.metaItem {
-  font-size: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.metaItem strong {
-  color: #111827;
-  font-weight: 600;
-  width: 80px; /* Align values */
-}
-.tagContainer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.tag {
-  background-color: #e0e7ff;
-  color: #4338ca;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.courseDescription {
-  font-size: 17px;
-  line-height: 1.7;
-  color: #4b5563;
-  margin-bottom: 40px;
-}
-
-.contentSection {
-  margin-top: 40px;
-}
-.sectionTitle {
-  font-size: 28px;
-  font-weight: 700;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 12px;
-}
-
-.contentList {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.contentItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffffff;
-  padding: 15px 20px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-.contentItem:hover {
-  border-color: #9ca3af;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-.contentItem span {
-    font-weight: 500;
-    font-size: 17px;
-    color: #374151;
-}
-.actionButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #4f46e5;
-  color: white;
-  font-weight: 600;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-.actionButton:hover {
-  background: #4338ca;
-}
-
-.enrollSection {
-  text-align: center;
-  margin-top: 50px;
-  padding-top: 30px;
-  border-top: 1px solid #e5e7eb;
-}
-.enrollButton {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 16px 40px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-.enrollButton:hover {
-  background: #059669;
-  transform: scale(1.03);
-}
-.enrolledButton {
-  background: #6b7280;
-  color: #e5e7eb;
-  border: none;
-  padding: 16px 40px;
-  border-radius: 10px;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: not-allowed;
-}
-.enrollMessage {
-  margin-top: 15px;
-  font-size: 15px;
-  color: #6b7280;
-}
-
-.manageButtonContainer {
-    text-align: center;
-    margin-top: 40px;
-}
-.manageButton {
-  background-color: #374151;
-  color: white;
-  font-weight: 600;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-.manageButton:hover {
-    background-color: #1f2937;
-}
-
-/* --- Edit Mode & Forms --- */
-.editCourseForm {
-  background: #ffffff;
-  padding: 30px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-}
-.editCourseForm h2 {
-  font-size: 32px;
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 30px;
-  color: #111827;
-}
-
-.formGroup {
-  margin-bottom: 25px;
-}
-.formGroup label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-  font-size: 16px;
-}
-.inputField, .dropdown {
-  width: 100%;
-  padding: 12px 15px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
-}
-.inputField:focus, .dropdown:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-    outline: none;
-}
-.dropdown option:disabled {
-    color: #9ca3af;
-    background-color: #f3f4f6;
-}
-.disabledOption {
-    color: #9ca3af;
-    background-color: #f3f4f6;
-}
-
-.formActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 30px;
-}
-.saveBtn, .cancelBtn {
-  flex-grow: 1;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-}
-.saveBtn {
-  background-color: #4f46e5;
-  color: white;
-}
-.saveBtn:hover {
-  background-color: #4338ca;
-}
-.cancelBtn {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-.cancelBtn:hover {
-  background-color: #d1d5db;
-}
-.formError {
-    color: #ef4444;
-    font-size: 14px;
-    margin-top: 8px;
-}
-
-/* --- Creator Action Cards --- */
-.courseStatusActions, .addContentSection, .dangerZone {
-    margin-top: 40px;
-    padding: 25px;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-}
-.courseStatusActions h4, .addContentSection h4, .dangerZone h4 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: #111827;
-}
-.addContentSection h5 {
-    font-size: 17px;
-    color: #374151;
-    margin-top: 20px;
-    margin-bottom: 10px;
-}
-.addContentSection h5:first-of-type {
-    margin-top: 0;
-}
-.sectionDivider {
-    border: none;
-    border-top: 1px solid #e5e7eb;
-    margin: 30px 0;
-}
-
-.publishBtn, .unpublishBtn {
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.publishBtn {
-  background-color: #10b981;
-  color: white;
-}
-.publishBtn:hover:not(:disabled) {
-  background-color: #059669;
-}
-.unpublishBtn {
-  background-color: #f59e0b;
-  color: white;
-}
-.unpublishBtn:hover:not(:disabled) {
-  background-color: #d97706;
-}
-.publishBtn:disabled, .unpublishBtn:disabled {
-    background-color: #d1d5db;
-    cursor: not-allowed;
-}
-
-.attachedContentList ul {
-    list-style: none;
-    padding: 0;
+.loadingContainer, .errorContainer {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-.attachedItem {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    border-radius: 8px;
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    font-size: 1.25rem;
+    color: var(--medium-color);
 }
-.detachBtn {
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    color: #6b7280;
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+
+.spinner {
+    animation: spin 1s linear infinite;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- Header --- */
+.header {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background-color: var(--dark-color);
+}
+
+.coverImage {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.coverImagePlaceholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--medium-color);
+    background-color: var(--light-color);
+}
+
+.headerOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.5rem;
+}
+
+.headerContent {
+    color: var(--white-color);
+}
+
+.subjectPill {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.courseTitle {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    line-height: 1.2;
+}
+
+.tagContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tag {
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+/* --- Main Layout --- */
+.mainContent {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile first */
+    gap: 2rem;
+}
+
+.leftColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+}
+
+.rightColumn {
+    /* Sticky sidebar on larger screens */
+}
+
+/* --- Content Sections --- */
+.contentSection {
+    background-color: var(--white-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.description {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--medium-color);
+    word-wrap: break-word;
+}
+
+.description h1, .description h2, .description h3 {
+    color: var(--dark-color);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.description p {
+    margin-bottom: 1em;
+}
+
+/* Content List (Lessons/Quizzes) */
+.contentList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contentList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
     transition: all 0.2s ease;
+}
+.contentList li:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+.contentList li span {
+    flex-grow: 1;
+    margin-right: 1rem;
+}
+
+
+/* --- Sidebar --- */
+.sidebarCard {
+    background-color: var(--white-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    position: sticky;
+    top: 2rem;
+}
+
+.enrollMessage {
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--medium-color);
+    margin-top: 1rem;
+}
+
+/* --- Buttons --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.btnPrimary {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+.btnPrimary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+.btnSecondary {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border-color: var(--border-color);
+}
+.btnSecondary:hover:not(:disabled) {
+    background-color: var(--border-color);
+}
+.btnSuccess {
+    background-color: var(--success-color);
+    color: var(--white-color);
+}
+.btnSuccess:hover:not(:disabled) {
+    background-color: var(--success-hover);
+}
+.btnDanger {
+    background-color: var(--danger-color);
+    color: var(--white-color);
+}
+.btnDanger:hover:not(:disabled) {
+    background-color: var(--danger-hover);
+}
+.btnWarning {
+    background-color: var(--warning-color);
+    color: var(--white-color);
+}
+.btnWarning:hover:not(:disabled) {
+    background-color: var(--warning-hover);
+}
+.btnIcon {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+.btnBlock {
+    width: 100%;
+}
+
+/* --- Edit Mode & Forms --- */
+.editForm, .adminSection {
+    background-color: var(--white-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.formHeader {
+    font-size: 1.75rem;
+    margin: 0 0 2rem 0;
+}
+
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.inputField, .dropdown {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background-color: var(--white-color);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+.inputField:focus, .dropdown:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.formActions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.formError {
+    background-color: #fef2f2;
+    color: var(--danger-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--danger-color);
+    margin-top: 1rem;
+}
+
+/* Admin Sections */
+.attachedList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.attachedList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+}
+.detachBtn {
+    background: none;
+    border: none;
+    color: var(--medium-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    line-height: 0;
 }
 .detachBtn:hover {
     background-color: #fee2e2;
-    color: #ef4444;
-    border-color: #fecaca;
+    color: var(--danger-color);
 }
+
 .addContentForm {
     display: flex;
-    gap: 10px;
+    gap: 0.75rem;
     align-items: center;
 }
 .addContentForm .dropdown {
     flex-grow: 1;
-    margin-bottom: 0;
-}
-.addBtn {
-  background-color: #4f46e5;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: background-color 0.2s ease;
-}
-.addBtn:hover {
-  background-color: #4338ca;
-}
-.addBtn:disabled {
-    background-color: #d1d5db;
-    cursor: not-allowed;
-}
-.noContentMessage {
-    color: #6b7280;
-    font-style: italic;
-    font-size: 15px;
-    padding: 10px;
-    background-color: #fff;
-    border-radius: 8px;
-    text-align: center;
 }
 
+.statusBox {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background-color: var(--light-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+}
+.statusPill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-weight: 600;
+    color: var(--white-color);
+}
+.statusDraft { background-color: var(--warning-color); }
+.statusPublished { background-color: var(--success-color); }
+.statusMessage { font-style: italic; color: var(--medium-color); }
+
 .dangerZone {
-    border-color: #fca5a5;
+    border-color: var(--danger-color);
     background-color: #fef2f2;
 }
-.dangerZone h4 {
-    color: #b91c1c;
+.dangerZone .sectionTitle { color: var(--danger-hover); }
+.dangerContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
-.courseDeleteBtn {
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
-.courseDeleteBtn:hover {
-  background-color: #dc2626;
-}
-.warningText {
-    font-size: 14px;
+.dangerContent p {
+    margin: 0;
     color: #991b1b;
-    margin-top: 10px;
+}
+
+/* Accordion Styles for Edit Mode */
+.accordionContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.accordionItem {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+.accordionHeader {
+    width: 100%;
+    background-color: var(--light-color);
+    padding: 1rem;
+    border: none;
+    text-align: left;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0;
+}
+.accordionHeader:hover {
+    background-color: var(--border-color);
+}
+.accordionContent {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+
+/* --- Responsive Design --- */
+
+@media (min-width: 768px) {
+    .headerOverlay {
+        padding: 2rem;
+    }
+    .courseTitle {
+        font-size: 3rem;
+    }
+    .mainContent {
+        grid-template-columns: minmax(0, 2.5fr) 1fr;
+    }
+    .editForm, .adminSection {
+        padding: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .coverImage {
+        height: 400px;
+    }
+    .courseTitle {
+        font-size: 3.5rem;
+    }
 }

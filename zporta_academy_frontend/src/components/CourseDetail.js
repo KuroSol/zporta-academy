@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useContext, useRef, useLayoutEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes } from "react-icons/fa";
+import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
 import CreateSubjectSelect from "./Admin/CreateSubjectSelect";
-import styles from "./CourseDetail.module.css";
+import styles from "./CourseDetail.module.css"; // This should point to the new responsive CSS
 import { loadStripe } from "@stripe/stripe-js";
 import { AuthContext } from "../context/AuthContext";
 import apiClient from "../api.js";
-import "./Editor/ViewerAccordion.css";
+import "./Editor/ViewerAccordion.css"; // Keep this if your CustomEditor relies on it
 
 const stripePromise = loadStripe(
   "pk_test_51KuSZdAyDb4VsWsQVWaz6RYSufh5e8ns6maCvV4b0g1waYUL4TvvgrB14G73tirboPQ67w3l8n8Tt631kACShVaT003wDftkeU"
 );
 
-// --- Helper Functions (Unchanged) ---
+// --- Helper Functions (From your original file, UNCHANGED) ---
 function initializeAccordions(containerElement) {
   if (!containerElement) return;
   const accordions = containerElement.querySelectorAll(".accordion-item");
@@ -76,7 +76,7 @@ const CourseDetail = () => {
   const permalink = `${username}/${date}/${subject}/${courseTitle}`;
   const isEditRoute = location.pathname.startsWith("/admin/courses/edit/");
 
-  // --- State Variables (Original) ---
+  // --- State Variables (From your original file, UNCHANGED) ---
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [userLessonsForDropdown, setUserLessonsForDropdown] = useState([])
@@ -98,55 +98,14 @@ const CourseDetail = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusUpdateMessage, setStatusUpdateMessage] = useState("");
 
-  // --- Refs (Original + New) ---
+  // --- Refs (From your original file, UNCHANGED) ---
   const editorRef = useRef(null);
   const courseDescriptionDisplayRef = useRef(null);
-  // --- NEW Refs for scaling ---
-  const containerRef = useRef(null);
-  const wrapperRef = useRef(null);
 
-  // --- Context (Original) ---
+  // --- Context (From your original file, UNCHANGED) ---
   const { user, token, logout } = useContext(AuthContext);
 
-  // --- NEW Scaling Logic ---
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    const wrapper = wrapperRef.current;
-    if (!container || !wrapper) return;
-
-    // This width must match the `width` in the new CSS file.
-    const designWidth = 1000;
-
-    const handleResize = () => {
-      const availableWidth = wrapper.offsetWidth;
-      const scale = Math.min(1, availableWidth / designWidth);
-
-      container.style.transform = `scale(${scale})`;
-      container.style.transformOrigin = 'top center';
-      wrapper.style.height = `${container.offsetHeight * scale}px`;
-    };
-
-    wrapper.style.display = 'flex';
-    wrapper.style.justifyContent = 'center';
-
-    const observer = new MutationObserver(handleResize);
-    observer.observe(container, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: true,
-    });
-    
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial call
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      observer.disconnect();
-    };
-  }, [loading]); // Re-calculates when loading state changes
-
-  // --- All original useEffects and handlers remain unchanged ---
+  // --- All original useEffects and handlers remain UNCHANGED ---
   useEffect(() => {
     if (!permalink) {
       setError("Course identifier (permalink) is missing.");
@@ -352,7 +311,6 @@ const CourseDetail = () => {
     }
   }, [enrolled, enrollmentId, navigate]);
 
-  // --- All handlers from original file ---
   const handleEnroll = async () => {
     if (!course?.id) {
       console.error("Enrollment attempted without course ID.");
@@ -702,323 +660,243 @@ const CourseDetail = () => {
 
   // --- Render Logic ---
   if (loading) return (
-      <div className={styles.loadingMessage}>
-        <FaSpinner className={styles.spinner} /> Loading Course Details…
+      <div className={styles.loadingContainer}>
+        <FaSpinner className={styles.spinner} />
+        <p>Loading Course Details...</p>
       </div>
     );
-  if (error && !editMode) return <p className={styles.errorMessage}>{error}</p>;
-  if (!course) return <p className={styles.loadingMessage}>Course data not available.</p>;
 
+  if (error && !course) return <div className={styles.errorContainer}><p>{error}</p></div>;
+  if (!course) return <div className={styles.loadingContainer}><p>Course data not available.</p></div>
 
-  return (
-    // The new wrapper div handles positioning for the scaling container.
-    <div ref={wrapperRef} className={styles.scaleWrapper}>
-        {/* The original container now has a ref and will be scaled by the JS logic. */}
-        <div ref={containerRef} className={styles.courseDetailContainer}>
-            {/* --- Edit Mode View --- */}
-            {editMode && isCreator ? (
-            <div className={styles.editCourseForm}>
-                <h2>Manage Course</h2>
-                <form onSubmit={handleSaveEdit}>
+  // --- RENDER Creator Edit View ---
+  if (isCreator && editMode) {
+    return (
+        <div className={styles.courseDetailContainer}>
+            <form onSubmit={handleSaveEdit} className={styles.editForm}>
+                <h1 className={styles.formHeader}>Manage Course</h1>
+                
+                {error && <p className={styles.formError}>{error}</p>}
+
                 <div className={styles.formGroup}>
-                    <label htmlFor="courseTitleEdit">Title:</label>
+                    <label htmlFor="courseTitleEdit">Course Title</label>
                     <input
-                    id="courseTitleEdit"
-                    type="text"
-                    value={editCourse.title || ""}
-                    onChange={e => setEditCourse({ ...editCourse, title: e.target.value })}
-                    required
-                    className={styles.inputField}
+                        id="courseTitleEdit" type="text"
+                        value={editCourse.title || ""}
+                        onChange={e => setEditCourse({ ...editCourse, title: e.target.value })}
+                        required className={styles.inputField}
                     />
                 </div>
+
                 <div className={styles.formGroup}>
-                    <label htmlFor="courseDescriptionEdit">Content:</label>
-                    <CustomEditor
-                    id="courseDescriptionEdit"
-                    ref={editorRef}
-                    initialContent={editCourse.description || ""}
-                    mediaCategory="course"
-                    editable={true}
-                    />
-                    {error && <p className={`${styles.error} ${styles.formError}`}>{error}</p>}
-                </div>
-                <div className={styles.formGroup}>
-                    <label htmlFor="courseSubjectEdit">Subject:</label>
+                    <label htmlFor="courseSubjectEdit">Subject</label>
                     <CreateSubjectSelect
-                    id="courseSubjectEdit"
-                    value={editCourse.subject}
-                    onChange={sel => setEditCourse({ ...editCourse, subject: sel })}
-                    required
+                        id="courseSubjectEdit"
+                        value={editCourse.subject}
+                        onChange={sel => setEditCourse({ ...editCourse, subject: sel })}
+                        required
                     />
                 </div>
+
                 <div className={styles.formGroup}>
-                    <label htmlFor="courseTagsEdit">Tags (comma separated):</label>
+                    <label htmlFor="courseTagsEdit">Tags (comma-separated)</label>
                     <input
-                    id="courseTagsEdit"
-                    type="text"
-                    value={editCourse.tags || ""}
-                    onChange={e => setEditCourse({ ...editCourse, tags: e.target.value })}
-                    className={styles.inputField}
+                        id="courseTagsEdit" type="text"
+                        value={editCourse.tags || ""}
+                        onChange={e => setEditCourse({ ...editCourse, tags: e.target.value })}
+                        className={styles.inputField}
                     />
                 </div>
-                {error && <p className={`${styles.error} ${styles.formError}`}>{error}</p>}
+
+                <div className={styles.formGroup}>
+                    <label>Course Content</label>
+                    <CustomEditor
+                        ref={editorRef}
+                        initialContent={editCourse.description || ""}
+                        mediaCategory="course"
+                        editable={true}
+                    />
+                </div>
+
                 <div className={styles.formActions}>
-                    <button type="submit" className={styles.saveBtn}>Save Content Changes</button>
-                    <button type="button" className={styles.cancelBtn} onClick={handleCancelEdit}>Cancel Edit</button>
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Save Changes</button>
+                    <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleCancelEdit}>Cancel</button>
                 </div>
-                </form>
+            </form>
 
-                <div className={styles.courseStatusActions}>
-                <h4>Status</h4>
-                <p>
-                    Current Status: {course.is_draft
-                    ? <strong style={{ color: '#f0ad4e' }}>Draft</strong>
-                    : <strong style={{ color: '#5cb85c' }}>Published</strong>}
-                    {isLocked && <span className={styles.lockedBadge}>🔒 Locked</span>}
-                </p>
-                {!isLocked && (
-                    <>
-                    {course.is_draft
-                        ? <button onClick={handlePublishCourse} disabled={isUpdatingStatus} className={styles.publishBtn}>
-                            {isUpdatingStatus ? 'Publishing…' : 'Publish Now'}
-                        </button>
-                        : <button onClick={handleUnpublishCourse} disabled={isUpdatingStatus} className={styles.unpublishBtn}>
-                            {isUpdatingStatus ? 'Working…' : 'Set to Draft'}
-                        </button>
-                    }
-                    </>
-                )}
-                {statusUpdateMessage && <p className={styles.message}>{statusUpdateMessage}</p>}
-                </div>
-
-                <div className={styles.addContentSection}>
-                <h4>Manage Content</h4>
-                <div className={styles.attachedContentList}>
-                    <h5>Currently Attached Lessons ({lessons.length})</h5>
-                    {lessons.length > 0 ? (
-                        <ul>
-                            {lessons.map(lesson => (
-                                <li key={lesson.id} className={styles.attachedItem}>
-                                    <span>{lesson.title}</span>
-                                    <button
-                                        onClick={() => handleDetachLesson(lesson.id)}
-                                        className={styles.detachBtn}
-                                        disabled={isLocked}
-                                        title="Detach Lesson"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className={styles.noContentMessage}>No lessons attached yet.</p>
-                    )}
-                </div>
-                <div className={styles.addContentForm}>
-                    <h5><FaPlus /> Add a Lesson</h5>
-                    <form onSubmit={handleAddLesson}>
-                    <select
-                        value={selectedLesson}
-                        onChange={e => { setSelectedLesson(e.target.value); setAddLessonError(''); }}
-                        className={styles.dropdown}
-                        disabled={isLocked}
-                    >
-                        <option value="">Select a lesson to add...</option>
-                    {userLessonsForDropdown.map(l => {
-                        const isAttachedElsewhere = l.course && l.course !== course.id;
-                        const displayText = isAttachedElsewhere
-                            ? `${l.title} (Attached to: ${l.course_data?.title || 'Another Course'})`
-                            : l.title;
-                        return (
-                            <option
-                                key={l.id}
-                                value={l.id}
-                                disabled={isAttachedElsewhere}
-                                className={isAttachedElsewhere ? styles.disabledOption : ''}
-                            >
-                                {displayText}
-                            </option>
-                        );
-                    })}
-                    </select>
-                    <button type="submit" disabled={!selectedLesson || isLocked} className={styles.addBtn}>Add Lesson</button>
-                    </form>
-                    {addLessonError && <p className={`${styles.error} ${styles.formError}`}>{addLessonError}</p>}
-                </div>
-                <hr className={styles.sectionDivider} />
-                <div className={styles.attachedContentList}>
-                    <h5>Currently Attached Quizzes ({quizzes.length})</h5>
-                    {quizzes.length > 0 ? (
-                        <ul>
-                            {quizzes.map(quiz => (
-                                <li key={quiz.id} className={styles.attachedItem}>
-                                    <span>{quiz.title}</span>
-                                    <button
-                                        onClick={() => handleDetachQuiz(quiz.id)}
-                                        className={styles.detachBtn}
-                                        disabled={isLocked}
-                                        title="Detach Quiz"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className={styles.noContentMessage}>No quizzes attached yet.</p>
-                    )}
-                </div>
-                <div className={styles.addContentForm}>
-                    <h5><FaPlus /> Attach a Quiz</h5>
-                    <form onSubmit={handleAddQuiz}>
-                    <select
-                        value={selectedQuiz}
-                        onChange={e => { setSelectedQuiz(e.target.value); setAddQuizError(''); }}
-                        className={styles.dropdown}
-                        disabled={isLocked}
-                    >
-                        <option value="">Select a quiz to attach...</option>
-                    {availableQuizzesForDropdown.map(q => {
-                        const isAttachedElsewhere = q.course && q.course !== course.id;
-                        const displayText = isAttachedElsewhere
-                            ? `${q.title} (Attached to: ${q.course_data?.title || 'Another Course'})`
-                            : q.title;
-                        return (
-                            <option
-                                key={q.id}
-                                value={q.id}
-                                disabled={isAttachedElsewhere}
-                                className={isAttachedElsewhere ? styles.disabledOption : ''}
-                            >
-                                {displayText}
-                            </option>
-                        );
-                    })}
-                    </select>
-                    <button type="submit" disabled={!selectedQuiz || isLocked} className={styles.addBtn}>Attach Quiz</button>
-                    </form>
-                    {addQuizError && <p className={`${styles.error} ${styles.formError}`}>{addQuizError}</p>}
-                </div>
+            <div className={`${styles.adminSection} ${styles.accordionContainer}`}>
+                <h2 className={styles.sectionTitle}>Manage Content</h2>
+                <div className={styles.accordionItem}>
+                    <h3 className={styles.accordionHeader}>Attached Lessons ({lessons.length})</h3>
+                    <div className={styles.accordionContent}>
+                        {lessons.length > 0 ? (
+                            <ul className={styles.attachedList}>
+                                {lessons.map(l => (
+                                    <li key={l.id}>
+                                        <span>{l.title}</span>
+                                        <button onClick={() => handleDetachLesson(l.id)} className={styles.detachBtn} title="Detach Lesson" disabled={isLocked}><FaTimes/></button>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : <p>No lessons attached.</p>}
+                        <form onSubmit={handleAddLesson} className={styles.addContentForm}>
+                            <select value={selectedLesson} onChange={e => { setSelectedLesson(e.target.value); setAddLessonError(''); }} className={styles.dropdown} disabled={isLocked}>
+                                <option value="">Select a lesson to add...</option>
+                                {userLessonsForDropdown.map(l => {
+                                    const isAttachedElsewhere = l.course && l.course !== course.id;
+                                    return <option key={l.id} value={l.id} disabled={isAttachedElsewhere}>{l.title}{isAttachedElsewhere ? ' (In another course)' : ''}</option>;
+                                })}
+                            </select>
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!selectedLesson || isLocked}><FaPlus/> Add</button>
+                        </form>
+                        {addLessonError && <p className={styles.formError}>{addLessonError}</p>}
+                    </div>
                 </div>
 
-                <div className={styles.dangerZone}>
-                <h4>Danger Zone</h4>
-                <button className={styles.courseDeleteBtn} onClick={handleDeleteCourse} disabled={isLocked}>
-                    Delete This Course Permanently
-                </button>
-                <p className={styles.warningText}>This action cannot be undone.</p>
+                <div className={styles.accordionItem}>
+                    <h3 className={styles.accordionHeader}>Attached Quizzes ({quizzes.length})</h3>
+                    <div className={styles.accordionContent}>
+                        {quizzes.length > 0 ? (
+                            <ul className={styles.attachedList}>
+                                {quizzes.map(q => (
+                                    <li key={q.id}>
+                                        <span>{q.title}</span>
+                                        <button onClick={() => handleDetachQuiz(q.id)} className={styles.detachBtn} title="Detach Quiz" disabled={isLocked}><FaTimes/></button>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : <p>No quizzes attached.</p>}
+                        <form onSubmit={handleAddQuiz} className={styles.addContentForm}>
+                            <select value={selectedQuiz} onChange={e => { setSelectedQuiz(e.target.value); setAddQuizError(''); }} className={styles.dropdown} disabled={isLocked}>
+                                <option value="">Select a quiz to attach...</option>
+                                {availableQuizzesForDropdown.map(q => {
+                                    const isAttachedElsewhere = q.course && q.course !== course.id;
+                                    return <option key={q.id} value={q.id} disabled={isAttachedElsewhere}>{q.title}{isAttachedElsewhere ? ' (In another course)' : ''}</option>;
+                                })}
+                            </select>
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!selectedQuiz || isLocked}><FaPlus/> Add</button>
+                        </form>
+                        {addQuizError && <p className={styles.formError}>{addQuizError}</p>}
+                    </div>
                 </div>
-
             </div>
 
-            ) : (
-            /* --- Read-only View --- */
-            <>
-                <h1 className={styles.courseTitle}>{course.title}</h1>
-                
-                {course?.cover_image ? (
-                <img
-                    src={course.cover_image}
-                    alt={course.title}
-                    className={styles.courseImage}
-                />
-                ) : (
-                <div className={styles.courseImagePlaceholder}>
-                    <FaBook size="40"/>
-                    <span>No Course Image</span>
-                </div>
-                )}
-
-                <div className={styles.courseMeta}>
-                    {course.subject_name && <span className={styles.metaItem}><strong>Subject:</strong> {course.subject_name}</span>}
-                    {course.tags?.length > 0 && (
-                        <div className={styles.metaItem}>
-                            <strong>Tags:</strong> 
-                            <div className={styles.tagContainer}>
-                                {course.tags.map(tag => <span key={tag} className={styles.tag}>#{tag}</span>)}
-                            </div>
-                        </div>
+            <div className={styles.adminSection}>
+                 <h2 className={styles.sectionTitle}>Status & Actions</h2>
+                 <div className={styles.statusBox}>
+                    <p>Status: {course.is_draft ? <span className={`${styles.statusPill} ${styles.statusDraft}`}>Draft</span> : <span className={`${styles.statusPill} ${styles.statusPublished}`}>Published</span>} {isLocked && "🔒"}</p>
+                    {!isLocked && (course.is_draft ? 
+                        <button onClick={handlePublishCourse} disabled={isUpdatingStatus} className={`${styles.btn} ${styles.btnSuccess}`}><FaCheckCircle/> {isUpdatingStatus ? 'Publishing...' : 'Publish'}</button> :
+                        <button onClick={handleUnpublishCourse} disabled={isUpdatingStatus} className={`${styles.btn} ${styles.btnWarning}`}><FaExclamationTriangle/> {isUpdatingStatus ? 'Working...' : 'Set to Draft'}</button>
                     )}
-                </div>
+                    {statusUpdateMessage && <p className={styles.statusMessage}>{statusUpdateMessage}</p>}
+                 </div>
+            </div>
 
-                <div
-                className={`${styles.courseDescription} displayed-content`}
-                ref={courseDescriptionDisplayRef}
-                dangerouslySetInnerHTML={{
-                    __html: sanitizeContentViewerHTML(course.description),
-                }}
-                />
+            <div className={`${styles.adminSection} ${styles.dangerZone}`}>
+                <h2 className={styles.sectionTitle}>Danger Zone</h2>
+                <div className={styles.dangerContent}>
+                    <p>This action is permanent and cannot be undone.</p>
+                    <button onClick={handleDeleteCourse} className={`${styles.btn} ${styles.btnDanger}`} disabled={isLocked}><FaTrash /> Delete Course</button>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  // --- RENDER Read-Only Student View ---
+  return (
+    <div className={styles.courseDetailContainer}>
+        <header className={styles.header}>
+            {course.cover_image ? (
+                <img src={course.cover_image} alt={course.title} className={styles.coverImage} onError={(e) => e.target.style.display='none'}/>
+            ) : (
+                <div className={`${styles.coverImage} ${styles.coverImagePlaceholder}`}>
+                    <FaBook size={50} />
+                </div>
+            )}
+             <div className={styles.headerOverlay}>
+                <div className={styles.headerContent}>
+                    <span className={styles.subjectPill}>{course.subject_name}</span>
+                    <h1 className={styles.courseTitle}>{course.title}</h1>
+                    <div className={styles.tagContainer}>
+                        {course.tags?.map(tag => <span key={tag} className={styles.tag}>#{tag}</span>)}
+                    </div>
+                </div>
+             </div>
+        </header>
+
+        <div className={styles.mainContent}>
+            <div className={styles.leftColumn}>
+                <section className={styles.contentSection}>
+                    <h2 className={styles.sectionTitle}>About this course</h2>
+                    <div
+                        className={styles.description}
+                        ref={courseDescriptionDisplayRef}
+                        dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(course.description) }}
+                    />
+                </section>
 
                 {lessons.length > 0 && (
-                <section className={styles.contentSection}>
-                    <h2 className={styles.sectionTitle}><FaBook /> Lessons in this Course</h2>
-                    <ul className={styles.contentList}>
-                    {lessons.map(lesson => (
-                        <li key={lesson.id} className={styles.contentItem}>
-                        <span>{lesson.title}</span>
-                        {(enrolled || isCreator) && (
-                            <button
-                                className={styles.actionButton}
-                                onClick={() => navigate(`/lessons/${lesson.permalink}`)}
-                                title={`Study lesson: ${lesson.title}`}
-                            >
-                                <FaBookOpen/> Study
-                            </button>
-                        )}
-                        </li>
-                    ))}
-                    </ul>
-                </section>
+                    <section className={styles.contentSection}>
+                        <h2 className={styles.sectionTitle}><FaBook /> Lessons</h2>
+                        <ul className={styles.contentList}>
+                            {lessons.map(lesson => (
+                                <li key={lesson.id}>
+                                    <span>{lesson.title}</span>
+                                    {(enrolled || isCreator) && (
+                                        <button onClick={() => navigate(`/lessons/${lesson.permalink}`)} className={`${styles.btn} ${styles.btnIcon}`}>
+                                            <FaBookOpen /> Study
+                                        </button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
                 )}
 
-                {quizzes.length > 0 && (
-                <section className={styles.contentSection}>
-                    <h2 className={styles.sectionTitle}><FaQuestion /> Quizzes in this Course</h2>
-                    <ul className={styles.contentList}>
-                    {quizzes.map(quiz => (
-                        <li key={quiz.id} className={styles.contentItem}>
-                        <span>{quiz.title}</span>
-                        {(enrolled || isCreator) && (
-                            <button
-                                className={styles.actionButton}
-                                onClick={() => navigate(`/quizzes/take/${quiz.id}`)}
-                                title={`Take quiz: ${quiz.title}`}
-                            >
-                                <FaQuestion/> Take Quiz
-                            </button>
-                        )}
-                        </li>
-                    ))}
-                    </ul>
-                </section>
+                 {quizzes.length > 0 && (
+                    <section className={styles.contentSection}>
+                        <h2 className={styles.sectionTitle}><FaQuestion /> Quizzes</h2>
+                        <ul className={styles.contentList}>
+                            {quizzes.map(quiz => (
+                                <li key={quiz.id}>
+                                    <span>{quiz.title}</span>
+                                    {(enrolled || isCreator) && (
+                                        <button onClick={() => navigate(`/quizzes/take/${quiz.id}`)} className={`${styles.btn} ${styles.btnIcon}`}>
+                                            <FaQuestion /> Take Quiz
+                                        </button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
                 )}
+            </div>
 
-                {!isCreator && (
-                <div className={styles.enrollSection}>
-                    {enrolled ? (
-                    <button className={styles.enrolledButton} disabled>
-                        Enrolled
-                    </button>
-                    ) : (
-                    <button className={styles.enrollButton} onClick={handleEnroll} disabled={course.is_draft}>
-                        {course.course_type === "premium" ? `Buy Course ($${course.price || 'N/A'})` : "Enroll Now"}
-                    </button>
-                    )}
-                    {enrollMessage && <p className={styles.enrollMessage}>{enrollMessage}</p>}
-                    {course.is_draft && <p className={styles.enrollMessage}>This course is a draft and cannot be enrolled in yet.</p>}
-                </div>
-                )}
-
-                {isCreator && !editMode && (
-                    <div className={styles.manageButtonContainer}>
-                        <button onClick={handleEditClick} className={styles.manageButton}>
-                            Manage Course Content & Settings
+            <aside className={styles.rightColumn}>
+                <div className={styles.sidebarCard}>
+                    {isCreator ? (
+                         <button onClick={handleEditClick} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`}>
+                            <FaEdit /> Manage Course
                         </button>
-                    </div>
-                )}
-            </>
-            )}
+                    ) : (
+                        <>
+                            {enrolled ? (
+                                <button className={`${styles.btn} ${styles.btnSuccess} ${styles.btnBlock}`} disabled>
+                                    <FaCheckCircle /> Enrolled
+                                </button>
+                            ) : (
+                                <button onClick={handleEnroll} disabled={course.is_draft} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`}>
+                                    {course.course_type === 'premium' ? `Enroll for $${course.price}` : 'Enroll for Free'}
+                                </button>
+                            )}
+                            {enrollMessage && <p className={styles.enrollMessage}>{enrollMessage}</p>}
+                            {course.is_draft && <p className={styles.enrollMessage}>Enrollment is currently closed.</p>}
+                        </>
+                    )}
+                </div>
+            </aside>
         </div>
     </div>
   );
