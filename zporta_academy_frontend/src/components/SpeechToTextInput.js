@@ -4,8 +4,10 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // uploading/transcribing state
+
   const mediaRecorderRef = useRef(null);
-  let audioChunks = [];
+  const audioChunksRef = useRef([]);
 
   // Detect PWA standalone mode
   const isPWA =
@@ -51,12 +53,17 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
         setListening(false);
       };
 
+      recognition.onend = () => {
+        setListening(false);
+      };
+
       try {
         recognition.start();
         setError('');
       } catch (e) {
         console.error('Start recognition failed:', e);
         setError('Could not start speech recognition.');
+        setListening(false);
       }
 
       return () => {
@@ -65,39 +72,46 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
     } else {
       // ── PWA: MediaRecorder + server ──────────────────────
       const startRec = async () => {
+        setError('');
+        setTranscript('');
+        setLoading(true);
         if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
           setError('Audio recording not supported.');
           setListening(false);
+          setLoading(false);
           return;
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           const mr = new MediaRecorder(stream);
           mediaRecorderRef.current = mr;
-          audioChunks = [];
+          audioChunksRef.current = [];
 
-          mr.ondataavailable = e => audioChunks.push(e.data);
+          mr.ondataavailable = e => audioChunksRef.current.push(e.data);
           mr.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: 'audio/webm' });
-            const form = new FormData();
-            form.append('file', blob, 'recording.webm');
             try {
+              const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+              const form = new FormData();
+              form.append('file', blob, 'recording.webm');
               const res = await fetch('/api/speech-to-text/', { method: 'POST', body: form });
-              if (!res.ok) throw new Error('Server error');
+              if (!res.ok) throw new Error(`Server responded ${res.status}`);
               const { text } = await res.json();
               setTranscript(text);
               memoizedOnTranscriptReady?.(text);
             } catch (err) {
+              console.error('Transcription error:', err);
               setError(err.message || 'Server error');
+            } finally {
+              setLoading(false);
+              setListening(false);
             }
-            setListening(false);
           };
           mr.start();
-          setError('');
         } catch (err) {
           console.error('MediaRecorder error:', err);
           setError('Could not access microphone.');
           setListening(false);
+          setLoading(false);
         }
       };
       startRec();
@@ -106,7 +120,6 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
     }
   }, [listening, isPWA, memoizedOnTranscriptReady]);
 
-  // Stop recording for PWA
   const stopRecording = () => {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
@@ -130,19 +143,23 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
       <div style={{ marginBottom: '0.75rem' }}>
         <button
           onClick={handleStart}
-          disabled={listening}
-          style={{ padding: '0.5rem 1rem', marginRight: '0.5rem', cursor: 'pointer', backgroundColor: listening ? '#ccc' : '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+          disabled={listening || loading}
+          style={{ padding: '0.5rem 1rem', marginRight: '0.5rem', cursor: listening || loading ? 'not-allowed' : 'pointer', backgroundColor: listening || loading ? '#ccc' : '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
         >
           {isPWA ? '🔴 Start Recording' : '🎙️ Start Speaking'}
         </button>
         <button
           onClick={handleStop}
           disabled={!listening}
-          style={{ padding: '0.5rem 1rem', cursor: 'pointer', backgroundColor: !listening ? '#ccc' : '#dc3545', color: 'white', border: 'none', borderRadius: '4px' }}
+          style={{ padding: '0.5rem 1rem', cursor: !listening ? 'not-allowed' : 'pointer', backgroundColor: !listening ? '#ccc' : '#dc3545', color: 'white', border: 'none', borderRadius: '4px' }}
         >
           {isPWA ? '⏹️ Stop & Transcribe' : '✋ Stop'}
         </button>
       </div>
+
+      {loading && (
+        <div style={{ marginTop: '0.5rem', color: '#555' }}>Transcribing audio…</div>
+      )}
 
       {error && (
         <div style={{ marginTop: '0.5rem', color: 'red', backgroundColor: '#ffebee', padding: '0.5rem', borderRadius: '4px' }}>
