@@ -88,7 +88,7 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
               setTranscript(text);
               memoizedOnTranscriptReady?.(text);
             } catch (err) {
-              setError(err.message || 'Transcription failed.');
+              setError(err.message || 'Server error');
             }
             setListening(false);
           };
@@ -102,7 +102,6 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
       };
       startRec();
 
-      // No cleanup here; stopping handled by stopRecording()
       return;
     }
   }, [listening, isPWA, memoizedOnTranscriptReady]);
@@ -111,6 +110,8 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
   const stopRecording = () => {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
+    } else {
+      setListening(false);
     }
   };
 
@@ -121,11 +122,7 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
   };
 
   const handleStop = () => {
-    if (isPWA) {
-      stopRecording();
-    } else {
-      setListening(false);
-    }
+    stopRecording();
   };
 
   return (
@@ -153,11 +150,12 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
         </div>
       )}
 
-      {transcript && !error && (
-        <div style={{ marginTop: '0.5rem', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white' }}>
-          <strong>Transcript:</strong> <span style={{ fontStyle: 'italic' }}>{transcript}</span>
-        </div>
-      )}
+      <textarea
+        value={transcript}
+        onChange={e => setTranscript(e.target.value)}
+        placeholder="Transcript appears here..."
+        style={{ width: '100%', minHeight: '80px', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+      />
     </div>
   );
 };
