@@ -5,6 +5,7 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // uploading/transcribing state
+  const [logs, setLogs] = useState([]); // debug logs
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -17,13 +18,19 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
   // Memoize callback
   const memoizedOnTranscriptReady = useCallback(onTranscriptReady, [onTranscriptReady]);
 
+  const addLog = msg => setLogs(prev => [...prev, msg]);
+
   useEffect(() => {
     if (!listening) return;
 
+    addLog(`Listening started (isPWA=${isPWA})`);
+
     if (!isPWA) {
-      // ── Browser: Web Speech API ───────────────────────────
+      // Browser: Web Speech API
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        setError("Your browser doesn't support speech recognition. Try Chrome or Edge.");
+        const msg = "Your browser doesn't support speech recognition.";
+        setError(msg);
+        addLog(msg);
         setListening(false);
         return;
       }
@@ -34,82 +41,99 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
       recognition.continuous = false;
       recognition.interimResults = false;
 
-      recognition.onresult = (event) => {
+      recognition.onresult = event => {
         const resultText = event.results[0][0].transcript;
         setTranscript(resultText);
+        addLog(`Recognized: ${resultText}`);
         memoizedOnTranscriptReady?.(resultText);
       };
 
-      recognition.onerror = (event) => {
-        let msg = 'An unknown error occurred.';
-        switch (event.error) {
-          case 'no-speech': msg = 'No speech detected. Please try again.'; break;
-          case 'audio-capture': msg = 'Audio capture failed. Check mic & permissions.'; break;
-          case 'not-allowed': msg = 'Microphone access denied.'; break;
-          case 'network': msg = 'Network error. Check your connection.'; break;
-          default: msg = `Error: ${event.error}`;
-        }
+      recognition.onerror = event => {
+        let msg = `Error: ${event.error}`;
         setError(msg);
+        addLog(msg);
         setListening(false);
       };
 
       recognition.onend = () => {
+        addLog('Recognition ended');
         setListening(false);
       };
 
       try {
         recognition.start();
         setError('');
+        addLog('Recognition.start() called');
       } catch (e) {
-        console.error('Start recognition failed:', e);
-        setError('Could not start speech recognition.');
+        const msg = `Start recognition failed: ${e.message}`;
+        console.error(msg, e);
+        setError(msg);
+        addLog(msg);
         setListening(false);
       }
 
-      return () => {
-        recognition.stop();
-      };
+      return () => recognition.stop();
     } else {
-      // ── PWA: MediaRecorder + server ──────────────────────
+      // PWA: MediaRecorder + server
       const startRec = async () => {
         setError('');
         setTranscript('');
         setLoading(true);
+        addLog('Requesting microphone...');
+
         if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-          setError('Audio recording not supported.');
+          const msg = 'Audio recording not supported.';
+          setError(msg);
+          addLog(msg);
           setListening(false);
           setLoading(false);
           return;
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          addLog('Microphone granted');
           const mr = new MediaRecorder(stream);
           mediaRecorderRef.current = mr;
           audioChunksRef.current = [];
 
-          mr.ondataavailable = e => audioChunksRef.current.push(e.data);
+          mr.ondataavailable = e => {
+            audioChunksRef.current.push(e.data);
+            addLog(`Chunk received: ${e.data.size} bytes`);
+          };
           mr.onstop = async () => {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            addLog(`Recording stopped, total size: ${blob.size} bytes`);
+            const form = new FormData();
+            form.append('file', blob, 'recording.webm');
+
             try {
-              const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-              const form = new FormData();
-              form.append('file', blob, 'recording.webm');
+              addLog('Sending to server...');
               const res = await fetch('/api/speech-to-text/', { method: 'POST', body: form });
-              if (!res.ok) throw new Error(`Server responded ${res.status}`);
+              addLog(`Server responded with status ${res.status}`);
+
+              if (!res.ok) throw new Error(`Server ${res.status}: ${res.statusText}`);
+
               const { text } = await res.json();
               setTranscript(text);
+              addLog(`Transcription: ${text}`);
               memoizedOnTranscriptReady?.(text);
             } catch (err) {
-              console.error('Transcription error:', err);
-              setError(err.message || 'Server error');
+              const msg = `Transcription error: ${err.message}`;
+              console.error(msg, err);
+              setError(msg);
+              addLog(msg);
             } finally {
               setLoading(false);
               setListening(false);
             }
           };
           mr.start();
+          addLog('MediaRecorder.start() called');
         } catch (err) {
-          console.error('MediaRecorder error:', err);
-          setError('Could not access microphone.');
+          const msg = `MediaRecorder error: ${err.message}`;
+          console.error(msg, err);
+          setError(msg);
+          addLog(msg);
           setListening(false);
           setLoading(false);
         }
@@ -132,11 +156,10 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
     setTranscript('');
     setError('');
     setListening(true);
+    setLogs([]);
   };
 
-  const handleStop = () => {
-    stopRecording();
-  };
+  const handleStop = () => stopRecording();
 
   return (
     <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
@@ -157,15 +180,9 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
         </button>
       </div>
 
-      {loading && (
-        <div style={{ marginTop: '0.5rem', color: '#555' }}>Transcribing audio…</div>
-      )}
+      {loading && <div style={{ marginTop: '0.5rem', color: '#555' }}>Transcribing audio…</div>}
 
-      {error && (
-        <div style={{ marginTop: '0.5rem', color: 'red', backgroundColor: '#ffebee', padding: '0.5rem', borderRadius: '4px' }}>
-          {error}
-        </div>
-      )}
+      {error && <div style={{ marginTop: '0.5rem', color: 'red', backgroundColor: '#ffebee', padding: '0.5rem', borderRadius: '4px' }}>{error}</div>}
 
       <textarea
         value={transcript}
@@ -173,6 +190,13 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
         placeholder="Transcript appears here..."
         style={{ width: '100%', minHeight: '80px', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
       />
+
+      <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#666' }}>
+        <strong>Debug Logs:</strong>
+        <ul style={{ maxHeight: '150px', overflowY: 'auto', padding: '0.5rem', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '4px' }}>
+          {logs.map((log, i) => <li key={i}>{log}</li>)}
+        </ul>
+      </div>
     </div>
   );
 };
