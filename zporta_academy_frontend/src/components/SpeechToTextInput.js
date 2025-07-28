@@ -1,13 +1,3 @@
-// To use this component:
-// 1) cd zporta_academy_frontend && npm install vosk-browser
-// 2) Download vosk-model-small-en-us-0.15.zip, extract its contents into:
-//      public/models/vosk-model-small-en-us-0.15/
-// 3) Inside that folder create a tar.gz of the files named model.tar.gz
-//    so you have:
-//      public/models/vosk-model-small-en-us-0.15/model.tar.gz
-// 4) Restart your React dev server; the model will then be served at:
-//      http://localhost:3000/models/vosk-model-small-en-us-0.15/model.tar.gz
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createModel } from 'vosk-browser';
 
@@ -21,14 +11,14 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
   const processorRef    = useRef(null);
   const sourceRef       = useRef(null);
 
-  // 1) Load Vosk model & instantiate the recognizer
+  // 1) Load Vosk model & setup event handlers
   useEffect(() => {
     createModel('/models/vosk-model-small-en-us-0.15/model.tar.gz')
       .then(model => {
-        // The Model exposes a KaldiRecognizer constructor
         const rec = new model.KaldiRecognizer(16000);
-        rec.setWords(true); // optional: include word-level timestamps
-        // Hook up interim (partial) results
+        rec.setWords(true);
+
+        // Interim (partial) results
         rec.on('partialresult', msg => {
           const text = msg.partial || '';
           setTranscript(prev => {
@@ -37,7 +27,8 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
             return combined;
           });
         });
-        // Hook up final results
+
+        // Final results
         rec.on('result', msg => {
           const text = msg.result?.text || '';
           setTranscript(prev => {
@@ -46,25 +37,31 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
             return combined;
           });
         });
+
         setRecognizer(rec);
       })
       .catch(err => setError('Failed to load model: ' + err.message));
   }, [onTranscriptReady]);
 
-  // 2) When user clicks “Start Speaking”
+  // 2) Start capturing microphone & feeding Vosk
   const startListening = async () => {
     if (!recognizer) {
       setError('Recognizer not ready — please wait a moment.');
       return;
     }
     setError('');
-    setTranscript(''); // clear previous text
+    setTranscript('');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Safari iOS quirk: resume suspended AudioContext
       const audioContext = new AudioContext({ sampleRate: 16000 });
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       audioContextRef.current = audioContext;
 
+      // Ask for mic
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const source = audioContext.createMediaStreamSource(stream);
       sourceRef.current = source;
 
@@ -74,7 +71,7 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
       source.connect(processor);
       processor.connect(audioContext.destination);
 
-      // Feed each buffer into Vosk; events fire automatically
+      // Feed PCM buffers into Vosk
       processor.onaudioprocess = e => {
         const input = e.inputBuffer.getChannelData(0);
         recognizer.acceptWaveformFloat(input, 16000);
@@ -82,11 +79,11 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
 
       setListening(true);
     } catch (err) {
-      setError('Microphone access denied or unavailable: ' + err.message);
+      setError('Microphone unavailable: ' + err.message);
     }
   };
 
-  // 3) Stop on “Stop” click
+  // 3) Stop capturing
   const stopListening = () => {
     processorRef.current?.disconnect();
     sourceRef.current?.disconnect();
@@ -97,18 +94,10 @@ export default function SpeechToTextInput({ onTranscriptReady }) {
   return (
     <div style={{ padding: '1rem', border: '1px solid #ccc', borderRadius: 8, background: '#f9f9f9' }}>
       <div style={{ marginBottom: '0.5rem' }}>
-        <button
-          onClick={startListening}
-          disabled={listening}
-          style={{ marginRight: 8, padding: '0.5rem 1rem' }}
-        >
+        <button onClick={startListening} disabled={listening} style={{ marginRight: 8, padding: '0.5rem 1rem' }}>
           🎤 Start Speaking
         </button>
-        <button
-          onClick={stopListening}
-          disabled={!listening}
-          style={{ padding: '0.5rem 1rem' }}
-        >
+        <button onClick={stopListening} disabled={!listening} style={{ padding: '0.5rem 1rem' }}>
           ✋ Stop
         </button>
       </div>
