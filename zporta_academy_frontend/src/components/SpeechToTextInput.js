@@ -171,3 +171,4 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
 };
 
 export default SpeechToTextInput;
+// src/components/SpeechToTextInput.js
