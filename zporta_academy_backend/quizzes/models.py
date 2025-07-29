@@ -34,6 +34,7 @@ def quiz_question_media_path(instance, filename):
     name      = f"{quiz_slug}-q{qid}-{date_str}-{rand}.{ext}"
     return os.path.join(f"user_{user_slug}", "quizzes", subject, name)
 
+
 def quiz_option_media_path(instance, filename, opt_index, media_type):
     ext       = filename.split('.')[-1]
     date_str  = timezone.now().strftime('%Y%m%d')
@@ -302,3 +303,32 @@ class BlankSolution(models.Model):
 
     def __str__(self):
         return f"Blank #{self.slot_index} → {self.correct_word}"
+    
+
+class QuizReport(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submitted_reports')
+    message = models.TextField()
+    suggested_correction = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+    def __str__(self):
+        return f"Report on {self.quiz.title} by {self.reporter.username}"
+    
+
+class QuizShare(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='shares')
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_shares_sent')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_shares_received')
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('quiz', 'from_user', 'to_user')
+        ordering = ['-created_at']
+    def __str__(self):
+        return f"{self.from_user.username} → {self.to_user.username} ({self.quiz.title})"
+

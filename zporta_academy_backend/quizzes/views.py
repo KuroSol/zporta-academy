@@ -10,12 +10,15 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.contrib.contenttypes.models import ContentType
-
+from users.models import User
+from notifications.models import Notification
+from notifications.utils import send_push_to_user_devices
 # Local App Imports
-from .models import Quiz, Question
-from .serializers import QuizSerializer, QuestionSerializer # Ensure both are imported
+from .models import Quiz, Question, QuizReport, QuizShare
+from .serializers import QuizSerializer, QuestionSerializer, QuizReportSerializer, QuizShareSerializer
 from analytics.utils import update_memory_stat_item, log_event
 from analytics.models import ActivityEvent
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -296,3 +299,61 @@ class MyQuizzesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
         return Quiz.objects.filter(created_by=self.request.user).select_related('subject', 'course')
+
+class ReportQuizView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk)
+        serializer = QuizReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report = QuizReport.objects.create(
+            quiz=quiz,
+            reporter=request.user,
+            message=serializer.validated_data['message'],
+            suggested_correction=serializer.validated_data.get('suggested_correction', '')
+        )
+        # Send notification to quiz creator
+        creator = quiz.created_by
+        title = f"Issue reported on \"{quiz.title}\""
+        msg = f"{request.user.username} reported: {report.message[:100]}"
+        link = reverse('dynamic_quiz', args=[quiz.permalink])
+        notif = Notification.objects.create(user=creator, title=title, message=msg, link=link)
+        send_push_to_user_devices(user=creator, title=title, body=msg, link=link,
+                                  extra_data={'type': 'quiz_report', 'report_id': report.id})
+        return Response({'detail': 'Report submitted.'}, status=status.HTTP_201_CREATED)
+
+class ShareQuizView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk)
+        serializer = QuizShareSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        to_user = get_object_or_404(User, pk=serializer.validated_data['to_user_id'])
+        if to_user == request.user:
+            return Response({'error': 'Cannot share a quiz with yourself.'}, status=status.HTTP_400_BAD_REQUEST)
+        # enforce one‑time share or implement rate‑limit here
+        if QuizShare.objects.filter(quiz=quiz, from_user=request.user, to_user=to_user).exists():
+            return Response({'error': 'You already shared this quiz with this user.'}, status=status.HTTP_400_BAD_REQUEST)
+        share = QuizShare.objects.create(
+            quiz=quiz, from_user=request.user, to_user=to_user,
+            message=serializer.validated_data.get('message', '')
+        )
+        title = f"{request.user.username} shared a quiz with you!"
+        msg = f"{request.user.username} shared \"{quiz.title}\"."
+        link = reverse('dynamic_quiz', args=[quiz.permalink])
+        notif = Notification.objects.create(user=to_user, title=title, message=msg, link=link)
+        send_push_to_user_devices(user=to_user, title=title, body=msg, link=link,
+                                  extra_data={'type': 'quiz_share', 'share_id': share.id})
+        return Response({'detail': 'Quiz shared successfully.'}, status=status.HTTP_200_OK)
+
+class UserSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        q = request.GET.get('q', '').strip()
+        results = []
+        if q:
+            users = User.objects.filter(username__icontains=q).order_by('username')[:10]
+            results = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
+        return Response({'results': results})

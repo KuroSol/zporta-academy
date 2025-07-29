@@ -3,11 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import apiClient from '../api'; // Assuming apiClient is configured elsewhere
 import { AuthContext } from '../context/AuthContext'; // Assuming AuthContext is set up
-import { ChevronLeft, ChevronRight, CheckCircle, XCircle, Edit3, Trash2, Loader2, AlertTriangle, Volume2, HelpCircle, Mic } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
+  Edit3,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  HelpCircle,  
+  Share2
+} from 'lucide-react';
 import SpeechToTextInput from './SpeechToTextInput';
 import styles from './QuizPage.module.css';
 import SortQuestion from './SortQuestion';
 import FillInTheBlanksQuestion from './FillInTheBlanksQuestion'; // Import the new component
+
+import ReportQuizModal from './ReportQuizModal';
+import ShareQuizModal  from './ShareQuizModal';
 
 // --- Skeleton Loader Component ---
 const SkeletonLoader = () => (
@@ -77,6 +91,8 @@ const QuizPage = () => {
     const permalink = `${username}/${subject}/${date}/${quizSlug}`;
     const navigate = useNavigate();
     const { user, token, logout } = useContext(AuthContext);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [showShareModal,  setShowShareModal]  = useState(false);
     // Determine the creator’s username (quizData.created_by may be a string or an object)
     let quizCreatorUsername = null;
     if (quizData?.created_by) {
@@ -577,6 +593,13 @@ const QuizPage = () => {
                                     </div>
                                  )}
                             </div>
+                            <button onClick={() => setShowReportModal(true)} title="Report problem">
+                                <AlertTriangle size={20} />
+                            </button>
+                            <button onClick={() => setShowShareModal(true)} title="Share quiz">
+                                <Share2 size={20} />
+                            </button>
+
                         </div>
 
                         <div className={styles.answerArea}>
@@ -626,6 +649,18 @@ const QuizPage = () => {
                     )}
                 </div>
             </div>
+            {/* ───── Modals ───── */}
+                <ReportQuizModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                quizId={quizData.id}
+                />
+                <ShareQuizModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                quizId={quizData.id}
+                quizLink={`${window.location.origin}/quizzes/${quizData.permalink}/`}
+                />
         </div>
     );
 };

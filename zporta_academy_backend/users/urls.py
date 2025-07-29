@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import RegisterView, GoogleLoginView, LoginView, ProfileView,  PasswordResetView, PasswordResetConfirmView, ChangePasswordView, PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView , MagicLinkRequestView, MagicLinkLoginView, UserPreferenceUpdateView  
+from quizzes.views import UserSearchView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
@@ -16,6 +17,6 @@ urlpatterns = [
     path('magic-link-request/', MagicLinkRequestView.as_view(), name='magic_link_request'),
     path('magic-link-login/<uidb64>/<token>/', MagicLinkLoginView.as_view(), name='magic_link_login'),
     path("preferences/", UserPreferenceUpdateView.as_view(), name="user-preferences"),
-
+    path('search/', UserSearchView.as_view(), name='user-search'),
 ]
 

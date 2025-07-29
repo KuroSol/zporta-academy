@@ -1,7 +1,7 @@
 # quizzes/admin.py
 
 from django.contrib import admin
-from .models import Quiz, Question
+from .models import Quiz, Question, QuizReport, QuizShare
 
 
 class QuestionInline(admin.StackedInline):
@@ -65,6 +65,13 @@ class QuizAdmin(admin.ModelAdmin):
         return obj.questions.count()
     question_count.short_description = 'Questions'
 
+@admin.register(QuizReport)
+class QuizReportAdmin(admin.ModelAdmin):
+    list_display = ('quiz','reporter','created_at','is_resolved')
+    
+@admin.register(QuizShare)
+class QuizShareAdmin(admin.ModelAdmin):
+    list_display = ('quiz','from_user','to_user','created_at')
 
 # Note: you don't need to call admin.site.register(Quiz, QuizAdmin)
 # because of the @admin.register decorator above.

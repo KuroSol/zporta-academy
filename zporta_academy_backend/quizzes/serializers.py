@@ -5,7 +5,7 @@ from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
 
 # Local app imports
-from .models import Quiz, Question, FillBlankQuestion, BlankWord, BlankSolution
+from .models import Quiz, Question, FillBlankQuestion, BlankWord, BlankSolution, QuizReport, QuizShare
 from tags.models import Tag
 from subjects.models import Subject
 from courses.models import Course
@@ -283,3 +283,12 @@ class QuizSerializer(serializers.ModelSerializer):
                 instance.questions.filter(id__in=ids_to_delete).delete()
         instance.refresh_from_db()
         return instance
+
+class QuizReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizReport
+        fields = ['message', 'suggested_correction']
+
+class QuizShareSerializer(serializers.Serializer):
+    to_user_id = serializers.IntegerField()
+    message = serializers.CharField(required=False, allow_blank=True)
