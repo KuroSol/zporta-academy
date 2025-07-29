@@ -71,7 +71,7 @@ class QuizDetailedAnalyticsView(views.APIView):
         question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
         
         unique_participants = ActivityEvent.objects.filter(
-            event_type='quiz_answer',
+            event_type='quiz_answer_submitted',
             content_type=question_ct, 
             metadata__quiz_id=quiz_id 
         ).values('user').distinct().count()
