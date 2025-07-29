@@ -52,7 +52,7 @@ export default function DragDropQuestion({ question, submitted, onSubmit }) {
   // --- TOUCH-BASED DRAG AND DROP HANDLERS (Mobile) ---
 
   const handleTouchStart = (e, item) => {
-    // Prevent the default touch behavior, like scrolling
+    // We call preventDefault here as well for immediate feedback
     e.preventDefault();
     const touch = e.touches[0];
     const sourceElement = e.currentTarget;
@@ -72,7 +72,6 @@ export default function DragDropQuestion({ question, submitted, onSubmit }) {
 
   // Memoize the move handler to avoid re-creating it on every render
   const handleTouchMove = useCallback((e) => {
-    // We only care about movement if a drag is in progress
     if (!dragState.isDragging) return;
     // This is CRITICAL: it prevents the page from scrolling while dragging
     e.preventDefault();
@@ -115,18 +114,22 @@ export default function DragDropQuestion({ question, submitted, onSubmit }) {
     });
   }, [dragState]); // Dependency array ensures the function is stable
 
-  // EFFECT to add and remove global event listeners for touch events
-  // This allows the drag to continue even if the finger leaves the original item
+  // EFFECT to add/remove global listeners and manage body scroll
   useEffect(() => {
     if (dragState.isDragging) {
-      // Listen for move and end events on the whole window
+      // When a drag starts, disable body scrolling
+      document.body.style.overflow = 'hidden';
+      // Add listeners for touch events
       window.addEventListener('touchmove', handleTouchMove, { passive: false });
       window.addEventListener('touchend', handleTouchEnd);
       window.addEventListener('touchcancel', handleTouchEnd);
     }
 
-    // Cleanup function to remove listeners when the drag ends or component unmounts
+    // Cleanup function: runs when drag ends or component unmounts
     return () => {
+      // Re-enable body scrolling
+      document.body.style.overflow = 'auto';
+      // Remove listeners to prevent memory leaks
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
