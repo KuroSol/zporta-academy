@@ -58,9 +58,9 @@ const SpeechToTextInput = ({ onTranscriptReady }) => {
     return () => recognition.stop();
   }, [listening, memoizedOnTranscriptReady]);
 
-  // 3) If in iOS PWA, show banner and exit
+  // 3) If in iOS PWA, show banner and exit "window.location.href"""
   if (isPWAonIOS) {
-    const currentUrl = window.location.href;
+    const currentUrl = "https://zportaacademy.com/learn";
     return (
       <div
         style={{
