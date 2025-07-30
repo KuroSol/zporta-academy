@@ -121,7 +121,10 @@ const SidebarMenu = ({ isExpanded, setIsExpanded }) => { // Removed permissions,
 
       {/* Unified Sidebar Toggle Handle - Positioned by CSS based on screen size and state */}
       <button
-        className={`sidebar-unified-handle ${isExpanded ? "is-open" : "is-closed"}`}
+        className={
+          `sidebar-unified-handle ${isExpanded ? "is-open" : "is-closed"}` +
+          `${!isExpanded && unreadCount > 0 ? " has-unread" : ""}`
+        }
         onClick={() => setIsExpanded(!isExpanded)}
         aria-label={isExpanded ? "Close Menu" : "Open Menu"}
       >

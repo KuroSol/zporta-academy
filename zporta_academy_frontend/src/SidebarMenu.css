@@ -95,13 +95,22 @@
   justify-content: center;
   margin: 2px 0;
 }
+/* -----------------------------------------------------------------------------
+   Show alert-count badge when sidebar is collapsed (desktop/tablet)
+----------------------------------------------------------------------------- */
+.sidebar-menu.collapsed .notification-link {
+  position: relative; /* ensure the badge is positioned against the bell */
+}
+
 .sidebar-menu.collapsed .notification-link .notification-badge {
-    top: -3px;
-    right: 5px; 
-    width: 15px;
-    height: 15px;
-    font-size: 9px;
-    line-height: 15px;
+  display: inline-block;      /* ← override the “nav ul li a span { display: none }” */
+  position: absolute;         /* keep it in the top-right of the bell */
+  top: -3px;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+  font-size: 9px;
+  line-height: 15px;
 }
 
 
@@ -147,6 +156,8 @@
   box-shadow: -2px 0px 6px rgba(0, 0, 0, 0.15);
   transition: background-color 0.2s ease;
 }
+
+
 
 .sidebar-unified-handle .handle-icon {
   font-size: 16px; 
@@ -363,4 +374,18 @@
 .toggle-sidebar-desktop,
 .toggle-sidebar-mobile {
     display: none !important;
+}
+@media (max-width: 768px) {
+  .sidebar-unified-handle.has-unread::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--zindex-sidebar-handle);
+  }
 }
