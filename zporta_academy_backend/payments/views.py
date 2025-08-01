@@ -9,31 +9,32 @@ from enrollment.models import Enrollment  # Import the Enrollment model
 
 # Set your Stripe API key from settings.
 stripe.api_key = settings.STRIPE_SECRET_KEY
+print("Stripe key prefix:", stripe.api_key[:10])
 
 @csrf_exempt
 def create_checkout_session(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            # Retrieve the course_id from the request body.
             course_id = data.get('course_id')
-            # Fetch the course from the database.
-            course = Course.objects.get(id=course_id)
-            # Calculate price in cents (e.g., $25.00 becomes 2500 cents)
+
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                return JsonResponse({'error': 'Course not found'}, status=404)
+
             price_in_cents = int(course.price * 100)
-            
-            # Set your domain URL (adjust if needed)
             domain_url = "http://localhost:3000/"
-            # Create the Stripe checkout session.
+
             checkout_session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
                         'currency': 'usd',
                         'product_data': {
-                            'name': course.title,  # Use the course title
+                            'name': course.title,
                         },
-                        'unit_amount': price_in_cents,  # Dynamic course price
+                        'unit_amount': price_in_cents,
                     },
                     'quantity': 1,
                 }],
@@ -47,8 +48,10 @@ def create_checkout_session(request):
             )
             return JsonResponse({'sessionId': checkout_session['id']})
         except Exception as e:
+            print("Checkout session error:", str(e))  # ✅ Add this line
             return JsonResponse({'error': str(e)}, status=400)
     return HttpResponse(status=405)
+
 
 
 @csrf_exempt

@@ -68,6 +68,30 @@
   margin-right: auto;
   padding: 1rem; /* Padding for mobile */
 }
+@media (max-width: 768px) {
+  /* Pin toolbar to bottom‑right and stack vertically */
+  .floatingToolbarContainer {
+    bottom: 16px;
+    right: 16px;
+    left: auto;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .toolbarContent {
+    flex-direction: column;
+  }
+  /* Smaller tool buttons */
+  .stylerToolBtn {
+    width: 36px;
+    height: 36px;
+  }
+  /* Round, small toggle */
+  .toolbarToggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+  }
+}
 
 /* Increase padding on larger screens */
 @media (min-width: 768px) {

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api';
 import { AuthContext } from '../context/AuthContext';
 import styles from './StudyDashboard.module.css';
+import Select from 'react-select';
 import QuizCard from './QuizCard';
 import { FileQuestion, Loader, AlertTriangle, RefreshCw, ArrowRight } from 'lucide-react';
 
@@ -13,6 +14,13 @@ export default function StudyDashboard() {
   const [feedQuizzes, setFeedQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+
+  // new: preferences form state
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [languageOptions, setLanguageOptions] = useState([]);
+  const [selection, setSelection] = useState({ subject: null, language: null });
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -35,7 +43,85 @@ export default function StudyDashboard() {
     };
 
     loadFeed();
+
+        // load subjects & languages for initial preferences
+    ;(async () => {
+      try {
+        const [subs, langs] = await Promise.all([
+          apiClient.get('/subjects/'),
+          apiClient.get('/feed/preferences/languages/')
+        ]);
+        setSubjectOptions(subs.data.map(s => ({ value: s.id, label: s.name })));
+        setLanguageOptions(langs.data.map(l => ({ value: l.id, label: l.name })));
+      } catch (err) {
+        console.error('Failed to load preference options', err);
+      }
+    })();
   }, [token, navigate]);
+
+  // when feed is empty, handle preferences submit
+  const handleSavePrefs = async e => {
+    e.preventDefault();
+    if (!selection.subject || !selection.language) return;
+    setSavingPrefs(true);
+    try {
+      await apiClient.patch(
+        '/users/preferences/',
+        {
+          interested_subjects: [selection.subject.value],
+          languages_spoken:     [selection.language.value]
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // reload feed once prefs are set
+      const { data } = await apiClient.get('feed/dashboard/');
+      setFeedQuizzes(data);
+    } catch (err) {
+      console.error('Failed to save preferences', err);
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  // show empty-state form when no quizzes
+  if (!loading && feedQuizzes.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <h2>Welcome! Let’s personalize your study feed.</h2>
+        <form className={styles.preferenceForm} onSubmit={handleSavePrefs}>
+          <div className={styles.preferenceField}>
+            <label>What subjects interest you?</label>
+            <Select
+              options={subjectOptions}
+              value={selection.subject}
+              onChange={opt => setSelection(s => ({ ...s, subject: opt }))}
+              isSearchable
+              placeholder="Select a subject…"
+              isDisabled={savingPrefs}
+            />
+          </div>
+          <div className={styles.preferenceField}>
+            <label>What language do you want to learn?</label>
+            <Select
+              options={languageOptions}
+              value={selection.language}
+              onChange={opt => setSelection(s => ({ ...s, language: opt }))}
+              isSearchable
+              placeholder="Select a language…"
+              isDisabled={savingPrefs}
+            />
+          </div>
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={savingPrefs}
+          >
+            {savingPrefs ? 'Saving…' : 'Save Preferences'}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

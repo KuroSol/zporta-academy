@@ -1,14 +1,33 @@
-import React, { useEffect, useState, useContext, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useContext, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../api";
 import { AuthContext } from "../context/AuthContext";
 import styles from "./QuizAttempts.module.css";
-import { 
-  Filter, PlusCircle, Trash2, AlertCircle, Loader, Inbox, Brain, Zap, 
-  TrendingUp, CalendarCheck2, Star, Clock, HelpCircle, ListChecks, 
-  ChevronsRight, Smile, Meh, Frown, Target, BarChartHorizontalBig, 
-  BookOpenCheck, ThumbsUp 
+import {
+  Filter, Trash2, AlertCircle, Loader, Inbox, Brain, Zap,
+  TrendingUp, CalendarCheck2, Star, Clock, HelpCircle, ListChecks,
+  ChevronsRight, Smile, Meh, Frown, Target, BarChartHorizontalBig,
+  BookOpenCheck, ThumbsUp, Search
 } from 'lucide-react';
+
+// --- Language Data (ISO 639-1) ---
+// A static list of languages to be displayed to the user.
+// This avoids an API call and provides a better user experience.
+const LANGUAGES = [
+    { code: 'en', name: 'English' }, { code: 'es', name: 'Spanish' }, { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' }, { code: 'it', name: 'Italian' }, { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' }, { code: 'ja', name: 'Japanese' }, { code: 'ko', name: 'Korean' },
+    { code: 'zh', name: 'Chinese' }, { code: 'ar', name: 'Arabic' }, { code: 'hi', name: 'Hindi' },
+    { code: 'bn', name: 'Bengali' }, { code: 'pa', name: 'Punjabi' }, { code: 'jv', name: 'Javanese' },
+    { code: 'ms', name: 'Malay' }, { code: 'vi', name: 'Vietnamese' }, { code: 'te', name: 'Telugu' },
+    { code: 'mr', name: 'Marathi' }, { code: 'ta', name: 'Tamil' }, { code: 'ur', name: 'Urdu' },
+    { code: 'tr', name: 'Turkish' }, { code: 'fa', name: 'Persian' }, { code: 'gu', name: 'Gujarati' },
+    { code: 'pl', name: 'Polish' }, { code: 'uk', name: 'Ukrainian' }, { code: 'ro', name: 'Romanian' },
+    { code: 'nl', name: 'Dutch' }, { code: 'el', name: 'Greek' }, { code: 'hu', name: 'Hungarian' },
+    { code: 'sv', name: 'Swedish' }, { code: 'cs', name: 'Czech' }, { code: 'fi', name: 'Finnish' },
+    { code: 'da', name: 'Danish' }, { code: 'no', name: 'Norwegian' }, { code: 'he', name: 'Hebrew' },
+    { code: 'id', name: 'Indonesian' }, { code: 'th', name: 'Thai' }
+].sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
 
 // --- Helper Components & Functions ---
 
@@ -18,6 +37,67 @@ const Chip = ({ label, onRemove }) => (
     <Trash2 size={14} onClick={onRemove} className={styles.removeIcon} />
   </span>
 );
+
+// A new reusable component for a searchable dropdown select.
+const SearchableSelect = ({ options, onSelect, placeholder, disabled, currentIds }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // Effect to handle clicks outside of the component to close the dropdown.
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wrapperRef]);
+
+  // Filter options based on search term and exclude already selected items.
+  const filteredOptions = useMemo(() => options.filter(opt =>
+    !currentIds.has(opt.id) &&
+    opt.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ), [options, currentIds, searchTerm]);
+
+  const handleSelect = (id) => {
+    onSelect(id);
+    setSearchTerm("");
+    setIsOpen(false);
+  };
+
+  return (
+    <div className={styles.searchableSelect} ref={wrapperRef}>
+      <div className={styles.searchableSelectInputWrapper}>
+        <Search size={16} className={styles.searchIcon} />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          disabled={disabled}
+          className={styles.addInput}
+        />
+      </div>
+      {isOpen && (
+        <ul className={styles.optionsList}>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map(opt => (
+              <li key={opt.id} onMouseDown={() => handleSelect(opt.id)}>
+                {opt.name}
+              </li>
+            ))
+          ) : (
+            <li className={styles.noOptions}>No results found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 
 const formatDate = (isoString) => {
   if (!isoString) return "N/A";
@@ -49,7 +129,7 @@ const getRelativeDateText = (isoString) => {
     else if (diffDays === 1) text = "Tomorrow";
     else if (diffDays < 0) text = `${Math.abs(diffDays)} day(s) ago`;
     else text = `In ${diffDays} days`;
-    
+
     return {
         text,
         fullDate: formatDate(isoString),
@@ -139,6 +219,7 @@ const FilterManager = ({ token }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Map IDs to names for displaying chips.
   const subjectMap = useMemo(() => new Map(options.subjects.map(s => [s.id, s.name])), [options.subjects]);
   const languageMap = useMemo(() => new Map(options.languages.map(l => [l.id, l.name])), [options.languages]);
 
@@ -147,16 +228,17 @@ const FilterManager = ({ token }) => {
       setIsLoading(true);
       setError("");
       try {
-        const [prefsRes, subjectsRes, languagesRes, regionsRes] = await Promise.all([
+        // Languages are now static, so we don't fetch them.
+        const [prefsRes, subjectsRes, regionsRes] = await Promise.all([
           apiClient.get('/users/preferences/', { headers: { Authorization: `Bearer ${token}` } }),
-          apiClient.get('/subjects/'), // CORRECTED URL
-          apiClient.get('/feed/preferences/languages/'),
+          apiClient.get('/subjects/'),
           apiClient.get('/feed/preferences/regions/')
         ]);
         setFilters(prefsRes.data);
         setOptions({
           subjects: subjectsRes.data || [],
-          languages: languagesRes.data || [],
+          // Map static LANGUAGES to the format used by the component.
+          languages: LANGUAGES.map(lang => ({ id: lang.code, name: lang.name })),
           regions: regionsRes.data || [],
         });
       } catch (err) {
@@ -171,7 +253,7 @@ const FilterManager = ({ token }) => {
     }
   }, [token]);
 
-  const handleUpdatePreferences = async (payload) => {
+  const handleUpdatePreferences = useCallback(async (payload) => {
     setIsSaving(true);
     try {
       const response = await apiClient.patch('/users/preferences/', payload, {
@@ -183,7 +265,7 @@ const FilterManager = ({ token }) => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [token]);
 
   const addFilterValue = (key, value) => {
     if (!value || filters[key].includes(value)) return;
@@ -196,7 +278,7 @@ const FilterManager = ({ token }) => {
     const updatedList = filters[key].filter(v => v !== value);
     handleUpdatePreferences({ [key]: updatedList });
   };
-  
+
   const handleLocationChange = (e) => {
     const newLocation = e.target.value;
     if (newLocation !== filters.location) {
@@ -234,20 +316,13 @@ const FilterManager = ({ token }) => {
           </div>
         </td>
         <td>
-          <select
-            className={styles.addSelect}
-            value=""
-            onChange={(e) => addFilterValue(key, e.target.value)}
+          <SearchableSelect
+            placeholder={`+ Add ${type}...`}
+            options={availableOptions}
+            onSelect={(id) => addFilterValue(key, id)}
             disabled={isSaving}
-          >
-            <option value="">+ Add...</option>
-            {availableOptions
-              .filter(opt => !currentIdSet.has(opt.id))
-              .map(opt => (
-                <option key={opt.id} value={opt.id}>{opt.name}</option>
-              ))
-            }
-          </select>
+            currentIds={currentIdSet}
+          />
         </td>
       </tr>
     );
@@ -270,7 +345,7 @@ const FilterManager = ({ token }) => {
             <td className={styles.filterType}>Location</td>
             <td colSpan="2">
                <select
-                className={styles.addSelect}
+                className={styles.locationSelect}
                 value={filters.location || ''}
                 onChange={handleLocationChange}
                 disabled={isSaving}
@@ -296,7 +371,7 @@ const QuizAttempts = () => {
   const [attemptOverview, setAttemptOverview] = useState(null);
   const [errorOverview, setErrorOverview] = useState("");
   const [loadingOverview, setLoadingOverview] = useState(true);
-  
+
   const [memoryProfile, setMemoryProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [errorProfile, setErrorProfile] = useState("");
@@ -341,7 +416,7 @@ const QuizAttempts = () => {
         const CardComponent = type === 'insights' ? QuizInsightCard : MemoryItemCard;
         content = <div className={styles.itemsGrid}>{validItems.map(item => <CardComponent key={`${type}-${item.id || item.quiz_id}`} item={item} type={type} />)}</div>;
     }
-    
+
     return <section className={styles.dashboardSection}><h2 className={styles.sectionHeader}>{icon} {title} <span className={styles.sectionCount}>({validItems.length})</span></h2>{content}</section>;
   };
 
@@ -352,7 +427,6 @@ const QuizAttempts = () => {
         <p className={styles.mainSubtitle}>Stay sharp! Here's what your brain is working on.</p>
       </header>
 
-      {/* --- Full Page Loaders --- */}
       {(loadingProfile || loadingOverview) && !memoryProfile && !attemptOverview && (
         <div className={styles.fullPageLoader}><Loader size={48} className="animate-spin" /> <p>Loading Your Learning Data...</p></div>
       )}
@@ -360,7 +434,6 @@ const QuizAttempts = () => {
         <div className={styles.fullPageError}><AlertCircle size={48} /> <p>{errorProfile || errorOverview}</p></div>
       )}
 
-      {/* --- Filter Section --- */}
       <section className={styles.filterSection}>
         <h2 className={styles.sectionHeader}><Filter size={24}/> Your Content Filters</h2>
         <p className={styles.sectionDescription}>
@@ -369,7 +442,6 @@ const QuizAttempts = () => {
         <FilterManager token={token} />
       </section>
 
-      {/* --- Overview Section --- */}
       {attemptOverview && (
         <section className={styles.dashboardSection}>
           <h2 className={styles.sectionHeader}><BarChartHorizontalBig size={24}/> Quiz Attempt Overview</h2>
@@ -383,7 +455,6 @@ const QuizAttempts = () => {
         </section>
       )}
 
-      {/* --- Memory Profile Sections --- */}
       {memoryProfile && (
         <>
           <section className={`${styles.dashboardSection} ${styles.highlightSection}`}>
@@ -401,8 +472,7 @@ const QuizAttempts = () => {
           {renderSection("Brain Champs: You Know These Well!", memoryProfile.strong_memory_items, 'strong', loadingProfile, errorProfile, <Star size={24} />, {icon: <Target size={48}/>, title:"Build Your Strengths", message:"Consistent review turns knowledge into mastery. Keep it up!"})}
         </>
       )}
-      
-      {/* --- Quiz Insights Section --- */}
+
       {renderSection("Overall Quiz Performance", quizInsights, 'insights', loadingInsights, errorInsights, <BarChartHorizontalBig size={24}/>, {icon: <BookOpenCheck size={48}/>, title:"No Quiz Insights Yet", message:"Complete some quizzes, and we'll show you how you're doing on them overall!", link: {to: "/explorer", text: "Find Quizzes to Try"}})}
     </div>
   );

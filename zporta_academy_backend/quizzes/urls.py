@@ -12,6 +12,7 @@ from .views import (
     QuestionRetrieveUpdateDestroyView,
     ReportQuizView, 
     ShareQuizView,
+    QuizStartView,
 )
 
 urlpatterns = [
@@ -32,4 +33,5 @@ urlpatterns = [
     path('courses/<int:course_id>/add-quiz/', AddQuizToCourseView.as_view(), name='add-quiz-to-course'),
     path('<path:permalink>/', DynamicQuizView.as_view(), name='dynamic_quiz'),
     path('', QuizListCreateView.as_view(), name='quiz-list-create'),
+    path('<int:pk>/start-quiz/', QuizStartView.as_view(), name='quiz-start'),
 ]

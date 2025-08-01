@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import apiClient from '../api'; // Assuming apiClient is configured elsewhere
-import { AuthContext } from '../context/AuthContext'; // Assuming AuthContext is set up
+import apiClient from '../api'; 
+import { AuthContext } from '../context/AuthContext'; 
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,12 +14,12 @@ import {
   AlertTriangle,
   HelpCircle,
   Share2,
-  Users, // Icon for Participants
-  UserCheck, // Icon for Finishers
-  ListChecks, // Icon for Total Answers
-  BarChart3, // Icon for Correctness
-  CheckSquare, // Icon for Correct Answers
-  XSquare, // Icon for Wrong answers
+  Users, 
+  UserCheck, 
+  ListChecks, 
+  BarChart3, 
+  CheckSquare, 
+  XSquare, 
 } from 'lucide-react';
 import SpeechToTextInput from './SpeechToTextInput';
 import styles from './QuizPage.module.css';
@@ -92,6 +92,11 @@ const QuizPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showHint, setShowHint] = useState(null);
 
+    // --- FIX: Track when each question was shown ---
+    // 1. Add state to hold per-question start timestamps.
+    // Using useRef is better here than useState to avoid re-renders when times are set.
+    const questionStartTimes = useRef({});
+
     const { username, subject, date, quizSlug } = useParams();
     const permalink = `${username}/${subject}/${date}/${quizSlug}`;
     const navigate = useNavigate();
@@ -122,6 +127,7 @@ const QuizPage = () => {
         setFeedback({});
         setShowHint(null);
         setCurrentIndex(0);
+        questionStartTimes.current = {}; // Reset timer on new fetch
 
         try {
             const res = await apiClient.get(`/quizzes/${permalink}/`);
@@ -163,7 +169,7 @@ const QuizPage = () => {
             console.error("Failed to load quiz:", err);
             setQuizData(null);
             if (err.response?.status === 401) { if (typeof logout === 'function') logout(); navigate('/login'); }
-            else if (err.response?.status === 404) { setError(`Quiz not found.`); }
+            else if (err.response?.status === 404) { setError("Quiz not found."); }
             else { setError(err.message || "An error occurred."); }
         } finally {
             setLoading(false);
@@ -178,8 +184,15 @@ const QuizPage = () => {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [permalink, token]);
+   // 2) NEW: fire /start-quiz/ as soon as we know quizData.id (only once)
+   useEffect(() => {
+     if (quizData?.id) {
+       apiClient.post(`/quizzes/${quizData.id}/start-quiz/`)
+         .catch(console.error);
+     }
+   }, [quizData?.id]);
 
-    useEffect(() => {
+   useEffect(() => {
         if (quizData?.id) {
             setStatsLoading(true);
             setStatsError(null);
@@ -209,6 +222,17 @@ const QuizPage = () => {
     const safeCurrentIndex = Math.min(Math.max(0, currentIndex), Math.max(0, totalQuestions - 1));
     const currentQuestion = questions[safeCurrentIndex] ?? {};
     const currentQuestionId = currentQuestion.id;
+
+    // --- FIX: Track when each question was shown ---
+    // 2. Stamp the start time whenever the current question changes.
+    // This useEffect is placed *after* currentQuestionId is declared to avoid the initialization error.
+    useEffect(() => {
+        if (currentQuestionId && !questionStartTimes.current[currentQuestionId]) {
+            questionStartTimes.current[currentQuestionId] = Date.now();
+        }
+    }, [currentQuestionId]);
+
+
     const isAnswerSubmitted = !!submittedAnswers[currentQuestionId];
     const currentFeedback = feedback[currentQuestionId];
     const mcqOptions = [
@@ -224,7 +248,6 @@ const QuizPage = () => {
         setUserAnswers(prev => ({ ...prev, [questionId]: answer }));
     };
 
-    // CORRECTED: Added the missing handler functions back
     const handleMcqAnswer = (optionIndex) => {
         if (isAnswerSubmitted) return;
         const answerValue = optionIndex + 1;
@@ -257,6 +280,11 @@ const QuizPage = () => {
         }
         setError(null);
         setSubmittedAnswers(prev => ({ ...prev, [questionId]: true }));
+
+        // --- FIX: Include time_spent_ms in answer submissions ---
+        // 3. Calculate elapsed time and include it in the POST request.
+        const startTime = questionStartTimes.current[questionId] || Date.now();
+        const timeSpentMs = Date.now() - startTime;
 
         let isCorrect = false;
         let correctValueForFeedback = null;
@@ -302,9 +330,11 @@ const QuizPage = () => {
 
         if (token) {
             try {
+                // Send the timeSpentMs to the backend
                 await apiClient.post(`/quizzes/${quizData.id}/record-answer/`, {
                     question_id: questionId,
-                    selected_option: answer
+                    selected_option: answer,
+                    time_spent_ms: timeSpentMs 
                 });
             } catch (err) {
                  console.error("Error recording answer:", err);
@@ -360,14 +390,12 @@ const QuizPage = () => {
                         <button
                             key={opt.index}
                             type="button"
-                            className={`
-                            ${styles.optionButton}
+                            className={`${styles.optionButton}
                             ${userAnswers[currentQuestionId] === (opt.index + 1) ? styles.selected : ''}
                             ${isAnswerSubmitted && currentFeedback?.correctValue === (opt.index + 1) ? styles.correct : ''}
                             ${isAnswerSubmitted && userAnswers[currentQuestionId] === (opt.index + 1) && !currentFeedback?.isCorrect ? styles.incorrect : ''}
                             ${isAnswerSubmitted ? styles.disabled : ''}
                             `}
-                            // CORRECTED: Changed to call the restored handler function
                             onClick={() => handleMcqAnswer(opt.index)}
                             disabled={isAnswerSubmitted}
                         >
@@ -392,8 +420,7 @@ const QuizPage = () => {
                       return (
                         <label
                           key={opt.index}
-                          className={`
-                            ${styles.optionLabel} ${styles.optionButton}
+                          className={`${styles.optionLabel} ${styles.optionButton}
                             ${isChecked ? styles.selected : ''}
                             ${isAnswerSubmitted && isCorrectOption ? styles.correct : ''}
                             ${isAnswerSubmitted && isChecked && !isCorrectOption ? styles.incorrect : ''}
@@ -484,7 +511,7 @@ const QuizPage = () => {
                     <>
                         <div className={styles.questionCard}>
                             <div className={styles.questionMediaArea}>
-                                <RenderMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || `Question image`}/>
+                                <RenderMedia url={currentQuestion.question_image} type="image" alt={currentQuestion.question_image_alt || "Question image"}/>
                                 <RenderMedia url={currentQuestion.question_audio} type="audio" />
                             </div>
                             <div className={styles.questionContentArea}>
@@ -499,8 +526,6 @@ const QuizPage = () => {
                             </div>
                         </div>
                         
-
-
                         <div className={styles.answerArea}>
                             {renderAnswerArea()}
                         </div>
@@ -538,16 +563,16 @@ const QuizPage = () => {
                     )}
                     
                 </div>
-                                        <div className={styles.underQuestionActions}>
-                            <button onClick={() => setShowShareModal(true)} className={styles.iconButton} title="Share quiz">
-                                <Share2 />
-                                <span>Share</span>
-                            </button>
-                            <button onClick={() => setShowReportModal(true)} className={styles.iconButton} title="Report problem">
-                                <AlertTriangle />
-                                <span>Report</span>
-                            </button>
-                        </div>
+                <div className={styles.underQuestionActions}>
+                    <button onClick={() => setShowShareModal(true)} className={styles.iconButton} title="Share quiz">
+                        <Share2 />
+                        <span>Share</span>
+                    </button>
+                    <button onClick={() => setShowReportModal(true)} className={styles.iconButton} title="Report problem">
+                        <AlertTriangle />
+                        <span>Report</span>
+                    </button>
+                </div>
             </div>
 
             <ReportQuizModal isOpen={showReportModal} onClose={() => setShowReportModal(false)} quizId={quizData?.id} />

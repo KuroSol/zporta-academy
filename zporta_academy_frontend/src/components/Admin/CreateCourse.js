@@ -347,7 +347,7 @@ const CreateCourse = () => {
 
                         {courseType === "premium" && (
                             <div className={styles.formGroup}>
-                                <label htmlFor="coursePrice">Price ($) <span className={styles.required}>*</span></label>
+                                <label htmlFor="coursePrice">Price <span className={styles.required}>*</span></label>
                                 <input
                                     id="coursePrice"
                                     type="number"

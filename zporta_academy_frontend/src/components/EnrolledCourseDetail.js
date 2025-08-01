@@ -5,7 +5,8 @@ import { AuthContext } from '../context/AuthContext'; // Adjust path if needed
 import apiClient from '../api'; // Adjust path if needed
 import { Helmet } from 'react-helmet';
 import {
-  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown, Users, Share2, UserPlus, BookOpen, Eraser, Undo, Radio, Home, Square, Circle as CircleIcon, MessageSquare
+  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown, Users, Share2, UserPlus, BookOpen, Eraser, Undo, Redo ,  Radio, Home, Square, Circle as CircleIcon, MessageSquare,
+  
 } from 'lucide-react';
 import QuizCard from './QuizCard';
 import styles from './EnrolledCourseDetail.module.css';
@@ -18,30 +19,40 @@ import { ref, onValue, get, remove, set } from 'firebase/database';
 import { db } from '../firebase';
 import StudyNoteSection from './StudyNoteSection';
 import rangy from 'rangy';
+import 'rangy/lib/rangy-textrange';   
 import 'rangy/lib/rangy-classapplier';
 import 'rangy/lib/rangy-serializer';
 
+let _isToolbarMounted = false;
 
 // ==================================================================
 // --- TextStyler Component (Now supports both API and Firebase) ---
 // ==================================================================
 const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick }) => {
+    const [showToolbar, setShowToolbar] = useState(() => !_isToolbarMounted);
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
     const isUpdatingFromFirebase = useRef(false);
-    const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+    const [isToolbarOpen, setIsToolbarOpen] = useState(() => window.innerWidth >= 768);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [history, setHistory] = useState([]);
-
+    const redoStack = useRef([]);
     useEffect(() => {
         rangy.init();
     }, []);
+
+    useEffect(() => {
+       if (showToolbar) _isToolbarMounted = true;
+       return () => {
+         if (showToolbar) _isToolbarMounted = false;
+       };
+     }, []);
 
     const saveState = useCallback(() => {
         if (!editorRef.current) return;
         const currentState = editorRef.current.innerHTML;
         setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
-
+        redoStack.current = [];
         if (isCollaborative && roomId) {
             // Use Firebase for real-time collaboration
             if (isUpdatingFromFirebase.current) return;
@@ -54,7 +65,8 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
             }).catch(err => console.error("Failed to save annotations via API:", err));
         }
     }, [isCollaborative, roomId, enrollmentId]);
-    
+
+
     useEffect(() => {
         if (!htmlContent) return;
 
@@ -117,14 +129,26 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         }
         onToolClick(null);
     }, [history, saveState, onToolClick]);
-    
+
+    const redo = useCallback(() => {
+      if (redoStack.current.length) {
+        const next = redoStack.current.pop();
+        setHistory(h => [...h, next]);
+        editorRef.current.innerHTML = next;
+        saveState();
+      }
+      onToolClick(null);
+    }, [saveState, onToolClick]);
+
     const handleToolClick = useCallback((tool) => {
         if (tool === 'undo') {
             undo();
+        } else if (tool === 'redo') {
+          redo(); 
         } else {
             onToolClick(tool);
         }
-    }, [undo, onToolClick]);
+    }, [undo, redo, onToolClick]);
 
     const openNote = useCallback((popup) => {
         if (overlayRef.current) overlayRef.current.style.display = 'block';
@@ -169,41 +193,98 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         const styleClassName = classMap[style];
         if (styleClassName) {
             const classApplier = rangy.createClassApplier(styleClassName, { elementTagName: 'span', normalize: true });
-            classApplier.toggleRange(range);
+            classApplier.applyToRange(range);
         }
     }, [applyNote]);
 
+  // Replace your entire eraseStyle with this:
+
   const eraseStyle = useCallback((range) => {
-    // Figure out where to look for spans
-    const container = range.commonAncestorContainer.nodeType === 1
-      ? range.commonAncestorContainer
-      : range.commonAncestorContainer.parentNode;
+    const editor = editorRef.current;
+    if (!editor) return;
 
-    // 1) Remove highlights, boxes & circles as before:
+    // 1️⃣ Clone the incoming Range so DOM mutations won’t invalidate it
+    const workingRange = range.cloneRange();
+
+    // 2️⃣ Gather all highlight/box/circle spans that intersect your drag
+    const toProcess = [];
     [styles.stylerHighlight, styles.stylerBox, styles.stylerCircle].forEach(cls => {
-      container.querySelectorAll(`span.${cls}`).forEach(el => {
-        // unwrap everything
-        while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
-        el.parentNode.removeChild(el);
-      });
-    });
-
-    // 2) Now handle note-anchors: keep only the **text** nodes, drop icon+popup
-    container.querySelectorAll(`span.${styles.stylerNoteAnchor}`).forEach(el => {
-      const parent = el.parentNode;
-      // pull out only the raw text nodes
-      Array.from(el.childNodes).forEach(child => {
-        if (child.nodeType === Node.TEXT_NODE) {
-          parent.insertBefore(child.cloneNode(), el);
+      Array.from(editor.querySelectorAll(`span.${cls}`)).forEach(el => {
+        try {
+          if (workingRange.intersectsNode(el)) {
+            toProcess.push({ el, cls });
+          }
+        } catch (err) {
+          // skip any invalid ranges
         }
       });
-      parent.removeChild(el);
     });
 
-    // clear selection & normalize
+    // 3️⃣ For each hit span, split out the erased portion
+    toProcess.forEach(({ el, cls }) => {
+      // full span range
+      const spanRange = document.createRange();
+      spanRange.selectNodeContents(el);
+
+      // portion to cut: start/end trimmed to your drag
+      const cut = spanRange.cloneRange();
+      if (workingRange.compareBoundaryPoints(Range.START_TO_START, spanRange) > 0) {
+        cut.setStart(workingRange.startContainer, workingRange.startOffset);
+      }
+      if (workingRange.compareBoundaryPoints(Range.END_TO_END, spanRange) < 0) {
+        cut.setEnd(workingRange.endContainer, workingRange.endOffset);
+      }
+
+      // text before & after cut
+      const before = spanRange.cloneRange();
+      before.setEnd(cut.startContainer, cut.startOffset);
+      const after = spanRange.cloneRange();
+      after.setStart(cut.endContainer, cut.endOffset);
+
+      const beforeText = before.toString();
+      const cutText    = cut.toString();
+      const afterText  = after.toString();
+
+      // rebuild fragment: [wrapped before] + [plain cut] + [wrapped after]
+      const frag = document.createDocumentFragment();
+      if (beforeText) {
+        const b = document.createElement('span');
+        b.className = cls;
+        b.textContent = beforeText;
+        frag.appendChild(b);
+      }
+      frag.appendChild(document.createTextNode(cutText));
+      if (afterText) {
+        const a = document.createElement('span');
+        a.className = cls;
+        a.textContent = afterText;
+        frag.appendChild(a);
+      }
+
+      el.parentNode.replaceChild(frag, el);
+    });
+
+    // 4️⃣ Now handle notes: unwrap only those you touched
+    Array.from(editor.querySelectorAll(`span.${styles.stylerNoteAnchor}`)).forEach(el => {
+      try {
+        if (!workingRange.intersectsNode(el)) return;
+      } catch {
+        return;
+      }
+      const parent = el.parentNode;
+      Array.from(el.childNodes).forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) parent.insertBefore(node.cloneNode(), el);
+      });
+      el.remove();
+    });
+
+    // 5️⃣ Cleanup
     window.getSelection().removeAllRanges();
-    if (editorRef.current) editorRef.current.normalize();
+    editor.normalize();
   }, []);
+
+
+
 
 
 
@@ -252,7 +333,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         <div className={styles.stylerWrapper}>
             <div ref={overlayRef} className={styles.stylerOverlay}></div>
             
-            {createPortal(
+            {showToolbar && createPortal(
                 <div className={`${styles.floatingToolbarContainer} ${!isToolbarOpen ? styles.collapsed : ''}`}>
                     <div className={styles.toolbarContent}>
                         <button onClick={() => handleToolClick('laser')} className={`${styles.stylerToolBtn} ${activeTool === 'laser' ? styles.active : ''}`} title="Laser Pointer">
@@ -277,6 +358,9 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
                         </button>
                         <button onClick={() => handleToolClick('undo')} className={styles.stylerToolBtn} title="Undo">
                             <Undo size={18} />
+                        </button>
+                        <button onClick={() => handleToolClick('redo')} className={styles.stylerToolBtn} title="Redo">
+                          <Redo size={18} />
                         </button>
                     </div>
                     <button onClick={() => setIsToolbarOpen(!isToolbarOpen)} className={styles.toolbarToggle}>
@@ -660,6 +744,8 @@ const SearchBar = ({ searchTerm, onSearchChange, resultCount, currentResultIndex
     </div>
   );
 };
+
+
 
 const ScrollProgress = () => {
   const [scrollPercentage, setScrollPercentage] = useState(0);
