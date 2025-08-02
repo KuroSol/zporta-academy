@@ -7,7 +7,7 @@ from django.db.models import F, Avg, Count, Q # Import Q
 import math
 import os 
 from django.conf import settings 
-
+import uuid
 # Import newly used libraries
 import pandas as pd
 import numpy as np
@@ -42,6 +42,32 @@ AI_MODEL_DIR = os.path.join(settings.BASE_DIR, 'analytics_ai_models')
 DIFFICULTY_MODEL_FILENAME = 'question_difficulty_predictor_v1.joblib'
 DIFFICULTY_MODEL_PATH = os.path.join(AI_MODEL_DIR, DIFFICULTY_MODEL_FILENAME)
 
+def get_or_create_quiz_session_id(user, quiz_id):
+    """
+    Return an existing open session_id for this user+quiz,
+    or generate a new one if none—or if the prior one has been completed.
+    """
+    # Look for the most recent event with a session_id for this quiz
+    last = ActivityEvent.objects.filter(
+        user=user,
+        session_id__isnull=False,
+        metadata__quiz_id=quiz_id
+    ).order_by('-timestamp').first()
+
+    if last:
+        # Check if a quiz_completed came *after* that event
+        completed_after = ActivityEvent.objects.filter(
+            user=user,
+            event_type='quiz_completed',
+            metadata__quiz_id=quiz_id,
+            timestamp__gt=last.timestamp
+        ).exists()
+        if not completed_after:
+            return last.session_id
+
+    # Otherwise: start a brand-new session
+    return uuid.uuid4()
+
 def ensure_ai_model_dir_and_placeholder_model():
     """Ensures the AI model directory exists and creates a placeholder model if none exists."""
     os.makedirs(AI_MODEL_DIR, exist_ok=True)
@@ -60,7 +86,7 @@ ensure_ai_model_dir_and_placeholder_model()
 
 
 # --- Event Logging ---
-def log_event(user, event_type, instance=None, metadata=None, related_object=None):
+def log_event(user, event_type, instance=None, metadata=None, related_object=None, session_id=None):
     if metadata is None: metadata = {}
     if related_object and hasattr(related_object, 'pk') and hasattr(related_object, '_meta'):
         try:
@@ -85,9 +111,10 @@ def log_event(user, event_type, instance=None, metadata=None, related_object=Non
             logger.warning(f"log_event: 'instance' provided but is not a valid model instance: {type(instance)}")
 
         ActivityEvent.objects.create(
-            user=user if user and user.is_authenticated else None, 
+            user=user if user and user.is_authenticated else None,
             event_type=event_type, content_type=ct, object_id=obj_id,
-            metadata=metadata, timestamp=timezone.now()
+            metadata=metadata, timestamp=timezone.now(),
+            session_id=session_id
         )
         # NEW LOGIC TO CREATE QuizAttempt
         if event_type == 'quiz_answer_submitted':

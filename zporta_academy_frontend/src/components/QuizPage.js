@@ -105,6 +105,7 @@ const QuizPage = () => {
     const [showShareModal, setShowShareModal] = useState(false);
 
     const [quizStats, setQuizStats] = useState(null);
+    const [sessionId, setSessionId] = useState(null);
     const [statsLoading, setStatsLoading] = useState(false);
     const [statsError, setStatsError] = useState(null);
 
@@ -184,13 +185,14 @@ const QuizPage = () => {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [permalink, token]);
-   // 2) NEW: fire /start-quiz/ as soon as we know quizData.id (only once)
-   useEffect(() => {
-     if (quizData?.id) {
-       apiClient.post(`/quizzes/${quizData.id}/start-quiz/`)
-         .catch(console.error);
-     }
-   }, [quizData?.id]);
+    // --- NEW: tell backend “I’ve started this quiz” as soon as it loads ---
+  useEffect(() => {
+    if (!quizData?.id) return;
+    apiClient
+      .post(`/api/quizzes/${quizData.id}/start/`)
+      .then(res => setSessionId(res.data.session_id))
+      .catch(console.error);
+  }, [quizData?.id]);
 
    useEffect(() => {
         if (quizData?.id) {
@@ -334,7 +336,8 @@ const QuizPage = () => {
                 await apiClient.post(`/quizzes/${quizData.id}/record-answer/`, {
                     question_id: questionId,
                     selected_option: answer,
-                    time_spent_ms: timeSpentMs 
+                    time_spent_ms: timeSpentMs,
+                    session_id:    sessionId
                 });
             } catch (err) {
                  console.error("Error recording answer:", err);

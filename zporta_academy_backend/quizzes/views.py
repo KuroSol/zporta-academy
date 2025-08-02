@@ -1,5 +1,7 @@
 import logging
 import numpy as np
+import uuid
+from uuid import uuid4
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
@@ -20,6 +22,8 @@ from .serializers import QuizSerializer, QuestionSerializer, QuizReportSerialize
 from analytics.utils import update_memory_stat_item, log_event
 from analytics.models import ActivityEvent
 from rest_framework.decorators import api_view, permission_classes
+from analytics.utils import get_or_create_quiz_session_id
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +36,8 @@ class QuizStartView(APIView):
 
     def post(self, request, pk):
         quiz = get_object_or_404(Quiz, pk=pk)
+        # force new session on explicit start
+        session_id = uuid.uuid4()
         # Only once per user + quiz
         quiz_ct = ContentType.objects.get_for_model(Quiz)
         if not ActivityEvent.objects.filter(
@@ -44,10 +50,8 @@ class QuizStartView(APIView):
                 user=request.user,
                 event_type='quiz_started',
                 instance=quiz,
-                metadata={
-                    'quiz_id': quiz.id,
-                    'started_at': timezone.now().isoformat()
-                }
+                metadata={ 'quiz_id': quiz.id, 'started_at': timezone.now().isoformat() },
+                session_id=session_id,
             )
         return Response({'status': 'quiz_started recorded'}, status=status.HTTP_200_OK)
 
@@ -162,7 +166,22 @@ class RecordQuizAnswerView(APIView):
 
     @staticmethod
     def log_answer(request, quiz, question, ans, corr, is_corr, time_spent, qor, stat):
-        """Logs the answer event, now including the 'attempt_index'."""
+        """Logs the answer event, including session_id and attempt_index."""
+        # 🎯 New logic: every time the user hits the *first* question, start a fresh UUID.
+        # Identify the quiz’s first question (by whatever ordering you use—here assumed 'order')
+        first_q = quiz.questions.order_by('id').first()
+        if question.id == first_q.id:
+            # New attempt → brand-new session
+            session_id = uuid4()
+        else:
+            # Subsequent questions → re-use the most recent session_id
+            last_ev = ActivityEvent.objects.filter(
+                user=request.user,
+                metadata__quiz_id=quiz.id,
+                session_id__isnull=False
+            ).order_by('-timestamp').first()
+            session_id = last_ev.session_id if last_ev else uuid4()
+        
         question_ct = ContentType.objects.get_for_model(Question)
         prev_attempts = ActivityEvent.objects.filter(
             user=request.user,
@@ -189,16 +208,25 @@ class RecordQuizAnswerView(APIView):
             event_type='quiz_answer_submitted',
             metadata__quiz_id=quiz.id
         ).count()
+
         if first_count == 0:
             log_event(
                 user=request.user,
                 event_type='quiz_started',
                 instance=quiz,
-                metadata={'started_at': timezone.now().isoformat()}
+                metadata={'quiz_id': quiz.id, 'started_at': timezone.now().isoformat()},
+                session_id=session_id,
             )
 
-        log_event(user=request.user, event_type='quiz_answer_submitted', instance=question, metadata=metadata, related_object=quiz)
-
+        # Pass session_id along to the central log_event
+        log_event(
+            user=request.user,
+            event_type='quiz_answer_submitted',
+            instance=question,
+            metadata=metadata,
+            related_object=quiz,
+            session_id=session_id,
+        )
     @staticmethod
     def check_completion_after_commit(user_id, quiz_id):
         """
@@ -244,6 +272,7 @@ class RecordQuizAnswerView(APIView):
                     delta = timezone.now() - start_ev.timestamp
                     attendance_ms = int(delta.total_seconds() * 1000)
 
+                completion_session = get_or_create_quiz_session_id(user, quiz.id)
                 log_event(
                     user=user,
                     event_type='quiz_completed',
@@ -252,7 +281,8 @@ class RecordQuizAnswerView(APIView):
                         'quiz_id': quiz.id,
                         'auto_triggered': True,
                         'attendance_time_ms': attendance_ms
-                    }
+                    },
+                    session_id=completion_session,
                 )
                 # Calculate SM-2 for the whole quiz based on the final, committed state
                 qos_list = ActivityEvent.objects.filter(
@@ -334,6 +364,8 @@ class QuizSubmitView(APIView):
         It logs the 'quiz_submitted' event with summary stats.
         """
         quiz = get_object_or_404(Quiz, pk=pk)
+        # force new session on explicit start
+        session_id = uuid.uuid4()
         q_ct = ContentType.objects.get_for_model(Question)
         
         correct = ActivityEvent.objects.filter(
@@ -346,7 +378,10 @@ class QuizSubmitView(APIView):
         ).count()
         
         metadata = { 'correct_count': correct, 'total_answers': total }
-        log_event(user=request.user, event_type='quiz_submitted', instance=quiz, metadata=metadata)
+        log_event(user=request.user, 
+                  event_type='quiz_submitted', 
+                  instance=quiz, 
+                  metadata=metadata)
         return Response({"message": "Quiz submission recorded."}, status=status.HTTP_200_OK)
 
 

@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType 
 from django.contrib.auth import get_user_model
+from .models import QuizSessionProgress
 
 from .models import ActivityEvent, MemoryStat
 
@@ -26,7 +27,6 @@ class QuestionAnalyticsSerializer(serializers.Serializer):
     times_wrong = serializers.IntegerField()
     percentage_correct = serializers.FloatField()
     percentage_wrong = serializers.FloatField()
-
 # --- Serializer for DetailedQuizAnalyticsView ---
 class DetailedQuizAnalyticsSerializer(serializers.Serializer):
     quiz_id = serializers.IntegerField()
@@ -39,8 +39,6 @@ class DetailedQuizAnalyticsSerializer(serializers.Serializer):
     overall_correctness_percentage = serializers.FloatField()
     overall_wrongness_percentage = serializers.FloatField()
     questions_stats = QuestionAnalyticsSerializer(many=True)
-
-
 # --- ActivityEvent Serializer ---
 class ActivityEventSerializer(serializers.ModelSerializer):
     user = serializers.IntegerField(source='user_id', read_only=True, allow_null=True) # Output user_id as 'user'
@@ -53,13 +51,10 @@ class ActivityEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivityEvent
         fields = [
-            'id', 
-            'user', # Will be user_id
-            'user_username', 
+            'id', 'user', 'user_username',
             'event_type', 'event_type_display',
-            'content_type', # Will be content_type_id
-            'object_id', 
-            'content_object_display', 
+            'content_type', 'object_id', 'content_object_display',
+            'session_id',                   # ← newly added
             'metadata', 'timestamp',
         ]
         read_only_fields = ['id', 'user_username', 'event_type_display', 'content_object_display', 'timestamp']
@@ -89,7 +84,6 @@ class ActivityEventSerializer(serializers.ModelSerializer):
             except ContentType.DoesNotExist:
                  return f"Unknown Type (ID: {obj.content_type_id}) ID: {obj.object_id}"
         return None
-
 # --- MemoryStat Serializer ---
 class LearnableItemDisplayField(serializers.RelatedField):
     # This field should receive the actual learnable_item object.
@@ -175,7 +169,6 @@ class MemoryStatSerializer(serializers.ModelSerializer):
             "display_text": item_display_string,
             "title": item_title 
         }
-
 # --- Serializer for Quiz-Specific Retention Insights ---
 class QuizRetentionInsightSerializer(serializers.Serializer):
     quiz_id = serializers.IntegerField()
@@ -184,7 +177,6 @@ class QuizRetentionInsightSerializer(serializers.Serializer):
     message = serializers.CharField(help_text="User-friendly message about quiz review status.")
     last_attempt_timestamp = serializers.DateTimeField(allow_null=True, required=False, help_text="Timestamp of the user's last attempt/interaction with this quiz.")
     current_quiz_retention_estimate = serializers.FloatField(allow_null=True, required=False, help_text="Overall retention estimate for the quiz if available.")
-
 # --- Serializer for User Memory Profile View (More Detailed) ---
 class UserMemoryProfileItemSerializer(MemoryStatSerializer):
     class Meta(MemoryStatSerializer.Meta): 
@@ -204,3 +196,14 @@ class QuizAttemptOverviewSerializer(serializers.Serializer):
     quizzes_fixed   = serializers.IntegerField()
     never_fixed     = serializers.IntegerField()
     filters         = serializers.DictField(child=serializers.ListField(), read_only=True)
+
+class QuizSessionProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSessionProgress
+        fields = [
+            'session_id','user','quiz',
+            'total_questions','answered_count',
+            'correct_count','status',
+            'started_at','completed_at'
+        ]
+        read_only_fields = fields
