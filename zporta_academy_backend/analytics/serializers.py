@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType 
 from django.contrib.auth import get_user_model
 from .models import QuizSessionProgress
-
+from quizzes.models import Quiz
 from .models import ActivityEvent, MemoryStat
 
 User = get_user_model()
@@ -167,7 +167,8 @@ class MemoryStatSerializer(serializers.ModelSerializer):
             "type": item_class_name,
             "id": obj.object_id,
             "display_text": item_display_string,
-            "title": item_title 
+            "title": item_title,
+            "permalink": instance.permalink  # <-- add this line
         }
 # --- Serializer for Quiz-Specific Retention Insights ---
 class QuizRetentionInsightSerializer(serializers.Serializer):
@@ -207,3 +208,10 @@ class QuizSessionProgressSerializer(serializers.ModelSerializer):
             'started_at','completed_at'
         ]
         read_only_fields = fields
+
+class QuizListSerializer(serializers.ModelSerializer):
+    permalink = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Quiz
+        fields = ('id', 'title', 'total_questions', 'permalink')

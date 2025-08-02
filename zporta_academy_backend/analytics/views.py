@@ -1,5 +1,6 @@
 # analytics/views.py
 import logging
+from rest_framework import generics
 from rest_framework import status, views, viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -12,6 +13,8 @@ from analytics.models import QuizAttempt
 from analytics.utils import update_memory_stat_item
 from users.models import UserPreference
 from .models import ActivityEvent, MemoryStat
+from quizzes.models import Quiz
+from quizzes.serializers import QuizSerializer
 from .serializers import (
     ActivityEventSerializer,
     QuizRetentionInsightSerializer,
@@ -353,6 +356,14 @@ class QuizAttemptOverviewView(APIView):
             elif True not in answers and False in answers:
                 never_fixed += 1
 
+        for answers in quiz_attempt_map.values():
+            # fixed: first try wrong (False), but later at least one True
+            if True in answers and False in answers and answers[0] == False:
+                quizzes_fixed += 1
+            # never_fixed: only wrong answers
+            elif True not in answers and False in answers:
+                never_fixed += 1
+
         # Build exactly the three arrays the frontend expects
         prefs, _ = UserPreference.objects.get_or_create(user=user)
         
@@ -373,3 +384,65 @@ class QuizAttemptOverviewView(APIView):
         }
         serializer = QuizAttemptOverviewSerializer(data)
         return Response(serializer.data)
+    
+
+class QuizListAPIView(generics.ListAPIView):
+    """
+    GET /analytics/quiz-list/?type=<taken|correct|mistake|fixed|never_fixed>
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class   = QuizSerializer
+
+    def get_queryset(self):
+        user       = self.request.user
+         # base: all answer events by this user, in timestamp order
+        evts = ActivityEvent.objects.filter(
+            user=user,
+            event_type='quiz_answer_submitted',
+            metadata__has_key='quiz_id'
+        ).order_by('timestamp')
+
+        # build a map quiz_id -> [is_correct, is_correct, …]
+        from collections import OrderedDict
+        quiz_map = OrderedDict()
+        for e in evts:
+            qid = e.metadata.get('quiz_id')
+            if qid is None:
+                continue
+            quiz_map.setdefault(qid, []).append(bool(e.metadata.get('is_correct', False)))
+
+        t = self.request.query_params.get('type')
+
+        # pick quiz IDs based on t
+        if t == 'taken':
+            qids = evts.values_list('metadata__quiz_id', flat=True).distinct()
+
+        elif t == 'correct':
+            qids = evts.filter(metadata__is_correct=True) \
+                       .values_list('metadata__quiz_id', flat=True) \
+                       .distinct()
+
+        elif t == 'mistake':
+            qids = evts.filter(metadata__is_correct=False) \
+                       .values_list('metadata__quiz_id', flat=True) \
+                       .distinct()
+
+        elif t == 'fixed':
+            # first answer wrong, then at least one correct
+            qids = [
+                qid for qid, answers in quiz_map.items()
+                if answers and answers[0] is False and True in answers
+            ]
+
+        elif t == 'never_fixed':
+            # only wrong answers, no correct
+            qids = [
+                qid for qid, answers in quiz_map.items()
+                if answers and True not in answers and False in answers
+            ]
+
+        else:
+            # fallback: return nothing
+            return Quiz.objects.none()
+
+        return Quiz.objects.filter(pk__in=qids)

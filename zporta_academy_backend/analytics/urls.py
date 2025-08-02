@@ -7,7 +7,8 @@ from .views import (
     UserMemoryProfileView,
     log_content_interaction_time_view,
     QuizDetailedAnalyticsView, # Ensure this is imported from .views
-    QuizAttemptOverviewView
+    QuizAttemptOverviewView,
+    QuizListAPIView
     # suggest_quizzes_based_on_activity, # This can remain commented if not used
 )
 
@@ -32,4 +33,5 @@ urlpatterns = [
     # Include router URLs. If analytics.urls is included under 'api/analytics/',
     # this makes ActivityEventViewSet available at /api/analytics/events/
     path('', include(router.urls)), 
+    path('quiz-list/', QuizListAPIView.as_view(), name='analytics-quiz-list'),
 ]

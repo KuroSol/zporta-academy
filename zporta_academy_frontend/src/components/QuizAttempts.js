@@ -164,13 +164,11 @@ const MemoryItemCard = ({ item, type }) => {
   const memoryStrength = getMemoryStrengthConfig(current_retention_estimate);
   const lastEffort = getLastReviewEffortText(last_quality_of_recall);
   const itemTitle = learnable_item_info?.title || learnable_item_info?.display_text || "Learnable Item";
-  const itemTypeForLink = learnable_item_info?.type?.toLowerCase();
-  const itemIdForLink = learnable_item_info?.id;
-  let reviewLink = '#';
-  if (itemIdForLink) {
-    if (itemTypeForLink === 'question') reviewLink = `/quizzes/question/${itemIdForLink}/review`;
-    else if (itemTypeForLink === 'quiz') reviewLink = `/quizzes/${itemIdForLink}`;
-  }
+  const { type: itemType, permalink } = learnable_item_info;
+  const reviewLink = itemType === 'question'
+    ? `/quizzes/${permalink}/review`
+    : `/quizzes/${permalink}`;
+    
   let cardClass = `${styles.memoryItemCard} ${styles[type + 'Item'] || ''}`;
   let typeSpecificIcon = <HelpCircle className={styles.itemTypeIconBase} />;
   if (type === 'due' || reviewDateInfo.isOverdue) typeSpecificIcon = <Zap className={`${styles.itemTypeIconBase} ${styles.dueIconAnimation}`} />;
@@ -206,7 +204,7 @@ const QuizInsightCard = ({ item: insight }) => {
         {insight.current_quiz_retention_estimate !== null && (<div className={styles.detailRow}><Brain size={16} /><span>Current Strength:</span><strong className={`${styles.detailValue} ${memoryStrength.colorClass}`}>{memoryStrength.icon} {memoryStrength.text} ({(insight.current_quiz_retention_estimate * 100).toFixed(0)}%)</strong></div>)}
       </div>
       <p className={styles.lastAttemptText}>Last Activity: {formatDate(insight.last_attempt_timestamp)}</p>
-      <Link to={`/quizzes/${insight.quiz_id}`} className={`${styles.actionButton} ${styles.actionButtonView}`}>Go to Quiz <ChevronsRight size={18}/></Link>
+      <Link to={`/quizzes/${insight.permalink}`} className={`${styles.actionButton} ${styles.actionButtonView}`}>Go to Quiz <ChevronsRight size={18}/></Link>
     </div>
   );
 };
@@ -380,7 +378,13 @@ const QuizAttempts = () => {
   const [loadingInsights, setLoadingInsights] = useState(true);
   const [errorInsights, setErrorInsights] = useState("");
 
-  const { token } = useContext(AuthContext);
+  const { token } = useContext(AuthContext); 
+
+    // ─── DRILL-DOWN STATE ───────────────────────────────────────────
+  const [openCategory, setOpenCategory]   = useState(null);
+  const [drillQuizzes, setDrillQuizzes]   = useState([]);
+  const [drillLoading, setDrillLoading]   = useState(false);
+  const [drillError, setDrillError]       = useState("");
 
   const fetchData = useCallback(async (endpoint, setState, setError, setLoading) => {
     setLoading(true);
@@ -419,6 +423,29 @@ const QuizAttempts = () => {
 
     return <section className={styles.dashboardSection}><h2 className={styles.sectionHeader}>{icon} {title} <span className={styles.sectionCount}>({validItems.length})</span></h2>{content}</section>;
   };
+  // ─── Handle card clicks & fetch quizzes by type ─────────────────
+  const handleCardClick = async (type) => {
+    // toggle off if same card clicked
+    if (type === openCategory) {
+      setOpenCategory(null);
+      return;
+    }
+    setOpenCategory(type);
+    setDrillLoading(true);
+    setDrillError("");
+
+    try {
+      const res = await apiClient.get(
+        `/analytics/quiz-list/?type=${type}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setDrillQuizzes(res.data);
+    } catch (err) {
+      setDrillError(err.message || "Failed to load quizzes");
+    } finally {
+      setDrillLoading(false);
+    }
+  };
 
   return (
     <div className={styles.quizAttemptsPage}>
@@ -445,13 +472,106 @@ const QuizAttempts = () => {
       {attemptOverview && (
         <section className={styles.dashboardSection}>
           <h2 className={styles.sectionHeader}><BarChartHorizontalBig size={24}/> Quiz Attempt Overview</h2>
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryCard}><BookOpenCheck className={styles.summaryIcon}/><span className={styles.summaryValue}>{attemptOverview.total_quizzes}</span><p className={styles.summaryLabel}>Quizzes Taken</p></div>
-            <div className={styles.summaryCard}><ThumbsUp className={styles.summaryIcon}/><span className={styles.summaryValue}>{attemptOverview.total_correct}</span><p className={styles.summaryLabel}>Correct</p></div>
-            <div className={styles.summaryCard}><Frown className={styles.summaryIcon}/><span className={styles.summaryValue}>{attemptOverview.total_mistakes}</span><p className={styles.summaryLabel}>Mistakes</p></div>
-            <div className={styles.summaryCard}><Smile className={styles.summaryIcon}/><span className={styles.summaryValue}>{attemptOverview.quizzes_fixed}</span><p className={styles.summaryLabel}>Fixed</p></div>
-            <div className={styles.summaryCard}><Zap className={styles.summaryIcon}/><span className={styles.summaryValue}>{attemptOverview.never_fixed}</span><p className={styles.summaryLabel}>Never Fixed</p></div>
-          </div>
+            <div className={styles.summaryGrid}>
+              <div
+                className={styles.summaryCard}
+                onClick={() => handleCardClick('taken')}
+              >
+                <BookOpenCheck className={styles.summaryIcon}/>
+                <span className={styles.summaryValue}>
+                  {attemptOverview.total_quizzes}
+                </span>
+                <p className={styles.summaryLabel}>Quizzes Taken</p>
+              </div>
+
+              <div
+                className={styles.summaryCard}
+                onClick={() => handleCardClick('correct')}
+              >
+                <ThumbsUp className={styles.summaryIcon}/>
+                <span className={styles.summaryValue}>
+                  {attemptOverview.total_correct}
+                </span>
+                <p className={styles.summaryLabel}>Correct</p>
+              </div>
+
+              <div
+                className={styles.summaryCard}
+                onClick={() => handleCardClick('mistake')}
+              >
+                <Frown className={styles.summaryIcon}/>
+                <span className={styles.summaryValue}>
+                  {attemptOverview.total_mistakes}
+                </span>
+                <p className={styles.summaryLabel}>Mistakes</p>
+              </div>
+
+              <div
+                className={styles.summaryCard}
+                onClick={() => handleCardClick('fixed')}
+              >
+                <Smile className={styles.summaryIcon}/>
+                <span className={styles.summaryValue}>
+                  {attemptOverview.quizzes_fixed}
+                </span>
+                <p className={styles.summaryLabel}>Fixed</p>
+              </div>
+
+              <div
+                className={styles.summaryCard}
+                onClick={() => handleCardClick('never_fixed')}
+              >
+                <Zap className={styles.summaryIcon}/>
+                <span className={styles.summaryValue}>
+                  {attemptOverview.never_fixed}
+                </span>
+                <p className={styles.summaryLabel}>Never Fixed</p>
+              </div>
+            </div>
+              {openCategory && (
+                <section className={styles.drillSection}>
+                  <h3>
+                    {{
+                      taken:       "All Quizzes Taken",
+                      correct:     "Quizzes You Got Right",
+                      mistake:     "Quizzes You Missed",
+                      fixed:       "Quizzes You Fixed",
+                      never_fixed: "Quizzes You Never Fixed"
+                    }[openCategory]}
+                  </h3>
+
+                  {drillLoading
+                    ? <p>Loading…</p>
+                    : drillError
+                      ? <p className={styles.errorState}>{drillError}</p>
+                      : (
+                        <table className={styles.drillTable}>
+                          <thead>
+                            <tr>
+                              <th>ID</th>
+                              <th>Title</th>
+                              <th>Total Q’s</th>
+                              <th>Go</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {drillQuizzes.map(q => (
+                              <tr key={q.id}>
+                                <td>{q.id}</td>
+                                <td>{q.title}</td>
+                                <td>{q.total_questions}</td>
+                                <td>
+                                  <Link to={`/quizzes/${q.permalink}`}>View</Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )
+                  }
+                </section>
+              )}
+
         </section>
       )}
 

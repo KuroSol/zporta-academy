@@ -464,3 +464,34 @@
     color: var(--text-secondary);
   }
 }
+
+/* Drill-down section */
+.drillSection {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Drill-down table */
+.drillTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+.drillTable th,
+.drillTable td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: left;
+}
+.drillTable th {
+  background: #eee;
+}
+
+/* Error text */
+.errorState {
+  color: #c00;
+  margin: 0.5rem 0;
+}
