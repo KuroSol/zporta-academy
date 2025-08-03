@@ -7,7 +7,7 @@ import styles from './Login.module.css';
 // --- Placeholder for AI Image ---
 const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png';
 
-const Login = () => {
+const Login = ({ onSuccess, skipRedirect }) => {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -102,8 +102,9 @@ const Login = () => {
         showMessage('Logging in...', 'info');
         try {
             const response = await apiClient.post('/users/login/', { username, password });
-            login(response.data, response.data.token);
-            navigate('/home');
+            login(response.data, response.data.token, { skipRedirect });
+            if (!skipRedirect && onSuccess) navigate('/home');
+            else if (onSuccess) onSuccess();
         } catch (error) {
             const errorMsg = error.response?.data?.error || 'Login failed. Please check your credentials.';
             showMessage(errorMsg, 'error');

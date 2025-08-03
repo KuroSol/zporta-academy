@@ -6,7 +6,7 @@ import App from './App';
 import { reportWebVitals } from './reportWebVitals';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
-
+import { AuthModalProvider } from './context/AuthModalContext';
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
@@ -25,7 +25,9 @@ root.render(
     <HelmetProvider>
       <Router> {/* ✅ Wrap inside Router */}
         <AuthProvider>
-          <App />
+          <AuthModalProvider>
+            <App />
+          </AuthModalProvider>
         </AuthProvider>
       </Router>
     </HelmetProvider>

@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'channels',
     'feed',
     'explorer',
+    'django.contrib.sitemaps', 
 ]
 
 ASGI_APPLICATION = 'zporta.asgi.application'

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import apiClient from '../api'; 
 import { AuthContext } from '../context/AuthContext'; 
+import { AuthModalContext } from '../context/AuthModalContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -79,7 +80,6 @@ const StatItem = ({ icon, label, value }) => (
     </div>
 );
 
-
 // --- Main Quiz Page Component ---
 const QuizPage = () => {
     const [quizData, setQuizData] = useState(null);
@@ -100,7 +100,8 @@ const QuizPage = () => {
     const { username, subject, date, quizSlug } = useParams();
     const permalink = `${username}/${subject}/${date}/${quizSlug}`;
     const navigate = useNavigate();
-    const { user, token, logout } = useContext(AuthContext);
+    const { user, token, logout } = useContext(AuthContext);      // :contentReference[oaicite:4]{index=4}
+    const { openLoginModal }           = useContext(AuthModalContext);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
 
@@ -181,7 +182,7 @@ const QuizPage = () => {
         if (token) {
             fetchQuiz();
         } else {
-            if(!loading && !error) navigate('/login');
+            if (!loading && !error) openLoginModal();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [permalink, token]);
@@ -270,6 +271,10 @@ const QuizPage = () => {
     };
 
     const handleSubmitAnswer = async (questionId, answerOverride = null) => {
+          if (!token) {
+                openLoginModal();
+                return;
+            }
         if (submittedAnswers[questionId]) return;
         const answer = answerOverride !== null ? answerOverride : userAnswers[questionId];
         const question = questions.find(q => q.id === questionId);
@@ -354,6 +359,10 @@ const QuizPage = () => {
     };
     const goPrev = () => goToQuestion(safeCurrentIndex - 1);
     const goNext = () => {
+          if (!token) {
+                openLoginModal();
+                return;
+            }
         if (isAnswerSubmitted || safeCurrentIndex === totalQuestions -1) {
             goToQuestion(safeCurrentIndex + 1);
         } else {
