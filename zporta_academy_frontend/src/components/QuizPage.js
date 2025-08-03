@@ -171,58 +171,57 @@ const QuizPage = () => {
         } catch (err) {
             console.error("Failed to load quiz:", err);
             setQuizData(null);
-            if (err.response?.status === 401) { if (typeof logout === 'function') logout(); navigate('/login'); }
-            else if (err.response?.status === 404) { setError("Quiz not found."); }
-            else { setError(err.message || "An error occurred."); }
-        } finally {
+            
+            if (err.response?.status === 401 && !token) {
+                openLoginModal();
+                setError("You must log in to access this quiz.");
+            } else if (err.response?.status === 404) {
+                setError("Quiz not found.");
+            } else {
+                setError(err.message || "An error occurred.");
+            }
+            }finally {
             setLoading(false);
         }
     }, [permalink, logout, navigate]);
 
   // as soon as token changes, either fetch or show login modal + stop loader
-  useEffect(() => {
-    if (!token) {
-      // no auth → show login popup and clear skeleton
-      openLoginModal();
-      setLoading(false);
-      return;
-    }
-    // authenticated → fetch quiz data
-    fetchQuiz();
-  }, [permalink, token, openLoginModal, fetchQuiz]);
+    useEffect(() => {
+        fetchQuiz(); // always fetch, even if no token
+    }, [permalink, fetchQuiz]);
     // --- NEW: tell backend “I’ve started this quiz” as soon as it loads ---
-  useEffect(() => {
-    if (!quizData?.id) return;
-    apiClient
-      .post(`/api/quizzes/${quizData.id}/start/`)
-      .then(res => setSessionId(res.data.session_id))
-      .catch(console.error);
-  }, [quizData?.id]);
+    useEffect(() => {
+        if (!quizData?.id) return;
+        apiClient
+        .post(`/quizzes/${quizData.id}/start/`)
+        .then(res => setSessionId(res.data.session_id))
+        .catch(console.error);
+    }, [quizData?.id]);
 
-   useEffect(() => {
-        if (quizData?.id) {
-            setStatsLoading(true);
-            setStatsError(null);
-            apiClient.get(`/analytics/quizzes/${quizData.id}/detailed-statistics/`)
-            .then(res => {
-                const data = res.data;
-                setQuizStats({
-                    uniqueParticipants: data.unique_participants ?? 0,
-                    uniqueFinishers: data.unique_finishers ?? 0,
-                    totalAnswersSubmitted: data.total_answers_submitted_for_quiz ?? 0,
-                    totalCorrectAnswers: data.total_correct_answers_for_quiz ?? 0,
-                    totalWrongAnswers: data.total_wrong_answers_for_quiz ?? 0,
-                    overallCorrectness: data.overall_correctness_percentage ?? 0,
+    useEffect(() => {
+            if (quizData?.id) {
+                setStatsLoading(true);
+                setStatsError(null);
+                apiClient.get(`/analytics/quizzes/${quizData.id}/detailed-statistics/`)
+                .then(res => {
+                    const data = res.data;
+                    setQuizStats({
+                        uniqueParticipants: data.unique_participants ?? 0,
+                        uniqueFinishers: data.unique_finishers ?? 0,
+                        totalAnswersSubmitted: data.total_answers_submitted_for_quiz ?? 0,
+                        totalCorrectAnswers: data.total_correct_answers_for_quiz ?? 0,
+                        totalWrongAnswers: data.total_wrong_answers_for_quiz ?? 0,
+                        overallCorrectness: data.overall_correctness_percentage ?? 0,
+                    });
+                })
+                .catch(() => {
+                    setStatsError("Could not load quiz statistics.");
+                })
+                .finally(() => {
+                    setStatsLoading(false);
                 });
-            })
-            .catch(() => {
-                setStatsError("Could not load quiz statistics.");
-            })
-            .finally(() => {
-                setStatsLoading(false);
-            });
-        }
-    }, [quizData]);
+            }
+        }, [quizData]);
 
     const questions = quizData?.questions ?? [];
     const totalQuestions = questions.length;
@@ -239,6 +238,13 @@ const QuizPage = () => {
         }
     }, [currentQuestionId]);
 
+    // 2) if there's no token, show the login-modal exactly once
+    useEffect(() => {
+    if (!token && !shownModalRef.current) {
+        openLoginModal();
+        shownModalRef.current = true;
+    }
+    }, [token, openLoginModal]);
 
     const isAnswerSubmitted = !!submittedAnswers[currentQuestionId];
     const currentFeedback = feedback[currentQuestionId];
@@ -393,22 +399,20 @@ const QuizPage = () => {
     // 1) if we still loading data → spinner
     if (loading) return <SkeletonLoader />;
 
-    // 2) if there's no token, show the login-modal exactly once
-    if (!token) {
-      if (!shownModalRef.current) {
-        openLoginModal();
-        shownModalRef.current = true;
-      }
-      // Render nothing (underneath page will still be there)
-      return null;
+    if (loading) return <SkeletonLoader />;
+
+    if (error) {
+        return <ErrorDisplay message={error} />;
     }
+
+    if (!quizData || !questions.length) {
+        return <ErrorDisplay message="Quiz data is unavailable or has no questions." />;
+    }
+
 
     // 3) if we have a genuine error after loading & after we have a token
     if (error) {
-    // if it’s an auth error, show login popup
-    openLoginModal();
-    setLoading(false);
-    return null;
+        return <ErrorDisplay message={error} />;
     }
 
     // 4) if quizData is empty even though we have a token + no error (unlikely fallback)
