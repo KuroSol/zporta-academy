@@ -66,40 +66,7 @@
   /* Centering */
   margin-left: auto;
   margin-right: auto;
-  padding: 1rem; /* Padding for mobile */
 }
-@media (max-width: 768px) {
-  /* Pin toolbar to bottom‑right and stack vertically */
-  .floatingToolbarContainer {
-    bottom: 16px;
-    right: 16px;
-    left: auto;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .toolbarContent {
-    flex-direction: column;
-  }
-  /* Smaller tool buttons */
-  .stylerToolBtn {
-    width: 36px;
-    height: 36px;
-  }
-  /* Round, small toggle */
-  .toolbarToggle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-  }
-}
-
-/* Increase padding on larger screens */
-@media (min-width: 768px) {
-  .lessonTemplate {
-    padding: 2rem;
-  }
-}
-
 
 .lessonTemplate h2,
 .lessonTemplate h3 {
@@ -213,12 +180,6 @@
   right: 1.5rem;
   z-index: 100;
 }
-@media (min-width: 768px) {
-  .floatingIndexButton {
-    bottom: 3rem;
-    right: 3rem;
-  }
-}
 
 /* --- REFINED MARKER HIGHLIGHT STYLE --- */
 .markerHighlight {
@@ -250,6 +211,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
+/* --- Base Toolbar Style (Desktop First) --- */
 .floatingToolbarContainer {
     position: fixed;
     bottom: 20px;
@@ -258,6 +220,7 @@
     z-index: 1000;
     display: flex;
     align-items: flex-end;
+    transition: bottom 0.3s ease, right 0.3s ease, left 0.3s ease, transform 0.3s ease;
 }
 
 .toolbarContent {
@@ -335,7 +298,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: margin-left 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
 }
 
 .floatingToolbarContainer.collapsed .toolbarToggle {
@@ -387,7 +350,6 @@
     cursor: pointer;
 }
 
-/* --- MODIFIED: Icon is smaller and raised to be less intrusive --- */
 .stylerNoteIcon {
     display: inline-block;
     width: 16px;
@@ -402,9 +364,9 @@
     margin-left: 3px;
     user-select: none;
     transition: transform 0.2s;
-    vertical-align: super; /* Lifts the icon up */
+    vertical-align: super;
     position: relative;
-    top: -1px; /* Fine-tune the vertical position */
+    top: -1px;
 }
 
 .stylerNoteAnchor:hover .stylerNoteIcon {
@@ -430,7 +392,6 @@
     padding-top: 32px;
 }
 
-/* --- NEW: Delete button for notes --- */
 .stylerNoteDeleteBtn {
     position: absolute;
     top: 6px;
@@ -457,8 +418,6 @@
     transform: scale(1.1);
 }
 
-
-/* --- Overlay Style --- */
 .stylerOverlay {
     display: none;
     position: fixed;
@@ -470,19 +429,18 @@
     z-index: 5;
 }
 
-/* --- NEW: Confirmation Modal Styles --- */
 .confirmationModalOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(17, 24, 39, 0.6); /* gray-900 with opacity */
+    background-color: rgba(17, 24, 39, 0.6);
     backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000; /* High z-index to be on top */
+    z-index: 2000;
 }
 
 .confirmationModal {
@@ -498,7 +456,7 @@
 .confirmationModalMessage {
     margin: 0 0 20px 0;
     font-size: 16px;
-    color: #1f2937; /* gray-800 */
+    color: #1f2937;
     line-height: 1.6;
 }
 
@@ -518,20 +476,207 @@
     transition: all 0.2s ease;
 }
 
-.confirmationModalActions button:first-child { /* Yes, Delete button */
-    background-color: #ef4444; /* red-500 */
+.confirmationModalActions button:first-child {
+    background-color: #ef4444;
     color: white;
 }
 .confirmationModalActions button:first-child:hover {
-    background-color: #dc2626; /* red-600 */
+    background-color: #dc2626;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }
 
-.confirmationModalActions button:last-child { /* Cancel button */
-    background-color: #e5e7eb; /* gray-200 */
-    color: #374151; /* gray-700 */
+.confirmationModalActions button:last-child {
+    background-color: #e5e7eb;
+    color: #374151;
 }
 .confirmationModalActions button:last-child:hover {
-    background-color: #d1d5db; /* gray-300 */
+    background-color: #d1d5db;
+}
+
+/* ================================================================== */
+/* --- MOBILE & RESPONSIVE OVERRRIDES --- */
+/* ================================================================== */
+
+/* On screens smaller than 768px */
+@media (max-width: 767px) {
+  .lessonTemplate {
+    padding: 1rem;
+  }
+
+  /* Reposition and restyle the entire toolbar for mobile (NOW ON THE LEFT) */
+  .floatingToolbarContainer {
+    /* Pin to bottom-left, above the notes button */
+    bottom: 100px; /* Approx. notes button height (56px) + bottom offset (24px) + margin (20px) */
+    left: 1.5rem;  /* 24px, to align with the notes button */
+    right: auto;   /* Important to unset right positioning */
+    transform: none; /* Reset desktop centering */
+    
+    /* Arrange content and toggle vertically, aligned to the start (left) */
+    flex-direction: column;
+    align-items: flex-start; /* Align items to the left */
+  }
+
+  /* Style the main toolbar content area for vertical layout */
+  .toolbarContent {
+    flex-direction: column; /* Stack buttons vertically */
+    order: 1; /* Ensure content is above the toggle button */
+    margin-bottom: 8px; /* Space between content and toggle */
+    max-height: 50vh; /* Prevent it from being too tall */
+    overflow-y: auto; /* Allow scrolling if many tools */
+  }
+  
+  /* When collapsed on mobile, hide the content entirely */
+  .floatingToolbarContainer.collapsed .toolbarContent {
+    display: none;
+  }
+
+  /* Style the toggle button for mobile */
+  .toolbarToggle {
+    order: 2; /* Ensure toggle is below the content */
+    margin-left: 0; /* Reset desktop margin */
+    width: 44px;
+    height: 44px;
+    border-radius: 50%; /* Make it a circle */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* When collapsed, the toggle is the only thing visible */
+  .floatingToolbarContainer.collapsed .toolbarToggle {
+    margin-bottom: 0;
+  }
+}
+
+/* On screens 768px and larger */
+@media (min-width: 768px) {
+  .lessonTemplate {
+    padding: 2rem;
+  }
+  .floatingIndexButton {
+    bottom: 3rem;
+    right: 3rem;
+  }
+}
+
+/* ================================================================== */
+/* --- Study Notes Section (Mobile Chat-like Panel) --- */
+/* Apply these classes to your StudyNoteSection component's JSX */
+/* ================================================================== */
+
+/* Style for the button that opens the notes panel */
+.notesToggleButton {
+    position: fixed;
+    bottom: 1.5rem; /* 24px */
+    left: 1.5rem;  /* 24px */
+    z-index: 99;
+    width: 56px;
+    height: 56px;
+    background-color: #6d28d9; /* Violet color */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.notesToggleButton:hover {
+    background-color: #5b21b6;
+    transform: scale(1.05);
+}
+
+/* Container for the overlay and the slide-up panel. */
+/* Use JS to add/remove the .open class to this container. */
+.notesContainer {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    pointer-events: none; /* Ignore clicks when hidden */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+/* The dark overlay behind the panel */
+.notesContainer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* The actual panel that holds the notes content */
+.notesPanel {
+    background-color: white;
+    width: 95vw; /* ADJUSTED: Slightly less than full width */
+    max-width: 500px; /* ADJUSTED: Max width on large phones */
+    height: 55vh; /* ADJUSTED: Reduced height */
+    border-radius: 16px 16px 0 0; /* Rounded top corners */
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    transform: translateY(100%); /* Start off-screen at the bottom */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    /* The parent .notesContainer will center this horizontally */
+}
+
+/* --- Open State --- */
+.notesContainer.open {
+    pointer-events: auto; /* Allow clicks when open */
+}
+
+.notesContainer.open::before {
+    opacity: 1; /* Show the dark overlay */
+}
+
+.notesContainer.open .notesPanel {
+    transform: translateY(0); /* Slide panel into view */
+}
+
+/* A header for the panel with a title and close button */
+.notesPanelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0; /* Prevents header from shrinking */
+}
+
+.notesPanelTitle {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #111827;
+}
+
+/* A dedicated, easily clickable close button */
+.notesPanelCloseBtn {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #4b5563;
+}
+
+.notesPanelCloseBtn:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+/* The scrollable area for the notes content */
+.notesPanelBody {
+    padding: 1rem;
+    overflow-y: auto; /* Allows scrolling within the panel */
+    flex-grow: 1; /* Takes up remaining space */
 }

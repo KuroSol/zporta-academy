@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext } from 'react';
-import Modal from '../components/Modal/Modal';           // adjust import path if needed
-import Login from '../Login';                         // reuse your Login component
+import React, { createContext, useState } from 'react';
+import Modal from '../components/Modal/Modal';    // adjust if your path differs
+import Login from '../Login';
 
 export const AuthModalContext = createContext({
   openLoginModal: () => {},
@@ -15,16 +15,16 @@ export const AuthModalProvider = ({ children }) => {
   return (
     <AuthModalContext.Provider value={{ openLoginModal, closeLoginModal }}>
       {children}
-      <Modal 
-        isOpen={isOpen} 
-        onClose={closeLoginModal} 
+      <Modal
+        isOpen={isOpen}
+        onClose={closeLoginModal}
         title="Log in to continue"
         size="small"
       >
-        {/* Use your existing Login component but prevent it from redirecting */}
-        <Login 
-          onSuccess={closeLoginModal}   // close modal on successful login
-          skipRedirect={true}           // see next step
+        <Login
+          onSuccess={closeLoginModal}  // close modal on successful login
+          skipRedirect={true}          // prevent full-page redirect
+          inModal={true}               // render the modal-style form
         />
       </Modal>
     </AuthModalContext.Provider>

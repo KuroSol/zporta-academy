@@ -91,6 +91,7 @@ const QuizPage = () => {
     const [feedback, setFeedback] = useState({});
     const [isDeleting, setIsDeleting] = useState(false);
     const [showHint, setShowHint] = useState(null);
+    const shownModalRef = useRef(false);
 
     // --- FIX: Track when each question was shown ---
     // 1. Add state to hold per-question start timestamps.
@@ -178,14 +179,17 @@ const QuizPage = () => {
         }
     }, [permalink, logout, navigate]);
 
-    useEffect(() => {
-        if (token) {
-            fetchQuiz();
-        } else {
-            if (!loading && !error) openLoginModal();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [permalink, token]);
+  // as soon as token changes, either fetch or show login modal + stop loader
+  useEffect(() => {
+    if (!token) {
+      // no auth → show login popup and clear skeleton
+      openLoginModal();
+      setLoading(false);
+      return;
+    }
+    // authenticated → fetch quiz data
+    fetchQuiz();
+  }, [permalink, token, openLoginModal, fetchQuiz]);
     // --- NEW: tell backend “I’ve started this quiz” as soon as it loads ---
   useEffect(() => {
     if (!quizData?.id) return;
@@ -386,11 +390,32 @@ const QuizPage = () => {
         }
     };
 
+    // 1) if we still loading data → spinner
     if (loading) return <SkeletonLoader />;
-    if (error && !quizData) return <ErrorDisplay message={error} />;
-    if (!quizData || !questions || questions.length === 0) {
-        return <ErrorDisplay message={error || "Quiz data is unavailable or has no questions."} />;
+
+    // 2) if there's no token, show the login-modal exactly once
+    if (!token) {
+      if (!shownModalRef.current) {
+        openLoginModal();
+        shownModalRef.current = true;
+      }
+      // Render nothing (underneath page will still be there)
+      return null;
     }
+
+    // 3) if we have a genuine error after loading & after we have a token
+    if (error) {
+    // if it’s an auth error, show login popup
+    openLoginModal();
+    setLoading(false);
+    return null;
+    }
+
+    // 4) if quizData is empty even though we have a token + no error (unlikely fallback)
+    if (!quizData || !questions.length) {
+      return <ErrorDisplay message="Quiz data is unavailable or has no questions." />;
+    }
+
     
     const renderAnswerArea = () => {
         const questionType = currentQuestion.question_type;

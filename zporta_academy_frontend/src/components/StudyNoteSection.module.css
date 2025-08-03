@@ -1,240 +1,316 @@
-/* Updated StudyNoteSection.module.css - modern, centered icons, Zporta theme */
+/* ================================================================== */
+/* --- Study Notes Section (Revised & Fully Responsive) --- */
+/* ================================================================== */
+
 :root {
-  --primary: #222E3A;
-  --accent: #FFC107;
-  --bg-light: #f8f9fa;
-  --bg-secondary: #f1f3f5;
-  --text-dark: #212529;
-  --text-light: #ffffff;
-  --border-radius: 8px;
-  --transition-speed: 0.3s;
+  --notes-primary: #6d28d9; /* A nice violet color */
+  --notes-primary-hover: #5b21b6;
+  --notes-bg: #ffffff;
+  --notes-bg-secondary: #f3f4f6;
+  --notes-text-dark: #111827;
+  --notes-text-light: #6b7280;
+  --notes-border: #e5e7eb;
+  --notes-my-note-bg: #e0e7ff;
+  --notes-success: #16a34a;
+  --notes-danger: #dc2626;
+  --notes-radius: 12px;
+  --notes-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --notes-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.container {
-  position: fixed !important;
-  bottom: 2rem;
-  left: 2rem !important;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  transition: width var(--transition-speed) ease, height var(--transition-speed) ease;
-  z-index: 1050;
+/* --- Floating Toggle Button --- */
+.notesToggleButton {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 1040; /* Below the panel, but above most content */
+    width: 56px;
+    height: 56px;
+    background-color: var(--notes-primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--notes-shadow);
+    cursor: pointer;
+    transition: var(--notes-transition);
 }
 
-.containerOpen {
-  width: 380px;
-  height: 500px;
-  border-radius: var(--border-radius);
-  background-color: var(--bg-light);
+.notesToggleButton:hover {
+    background-color: var(--notes-primary-hover);
+    transform: scale(1.05);
 }
 
-.toggleButton {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-light);
-  cursor: pointer;
-  transition: background var(--transition-speed) ease;
-}
-.containerOpen .toggleButton {
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+/* --- Main Container for Panel & Overlay --- */
+.notesContainer {
+    position: fixed;
+    inset: 0;
+    z-index: 1050; /* High z-index to cover the page */
+    pointer-events: none; /* Ignore clicks when hidden */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Aligns panel to the bottom for mobile */
 }
 
-.toggleButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-.containerOpen .toggleButton:hover {
-  background-color: var(--bg-secondary);
+.notesContainer.open {
+    pointer-events: auto; /* Allow clicks when open */
 }
 
-.contentWrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
+/* --- Darkening Overlay --- */
+.notesOverlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
 }
 
-.header {
-  padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
-}
-.header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-dark);
+.notesContainer.open .notesOverlay {
+    opacity: 1;
 }
 
-.body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  background: var(--bg-light);
+/* --- The Notes Panel Itself --- */
+.notesPanel {
+    background-color: var(--notes-bg);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--notes-shadow);
+    transform: translateY(100%);
+    transition: var(--notes-transition);
+    width: 100%;
+    height: 70vh; /* Taller for better usability */
+    border-radius: var(--notes-radius) var(--notes-radius) 0 0;
+    max-width: 100vw; /* Ensure it never exceeds screen width */
+    box-sizing: border-box;
 }
 
-.loader {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #6c757d;
+.notesContainer.open .notesPanel {
+    transform: translateY(0);
 }
-.spinner {
-  width: 2.5rem;
-  height: 2.5rem;
-  animation: spin 1s linear infinite;
+
+/* --- Panel Header --- */
+.notesPanelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--notes-border);
+    flex-shrink: 0;
+}
+
+.notesPanelTitle {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--notes-text-dark);
+}
+
+.notesPanelCloseBtn {
+    background: var(--notes-bg-secondary);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--notes-text-light);
+    transition: var(--notes-transition);
+}
+
+.notesPanelCloseBtn:hover {
+    background: var(--notes-border);
+    color: var(--notes-text-dark);
+}
+
+/* --- Panel Body & Notes List --- */
+.notesPanelBody {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .notesList {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 1rem;
-  padding-right: 0.5rem;
+    flex-grow: 1;
 }
 
-.noteItem,
-.myNote {
-  max-width: 80%;
-  padding: 0.75rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 0.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  transition: background var(--transition-speed) ease;
+.noNotesMessage {
+    text-align: center;
+    color: var(--notes-text-light);
+    padding: 2rem;
 }
 
+/* --- Individual Note Styling --- */
 .noteItem {
-  background: var(--bg-secondary);
-  align-self: flex-start;
+    padding: 0.75rem 1rem;
+    border-radius: var(--notes-radius);
+    margin-bottom: 0.75rem;
+    max-width: 85%;
+    word-wrap: break-word;
+    background: var(--notes-bg-secondary);
+    align-self: flex-start;
 }
 
 .myNote {
-  background: var(--accent);
-  color: var(--text-dark);
-  align-self: flex-end;
+    background: var(--notes-my-note-bg);
+    align-self: flex-end;
 }
 
 .noteAuthor {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--notes-text-dark);
 }
 
-.actions button {
-  background: transparent;
-  border: none;
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity var(--transition-speed) ease;
+.noteActions {
+    display: flex;
+    gap: 0.5rem;
 }
-.actions button:hover {
-  opacity: 1;
+
+.noteActions button {
+    background: none;
+    border: none;
+    color: var(--notes-text-light);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0;
 }
-.actions button:last-child {
-  color: #c00;
+.noteActions button:hover {
+    text-decoration: underline;
+}
+.noteActions button:last-child {
+    color: var(--notes-danger);
 }
 
 .noteContent {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 0.9rem;
-  margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin: 0;
+    color: var(--notes-text-dark);
 }
 
-.textarea {
-  width: 100%;
-  min-height: 80px;
-  padding: 0.75rem;
-  font-size: 0.95rem;
-  border: 1px solid var(--primary);
-  border-radius: var(--border-radius);
-  resize: none;
-  transition: border var(--transition-speed) ease;
-}
-.textarea:focus {
-  border-color: var(--accent);
-  outline: none;
+/* --- Panel Footer & Input --- */
+.notesPanelFooter {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--notes-border);
+    background-color: var(--notes-bg);
+    flex-shrink: 0;
 }
 
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #dee2e6;
-  background: var(--bg-light);
+.notesTextarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--notes-border);
+    border-radius: var(--notes-radius);
+    resize: vertical;
+    min-height: 60px;
+    max-height: 150px;
+    font-size: 1rem;
+    transition: var(--notes-transition);
+}
+.notesTextarea:focus {
+    outline: none;
+    border-color: var(--notes-primary);
+    box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
+}
+
+.footerActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
 }
 
 .saveStatus {
-  font-size: 0.875rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
+.successMessage { color: var(--notes-success); display: flex; align-items: center; gap: 0.25rem; }
+.errorMessage { color: var(--notes-danger); display: flex; align-items: center; gap: 0.25rem; }
 
-.successMessage,
-.errorMessage {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-weight: 500;
+.cancelButton {
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    color: var(--notes-text-light);
+    cursor: pointer;
 }
-.successMessage {
-  color: #28a745;
-}
-.errorMessage {
-  color: #dc3545;
+.cancelButton:hover {
+    text-decoration: underline;
 }
 
 .saveButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--border-radius);
-  background: var(--accent);
-  color: var(--text-dark);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transition-speed) ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--notes-radius);
+    background: var(--notes-primary);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--notes-transition);
 }
 .saveButton:hover:not(:disabled) {
-  filter: brightness(0.9);
+    background-color: var(--notes-primary-hover);
 }
 .saveButton:disabled {
-  background: #ddd;
-  cursor: not-allowed;
+    background: #9ca3af;
+    cursor: not-allowed;
 }
 
+/* --- Spinners --- */
+.notesLoader {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6c757d;
+}
+.notesSpinner {
+    width: 2.5rem; height: 2.5rem; animation: notes_spin 1s linear infinite;
+}
 .spinnerSmall {
-  width: 1rem;
-  height: 1rem;
-  animation: spin 1s linear infinite;
+    width: 1rem; height: 1rem; animation: notes_spin 1s linear infinite;
 }
-
-@keyframes spin {
+@keyframes notes_spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* --- Desktop Layout (>= 768px) --- */
+@media (min-width: 768px) {
+    .notesContainer {
+        /* Change alignment for sidebar view */
+        justify-content: flex-start;
+        align-items: flex-end;
+    }
+
+    .notesPanel {
+        width: 380px; /* Fixed width for sidebar */
+        height: calc(100vh - 3rem); /* Full height with margin */
+        max-height: 700px;
+        border-radius: var(--notes-radius);
+        margin-left: 1.5rem;
+        margin-bottom: 1.5rem;
+        /* Adjust transform for a different open/close animation */
+        transform: translateX(-120%);
+    }
+
+    .notesContainer.open .notesPanel {
+        transform: translateX(0);
+    }
+
+    /* Hide the overlay on desktop as it's not needed for a sidebar */
+    .notesOverlay {
+        display: none;
+    }
 }

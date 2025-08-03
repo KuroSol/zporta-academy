@@ -6,8 +6,7 @@ import styles from './Login.module.css';
 
 // --- Placeholder for AI Image ---
 const aiImageUrl = 'https://zportaacademy.com/media/managed_images/MakeLearningSimple.png';
-
-const Login = ({ onSuccess, skipRedirect }) => {
+const Login = ({ onSuccess, skipRedirect, inModal = false }) => {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -131,6 +130,50 @@ const Login = ({ onSuccess, skipRedirect }) => {
             setIsLoading(false);
         }
     };
+
+    // ───── EARLY RETURN FOR MODAL ─────
+    if (inModal) {
+      return (
+        <div className={styles.modalLoginContainer}>
+          <h2>Sign In</h2>
+          {message && <div className={`${styles.message} ${styles[messageType]}`}>{message}</div>}
+
+          <form onSubmit={handleLogin} className={styles.formSection}>
+            <div className={styles.formGroup}>
+              <label htmlFor="login-username">Username or Email</label>
+              <input
+                id="login-username"
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required disabled={isLoading}
+                className={styles.input}
+                autoComplete="username"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required disabled={isLoading}
+                className={styles.input}
+                autoComplete="current-password"
+              />
+            </div>
+            <button type="submit" className={styles.submitButton} disabled={isLoading}>
+              {isLoading ? 'Please wait...' : 'Login'}
+            </button>
+          </form>
+
+          <div className={styles.separator}><span>Or</span></div>
+          {/* magic-link + Google button here */}
+        </div>
+      );
+    }
+    // ───────────────────────────────────
 
     return (
         <div className={styles.loginPageContainer}>
