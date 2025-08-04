@@ -19,7 +19,10 @@ class QuizSitemap(Sitemap):
     # Build the front‑end route; adjust to match your React router
     def location(self, obj):
         date = timezone.localtime(obj.created_at).date().isoformat()
-        return f"/quizzes/{obj.created_by.username}/{slugify(obj.subject.name if obj.subject else "no-subject")}/{date}/{obj.permalink}"
+        subject_slug = slugify(obj.subject.name if obj.subject else 'no-subject')
+        return f"/quizzes/{obj.created_by.username}/{subject_slug}/{date}/{obj.permalink}"
+
+
 
 class CourseSitemap(Sitemap):
     changefreq = "weekly"
