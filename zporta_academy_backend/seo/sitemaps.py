@@ -6,6 +6,7 @@ from quizzes.models import Quiz
 from courses.models import Course
 from lessons.models import Lesson
 from django.utils import timezone
+from django.utils.text import slugify
 
 class QuizSitemap(Sitemap):
     changefreq = "daily"
@@ -13,12 +14,12 @@ class QuizSitemap(Sitemap):
 
     # Only free quizzes
     def items(self):
-        return Quiz.objects.filter(quiz_type="free")
+        return Quiz.objects.filter(quiz_type="free").order_by('id')
 
     # Build the front‑end route; adjust to match your React router
     def location(self, obj):
         date = timezone.localtime(obj.created_at).date().isoformat()
-        return f"/quizzes/{obj.created_by.username}/{obj.subject.slug}/{date}/{obj.permalink}"
+        return f"/quizzes/{obj.created_by.username}/{slugify(obj.subject.name if obj.subject else "no-subject")}/{date}/{obj.permalink}"
 
 class CourseSitemap(Sitemap):
     changefreq = "weekly"

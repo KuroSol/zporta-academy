@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/explorer/',   include('explorer.urls')),
     path('api/feed/',       include('feed.urls')),
     path('api/tags/',       include('tags.urls')),
+    path('', include('seo.urls')),
 ]
 
 # ─── NEW: sitemap endpoint ──────────────────────────────────

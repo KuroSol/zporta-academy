@@ -8,10 +8,10 @@ from django.utils import timezone
 from bs4 import BeautifulSoup
 from pykakasi import kakasi
 from subjects.models import Subject
-from subjects.models import Subject
 from tags.models    import Tag
 from django.contrib.contenttypes.fields import GenericRelation
 from analytics.models import ActivityEvent
+from unidecode import unidecode
 
 # --- japanese_to_romaji function ---
 def japanese_to_romaji(text):
@@ -20,7 +20,10 @@ def japanese_to_romaji(text):
     kks.setMode("K", "a")
     kks.setMode("J", "a")
     kks.setMode("r", "Hepburn")
-    return kks.getConverter().do(text)
+    romaji = kks.getConverter().do(text)
+    fallback = unidecode(text)
+
+    return romaji if len(romaji) >= len(fallback) else fallback
 
 # --- Media Path Functions ---
 def quiz_question_media_path(instance, filename):
