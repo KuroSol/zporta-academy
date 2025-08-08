@@ -386,7 +386,7 @@ const QuizPage = ({ initialData, permalink }) => {
         setError(null);
         try {
             await apiClient.delete(`/quizzes/${quizData.id}/delete/`);
-            router.push('/dashboard');
+            window.location.href = '/dashboard';
         } catch (err) {
             console.error('Error deleting quiz:', err);
             setError('Failed to delete quiz.');
@@ -519,7 +519,7 @@ const QuizPage = ({ initialData, permalink }) => {
                     <h1 className={styles.quizTitle} dangerouslySetInnerHTML={{ __html: quizData.title }}></h1>
                     {isOwner && (
                         <div className={styles.quizActions}>
-                            <button onClick={() => router.push(`/admin/create-quiz/${quizData.id}`)} title="Edit Quiz" className={`${styles.actionButton} ${styles.editButton}`} disabled={isDeleting}><Edit3 size={16} /><span>Edit</span></button>
+                            <button onClick={() => window.location.href = `/admin/create-quiz/${quizData.id}`} title="Edit Quiz" className={`${styles.actionButton} ${styles.editButton}`} disabled={isDeleting}><Edit3 size={16} /><span>Edit</span></button>
                             <button onClick={handleDeleteQuiz} title="Delete Quiz" className={`${styles.actionButton} ${styles.deleteButton}`} disabled={isDeleting}>{isDeleting ? <Loader2 size={16} className={styles.spinner} /> : <Trash2 size={16} />}<span>{isDeleting ? 'Deleting...' : 'Delete'}</span></button>
                         </div>
                     )}
