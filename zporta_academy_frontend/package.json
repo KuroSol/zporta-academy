@@ -1,60 +1,103 @@
 {
-    "name": "zporta_academy_frontend",
-    "version": "0.1.0",
-    "private": true,
-    "dependencies": {
-        "@craco/craco": "^7.1.0",
-        "@liveblocks/client": "^2.24.3",
-        "@liveblocks/react": "^2.24.3",
-        "@stripe/stripe-js": "^5.6.0",
-        "@tinymce/tinymce-react": "^5.1.1",
-        "axios": "^1.8.4",
-        "classnames": "^2.5.1",
-        "firebase": "^11.8.1",
-        "lucide-react": "^0.482.0",
-        "mammoth": "^1.9.0",
-        "rangy": "^1.3.2",
-        "react": "^18.3.1",
-        "react-circular-progressbar": "^2.2.0",
-        "react-dom": "^18.3.1",
-        "react-helmet": "^6.1.0",
-        "react-helmet-async": "^2.0.5",
-        "react-icons": "^5.5.0",
-        "react-router-dom": "^7.1.1",
-        "react-scripts": "^5.0.1",
-        "react-select": "^5.10.2",
-        "recharts": "^2.15.3",
-        "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17",
-        "vosk-browser": "^0.0.8",
-        "web-vitals": "^4.2.4"
+  "name": "zporta_academy_frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "@liveblocks/client": "^2.24.3",
+    "@liveblocks/react": "^2.24.3",
+    "@stripe/stripe-js": "^5.6.0",
+    "@tinymce/tinymce-react": "^5.1.1",
+    "axios": "^1.8.4",
+    "classnames": "^2.5.1",
+    "firebase": "^11.8.1",
+    "lucide-react": "^0.482.0",
+    "mammoth": "^1.9.0",
+    "rangy": "^1.3.2",
+    "react": "^18.3.1",
+    "react-circular-progressbar": "^2.2.0",
+    "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.1.1",
+    "react-scripts": "^5.0.1",
+    "react-select": "^5.10.2",
+    "react-snap": "^1.23.0",
+    "recharts": "^2.15.3",
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17",
+    "vosk-browser": "^0.0.8",
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "prebuild": "node scripts/generate-routes.js",
+    "build": "react-scripts build && react-snap",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "build:css": "tailwindcss -i ./src/index.css -o ./src/tailwind.output.css --watch"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "reactSnap": {
+    "inlineCss": true,
+    "minifyHtml": {
+      "collapseWhitespace": true
     },
-    "devDependencies": {
-        "autoprefixer": "^10.4.20",
-        "postcss": "^8.5.1"
-    },
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject",
-        "build:css": "tailwindcss -i ./src/index.css -o ./src/tailwind.output.css --watch"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    }
+    "source": "build",
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
+    "waitFor": 1000,
+    "routes": [
+      "/",
+      "/home",
+      "/explore",
+      "/guides",
+      "/login",
+      "/register",
+      "/quizzes/zporta/database/2025-07-27/testing-quiz",
+      "/quizzes/annie/english/2025-06-12/words-from-songs-honey-are-u-coming-maneskin",
+      "/quizzes/annie/english/2025-06-11/words-from-songs-energy-lucky-me-morgan-st-jean",
+      "/quizzes/annie/english/2025-06-11/words-from-songs-true-love-kanye-west",
+      "/quizzes/annie/english/2025-06-10/words-from-songs-too-sweet-hozier",
+      "/quizzes/annie/english/2025-06-09/words-from-songs-devil-doesnt-bargain-alec-benjamin",
+      "/quizzes/annie/english/2025-06-09/words-from-songs-from-the-jump-james-arthur",
+      "/quizzes/annie/english/2025-06-08/words-from-songs-i-am-not-a-woman-im-a-god-halsey",
+      "/quizzes/annie/english/2025-06-08/words-from-songs-granite-sleep-token",
+      "/quizzes/annie/english/2025-06-07/words-from-songs-immortal-queen-sia",
+      "/quizzes/annie/english/2025-06-06/words-from-songs-skyscraper-demi-lovato",
+      "/quizzes/annie/english/2025-05-17/words-from-songs-cruel-summer-tayler-swift",
+      "/quizzes/annie/english/2025-05-17/words-from-songs",
+      "/quizzes/zporta/english/2025-05-15/test-blank",
+      "/quizzes/sol_anna/no-subject/2025-05-09/the-quizzical",
+      "/quizzes/alex/no-subject/2025-05-09/audio-quiz",
+      "/quizzes/alex/english/2025-05-04/important-english-tips",
+      "/quizzes/sean_baker/english/2025-05-04/english-vocabulary-quiz",
+      "/quizzes/it_company_zporta/english/2025-05-02/vocab",
+      "/quizzes/alex/english/2025-04-29/quiz-3-from-cause-geninwoarawasufromkuizu",
+      "/quizzes/alex/english/2025-05-04/quiz-2-prepositions-of-time-jikanwoarawasuzenchishikuizu",
+      "/quizzes/alex/english/2025-05-04/quiz-1-prepositions-of-place-bashowoarawasuzenchishikuizu"
+    ]
+  }
 }
