@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import apiClient from '../api'; 
 import { AuthContext } from '../context/AuthContext'; 
 import { AuthModalContext } from '../context/AuthModalContext';
@@ -513,9 +513,28 @@ const QuizPage = () => {
 
     return (
         <div className={styles.pageContainer}>
+
             <Helmet>
+                {/* Page Title */}
                 <title>{quizData?.seo_title || quizData?.title || 'Quiz'}</title>
-                <meta name="description" content={quizData?.seo_description || `Take the quiz: ${quizData?.title}`} />
+
+                {/* Standard SEO Tags */}
+                <meta name="description" content={quizData?.seo_description || 'An interactive quiz on Zporta Academy.'} />
+                <link rel="canonical" href={quizData?.canonical_url || window.location.href} />
+
+                {/* Open Graph / Facebook / Social Media Tags */}
+                <meta property="og:title" content={quizData?.og_title || quizData?.title || 'Quiz'} />
+                <meta property="og:description" content={quizData?.og_description || quizData?.seo_description || 'Check out this quiz on Zporta Academy!'} />
+                <meta property="og:image" content={quizData?.og_image || 'https://www.zportaacademy.com/static/default_quiz_image.png'} />
+                <meta property="og:url" content={quizData?.canonical_url || window.location.href} />
+                <meta property="og:type" content="article" /> 
+                <meta property="og:site_name" content="Zporta Academy" />
+
+                {/* Twitter Card Tags */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={quizData?.og_title || quizData?.title || 'Quiz'} />
+                <meta name="twitter:description" content={quizData?.og_description || quizData?.seo_description || 'Check out this quiz on Zporta Academy!'} />
+                <meta name="twitter:image" content={quizData?.og_image || 'https://www.zportaacademy.com/static/default_quiz_image.png'} />
             </Helmet>
 
             <div className={styles.quizContainer}>

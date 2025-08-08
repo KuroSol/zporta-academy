@@ -21,17 +21,15 @@ if ('serviceWorker' in navigator) {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <HelmetProvider>
-      <Router> {/* ✅ Wrap inside Router */}
-        <AuthProvider>
-          <AuthModalProvider>
-            <App />
-          </AuthModalProvider>
-        </AuthProvider>
-      </Router>
-    </HelmetProvider>
-  </React.StrictMode>
+  <HelmetProvider>
+    <Router>
+      <AuthProvider>
+        <AuthModalProvider>
+          <App />
+        </AuthModalProvider>
+      </AuthProvider>
+    </Router>
+  </HelmetProvider>
 );
 
 reportWebVitals();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react'; // Keep useContext
 import { useParams, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../api'; 
 import './EnrolledLessonDetail.css'; 

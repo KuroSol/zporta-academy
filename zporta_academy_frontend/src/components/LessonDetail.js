@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet-async';
 import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from 'react-icons/fa'; // Removed FaEdit, FaTrash as Pencil/Trash2 are used
 import { Pencil, Trash2 } from 'lucide-react';
 import CustomEditor from "./Editor/CustomEditor";

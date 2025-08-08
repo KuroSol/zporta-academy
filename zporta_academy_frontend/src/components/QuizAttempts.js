@@ -204,7 +204,7 @@ const QuizInsightCard = ({ item: insight }) => {
         {insight.current_quiz_retention_estimate !== null && (<div className={styles.detailRow}><Brain size={16} /><span>Current Strength:</span><strong className={`${styles.detailValue} ${memoryStrength.colorClass}`}>{memoryStrength.icon} {memoryStrength.text} ({(insight.current_quiz_retention_estimate * 100).toFixed(0)}%)</strong></div>)}
       </div>
       <p className={styles.lastAttemptText}>Last Activity: {formatDate(insight.last_attempt_timestamp)}</p>
-      <Link to={`/quizzes/${insight.permalink}`} className={`${styles.actionButton} ${styles.actionButtonView}`}>Go to Quiz <ChevronsRight size={18}/></Link>
+      <Link to={`/quizzes/${insight.permalink}/`} className={`${styles.actionButton} ${styles.actionButtonView}`}>Go to Quiz <ChevronsRight size={18}/></Link>
     </div>
   );
 };
@@ -561,7 +561,7 @@ const QuizAttempts = () => {
                                 <td>{q.title}</td>
                                 <td>{q.total_questions}</td>
                                 <td>
-                                  <Link to={`/quizzes/${q.permalink}`}>View</Link>
+                                  <Link to={`/quizzes/${q.permalink}/`}>View</Link>
                                 </td>
                               </tr>
                             ))}

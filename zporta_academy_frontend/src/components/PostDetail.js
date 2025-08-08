@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet-async';
 import { FaRegClock, FaUser, FaEdit, FaTrash } from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
 import apiClient from "../api";

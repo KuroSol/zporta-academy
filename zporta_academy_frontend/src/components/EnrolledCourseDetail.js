@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext'; // Adjust path if needed
 import apiClient from '../api'; // Adjust path if needed
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import {
   CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, List, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, X, HelpCircle, ArrowUp, ArrowDown, Users, Share2, UserPlus, BookOpen, Eraser, Undo, Redo ,  Radio, Home, Square, Circle as CircleIcon, MessageSquare,
   
