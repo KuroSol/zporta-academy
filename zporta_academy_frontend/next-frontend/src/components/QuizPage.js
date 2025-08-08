@@ -591,7 +591,7 @@ const QuizPage = ({ initialData, permalink }) => {
                     {safeCurrentIndex === totalQuestions - 1 && isAnswerSubmitted ? (
                         <div className={styles.completionMessage}>
                             Quiz Completed!
-                            <button onClick={() => router.push('/study/dashboard')} className={`${styles.btn} ${styles.resultsButton}`}>Back to Dashboard</button>
+                            <button onClick={() => window.location.href = '/study/dashboard'} className={`${styles.btn} ${styles.resultsButton}`}>Back to Dashboard</button>
                         </div>
                     ) : (
                         <button type="button" className={styles.navButton} onClick={goNext} disabled={safeCurrentIndex >= totalQuestions - 1 || !isAnswerSubmitted || isDeleting} aria-label="Next Question">
