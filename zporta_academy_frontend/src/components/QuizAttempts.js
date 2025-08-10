@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { quizPermalinkToUrl } from "../utils/urls";
 import apiClient from "../api";
 import { AuthContext } from "../context/AuthContext";
 import styles from "./QuizAttempts.module.css";
@@ -165,10 +166,9 @@ const MemoryItemCard = ({ item, type }) => {
   const lastEffort = getLastReviewEffortText(last_quality_of_recall);
   const itemTitle = learnable_item_info?.title || learnable_item_info?.display_text || "Learnable Item";
   const { type: itemType, permalink } = learnable_item_info;
-  const reviewLink = itemType === 'question'
-    ? `/quizzes/${permalink}/review`
-    : `/quizzes/${permalink}`;
-    
+  const href = itemType === "question"
+    ? quizPermalinkToUrl(permalink, { review: true })
+    : quizPermalinkToUrl(permalink);
   let cardClass = `${styles.memoryItemCard} ${styles[type + 'Item'] || ''}`;
   let typeSpecificIcon = <HelpCircle className={styles.itemTypeIconBase} />;
   if (type === 'due' || reviewDateInfo.isOverdue) typeSpecificIcon = <Zap className={`${styles.itemTypeIconBase} ${styles.dueIconAnimation}`} />;
@@ -184,8 +184,13 @@ const MemoryItemCard = ({ item, type }) => {
         <div className={styles.detailRow}><ListChecks size={16} /><span>Correct Streak:</span><strong className={styles.detailValue}>{repetitions ?? 0}</strong></div>
         {last_quality_of_recall !== null && (<div className={styles.detailRow}><HelpCircle size={16} /><span>Last Review Felt:</span><strong className={styles.detailValue}>{lastEffort}</strong></div>)}
       </div>
-      {reviewLink !== '#' && (<Link to={reviewLink} className={`${styles.actionButton} ${type === 'due' || reviewDateInfo.isOverdue ? styles.actionButtonPrimary : styles.actionButtonSecondary}`}>{type === 'due' || reviewDateInfo.isOverdue ? "Review Now" : "Review"} <ChevronsRight size={18} /></Link>)}
-    </div>
+        {href !== '#' && (
+          <a href={href}
+            className={`${styles.actionButton} ${type === 'due' || reviewDateInfo.isOverdue ? styles.actionButtonPrimary : styles.actionButtonSecondary}`}>
+            {type === 'due' || reviewDateInfo.isOverdue ? "Review Now" : "Review"} <ChevronsRight size={18} />
+          </a>
+        )}    
+      </div>
   );
 };
 
@@ -204,7 +209,9 @@ const QuizInsightCard = ({ item: insight }) => {
         {insight.current_quiz_retention_estimate !== null && (<div className={styles.detailRow}><Brain size={16} /><span>Current Strength:</span><strong className={`${styles.detailValue} ${memoryStrength.colorClass}`}>{memoryStrength.icon} {memoryStrength.text} ({(insight.current_quiz_retention_estimate * 100).toFixed(0)}%)</strong></div>)}
       </div>
       <p className={styles.lastAttemptText}>Last Activity: {formatDate(insight.last_attempt_timestamp)}</p>
-      <Link to={`/quizzes/${insight.permalink}/`} className={`${styles.actionButton} ${styles.actionButtonView}`}>Go to Quiz <ChevronsRight size={18}/></Link>
+       <a href={quizPermalinkToUrl(insight.permalink)} className={`${styles.actionButton} ${styles.actionButtonView}`}>
+          Go to Quiz <ChevronsRight size={18}/>
+        </a>
     </div>
   );
 };
@@ -561,7 +568,7 @@ const QuizAttempts = () => {
                                 <td>{q.title}</td>
                                 <td>{q.total_questions}</td>
                                 <td>
-                                  <Link to={`/quizzes/${q.permalink}/`}>View</Link>
+                                  <a href={quizPermalinkToUrl(q.permalink)} target="_blank" rel="noopener noreferrer">View</a>
                                 </td>
                               </tr>
                             ))}
@@ -593,7 +600,7 @@ const QuizAttempts = () => {
         </>
       )}
 
-      {renderSection("Overall Quiz Performance", quizInsights, 'insights', loadingInsights, errorInsights, <BarChartHorizontalBig size={24}/>, {icon: <BookOpenCheck size={48}/>, title:"No Quiz Insights Yet", message:"Complete some quizzes, and we'll show you how you're doing on them overall!", link: {to: "/explorer", text: "Find Quizzes to Try"}})}
+      {renderSection("Overall Quiz Performance", quizInsights, 'insights', loadingInsights, errorInsights, <BarChartHorizontalBig size={24}/>, {icon: <BookOpenCheck size={48}/>, title:"No Quiz Insights Yet", message:"Complete some quizzes, and we'll show you how you're doing on them overall!", link: {to: "/learn", text: "Find Quizzes to Try"}})}
     </div>
   );
 };

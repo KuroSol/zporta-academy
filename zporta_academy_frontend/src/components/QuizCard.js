@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect, useCallback, useRef } from 'rea
 import { Link } from 'react-router-dom';                
 import apiClient from '../api'; // Use your actual API client
 import { AuthContext } from '../context/AuthContext'; // Use your actual AuthContext
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,12 +19,14 @@ import {
   PlayCircle,
   ChevronsUpDown,
 } from 'lucide-react';
+
 import styles from './QuizCard.module.css';
 
-// Your original components are correctly imported
-import SpeechToTextInput from './SpeechToTextInput';
-import FillInTheBlanksQuestion from './FillInTheBlanksQuestion';
-import SortQuestion from './SortQuestion';
+import { quizPermalinkToUrl } from '../utils/urls';
+// ⬇️ TEMP stubs so this file compiles while Next.js owns full quiz play
+const SpeechToTextInput = () => null;
+const FillInTheBlanksQuestion = () => null;
+const SortQuestion = () => null;
 
 const DEFAULT_AVATAR =
   "https://zportaacademy.com/media/managed_images/zpacademy.png";
@@ -89,6 +92,8 @@ const QuizCard = ({
 
   const { token, logout } = useContext(AuthContext) || {};
   const cardRef = useRef(null);
+  // Link to Next.js quiz page (uses quiz.permalink from API)
+  const takeUrl = quiz?.permalink ? quizPermalinkToUrl(quiz.permalink) : null;
 
   // All of your original useEffects and logic are fully restored
   useEffect(() => {
@@ -425,21 +430,18 @@ const QuizCard = ({
           </div>
         );
       case 'dragdrop':
-        if (!currentQuestion._fill_blank) return <p className={styles.errorText}>Loading fill-in-the-blanks data...</p>;
-        return (
-          <FillInTheBlanksQuestion question={currentQuestion} disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
-            onSubmit={(filledMap) => { handleAnswerChange(currentQuestionId, filledMap); handleSubmitAnswerForCurrentQuestion(filledMap); }}
-            submittedAnswer={currentQUserAnswer} feedback={currentFeedback}
-          />
+        // Hand off to Next.js page for full interaction
+        return takeUrl ? (
+          <a href={takeUrl} className={styles.startQuizButton}>Open full quiz</a>
+        ) : (
+          <p className={styles.errorText}>Open quiz to answer this type.</p>
         );
       case 'sort':
-        if (!currentQuestion.question_data?.items) return <p className={styles.errorText}>Loading sort question data...</p>;
-        return (
-          <SortQuestion question={currentQuestion} submitted={isAnswerSubmittedForCurrent}
-            userAnswer={currentQUserAnswer} onChange={(order) => handleAnswerChange(currentQuestionId, order)}
-            onSubmit={() => handleSubmitAnswerForCurrentQuestion(currentQUserAnswer)}
-            feedback={currentFeedback} disabled={isLoadingSubmission}
-          />
+        // Hand off to Next.js page for full interaction
+        return takeUrl ? (
+          <a href={takeUrl} className={styles.startQuizButton}>Open full quiz</a>
+        ) : (
+          <p className={styles.errorText}>Open quiz to answer this type.</p>
         );
       default:
         return <p className={styles.unsupportedType}>Unsupported question type for direct interaction on card.</p>;

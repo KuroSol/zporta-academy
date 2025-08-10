@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { quizPermalinkToUrl } from '../utils/urls';
 import apiClient from '../api';
 import { AuthContext } from '../context/AuthContext';
 import styles from './StudyDashboard.module.css';
@@ -169,10 +170,10 @@ export default function StudyDashboard() {
             <span className={styles.sourceTag}>{getSourceLabel(quiz.source)}</span>
           </p>
         </div>
-        <Link to={`/quizzes/${quiz.permalink}`} className={styles.cardAction}>
-          <span>Take Quiz</span>
-          <ArrowRight />
-        </Link>
+          <a href={quizPermalinkToUrl(quiz.permalink)} className={styles.cardAction}>
+            <span>Take Quiz</span>
+            <ArrowRight />
+          </a>
       </div>
       <div className={styles.quizCardWrapper}>
         <QuizCard quiz={quiz} isFeedView />

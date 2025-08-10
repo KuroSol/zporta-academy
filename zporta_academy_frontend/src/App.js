@@ -31,7 +31,6 @@ import './styles.css'; // Main global styles
 import UserPosts from './components/UserPosts';
 import PostDetail from './components/PostDetail';
 import ChangePassword from './ChangePassword';
-import QuizPage from './components/QuizPage';
 import QuizAttempts from './components/QuizAttempts';
 import QuizListPage from './components/QuizListPage';
 import HomePage from './components/HomePage';
@@ -573,9 +572,8 @@ const App = () => {
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-cancel" element={<PaymentCancel />} />
 
-                  <Route path="/quizzes/my" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
-                  <Route path="/quizzes/Attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
-                  <Route path="/quizzes/:username/:subject/:date/:quizSlug" element={<QuizPage/>} />
+                  <Route path="/my-quizzes" element={isLoggedIn ? <QuizListPage /> : <Navigate to="/login" replace />} />
+                  <Route path="/quiz-attempts" element={isLoggedIn ? <QuizAttempts /> : <Navigate to="/login" replace />} />
 
                   <Route path="/admin/create-course" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />
                   <Route path="/admin/courses/edit/:username/:date/:subject/:courseTitle" element={isLoggedIn ? <CreateCourse /> : <Navigate to="/login" replace />} />

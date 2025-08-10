@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext'; // Adjust path as needed
 import apiClient from '../api'; // Adjust path as needed
 import styles from './HomePage.module.css'; // Import NEW CSS Module styles
+import { quizPermalinkToUrl } from '../utils/urls';
 
 import { 
     FaRocket, FaChalkboardTeacher, FaNewspaper, FaGraduationCap, 
@@ -302,29 +303,27 @@ const HomePage = () => {
                                 <div className={styles.quizAttemptsPreview}>
                                     {latestQuizAttempts.map(attempt => (
                                         attempt?.quizId && (
-                                            <div
-                                                key={attempt.quizId}
-                                                className={styles.quizAttemptItem}
-                                                onClick={() => attempt.permalink && navigate(`/quizzes/${attempt.permalink}`)}
-                                                role="button" tabIndex={0}
-                                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && attempt.permalink && navigate(`/quizzes/${attempt.permalink}`)}
-                                                aria-label={`View quiz: ${attempt.quiz_title || `Quiz ${attempt.quizId}`}`}
+                                            <a
+                                            key={attempt.quizId}
+                                            className={styles.quizAttemptItem}
+                                            href={attempt.permalink ? quizPermalinkToUrl(attempt.permalink) : '#'}
+                                            aria-label={`View quiz: ${attempt.quiz_title || `Quiz ${attempt.quizId}`}`}
                                             >
-                                                <div className={styles.attemptInfo}>
-                                                    <span className={styles.attemptQuiz}>{attempt.quiz_title || `Quiz ${attempt.quizId}`}</span>
-                                                    <span className={styles.attemptDate}>{new Date(attempt.timestamp).toLocaleDateString()}</span>
-                                                </div>
-                                                <div className={styles.attemptStats}>
-                                                    <span title={`${attempt.correct} Correct`}><FaCheckCircle className={styles.statIconCorrect}/> {attempt.correct}</span>
-                                                    <span title={`${attempt.wrong} Incorrect`}><FaTimesCircle className={styles.statIconIncorrect}/> {attempt.wrong}</span>
-                                                    <span title={`${attempt.total} Total Questions`}> <FaEllipsisH /> {attempt.total}</span>
-                                                </div>
+                                            <div className={styles.attemptInfo}>
+                                                <span className={styles.attemptQuiz}>{attempt.quiz_title || `Quiz ${attempt.quizId}`}</span>
+                                                <span className={styles.attemptDate}>{new Date(attempt.timestamp).toLocaleDateString()}</span>
                                             </div>
+                                            <div className={styles.attemptStats}>
+                                                <span title={`${attempt.correct} Correct`}><FaCheckCircle className={styles.statIconCorrect}/> {attempt.correct}</span>
+                                                <span title={`${attempt.wrong} Incorrect`}><FaTimesCircle className={styles.statIconIncorrect}/> {attempt.wrong}</span>
+                                                <span title={`${attempt.total} Total Questions`}><FaEllipsisH /> {attempt.total}</span>
+                                            </div>
+                                            </a>
                                         )
                                     ))}
                                 </div>
                             ) : ( <EmptyState message="No recent quiz attempts found." /> )}
-                            <button className={styles.cardActionButton} onClick={() => navigate('/quizzes/attempts')}>
+                            <button className={styles.cardActionButton} onClick={() => navigate('/quiz-attempts')}>
                                 See All Quiz Attempts
                             </button>
                         </div>
