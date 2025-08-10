@@ -274,6 +274,8 @@
   padding: 10px 0;
 }
 .profile-hexagon {
+  display: inline-block;   /* <— add */
+  cursor: pointer;         /* optional */
   width: 70px;
   height: 70px;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
@@ -284,6 +286,7 @@
   border: 2px solid var(--sidebar-accent-color);
 }
 .profile-hexagon img {
+  display: block;  
   width: 100%;
   height: 100%;
   object-fit: cover;

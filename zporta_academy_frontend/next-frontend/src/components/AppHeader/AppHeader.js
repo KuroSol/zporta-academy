@@ -25,11 +25,10 @@ const AppHeader = () => {
   return (
     <header className={styles.appHeader}>
       {/* Logo / Brand - links to home */}
-      <Link href="/" className={styles.brandLink} onClick={handleHeaderClick} title="Zporta Academy - Homepage">
-        {/* If you have a logo image, you can include it here */}
-        {/* <img src="/path/to/logo.png" alt="Zporta Academy" className={styles.logoImage} /> */}
-        <span className={styles.logoText}>Zporta Academy</span>
-      </Link>
+        <a href={process.env.NEXT_PUBLIC_MAIN_ORIGIN || '/'} className={styles.brandLink}>
+          <span className={styles.logoText}>Zporta Academy</span>
+        </a>
+
 
       {/* User welcome (shown only if logged in) */}
       {user && (
