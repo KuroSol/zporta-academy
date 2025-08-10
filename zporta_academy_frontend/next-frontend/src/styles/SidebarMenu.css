@@ -1,0 +1,391 @@
+/* SidebarMenu.css - Aligned with AppHeader & Handle Re-centered */
+
+:root {
+  /* Z-Indexes */
+  --zindex-sidebar: 1030;              
+  --zindex-sidebar-handle: 1031;       
+
+  /* Sidebar Dimensions */
+  --sidebar-width-desktop-collapsed: 60px; 
+  --sidebar-width-expanded: 250px;         
+  --sidebar-transition-duration: 0.3s;
+  --sidebar-transition-timing: ease; 
+
+  /* Unified Handle Toggle Dimensions & Style */
+  --sidebar-handle-width: 28px;          
+  --sidebar-handle-visual-width: 20px;   
+  --sidebar-handle-height: 60px; /* Height of the handle itself */        
+  --sidebar-handle-bg-closed: #ffc107;   
+  --sidebar-handle-icon-closed: #1B2735; 
+  --sidebar-handle-bg-open: #2c3e50;   
+  --sidebar-handle-icon-open: #ffc107;   
+  
+  /* Colors & Base Styles */
+  --sidebar-bg-color: rgba(27, 39, 53, 0.97); 
+  --sidebar-text-color: #ffc107;
+  --sidebar-accent-color: #ffc107;       
+  --zporta-radius-md: 8px;               
+
+  /* AppHeader Heights (ensure these match your AppHeader.module.css) */
+  --app-header-height-desktop: 55px;
+  --app-header-height-mobile: 50px;
+}
+
+/* -----------------------------------------------------------------------------
+   Sidebar Container
+----------------------------------------------------------------------------- */
+.sidebar-menu {
+  position: fixed;
+  top: var(--app-header-height-desktop); 
+  right: 0; 
+  bottom: 0; 
+  height: calc(100vh - var(--app-header-height-desktop)); 
+  background-color: var(--sidebar-bg-color);
+  color: var(--sidebar-text-color);
+  z-index: var(--zindex-sidebar);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 20px 10px; 
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.25);
+
+  width: var(--sidebar-width-desktop-collapsed);
+  transform: translateX(0); 
+  opacity: 1;
+  transition: width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              transform var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              height var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+
+.sidebar-menu.expanded {
+  width: var(--sidebar-width-expanded);
+}
+
+/* Content visibility for desktop/tablet collapsed state */
+.sidebar-menu.collapsed .sidebar-header .sidebar-title {
+  font-size: 1.1em; 
+  line-height: 1.1;
+  margin-top: 3px;
+  padding-bottom: 3px;
+}
+.sidebar-menu.collapsed .profile-info,
+.sidebar-menu.collapsed nav ul li a span {
+  display: none;
+}
+.sidebar-menu.collapsed .profile-hexagon {
+  width: 36px; 
+  height: 36px;
+  margin-bottom: 8px;
+  border-width: 1px;
+}
+.sidebar-menu.collapsed .icon {
+  margin-right: 0;
+  display: block;
+  text-align: center;
+  width: 100%;
+  font-size: 18px; 
+}
+.sidebar-menu.collapsed nav ul li a {
+  padding: 8px 0; 
+  justify-content: center;
+  margin: 2px 0;
+}
+/* -----------------------------------------------------------------------------
+   Show alert-count badge when sidebar is collapsed (desktop/tablet)
+----------------------------------------------------------------------------- */
+.sidebar-menu.collapsed .notification-link {
+  position: relative; /* ensure the badge is positioned against the bell */
+}
+
+.sidebar-menu.collapsed .notification-link .notification-badge {
+  display: inline-block;      /* ← override the “nav ul li a span { display: none }” */
+  position: absolute;         /* keep it in the top-right of the bell */
+  top: -3px;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+  font-size: 9px;
+  line-height: 15px;
+}
+
+
+/* -----------------------------------------------------------------------------
+   Unified Sidebar Toggle Handle (for all screen sizes)
+----------------------------------------------------------------------------- */
+.sidebar-unified-handle {
+  position: fixed;
+  /* Calculation to center the handle vertically within the sidebar's visible area:
+    top_of_sidebar = var(--app-header-height-desktop)
+    height_of_sidebar = (100vh - var(--app-header-height-desktop))
+    midpoint_of_sidebar_from_viewport_top = top_of_sidebar + (height_of_sidebar / 2)
+    top_for_handle = midpoint_of_sidebar_from_viewport_top - (var(--sidebar-handle-height) / 2)
+    Simplified: calc( (var(--app-header-height-desktop) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  */
+  top: calc( (var(--app-header-height-desktop) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  /* transform: translateY(-50%); -- This is NOT needed with the above 'top' calculation */
+  
+  width: var(--sidebar-handle-width); 
+  height: var(--sidebar-handle-height);
+  background-color: transparent; 
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: var(--zindex-sidebar-handle);
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+  transition: right var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              top var(--sidebar-transition-duration) var(--sidebar-transition-timing); /* Add top transition */
+}
+
+/* Visual part of the handle */
+.sidebar-unified-handle::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--sidebar-handle-width) - var(--sidebar-handle-visual-width)); 
+  top: 0;
+  width: var(--sidebar-handle-visual-width);
+  height: 100%;
+  border-top-left-radius: var(--zporta-radius-md);
+  border-bottom-left-radius: var(--zporta-radius-md);
+  box-shadow: -2px 0px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+
+
+.sidebar-unified-handle .handle-icon {
+  font-size: 16px; 
+  position: relative; 
+  z-index: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-unified-handle:hover::before {
+  filter: brightness(1.1);
+}
+.sidebar-unified-handle:active .handle-icon {
+  transform: scale(0.9);
+}
+
+/* Default (Desktop/Tablet) Handle Positioning & Style */
+.sidebar-unified-handle.is-closed {
+  right: var(--sidebar-width-desktop-collapsed); 
+}
+.sidebar-unified-handle.is-closed::before {
+  background-color: var(--sidebar-handle-bg-closed);
+}
+.sidebar-unified-handle.is-closed .handle-icon {
+  color: var(--sidebar-handle-icon-closed);
+}
+
+.sidebar-unified-handle.is-open {
+  right: var(--sidebar-width-expanded); 
+}
+.sidebar-unified-handle.is-open::before {
+  background-color: var(--sidebar-handle-bg-open);
+}
+.sidebar-unified-handle.is-open .handle-icon {
+  color: var(--sidebar-handle-icon-open);
+}
+
+
+/* -----------------------------------------------------------------------------
+   Mobile Specific Adjustments (max-width: 768px)
+----------------------------------------------------------------------------- */
+@media only screen and (max-width: 768px) {
+  .sidebar-menu {
+    top: var(--app-header-height-mobile); 
+    height: calc(100vh - var(--app-header-height-mobile)); 
+    
+    width: var(--sidebar-width-expanded); 
+    transform: translateX(100%); 
+    opacity: 0; 
+    padding: 15px 10px; 
+  }
+
+  .sidebar-menu.expanded {
+    transform: translateX(0%); 
+    opacity: 1; 
+  }
+
+  .sidebar-menu.expanded .sidebar-header .sidebar-title {
+    font-size: 20px; 
+  }
+  .sidebar-menu.expanded .profile-info,
+  .sidebar-menu.expanded nav ul li a span {
+    display: inline;
+  }
+  .sidebar-menu.expanded .profile-hexagon {
+    width: 60px; 
+    height: 60px;
+    border-width: 2px;
+  }
+  .sidebar-menu.expanded .icon {
+    margin-right: 10px; 
+    font-size: 18px;  
+  }
+  .sidebar-menu.expanded nav ul li a {
+    padding: 8px 10px; 
+    justify-content: flex-start;
+  }
+  .sidebar-menu.expanded .notification-link .notification-badge {
+    top: -4px; 
+    right: -4px;
+    width: 16px; 
+    height: 16px;
+    font-size: 10px;
+    line-height: 16px;
+  }
+
+  /* Mobile Handle Positioning - Centered relative to mobile sidebar's visible area */
+  .sidebar-unified-handle {
+    top: calc( (var(--app-header-height-mobile) / 2) + 50vh - (var(--sidebar-handle-height) / 2) );
+  }
+   .sidebar-unified-handle.is-closed {
+    right: 0px; 
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Sidebar Header, Profile, Navigation (Base styles from your provided CSS)
+----------------------------------------------------------------------------- */
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 5px;
+  padding: 10px 0;
+}
+.sidebar-title {
+  font-size: 22px;
+  margin: 0;
+  color: var(--sidebar-text-color);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.profile-section {
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 10px 0;
+}
+.profile-hexagon {
+  width: 70px;
+  height: 70px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  margin: 0 auto 10px auto;
+  overflow: hidden;
+  transition: width 0.3s ease, height 0.3s ease, border-width 0.3s ease;
+  background-color: #334E68; /* Placeholder */
+  border: 2px solid var(--sidebar-accent-color);
+}
+.profile-hexagon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-info {
+  margin-top: 5px;
+  text-align: center;
+}
+.profile-info h3 {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 16px;
+  color: #fff;
+  border-bottom: 1px solid var(--sidebar-accent-color);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.sidebar-menu nav {
+  flex-grow: 1;
+}
+.sidebar-menu nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sidebar-menu nav ul li {
+  margin-bottom: 0;
+}
+.sidebar-menu nav ul li a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--sidebar-text-color);
+  font-size: 15px;
+  padding: 10px 10px;
+  border-radius: 6px;
+  margin: 3px 0;
+  transition: color 0.2s ease, background-color 0.2s ease, padding-left 0.2s ease;
+  white-space: nowrap;
+}
+.sidebar-menu nav ul li a:hover {
+  color: var(--sidebar-bg-color); 
+  background-color: var(--sidebar-accent-color); 
+  padding-left: 15px; 
+}
+.sidebar-menu nav ul li a:hover .icon {
+  color: var(--sidebar-bg-color); 
+}
+.sidebar-menu nav ul li a.active {
+  color: var(--sidebar-bg-color);
+  background-color: var(--sidebar-accent-color);
+  font-weight: 600;
+}
+.sidebar-menu nav ul li a.active .icon {
+  color: var(--sidebar-bg-color);
+}
+.icon {
+  font-size: 20px;
+  margin-right: 12px;
+  min-width: 20px;
+  text-align: center;
+  transition: margin-right 0.3s ease, color 0.2s ease;
+}
+
+.notification-link {
+  position: relative;
+}
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  text-align: center;
+  line-height: 18px;
+  font-weight: bold;
+  padding: 0 3px;
+}
+
+/* Ensure old toggle buttons are definitely gone */
+.toggle-sidebar-desktop,
+.toggle-sidebar-mobile {
+    display: none !important;
+}
+@media (max-width: 768px) {
+  .sidebar-unified-handle.has-unread::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--zindex-sidebar-handle);
+  }
+}

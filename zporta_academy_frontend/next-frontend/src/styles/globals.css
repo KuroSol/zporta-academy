@@ -54,6 +54,44 @@
   /* Transitions & Typography */
   --transition-speed: 0.2s;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    /* === Header (AppHeader) tokens - no collisions === */
+  --header-bg: #1B2735;                  /* was --primary-dark */
+  --header-fg: #FFFFFF;                  /* was --text-light (conflicted) */
+  --header-fg-dim: rgba(255,255,255,0.8);/* was --text-light-secondary */
+  --header-accent: #FFC107;              /* was --primary-accent */
+  --header-accent-hover: #FDB813;        /* was --primary-accent-hover */
+  --header-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+  --header-radius-sm: 6px;
+  --header-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  /* === Chrome layout heights (shared) === */
+  --app-header-height-desktop: 55px;
+  --app-header-height-mobile: 50px;
+
+  /* === Sidebar tokens (match existing names used in SidebarMenu.css) === */
+  --zindex-sidebar: 1030;
+  --zindex-sidebar-handle: 1031;
+
+  --sidebar-width-desktop-collapsed: 60px;
+  --sidebar-width-expanded: 250px;
+  --sidebar-transition-duration: 0.3s;
+  --sidebar-transition-timing: ease;
+
+  --sidebar-handle-width: 28px;
+  --sidebar-handle-visual-width: 20px;
+  --sidebar-handle-height: 60px;
+  --sidebar-handle-bg-closed: #ffc107;
+  --sidebar-handle-icon-closed: #1B2735;
+  --sidebar-handle-bg-open: #2c3e50;
+  --sidebar-handle-icon-open: #ffc107;
+
+  --sidebar-bg-color: rgba(27, 39, 53, 0.97);
+  --sidebar-text-color: #ffc107;
+  --sidebar-accent-color: #ffc107;
+
+  /* Alias to your existing radius (keeps Sidebar CSS unchanged) */
+  --zporta-radius-md: var(--border-radius-md);
+
 }
 
 /* NOTE: The 'prefers-color-scheme: dark' media query has been removed 
