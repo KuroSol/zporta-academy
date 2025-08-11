@@ -1,5 +1,5 @@
 # quizzes/serializers.py
-
+import random
 from rest_framework import serializers
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
@@ -106,7 +106,49 @@ class QuestionSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'quiz': {'required': False}
         }
+    def to_representation(self, instance):
+        """
+        Shuffle options for Multiple Choice questions before sending to the client.
+        """
+        # First, get the standard serialized representation of the question
+        rep = super().to_representation(instance)
 
+        # Only shuffle for 'mcq' (Multiple Choice) question types
+        if instance.question_type == 'mcq' and instance.correct_option is not None:
+            # Group the options and their related media/alt text together
+            options = []
+            for i in range(1, 5):
+                option_text = getattr(instance, f'option{i}', None)
+                if option_text:  # Only include options that exist
+                    options.append({
+                        'text': option_text,
+                        'image': getattr(instance, f'option{i}_image').url if getattr(instance, f'option{i}_image') else None,
+                        'image_alt': getattr(instance, f'option{i}_image_alt', ''),
+                        'audio': getattr(instance, f'option{i}_audio').url if getattr(instance, f'option{i}_audio') else None,
+                        'is_correct': (i == instance.correct_option) # Track the correct answer
+                    })
+            
+            # Shuffle the collected options
+            random.shuffle(options)
+
+            # Find the new index of the correct answer after shuffling
+            new_correct_option = -1
+            for i, option in enumerate(options):
+                if option['is_correct']:
+                    new_correct_option = i + 1  # 1-based index
+                    break
+            
+            # Update the representation with the shuffled options
+            for i, option_data in enumerate(options):
+                rep[f'option{i+1}'] = option_data['text']
+                rep[f'option{i+1}_image'] = option_data['image']
+                rep[f'option{i+1}_image_alt'] = option_data['image_alt']
+                rep[f'option{i+1}_audio'] = option_data['audio']
+
+            # Update the correct_option to point to the new shuffled position
+            rep['correct_option'] = new_correct_option
+
+        return rep
     def validate(self, data):
         # This is your complete, detailed validation logic. It is fully preserved.
         question_type = data.get('question_type', getattr(self.instance, 'question_type', None))
