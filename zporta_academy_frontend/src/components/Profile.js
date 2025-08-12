@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useContext, useCallback } from "react";
+import { quizPermalinkToUrl } from "../utils/urls";
+
 import { Link, useNavigate } from "react-router-dom";
 import { 
   FaEdit, FaChevronDown, FaSpinner, FaBookOpen, 
@@ -507,7 +509,9 @@ const Profile = () => {
                                 <h3 className={styles.listItemTitle}><FaQuestionCircle className="text-[color:var(--primary-dark)] flex-shrink-0"/>{quiz.title}</h3>
                                 <p className={styles.listItemDescription}> {stripHTML(quiz.question) || "No question preview."} </p>
                           </div>
-                          <Link to={`/quizzes/${quiz.permalink}`} className={`${styles.cardButton} ${styles.listItemButton}`}> View Quiz </Link>
+                           <a href={quizPermalinkToUrl(quiz.permalink)} className={`${styles.cardButton} ${styles.listItemButton}`}>
+                             View Quiz
+                           </a>
                         </div>
                       ))}
                     </div>
