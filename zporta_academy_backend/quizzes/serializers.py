@@ -14,6 +14,8 @@ from tags.serializers import TagSerializer
 from users.models import Profile
 from django.contrib.auth.models import User
 # --- Serializers for Drag & Drop Nested Data ---
+import re, unicodedata
+SPLIT_RE = re.compile(r'[\s\u3000,，、;；]+' )  # space, full-width space, commas, etc.
 
 class BlankWordSerializer(serializers.ModelSerializer):
     class Meta:
@@ -195,7 +197,7 @@ class QuizSerializer(serializers.ModelSerializer):
     # Tagging fields
     tags = TagSerializer(many=True, read_only=True)
     tag_names = serializers.ListField(
-        child=serializers.CharField(max_length=100),
+        child=serializers.CharField(max_length=191),
         write_only=True,
         required=False
     )
@@ -218,6 +220,7 @@ class QuizSerializer(serializers.ModelSerializer):
             'id', 'title', 'content', 'lesson',
             'subject', 'course', 'quiz_type',
             'permalink', 'created_by', 'created_at', 'is_locked',
+            'status', 'published_at',
             'tags', 'tag_names', 'questions',
             'attempt_count', 'correct_count', 'wrong_count',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
@@ -238,6 +241,27 @@ class QuizSerializer(serializers.ModelSerializer):
             'course':  {'required': False, 'allow_null': True},
         }
 
+    def validate_tag_names(self, value):
+        """
+        Normalize tag_names so we always work with a Python list.
+        Accepts:
+        - list of strings
+        - single string
+        - JSON-encoded list in a string (e.g. '["#a","#b"]')
+        """
+        import json
+        if isinstance(value, str):
+            s = value.strip()
+            if s.startswith('[') and s.endswith(']'):
+                try:
+                    parsed = json.loads(s)
+                    if isinstance(parsed, list):
+                        return parsed
+                except Exception:
+                    pass
+            return [s]
+        return value
+
     def to_representation(self, instance):
         """
         Override the default representation to return the subject name
@@ -246,15 +270,29 @@ class QuizSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['subject'] = instance.subject.name if instance.subject else None
         return rep
+    
+    def _expand_tags(self, incoming):
+        flat = []
+        for item in incoming or []:
+            for t in SPLIT_RE.split(item or ''):
+                t = unicodedata.normalize('NFKC', t).strip()
+                if t.startswith('#'): t = t[1:]
+                if t: flat.append(t)
+        # de-dupe, keep order
+        seen, out = set(), []
+        for t in flat:
+            if t not in seen:
+                seen.add(t); out.append(t)
+        return out
+
 
     def _save_tags(self, quiz_instance, tag_names_list):
-        # Your tag-saving logic is preserved.
+        names = self._expand_tags(tag_names_list)  # split/normalize/de-dupe
         quiz_instance.tags.clear()
-        for name in tag_names_list:
-            name = name.strip()
-            if name:
-                tag, _ = Tag.objects.get_or_create(name=name)
-                quiz_instance.tags.add(tag)
+        for name in names:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            quiz_instance.tags.add(tag)
+
 
     def _save_dragdrop_data(self, question_instance, fill_blank_data_dict, frontend_question_temp_id):
         # Your drag-and-drop data saving logic is preserved.

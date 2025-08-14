@@ -62,6 +62,7 @@ def option4_audio_path(inst, fn): return quiz_option_media_path(inst, fn, 4, 'au
 # --- Quiz Model ---
 class Quiz(models.Model):
     TYPE_CHOICES = [('free','Free'),('premium','Premium')]
+    STATUS_CHOICES = [('draft', 'Draft'), ('published', 'Published')]
 
     title           = models.CharField(max_length=200)
     content         = models.TextField(blank=True, help_text="Main explanation or content about the quiz.")
@@ -74,6 +75,8 @@ class Quiz(models.Model):
     created_at      = models.DateTimeField(auto_now_add=True)
     quiz_type       = models.CharField(max_length=10, choices=TYPE_CHOICES, default='free')
     permalink       = models.SlugField(max_length=255, unique=True, blank=True)
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', db_index=True)
+    published_at    = models.DateTimeField(null=True, blank=True)
 
     # ✅ Add these two lines from the incoming GitHub version
     languages = models.JSONField(
@@ -162,6 +165,9 @@ class Quiz(models.Model):
         if not self.og_image:
             self.og_image = "https://www.zportaacademy.com/static/default_quiz_image.png"
  
+        # stamp first publish time
+        if self.status == 'published' and not self.published_at:
+            self.published_at = timezone.now()
 
         super().save(*args, **kwargs)
 
