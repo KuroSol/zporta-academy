@@ -57,16 +57,25 @@ const Notifications = () => {
     try {
         // Create a full URL to parse it, even if the link is relative
         const url = new URL(notification.link, window.location.origin);
+        let path = url.pathname + url.search;
+        // If it’s a quiz route but missing the trailing slash, add it
+        if (path.startsWith('/quizzes/') && !path.endsWith('/review/') && !path.endsWith('/')) {
+            path += '/';
+        }
         if (url.origin === window.location.origin) {
             // It's an internal link, use React Router to navigate
-            navigate(url.pathname + url.search);
+            navigate(path);
         } else {
             // It's an external link, open it in a new tab for security
             window.open(notification.link, '_blank', 'noopener,noreferrer');
         }
     } catch (_) {
         // If the link is relative and not a full URL (e.g., "/courses/1"), navigate directly
-        navigate(notification.link);
+        let path = notification.link || '/';
+        if (path.startsWith('/quizzes/') && !path.endsWith('/review/') && !path.endsWith('/')) {
+            path += '/';
+        }
+        navigate(path);
     }
   };
 

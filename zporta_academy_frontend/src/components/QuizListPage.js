@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import apiClient from '../api'; // <-- Added apiClient (Adjust path ../api)
 import { AuthContext } from '../context/AuthContext'; // <-- Added AuthContext (Adjust path)
 import './QuizListPage.css'; // Assuming CSS path is correct
+import { quizPermalinkToUrl } from '../utils/urls';
 
 const QuizListPage = () => {
     const [quizzes, setQuizzes] = useState([]);

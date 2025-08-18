@@ -50,8 +50,8 @@ class QuestionInline(admin.StackedInline):
 
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
-    list_display    = ('title', 'created_by', 'display_subject', 'quiz_type', 'created_at', 'question_count')
-    list_filter     = ('quiz_type', 'created_by', 'subject')
+    list_display    = ('title', 'created_by', 'display_subject', 'quiz_type', 'status', 'created_at', 'published_at', 'question_count')
+    list_filter     = ('quiz_type', 'status', 'created_by', 'subject')
     search_fields   = ('title', 'created_by__username', 'subject__name')
     raw_id_fields   = ('created_by', 'subject')
     readonly_fields = ('permalink',)         # ← make permalink read-only
@@ -65,6 +65,12 @@ class QuizAdmin(admin.ModelAdmin):
         return obj.questions.count()
     question_count.short_description = 'Questions'
 
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj and obj.status == 'published':
+            ro.append('status')  # prevent manual unpublish in admin
+        return tuple(ro)
+    
 @admin.register(QuizReport)
 class QuizReportAdmin(admin.ModelAdmin):
     list_display = ('quiz','reporter','created_at','is_resolved')

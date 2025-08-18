@@ -96,6 +96,10 @@ class RecordQuizAnswerView(APIView):
 
         question = get_object_or_404(Question, pk=question_id, quiz_id=quiz_id)
         quiz = question.quiz
+        # block answering drafts unless owner or staff
+        if quiz.status != 'published' and request.user != quiz.created_by and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
 
         # ——— Log quiz_started the very first time, including quiz_id ———
         quiz_ct = ContentType.objects.get_for_model(Quiz)
@@ -305,7 +309,8 @@ class QuizListCreateView(generics.ListCreateAPIView):
         ).annotate(
             attempt_count=Count('activity_events', filter=Q(activity_events__event_type__in=['quiz_submitted', 'quiz_completed']), distinct=True)
         ).order_by('-created_at')
-        
+        # public list: only published
+        queryset = queryset.filter(status='published')
         username = self.request.query_params.get('created_by')
         if username:
             queryset = queryset.filter(created_by__username=username)
@@ -330,6 +335,9 @@ class QuizRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         quiz = self.get_object()
+            # hide drafts from non-owners
+        if quiz.status != 'published' and not (request.user.is_authenticated and (request.user == quiz.created_by or request.user.is_staff)):
+            return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(quiz)
         data = serializer.data
         question_stats = self.get_question_stats(quiz)
@@ -364,6 +372,9 @@ class QuizSubmitView(APIView):
         It logs the 'quiz_submitted' event with summary stats.
         """
         quiz = get_object_or_404(Quiz, pk=pk)
+        # block starting drafts unless owner or staff
+        if quiz.status != 'published' and request.user != quiz.created_by and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         # force new session on explicit start
         session_id = uuid.uuid4()
         q_ct = ContentType.objects.get_for_model(Question)
@@ -391,6 +402,10 @@ class DynamicQuizView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, permalink):
         quiz = get_object_or_404(Quiz.objects.select_related('created_by', 'subject', 'course').prefetch_related('questions'), permalink=permalink)
+        # hide drafts from non-owners
+        user = request.user if request.user.is_authenticated else None
+        if quiz.status != 'published' and not (user and (user == quiz.created_by or user.is_staff)):
+            return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = QuizSerializer(quiz, context={"request": request})
         return Response({"quiz": serializer.data})
 
@@ -399,7 +414,9 @@ class QuizListByCourseView(generics.ListAPIView):
     permission_classes = [AllowAny]
     def get_queryset(self):
         course_id = self.kwargs.get("course_id")
-        return Quiz.objects.filter(course_id=course_id) if course_id else Quiz.objects.none()
+        if not course_id:
+            return Quiz.objects.none()
+        return Quiz.objects.filter(course_id=course_id, status='published')
 
 class MyQuizzesView(generics.ListAPIView):
     serializer_class = QuizSerializer

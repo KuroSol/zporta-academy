@@ -9,6 +9,8 @@ import Modal from './components/Modal/Modal';        // ← NEW
 import './DiaryList.css';
 import './DiaryManagement.css';
 
+import DiaryRecommendations from './DiaryRecommendations'; // Assuming recommendations has its own styling
+
 const DiaryList = () => {
   // ----------------------------------------------------------------
   // State

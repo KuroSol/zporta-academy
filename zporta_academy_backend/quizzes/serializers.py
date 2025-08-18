@@ -327,6 +327,12 @@ class QuizSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        # forbid unpublish by non-staff
+        prev_status = instance.status
+        new_status  = validated_data.get('status', prev_status)
+        req_user    = self.context.get('request').user if self.context.get('request') else None
+        if prev_status == 'published' and new_status == 'draft' and (not req_user or not req_user.is_staff):
+            raise serializers.ValidationError({'status': 'Cannot revert a published quiz to draft.'})
         # This method correctly combines tag and nested question updates/creation/deletion.
         questions_input_data = validated_data.pop('questions', None)
         tag_names_input = validated_data.pop('tag_names', None)

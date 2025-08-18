@@ -13,6 +13,7 @@ export default function StudyDashboard() {
   const navigate = useNavigate();
 
   const [feedQuizzes, setFeedQuizzes] = useState([]);
+  const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -33,7 +34,7 @@ export default function StudyDashboard() {
       setLoading(true);
       setError('');
       try {
-        const { data } = await apiClient.get('feed/dashboard/');
+        const { data } = await apiClient.get('/feed/dashboard/');
         setFeedQuizzes(data);
       } catch (e) {
         console.error(e);
@@ -50,10 +51,22 @@ export default function StudyDashboard() {
       try {
         const [subs, langs] = await Promise.all([
           apiClient.get('/subjects/'),
-          apiClient.get('/feed/preferences/languages/')
+          apiClient.get('/feed/preferences/languages/'),
         ]);
-        setSubjectOptions(subs.data.map(s => ({ value: s.id, label: s.name })));
-        setLanguageOptions(langs.data.map(l => ({ value: l.id, label: l.name })));
+        const subjectOpts  = subs.data.map(s => ({ value: s.id, label: s.name }));
+        const languageOpts = langs.data.map(l => ({ value: l.id, label: l.name }));
+        setSubjectOptions(subjectOpts);
+        setLanguageOptions(languageOpts);
+
+        const prefRes = await apiClient.get('/users/preferences/');
+        setPrefs(prefRes.data);
+        const subjIds = prefRes.data?.interested_subjects || [];
+        const langsSp = (prefRes.data?.languages_spoken || []).map(x => String(x).toLowerCase());
+        
+        setSelection({
+          subject:  subjectOpts.find(o => o.value === subjIds[0]) || null,
+          language: languageOpts.find(o => o.value === (langsSp[0] || '').toLowerCase()) || null,
+        });
       } catch (err) {
         console.error('Failed to load preference options', err);
       }
@@ -70,12 +83,16 @@ export default function StudyDashboard() {
         '/users/preferences/',
         {
           interested_subjects: [selection.subject.value],
-          languages_spoken:     [selection.language.value]
+          languages_spoken:     [String(selection.language.value).toLowerCase()]
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // refresh prefs and feed
+      const prefRes = await apiClient.get('/users/preferences/');
+      setPrefs(prefRes.data);
+
       // reload feed once prefs are set
-      const { data } = await apiClient.get('feed/dashboard/');
+      const { data } = await apiClient.get('/feed/dashboard/');
       setFeedQuizzes(data);
     } catch (err) {
       console.error('Failed to save preferences', err);
@@ -84,8 +101,15 @@ export default function StudyDashboard() {
     }
   };
 
-  // show empty-state form when no quizzes
-  if (!loading && feedQuizzes.length === 0) {
+    // compute true “no preferences”
+  const noPrefs =
+    !prefs ||
+    ((prefs.interested_subjects || []).length === 0 &&
+     (prefs.languages_spoken   || []).length === 0);
+
+
+  // show onboarding form only when prefs are truly empty
+  if (!loading && noPrefs) {
     return (
       <div className={styles.emptyState}>
         <h2>Welcome! Let’s personalize your study feed.</h2>
@@ -123,7 +147,15 @@ export default function StudyDashboard() {
       </div>
     );
   }
-
+  // graceful empty feed when prefs exist but no matches
+  if (!loading && !noPrefs && feedQuizzes.length === 0) {
+    return (
+      <div className={styles.centeredMessage}>
+        <FileQuestion />
+        <p>No quizzes match your preferences yet. Try another subject or language.</p>
+      </div>
+    );
+  }
   if (loading) {
     return (
       <div className={styles.centeredMessage}>

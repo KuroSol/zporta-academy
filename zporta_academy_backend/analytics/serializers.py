@@ -137,23 +137,31 @@ class MemoryStatSerializer(serializers.ModelSerializer):
     def get_learnable_item_info(self, obj):
         item_display_string = "N/A"
         item_title = None
+        permalink = None
         
         # obj.content_type should be a ContentType object here for .model to work
         item_class_name = obj.content_type.model if obj.content_type and isinstance(obj.content_type, ContentType) else "Unknown"
 
         # obj.learnable_item should be pre_fetched by the view if possible
         # This is the actual related object (e.g., a Question instance)
-        actual_item = obj.learnable_item 
-        if actual_item: 
-            instance = actual_item # Use the resolved GFK object
-            if hasattr(instance, 'title') and instance.title:
+        actual_item = obj.learnable_item
+        if actual_item:
+            instance = actual_item  # resolved GFK object
+            # Quiz-like objects with a title
+            if hasattr(instance, "title") and instance.title and not hasattr(instance, "question_text"):
                 item_title = instance.title
                 item_display_string = f"{item_class_name.capitalize()}: {item_title}"
-            elif hasattr(instance, 'question_text') and instance.question_text: 
-                item_title = str(instance.question_text)[:100] + "..." if len(str(instance.question_text)) > 100 else str(instance.question_text)
+                permalink = getattr(instance, "permalink", None)
+            # Question-like objects
+            elif hasattr(instance, "question_text") and instance.question_text:
+                raw = str(instance.question_text)
+                item_title = (raw[:100] + "...") if len(raw) > 100 else raw
                 item_display_string = f"Question: {item_title}"
+                quiz_obj = getattr(instance, "quiz", None)
+                permalink = getattr(quiz_obj, "permalink", None)
             else:
                 item_display_string = f"{item_class_name.capitalize()} ID: {obj.object_id}"
+
         elif obj.content_type_id and obj.object_id: # Fallback if GFK object not loaded
              # Try to get model name from content_type_id if content_type object isn't loaded
              try:
@@ -168,7 +176,7 @@ class MemoryStatSerializer(serializers.ModelSerializer):
             "id": obj.object_id,
             "display_text": item_display_string,
             "title": item_title,
-            "permalink": instance.permalink  # <-- add this line
+            "permalink": permalink
         }
 # --- Serializer for Quiz-Specific Retention Insights ---
 class QuizRetentionInsightSerializer(serializers.Serializer):

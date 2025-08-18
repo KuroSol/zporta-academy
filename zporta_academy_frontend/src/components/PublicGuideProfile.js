@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext"; // Assuming correct path
 import apiClient from '../api'; // Assuming correct path
 import styles from "./PublicGuideProfile.module.css"; // Ensure this path is correct
 import { FaBookReader, FaAward } from "react-icons/fa";
+import { quizPermalinkToUrl } from "../utils/urls"; 
 
 const INITIAL_DISPLAY_DEFAULT_TAB = 6; // Max items for the very first display of the default tab
 const SUBSEQUENT_LOAD_BATCH_SIZE = { // Number of items to load on each scroll and for initial display of non-default tabs
@@ -407,7 +408,7 @@ const PublicGuideProfile = () => {
                       <p>
                         {quiz.question ? stripHTML(quiz.question).substring(0, 150) + "..." : "No question preview."}
                       </p>
-                      <Link to={`/quizzes/${quiz.permalink}`} className={styles.detailsBtn}>
+                      <Link to={quizPermalinkToUrl(quiz.permalink)} className={styles.detailsBtn}>
                         View Details
                       </Link>
                     </li>

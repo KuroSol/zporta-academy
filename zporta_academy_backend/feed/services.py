@@ -9,7 +9,6 @@ from analytics.models import MemoryStat, FeedExposure, QuizAttempt
 from quizzes.serializers import QuizSerializer
 from users.models import UserPreference
 
-
 def log_quiz_feed_exposure(user, quiz, source):
     """Record that we showed this quiz to the user in this feed."""
     FeedExposure.objects.create(user=user, quiz=quiz, source=source)
@@ -25,9 +24,13 @@ def _base_pool(user):
     Core pool: only quizzes whose subject ∈ user.interested_subjects.
     """
     prefs = _get_user_prefs(user)
-    if not prefs or not prefs.interested_subjects.exists():
-        return Quiz.objects.none()
-    return Quiz.objects.filter(subject__in=prefs.interested_subjects.all())
+    qs = Quiz.objects.filter(status='published')
+    if not prefs:
+        return qs.none()
+    if prefs.interested_subjects.exists():
+        qs = qs.filter(subject__in=prefs.interested_subjects.all())
+
+    return qs
 
 
 def _language_bucket_selection(pool_qs, limit, prefs):
@@ -91,17 +94,23 @@ def get_explore_quizzes(user, limit=5):
     """
     prefs = _get_user_prefs(user)
     pool  = _base_pool(user)
-    if not prefs or not prefs.languages_spoken:
+    if not prefs:
         return []
 
     # 1) Filter by language too
     filtered = Quiz.objects.filter(
         id__in=[q.id for q in pool]
     )
-    filtered = filtered.filter(languages__contains=[prefs.languages_spoken[0]])
+    primary = (prefs.languages_spoken[0] if prefs.languages_spoken else '') or ''
+    primary = primary.lower()
+    filtered = filtered.filter(languages__contains=[primary]) if primary else filtered
+
     # fallback English if no primary-language items available
     if filtered.count() < limit:
         filtered = filtered | pool.filter(languages__contains=["en"])
+    # ultimate fallback: if still empty, take newest subject-only pool
+    if filtered.count() == 0:
+        filtered = pool
 
     # 2) Order by newest
     newest = filtered.order_by('-created_at')[:limit]
@@ -128,11 +137,14 @@ def get_personalized_quizzes(user, limit=50):
     """
     prefs = _get_user_prefs(user)
     pool  = _base_pool(user)
-    if not prefs or not prefs.languages_spoken:
+    if not prefs:
         return []
 
     # 1) Language bucket selection
-    lang_selected = _language_bucket_selection(pool, limit, prefs)
+    if prefs.languages_spoken:
+        lang_selected = _language_bucket_selection(pool, limit, prefs)
+    else:
+        lang_selected = list(pool.order_by('-created_at')[:limit])
     # 2) Location reorder
     final_list = _location_reorder(lang_selected, prefs)
 
@@ -212,6 +224,8 @@ def generate_user_feed(user, limit=55):
 
     def add(items):
         for itm in items:
+            if 'status' in itm and itm['status'] != 'published':
+                continue
             if itm["id"] not in seen_ids and itm["id"] not in recently_tried:
                 final_feed.append(itm)
                 seen_ids.add(itm["id"])

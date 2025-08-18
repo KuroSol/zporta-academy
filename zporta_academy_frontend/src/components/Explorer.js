@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api';
+import { quizPermalinkToUrl } from '../utils/urls';
 import { AuthContext } from '../context/AuthContext';
 import QuizCard from './QuizCard';
 import styles from './Explorer.module.css';
@@ -26,14 +27,17 @@ const ItemCard = ({ item, type }) => {
   if (!item || !item.id) return null;
 
   const defaultPlaceholder = 'https://placehold.co/600x400/f5f5f7/c7c7cc?text=No+Image';
-  let linkUrl = `/${type}/${item.permalink || item.username || item.id}`;
+  let linkUrl;
+  if (type === 'quizzes') {
+    linkUrl = quizPermalinkToUrl(item.permalink);
+  } else if (type === 'guides') {
+    linkUrl = `/guide/${item.username}`;
+  } else {
+    linkUrl = `/${type}/${item.permalink || item.username || item.id}/`;
+  }
   let imageUrl = item.og_image_url || item.cover_image || item.profile_image_url || defaultPlaceholder;
   let title = item.title || item.username || 'Untitled';
   let creatorName = item.created_by?.username || null; // Access nested username
-
-  if (type === 'guides') {
-      linkUrl = `/guide/${item.username}`;
-  }
 
   return (
     <div className={styles.gridItem}>

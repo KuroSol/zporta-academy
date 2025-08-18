@@ -28,7 +28,6 @@ from .utils import predict_overall_quiz_retention_days, log_event
 from rest_framework.views import APIView
 from .serializers import QuizAttemptOverviewSerializer
 from .models import QuizAttempt
-from feed.models import UserPreference as FeedPreference
 from subjects.models import Subject
 
 from subjects.serializers import SubjectSerializer
@@ -63,13 +62,17 @@ class QuizDetailedAnalyticsView(views.APIView):
             quiz_id = int(quiz_id)
             quiz_instance = QuizzesQuiz.objects.get(pk=quiz_id)
         except QuizzesQuiz.DoesNotExist:
-            return Response({"error": f"Quiz with ID {quiz_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": f"Quiz with ID {quiz_id} not found."}, status=status.HTTP_404_NOT_FOUND)        
         except ValueError:
             return Response({"error": f"Invalid Quiz ID format: {quiz_id}."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Error fetching quiz for detailed analytics (ID: {quiz_id}): {e}", exc_info=True)
             return Response({"error": "Server error fetching quiz details."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        else:
+            # block draft analytics from public
+            if getattr(quiz_instance, "status", "published") != "published":
+                return Response({"error": "Quiz not public."}, status=status.HTTP_404_NOT_FOUND)
         quiz_content_type = ContentType.objects.get_for_model(QuizzesQuiz)
         question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
         
@@ -350,11 +353,6 @@ class QuizAttemptOverviewView(APIView):
 
         quizzes_fixed = 0
         never_fixed = 0
-        for answers in quiz_attempt_map.values():
-            if True in answers and False in answers and answers[0] == False:
-                quizzes_fixed += 1
-            elif True not in answers and False in answers:
-                never_fixed += 1
 
         for answers in quiz_attempt_map.values():
             # fixed: first try wrong (False), but later at least one True
@@ -445,4 +443,4 @@ class QuizListAPIView(generics.ListAPIView):
             # fallback: return nothing
             return Quiz.objects.none()
 
-        return Quiz.objects.filter(pk__in=qids)
+        return Quiz.objects.filter(pk__in=qids, status='published')

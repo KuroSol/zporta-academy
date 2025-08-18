@@ -3,6 +3,8 @@ import DiaryEditor from './DiaryEditor'; // Assuming editor has its own styling
 import DiaryList from './DiaryList'; // Assuming list has its own styling
 import DiaryMentions from './DiaryMentions'; // Assuming mentions has its own styling
 import './DiaryManagement.css'; // Import the CSS file for this page
+import DiaryRecommendations from './DiaryRecommendations'; // Assuming recommendations has its own styling
+
 
 const DiaryManagement = () => {
     const [activeTab, setActiveTab] = useState('editor');
@@ -51,7 +53,12 @@ const DiaryManagement = () => {
             </header>
             {/* Main content area where components are rendered */}
             <main className="diary-content">
-                {activeTab === 'editor' && <DiaryEditor onNoteCreated={handleNoteCreated} />}
+                  {activeTab === 'editor' && (
+                    <>
+                    <DiaryEditor onNoteCreated={handleNoteCreated} />
+                    <DiaryRecommendations title="Recommended right now" limit={12} />
+                    </>
+                )}
                 {activeTab === 'list' && <DiaryList key={refreshKey} />}
                 {activeTab === 'mentions' && <DiaryMentions />}
             </main>

@@ -427,8 +427,8 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const handleSaveContent = useCallback(html => setContent(html), []);
 
   // --- Form Submission Handler ---
-  const handleSubmit = async e => {
-    e.preventDefault();
+  const handleSubmit = async (e, desiredStatus = 'draft') => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     setSubmitting(true);
     setMessage(''); // Clear previous messages
 
@@ -503,6 +503,8 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
     formData.append('title', title);
     formData.append('quiz_type', quizType);
     formData.append('content', content);
+    // publish/draft flag
+    formData.append('status', desiredStatus === 'published' ? 'published' : 'draft');
     if (subjectOption && subjectOption.value) {
       formData.append('subject', subjectOption.value);
     }
@@ -912,7 +914,7 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
         )}
 
         {/* Form Element */}
-        <form onSubmit={handleSubmit} className={styles.quizForm} noValidate>
+        <form onSubmit={(e) => handleSubmit(e, 'draft')} className={styles.quizForm} noValidate>
           {/* --- Step 1: Quiz Details --- */}
           {currentStep === 1 && (
             <div className={`${styles.step} ${styles.step1}`}>
@@ -1029,8 +1031,27 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
             <div style={{ flexGrow: 1 }}></div> {/* Spacer */}
             {/* Next Button */}
             {currentStep < 3 && <button type="button" onClick={handleNext} className={`${styles.btn} ${styles.btnNext}`} disabled={submitting}>Next</button>}
-            {/* Submit/Save Button */}
-            {currentStep === 3 && <button type="submit" className={`${styles.btn} ${styles.btnSubmit}`} disabled={submitting}>{submitting ? (quizId ? 'Saving Changes...' : 'Creating Quiz...') : (quizId ? 'Save Changes' : 'Create Quiz')}</button>}
+            {/* Final actions: Draft or Publish */}
+            {currentStep === 3 && (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnSecondary} ${styles.btnDraft}`}
+                  disabled={submitting}
+                  onClick={(e)=>handleSubmit(e, 'draft')}
+                >
+                  {submitting ? 'Saving…' : (quizId ? 'Save as Draft' : 'Create as Draft')}
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnSubmit} ${styles.btnPublish}`}
+                  disabled={submitting}
+                  onClick={(e)=>handleSubmit(e, 'published')}
+                >
+                  {submitting ? 'Publishing…' : 'Publish'}
+                </button>
+              </>
+            )}
             {/* Cancel Button (only in modal mode) */}
             {isModalMode && <button type="button" onClick={onClose} className={`${styles.btn} ${styles.btnSecondary}`} disabled={submitting}>Cancel</button>}
           </div>
