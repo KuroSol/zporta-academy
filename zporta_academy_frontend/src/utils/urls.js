@@ -19,8 +19,8 @@ if (process.env.NODE_ENV === 'development') {
 // Accepts "username/subject/date/slug"
 export const quizPermalinkToUrl = (permalink, opts = {}) => {
   const path = String(permalink || '').replace(/^\/+|\/+$/g, '');
-  const suffix = opts.review ? '/review/' : '/';
-  return `${QUIZ_ORIGIN}/quizzes/${path}${suffix}`;
+  const suffix = opts.review ? '' : '';
+  return `${QUIZ_ORIGIN}/quizzes/${path}`;
 };
 
 // Optional builder
