@@ -408,9 +408,12 @@ const PublicGuideProfile = () => {
                       <p>
                         {quiz.question ? stripHTML(quiz.question).substring(0, 150) + "..." : "No question preview."}
                       </p>
-                      <Link to={quizPermalinkToUrl(quiz.permalink)} className={styles.detailsBtn}>
+                      <button
+                        onClick={() => window.location.assign(quizPermalinkToUrl(quiz.permalink))}
+                        className={styles.detailsBtn}
+                      >
                         View Details
-                      </Link>
+                      </button>
                     </li>
                   )
                 ))}

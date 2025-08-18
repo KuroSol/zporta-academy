@@ -55,20 +55,11 @@ const Notifications = () => {
 
     // This logic correctly handles navigation for both internal and external links
     try {
-        // Create a full URL to parse it, even if the link is relative
-        const url = new URL(notification.link, window.location.origin);
-        let path = url.pathname + url.search;
-        // If it’s a quiz route but missing the trailing slash, add it
-        if (path.startsWith('/quizzes/') && !path.endsWith('/review/') && !path.endsWith('/')) {
-            path += '/';
-        }
-        if (url.origin === window.location.origin) {
-            // It's an internal link, use React Router to navigate
-            navigate(path);
-        } else {
-            // It's an external link, open it in a new tab for security
-            window.open(notification.link, '_blank', 'noopener,noreferrer');
-        }
+      // Always do a hard redirect so /quizzes/... goes to Next.js
+      const href = notification.link.startsWith('http')
+        ? notification.link
+        : notification.link; // keep relative paths intact
+      window.location.assign(href);
     } catch (_) {
         // If the link is relative and not a full URL (e.g., "/courses/1"), navigate directly
         let path = notification.link || '/';
