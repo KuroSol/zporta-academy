@@ -12,6 +12,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.conf import settings 
 from django.utils import timezone
 # Local App Imports
 from users.models import User
@@ -436,7 +437,7 @@ class ReportQuizView(APIView):
         creator = quiz.created_by
         title = f"Issue reported on \"{quiz.title}\""
         msg = f"{request.user.username} reported: {report.message[:100]}"
-        link = reverse('dynamic_quiz', args=[quiz.permalink])
+        link = f"{settings.QUIZ_ORIGIN}/quizzes/{quiz.permalink}/"
         Notification.objects.create(user=creator, title=title, message=msg, link=link)
         send_push_to_user_devices(user=creator, title=title, body=msg, link=link, extra_data={'type': 'quiz_report', 'report_id': report.id})
         return Response({'detail': 'Report submitted.'}, status=status.HTTP_201_CREATED)
@@ -455,7 +456,7 @@ class ShareQuizView(APIView):
         share = QuizShare.objects.create(quiz=quiz, from_user=request.user, to_user=to_user, message=serializer.validated_data.get('message', ''))
         title = f"{request.user.username} shared a quiz with you!"
         msg = f"{request.user.username} shared \"{quiz.title}\"."
-        link = reverse('dynamic_quiz', args=[quiz.permalink])
+        link = f"{settings.QUIZ_ORIGIN}/quizzes/{quiz.permalink}/"
         Notification.objects.create(user=to_user, title=title, message=msg, link=link)
         send_push_to_user_devices(user=to_user, title=title, body=msg, link=link, extra_data={'type': 'quiz_share', 'share_id': share.id})
         return Response({'detail': 'Quiz shared successfully.'}, status=status.HTTP_200_OK)
