@@ -32,15 +32,20 @@ class QuizSitemap(Sitemap):
         return Quiz.objects.filter(quiz_type="free").order_by("id")
 
     def location(self, obj):
-        # Build the front-end route
-        date = (
-            timezone.localtime(obj.created_at).date().isoformat()
-            if getattr(obj, "created_at", None)
-            else timezone.now().date().isoformat()
-        )
-        subject_name = obj.subject.name if getattr(obj, "subject", None) else "no-subject"
+        # If permalink already contains a full path like
+        # "alex/english/2025-05-04/quiz-slug", use it directly.
+        p = (getattr(obj, "permalink", "") or "").strip("/")
+        if "/" in p:
+            return f"/quizzes/{p}/"
+
+        # Otherwise compose from parts.
+        author = slugify(getattr(getattr(obj, "created_by", None), "username", "") or "unknown")
+        subject_name = getattr(getattr(obj, "subject", None), "name", "") or "no-subject"
         subject_slug = slugify(subject_name)
-        return f"/quizzes/{obj.created_by.username}/{subject_slug}/{date}/{obj.permalink}/"
+        date_src = getattr(obj, "published_at", None) or getattr(obj, "created_at", None) or timezone.now()
+        date_str = timezone.localtime(date_src).date().isoformat()
+        slug = p or slugify(getattr(obj, "title", "") or str(obj.pk))
+        return f"/quizzes/{author}/{subject_slug}/{date_str}/{slug}/"
 
     def lastmod(self, obj):
         return _lastmod(obj)
