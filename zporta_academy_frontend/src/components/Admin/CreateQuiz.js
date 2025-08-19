@@ -1,12 +1,12 @@
 // src/components/Admin/CreateQuiz.js
-import React, { useState, useEffect, useContext, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../../api'; // Ensure this path is correct
 import { AuthContext } from '../../context/AuthContext'; // Ensure this path is correct
 import CustomEditor from '../Editor/CustomEditor'; // Assuming this component exists
 import CreateSubjectSelect from './CreateSubjectSelect'; // Assuming this component exists
 import styles from './CreateQuiz.module.css';
-import { Plus, Trash2, HelpCircle } from 'lucide-react'; // Added HelpCircle
+import { Plus, Trash2, HelpCircle, ChevronDown, CheckCircle } from 'lucide-react'; // Added ChevronDown, CheckCircle
 
 // Helper component for managing lists (e.g., words for sort, items for drag&drop)
 const EditableListItem = ({
@@ -108,6 +108,12 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
     question_image_url: null, // URL of existing image
     question_audio_url: null, // URL of existing audio
     allow_speech_to_text: false,
+    // [UI-ONLY] State for collapsible sections within a question
+    ui_collapsed: {
+      optionalOptions: true,
+      hints: true,
+      media: true,
+    },
 
     // Specific fields for 'dragdrop' type (kept for simpler state management initially)
     drag_sentence: '', // Sentence with '*' placeholders
@@ -144,11 +150,77 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const [message, setMessage] = useState(''); // Feedback message (error or success)
   const [messageType, setMessageType] = useState('error');
   const [submitting, setSubmitting] = useState(false); // Loading state during submission
+  const [openIndex, setOpenIndex] = useState(0); // [UI-ONLY] Controls which question accordion is open
+  const questionRefs = useRef([]); // [UI-ONLY] For scrolling to questions
+
+  // [UI-ONLY] Scroll to the active question when it opens
+  useEffect(() => {
+    if (openIndex !== -1 && questionRefs.current[openIndex]) {
+      setTimeout(() => { // Timeout ensures the element is visible before scroll
+        questionRefs.current[openIndex].scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        // Also focus the header button for accessibility
+        const headerButton = questionRefs.current[openIndex].querySelector(`.${styles.accordionHeader}`);
+        if (headerButton) headerButton.focus();
+      }, 100); // A small delay can help with layout shifts
+    }
+  }, [openIndex]);
+
+  // [UI-ONLY] Basic validation to check if a question has minimum required info before switching
+  const validateQuestionForSwitching = (q, index) => {
+    if (!q) return { isValid: true }; // No question to validate
+    
+    const qNum = index + 1;
+    if (!q.question_text?.trim()) {
+      return { isValid: false, message: `Please add the main text for Question ${qNum} before proceeding.` };
+    }
+
+    if (['mcq', 'multi'].includes(q.question_type)) {
+      if (!q.option1?.trim() || !q.option2?.trim()) {
+        return { isValid: false, message: `Please add at least Option 1 and Option 2 for Question ${qNum}.` };
+      }
+    }
+    return { isValid: true };
+  };
+
+  // [UI-ONLY] Handler to toggle accordion items
+  const handleQuestionToggle = (index) => {
+    const currentlyOpenIndex = openIndex;
+    // Only validate if switching away from an open question to a different one
+    if (currentlyOpenIndex !== -1 && currentlyOpenIndex !== index) {
+      const validation = validateQuestionForSwitching(questions[currentlyOpenIndex], currentlyOpenIndex);
+      if (!validation.isValid) {
+        setMessage(validation.message);
+        setMessageType('error');
+        // Do not change the open index, keeping the user on the incomplete question
+        return;
+      }
+    }
+    // If validation passes or is not needed (e.g., closing the current item)
+    setOpenIndex(prevIndex => (prevIndex === index ? -1 : index));
+  };
+
 
   // --- Question Management Functions ---
   const addNewQuestion = () => {
+    const lastQuestionIndex = questions.length - 1;
+    if (lastQuestionIndex >= 0) {
+      const validation = validateQuestionForSwitching(questions[lastQuestionIndex], lastQuestionIndex);
+      if (!validation.isValid) {
+        setMessage(validation.message);
+        setMessageType('error');
+        setOpenIndex(lastQuestionIndex); // Keep the focus on the incomplete question
+        return; // Block adding a new question
+      }
+    }
+
     // Add a new question with a unique temp_id
-    setQuestions(qs => [...qs, { ...initialQuestionState, temp_id: Date.now() + `_qs${qs.length + 1}` + Math.random() }]);
+    const newQuestion = { ...initialQuestionState, temp_id: Date.now() + `_qs${questions.length + 1}` + Math.random() };
+    setQuestions(qs => [...qs, newQuestion]);
+    // [UI-ONLY] Automatically open the new question
+    setOpenIndex(questions.length);
   };
 
   const removeQuestion = index => {
@@ -158,7 +230,13 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       setMessageType('error');
       return;
     }
-    setQuestions(qs => qs.filter((_, idx) => idx !== index));
+    setQuestions(qs => {
+      const newQs = qs.filter((_, idx) => idx !== index);
+      // [UI-ONLY] Adjust open index if needed
+      if (openIndex === index) setOpenIndex(Math.max(0, index - 1));
+      else if (openIndex > index) setOpenIndex(openIndex - 1);
+      return newQs;
+    });
   };
 
   // Generic function to update any field of a specific question
@@ -171,18 +249,34 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
         if (field === 'question_type') {
             updatedQ.correct_options = []; // Reset for multi, sort, dragdrop
             updatedQ.correct_option = 1;  // Reset for mcq
+            if (value === 'mcq') updatedQ.correct_option = 1;
             updatedQ.correct_answer = ''; // Reset for short
             updatedQ.drag_sentence = '';  // Reset dragdrop specific input fields
             updatedQ.drag_words = '';
             updatedQ.question_data = { items: [], dropZones: [] }; // Reset internal data structure
         }
-
+        // If author switches back to MCQ, enforce 1
+        if (updatedQ.question_type === 'mcq') updatedQ.correct_option = 1;
+ 
         // --- Update dragdrop config if relevant fields change ---
         // This recalculates items, dropZones, and resets/preserves the solution structure
         if (updatedQ.question_type === 'dragdrop' && (field === 'drag_sentence' || field === 'drag_words' || field === 'question_type')) {
             return handleDragDropConfigChange(updatedQ);
         }
         return updatedQ;
+      }
+      return q;
+    }));
+  };
+
+  // [UI-ONLY] Toggles collapsible sections within a question (hints, media, etc.)
+  const toggleQuestionUiSection = (qIndex, sectionKey) => {
+    setQuestions(qs => qs.map((q, idx) => {
+      if (idx === qIndex) {
+        return {
+          ...q,
+          ui_collapsed: { ...q.ui_collapsed, [sectionKey]: !q.ui_collapsed[sectionKey] }
+        };
       }
       return q;
     }));
@@ -336,6 +430,12 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
             question_image_url: q.question_image || null, // URLs for existing media
             question_audio_url: q.question_audio || null,
             allow_speech_to_text: q.allow_speech_to_text || false,
+            // [UI-ONLY] Keep sections collapsed by default on load
+            ui_collapsed: {
+              optionalOptions: !(q.option3 || q.option4), // Open if they have content
+              hints: !(q.hint1 || q.hint2),
+              media: true, // Always start media collapsed
+            },
             option1: q.option1 || '', option1_image_url: q.option1_image || null, option1_audio_url: q.option1_audio || null,
             option2: q.option2 || '', option2_image_url: q.option2_image || null, option2_audio_url: q.option2_audio || null,
             option3: q.option3 || '', option3_image_url: q.option3_image || null, option3_audio_url: q.option3_audio || null,
@@ -452,48 +552,53 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
         const q = questions[i];
         const qNum = i + 1;
         if (!q.question_text?.trim()) {
-            setMessage(`Text for Question ${qNum} is required.`); setCurrentStep(2); setSubmitting(false); return;
+            setMessage(`Text for Question ${qNum} is required.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
         }
         // MCQ/Multi specific validation
         if (['mcq', 'multi'].includes(q.question_type)) {
             if (!q.option1?.trim() || !q.option2?.trim()) {
-                setMessage(`Option 1 and Option 2 text for Question ${qNum} (MCQ/Multi) are required.`); setCurrentStep(2); setSubmitting(false); return;
+                setMessage(`Option 1 and Option 2 text for Question ${qNum} (MCQ/Multi) are required.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
-            if (q.question_type === 'mcq' && (!q.correct_option || ![1,2,3,4].includes(q.correct_option) || !q[`option${q.correct_option}`]?.trim())) {
-                 setMessage(`A valid correct option (1-4) with text must be selected for MCQ Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
-            }
-            if (q.question_type === 'multi' && (!Array.isArray(q.correct_options) || q.correct_options.length === 0 || q.correct_options.some(opt => !q[`option${opt}`]?.trim()))) {
-                setMessage(`At least one valid correct option with text must be selected for Multi-Select Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+          // MCQ: first answer is always correct. No selector.
+          if (q.question_type === 'mcq' && !q.option1?.trim()) {
+            setMessage('Option 1 must contain the correct answer for MCQ Question ' + qNum + '.'); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
+          }
+          if (q.question_type === 'multi' && (
+              !Array.isArray(q.correct_options) ||
+              q.correct_options.length === 0 ||
+              q.correct_options.some((opt) => !((q['option' + opt] || '').trim()))
+          )) {
+            setMessage('At least one valid correct option with text must be selected for Multi-Select Question ' + qNum + '.'); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return; 
             }
         }
         // Short answer validation
         if (q.question_type === 'short' && !q.correct_answer?.trim() && !q.allow_speech_to_text) {
-             setMessage(`Correct answer for short answer Question ${qNum} is required if speech input is not allowed.`); setCurrentStep(2); setSubmitting(false); return;
+             setMessage(`Correct answer for short answer Question ${qNum} is required if speech input is not allowed.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
         }
         // Word sort validation
         if (q.question_type === 'sort') {
             const items = q.question_data?.items || [];
             if (items.length < 2 || items.some(item => !item?.trim())) {
-                setMessage(`At least two non-empty words are required for word sort Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+                setMessage(`At least two non-empty words are required for word sort Question ${qNum}.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
              // Ensure correct_options (the solution) exists and matches items length
             if (!Array.isArray(q.correct_options) || q.correct_options.length !== items.length) {
-                setMessage(`Correct sort order definition is missing or incomplete for Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+                setMessage(`Correct sort order definition is missing or incomplete for Question ${qNum}.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
         }
         // Drag & Drop validation
         if (q.question_type === 'dragdrop') {
             if (!q.drag_sentence?.trim() || !q.drag_sentence.includes('*')) {
-                setMessage(`Sentence with at least one blank (*) is required for drag & drop Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+                setMessage(`Sentence with at least one blank (*) is required for drag & drop Question ${qNum}.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
             const words = (q.question_data?.items || []);
             if (words.length === 0) {
-                setMessage(`At least one draggable word is required for drag & drop Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+                setMessage(`At least one draggable word is required for drag & drop Question ${qNum}.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
             const blankCount = (q.drag_sentence.match(/\*/g) || []).length;
             const solutions = q.correct_options || [];
             if (solutions.length !== blankCount || solutions.some(sol => !sol?.itemId)) { // Check if itemId is present and non-empty
-                 setMessage(`Each blank must have a correct word selected for drag & drop Question ${qNum}.`); setCurrentStep(2); setSubmitting(false); return;
+                 setMessage(`Each blank must have a correct word selected for drag & drop Question ${qNum}.`); setCurrentStep(2); setOpenIndex(i); setSubmitting(false); return;
             }
         }
     }
@@ -554,7 +659,10 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
 
         // Append correct answers
         if (q.question_type === 'mcq') {
-          formData.append(`${prefix}correct_option`, q.correct_option);
+          // Force first option as correct
+          formData.append(`${prefix}correct_option`, 1);
+          // keep state consistent
+          q.correct_option = 1;
         } else { // multi
           // Ensure it's an array of numbers [1-4]
           const validCorrectOptions = (q.correct_options || []).map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 4);
@@ -662,54 +770,67 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const renderQuestionSpecificFields = (q, i) => {
     // Helper to render inputs for an option (MCQ/Multi)
     const renderOptionInputs = (optNum) => (
-        <div key={optNum} className={styles.optionGroup}>
-            <label className={styles.inputLabel} htmlFor={`q-${i}-opt${optNum}-text`}>
-            Option {optNum}: {optNum <= 2 ? <span className={styles.required}>*</span> : '(Optional)'}
-            </label>
-            <div className={styles.fileInputGroup}> {/* Group text and media */}
-                <input
-                    id={`q-${i}-opt${optNum}-text`}
-                    className={styles.inputField}
-                    placeholder={`Text for Option ${optNum}`}
-                    value={q[`option${optNum}`] || ''}
-                    onChange={e => updateQuestionField(i, `option${optNum}`, e.target.value)}
-                    required={optNum <= 2 && ['mcq', 'multi'].includes(q.question_type)} // Required for 1 & 2
-                    disabled={submitting}
-                />
-                {/* Render media uploads for this option */}
-                <RenderMediaUploads
-                    q={q}
-                    questionIndex={i}
-                    baseName={`option${optNum}`}
-                    onUpdate={updateQuestionField}
-                    submittingStatus={submitting}
-                />
-            </div>
+      <div key={optNum} className={styles.optionGroup}>
+        {/* [UI-ONLY] Special label for MCQ correct answer */}
+        {q.question_type === 'mcq' && optNum === 1 && (
+          <p className={styles.inlineKicker}>Correct Answer</p>
+        )}
+        <label className={styles.inputLabel} htmlFor={`q-${i}-opt${optNum}-text`}>
+          Option {optNum}: {optNum <= 2 ? <span className={styles.required}>*</span> : ''}
+        </label>
+        <div className={styles.fileInputGroup}> {/* Group text and media */}
+          <input
+            id={`q-${i}-opt${optNum}-text`}
+            className={styles.inputField}
+            placeholder={`Text for Option ${optNum}`}
+            value={q[`option${optNum}`] || ''}
+            onChange={e => updateQuestionField(i, `option${optNum}`, e.target.value)}
+            required={optNum <= 2 && ['mcq', 'multi'].includes(q.question_type)} // Required for 1 & 2
+            disabled={submitting}
+          />
+          {/* Render media uploads for this option */}
+          <RenderMediaUploads
+            q={q}
+            questionIndex={i}
+            baseName={`option${optNum}`}
+            onUpdate={updateQuestionField}
+            submittingStatus={submitting}
+          />
         </div>
+      </div>
     );
 
     // --- Switch based on question type ---
     switch (q.question_type) {
       case 'mcq': // Multiple Choice (Single Correct)
       case 'multi': // Multiple Select (Multiple Correct)
+        const showOptionalOptions = !q.ui_collapsed.optionalOptions || q.option3 || q.option4;
         return (
           <>
-            {/* Render inputs for options 1-4 */}
-            {[1, 2, 3, 4].map(optNum => renderOptionInputs(optNum))}
+            {/* Render required options 1 & 2 */}
+            {renderOptionInputs(1)}
+            {renderOptionInputs(2)}
+            
+            {/* [UI-ONLY] Conditionally render optional options 3 & 4 */}
+            {showOptionalOptions ? (
+              <>
+                {renderOptionInputs(3)}
+                {renderOptionInputs(4)}
+              </>
+            ) : (
+              <button type="button" onClick={() => toggleQuestionUiSection(i, 'optionalOptions')} className={styles.miniToggle}>
+                <Plus size={16} /> Add wrong options
+              </button>
+            )}
+
             {/* Render correct answer selection */}
             <div className={styles.formGroup}>
               <label className={styles.inputLabel}>Correct Answer(s): <span className={styles.required}>*</span></label>
               {q.question_type === 'mcq' ? (
-                // Dropdown for single correct answer (MCQ)
-                <select
-                    className={styles.selectField}
-                    value={q.correct_option}
-                    onChange={e => updateQuestionField(i, 'correct_option', parseInt(e.target.value))}
-                    disabled={submitting} required
-                >
-                  {/* Only show options that have text */}
-                  {[1, 2, 3, 4].map(n => q[`option${n}`]?.trim() && <option key={n} value={n}>Option {n}</option>)}
-                </select>
+                // [UI-ONLY] No selector for MCQ. Display info pill instead.
+                <p className={styles.correctPill}>
+                  <CheckCircle size={16} /> Option 1 is always the correct answer.
+                </p>
               ) : (
                 // Checkboxes for multiple correct answers (Multi)
                 <div className={styles.checkboxGroup}>
@@ -944,14 +1065,29 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
           {/* --- Step 2: Questions --- */}
           {currentStep === 2 && (
             <div className={`${styles.step} ${styles.step2}`}>
-              {/* Map through questions array */}
+              {/* [UI-ONLY] Accordion container */}
+              <div className={styles.questionsAccordion}>
               {questions.map((q, i) => (
-                <div key={q.temp_id || q.id || i} className={styles.questionBlock}>
-                  {/* Question Header */}
-                  <div className={styles.questionHeader}>
-                    <h4 className={styles.questionTitle}>Question {i + 1}</h4>
-                    <button type="button" onClick={() => removeQuestion(i)} className={styles.removeQuestionButton} disabled={submitting || questions.length <= 1} title="Remove Question"> <Trash2 size={18} /> </button>
-                  </div>
+                // [UI-ONLY] Accordion Item
+                <div key={q.temp_id || q.id || i}
+                     ref={el => questionRefs.current[i] = el}
+                     className={`${styles.accordionItem} ${openIndex === i ? styles.isOpen : ''}`}>
+                  {/* [UI-ONLY] Accordion Header (acts as toggle button) */}
+                  <button type="button"
+                          className={styles.accordionHeader}
+                          onClick={() => handleQuestionToggle(i)}
+                          aria-expanded={openIndex === i}
+                          aria-controls={`question-body-${i}`}>
+                    <h4>Question {i + 1}</h4>
+                    <span className={styles.accordionPreview}>{q.question_text || '...'}</span>
+                    <div className={styles.accordionMeta}>
+                      <span className={styles.questionTypeBadge}>{q.question_type}</span>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); removeQuestion(i); }} className={styles.removeQuestionButton} disabled={submitting || questions.length <= 1} title="Remove Question"> <Trash2 size={18} /> </button>
+                      <ChevronDown size={20} className={styles.accordionChevron} />
+                    </div>
+                  </button>
+                  {/* [UI-ONLY] Accordion Body (conditionally rendered) */}
+                  {openIndex === i && <div className={styles.accordionBody} id={`question-body-${i}`}>
                   {/* Question Type Select */}
                   <div className={styles.formGroup}>
                     <label className={styles.inputLabel} htmlFor={`q-type-${i}`}>Question Type:</label>
@@ -959,7 +1095,7 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                       <option value="mcq">Multiple Choice (Single Correct)</option>
                       <option value="multi">Multiple Select (Multiple Correct)</option>
                       <option value="short">Short Answer</option>
-                      {/*<option value="sort">Word Sort</option>} Will Add this latter*/}
+                      {/*<option value="sort">Word Sort</option> Will Add this latter*/}
                       <option value="dragdrop">Fill in the Blanks (Drag & Drop)</option>
                       {/* <option value="speech_input">Speech Input</option> */}
                     </select>
@@ -971,13 +1107,24 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                   </div>
 
                   {/* Question Media Uploads */}
-                  <RenderMediaUploads
-                    q={q}
-                    questionIndex={i}
-                    baseName="question"
-                    onUpdate={updateQuestionField}
-                    submittingStatus={submitting}
-                  />
+                  {!q.ui_collapsed.media ? (
+                    <RenderMediaUploads
+                      q={q}
+                      questionIndex={i}
+                      baseName="question"
+                      onUpdate={updateQuestionField}
+                      submittingStatus={submitting}
+                    />
+                  ) : (
+                    <div>
+                      <button type="button"
+                              onClick={() => toggleQuestionUiSection(i, 'media')}
+                              className={styles.miniToggle}>
+                        <Plus size={16} /> Add Question Media
+                      </button>
+                    </div>
+                  )}
+
 
                   {/* Allow Speech Input Checkbox */}
                   <div className={styles.formGroup}>
@@ -991,18 +1138,32 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                   {renderQuestionSpecificFields(q, i)}
 
                   {/* Hint Inputs */}
-                  <div className={styles.formGroup}>
-                    <label className={styles.inputLabel} htmlFor={`q-${i}-hint1`}>Hint 1 (Optional):</label>
-                    <input id={`q-${i}-hint1`} type="text" className={styles.inputField} placeholder="Enter first hint" value={q.hint1} onChange={e => updateQuestionField(i, 'hint1', e.target.value)} disabled={submitting} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.inputLabel} htmlFor={`q-${i}-hint2`}>Hint 2 (Optional):</label>
-                    <input id={`q-${i}-hint2`} type="text" className={styles.inputField} placeholder="Enter second hint" value={q.hint2} onChange={e => updateQuestionField(i, 'hint2', e.target.value)} disabled={submitting} />
-                  </div>
+                  {!q.ui_collapsed.hints || q.hint1 || q.hint2 ? (
+                    <>
+                      <div className={styles.formGroup}>
+                        <label className={styles.inputLabel} htmlFor={`q-${i}-hint1`}>Hint 1 (Optional):</label>
+                        <input id={`q-${i}-hint1`} type="text" className={styles.inputField} placeholder="Enter first hint" value={q.hint1} onChange={e => updateQuestionField(i, 'hint1', e.target.value)} disabled={submitting} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.inputLabel} htmlFor={`q-${i}-hint2`}>Hint 2 (Optional):</label>
+                        <input id={`q-${i}-hint2`} type="text" className={styles.inputField} placeholder="Enter second hint" value={q.hint2} onChange={e => updateQuestionField(i, 'hint2', e.target.value)} disabled={submitting} />
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <button type="button"
+                              onClick={() => toggleQuestionUiSection(i, 'hints')}
+                              className={styles.miniToggle}>
+                        <Plus size={16} /> Add Hints
+                      </button>
+                    </div>
+                  )}
+                  </div>}
                 </div>
               ))}
+              </div>
               {/* Add Question Button */}
-              <button type="button" onClick={addNewQuestion} className={`${styles.btn} ${styles.btnAddQuestion}`} disabled={submitting}> <Plus size={16} /> Add Another Question </button>
+              <button type="button" onClick={addNewQuestion} className={`${styles.btn} ${styles.btnAddQuestion}`} disabled={submitting}> <Plus size={16} /> Add Question </button>
             </div>
           )}
 

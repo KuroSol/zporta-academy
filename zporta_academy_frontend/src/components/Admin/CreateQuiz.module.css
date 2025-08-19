@@ -701,3 +701,143 @@
   .btnPublish {
     composes: btnSubmit;
   }
+
+/* ==========================================================================
+   NEW UI-ONLY STYLES FOR ACCORDION REDESIGN
+   ========================================================================== */
+.questionsAccordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* Space between accordion items */
+}
+
+.accordionItem {
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-subtle);
+  transition: background-color var(--transition-speed) ease;
+  overflow: hidden; /* Ensures children with border-radius clip correctly */
+}
+
+.accordionItem.isOpen {
+  background-color: var(--bg-light);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none; /* Replaced with focus-visible */
+}
+.accordionHeader:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary-color-light) inset;
+}
+
+.accordionHeader h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.accordionPreview {
+  flex-grow: 1;
+  text-align: left;
+  font-weight: 400;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accordionMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.questionTypeBadge {
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.accordionChevron {
+  color: var(--text-light);
+  transition: transform var(--transition-speed) ease;
+}
+.isOpen .accordionChevron {
+  transform: rotate(180deg);
+}
+
+.accordionBody {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeIn 0.4s ease;
+  border-top: 1px solid var(--border-color);
+  margin-top: -1px; /* Overlap with header bottom border */
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* For MCQ specific visual cues */
+.inlineKicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--correct-color);
+  text-transform: uppercase;
+  margin-bottom: -0.25rem; /* Pull input closer */
+}
+
+.correctPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: var(--correct-bg);
+  color: var(--correct-color);
+  border: 1px solid var(--correct-border);
+  padding: 0.3rem 0.7rem;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* For mini toggles to show/hide sections */
+.miniToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.25rem;
+  border-radius: var(--border-radius-sm);
+}
+.miniToggle:hover {
+  background-color: var(--primary-color-light);
+}
