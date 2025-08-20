@@ -8,7 +8,8 @@ from .views import (
     log_content_interaction_time_view,
     QuizDetailedAnalyticsView, # Ensure this is imported from .views
     QuizAttemptOverviewView,
-    QuizListAPIView
+    QuizListAPIView,
+    CorrectUsersForQuestionView,
     # suggest_quizzes_based_on_activity, # This can remain commented if not used
 )
 
@@ -29,6 +30,9 @@ urlpatterns = [
     # This path is for the detailed quiz statistics needed by QuizCard.js
     # It will resolve to /api/analytics/quizzes/<quiz_id>/detailed-statistics/
     path('quizzes/<int:quiz_id>/detailed-statistics/', QuizDetailedAnalyticsView.as_view(), name='analytics-quiz-detailed-statistics'),
+    # NEW: /api/analytics/quizzes/<quiz_id>/questions/<question_id>/answers/
+    path('quizzes/<int:quiz_id>/questions/<int:question_id>/answers/', CorrectUsersForQuestionView.as_view(), name='analytics-correct-users'),
+
     path('quiz-attempt-overview/',QuizAttemptOverviewView.as_view(),name='quiz-attempt-overview'),
     # Include router URLs. If analytics.urls is included under 'api/analytics/',
     # this makes ActivityEventViewSet available at /api/analytics/events/

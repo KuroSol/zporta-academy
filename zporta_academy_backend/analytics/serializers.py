@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from .models import QuizSessionProgress
 from quizzes.models import Quiz
 from .models import ActivityEvent, MemoryStat
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -223,3 +224,57 @@ class QuizListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = ('id', 'title', 'total_questions', 'permalink')
+
+# --- Users-who-answered-correctly row (for the “Correctly” modal) ---
+class CorrectAnswerUserRowSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True, allow_null=True)
+    profile_image_url = serializers.SerializerMethodField()
+    answered_at = serializers.DateTimeField(source="timestamp", read_only=True)
+    user_quiz_score = serializers.SerializerMethodField()  # DRF will call get_user_quiz_score
+
+    class Meta:
+        model = ActivityEvent
+        fields = ("username", "profile_image_url", "answered_at", "session_id", "user_quiz_score")
+        read_only_fields = fields
+
+    def get_profile_image_url(self, obj):
+        u = getattr(obj, "user", None)
+        if not u:
+            return None
+        prof = getattr(u, "profile", None)
+        if prof and hasattr(prof, "profile_image_url"):
+            return prof.profile_image_url
+        # fallback if you store it on user
+        return getattr(u, "profile_image_url", None)
+
+    def get_user_quiz_score(self, obj):
+        # Prefer session-bound progress
+        qsp = None
+        if obj.session_id:
+            qsp = (
+                QuizSessionProgress.objects
+                .filter(session_id=obj.session_id)
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+
+        # Fallback to user+quiz if metadata carries quiz_id
+        if not qsp:
+            meta = obj.metadata or {}
+            quiz_id = meta.get("quiz_id") if isinstance(meta, dict) else None
+            if quiz_id:
+                qsp = (
+                    QuizSessionProgress.objects
+                    .filter(user=obj.user_id, quiz_id=quiz_id)
+                    .order_by("-completed_at", "-started_at")
+                    .first()
+                )
+
+        if qsp:
+            total = int(qsp.total_questions or 0)
+            correct = int(qsp.correct_count or 0)
+            percent = int(round((correct / total) * 100)) if total else 0
+            return {"correct": correct, "total": total, "percent": percent}
+
+        return {"correct": 0, "total": 0, "percent": 0}
+#dhey i think the data also is not accour i just answer the question inside quiz and i even refresh but its keep showing  no one answer correct 

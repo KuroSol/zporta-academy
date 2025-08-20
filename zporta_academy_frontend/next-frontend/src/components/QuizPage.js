@@ -347,12 +347,16 @@ const QuizPage = ({ initialData, permalink }) => {
         if (token) {
             try {
                 // Send the timeSpentMs to the backend
+                const cq = questions.find(q => q.id === questionId) || {};
+                const textField = cq.question_type === 'mcq' ? `option${answer}` : null;
+                const selectedText = textField ? cq[textField] : null;
                 await apiClient.post(`/quizzes/${quizData.id}/record-answer/`, {
-                    question_id: questionId,
-                    selected_option: answer,
-                    time_spent_ms: timeSpentMs,
-                    session_id:    sessionId
-                });
+                question_id: questionId,
+                selected_option: answer,               // UI 1..4 is fine to keep
+                selected_answer_text: selectedText,    // <<< crucial for shuffle
+                time_spent_ms: timeSpentMs,
+                session_id: sessionId
+                })
             } catch (err) {
                  console.error("Error recording answer:", err);
             }

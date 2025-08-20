@@ -17,6 +17,7 @@ from .views import (
 
 urlpatterns = [
     # 1. Question CRUD endpoints are correctly placed at the top.
+    path('<int:pk>/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-detail-plain'),
     path('questions/', QuestionListCreateView.as_view(), name='question-list-create'),
     path('questions/<int:pk>/', QuestionRetrieveUpdateDestroyView.as_view(), name='question-detail'),
 

@@ -841,3 +841,29 @@
 .miniToggle:hover {
   background-color: var(--primary-color-light);
 }
+.statItemClickable { cursor: pointer; }
+.modalBackdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal {
+  background: #fff; border-radius: 12px; width: min(640px, 92vw);
+  max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.modalHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid #eee;
+}
+.modalBody { padding: 0 16px; overflow-y: auto; }
+.modalFooter { padding: 12px 16px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
+.closeBtn, .loadMoreBtn {
+  border: 1px solid #ddd; background: #fafafa; padding: 6px 10px; border-radius: 8px;
+}
+.userList { list-style: none; margin: 0; padding: 8px 0; }
+.userRow { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f3f3f3; }
+.userAvatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.userMeta { display: flex; flex-direction: column; }
+.username { font-weight: 600; }
+.metaLine { color: #666; font-size: 12px; }
+.emptyState { color: #666; padding: 16px 0; text-align: center; }

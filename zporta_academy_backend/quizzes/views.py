@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import unicodedata, re
 import uuid
 from uuid import uuid4
 from rest_framework import generics, status
@@ -9,10 +10,11 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, OuterRef, Subquery, IntegerField
+from django.db.models.functions import Coalesce
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-from django.conf import settings 
+from django.conf import settings
 from django.utils import timezone
 # Local App Imports
 from users.models import User
@@ -30,16 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 class QuizStartView(APIView):
-    """
-    Logs a quiz_started event for a given quiz.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
         quiz = get_object_or_404(Quiz, pk=pk)
-        # force new session on explicit start
         session_id = uuid.uuid4()
-        # Only once per user + quiz
         quiz_ct = ContentType.objects.get_for_model(Quiz)
         if not ActivityEvent.objects.filter(
             user=request.user,
@@ -56,7 +53,6 @@ class QuizStartView(APIView):
             )
         return Response({'status': 'quiz_started recorded'}, status=status.HTTP_200_OK)
 
-# --- Question-specific Views ---
 class QuestionListCreateView(generics.ListCreateAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
@@ -70,13 +66,7 @@ class QuestionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-# --- CORRECTED Quiz Views ---
-
 class RecordQuizAnswerView(APIView):
-    """
-    Records a user's answer and handles all related analytics events,
-    using the project's existing structure and fixing previous errors.
-    """
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
@@ -87,9 +77,11 @@ class RecordQuizAnswerView(APIView):
         raw_answer = request.data.get("selected_option")
         time_spent_ms = request.data.get("time_spent_ms")
 
-        # Validate inputs
-        if question_id is None or raw_answer is None:
-            return Response({"error": "question_id and selected_option are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if question_id is None:
+             return Response({"error": "question_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if raw_answer is None and request.data.get("selected_options") is None:
+             return Response({"error": "selected_option or selected_options is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             time_spent_ms = int(time_spent_ms) if time_spent_ms is not None else None
         except (ValueError, TypeError):
@@ -97,12 +89,9 @@ class RecordQuizAnswerView(APIView):
 
         question = get_object_or_404(Question, pk=question_id, quiz_id=quiz_id)
         quiz = question.quiz
-        # block answering drafts unless owner or staff
         if quiz.status != 'published' and request.user != quiz.created_by and not request.user.is_staff:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-
-        # ——— Log quiz_started the very first time, including quiz_id ———
         quiz_ct = ContentType.objects.get_for_model(Quiz)
         if not ActivityEvent.objects.filter(
             user=user, content_type=quiz_ct, object_id=quiz.id, event_type='quiz_started'
@@ -117,17 +106,13 @@ class RecordQuizAnswerView(APIView):
                 }
             )
 
-        # Use static methods for logic, as in your original file
-        is_correct, correct_val, processed_answer = self.check_answer(question, raw_answer)
+        is_correct, correct_val, processed_answer = self.check_answer(question, request.data)
         qor = self.calculate_qor(is_correct, time_spent_ms)
-        
-        # Use your project's existing utility for spaced repetition
+
         stat = update_memory_stat_item(user=user, learnable_item=question, quality_of_recall=qor, time_spent_ms=time_spent_ms)
-        
-        # Log the answer with all analytics data
+
         self.log_answer(request, quiz, question, processed_answer, correct_val, is_correct, time_spent_ms, qor, stat)
-        
-        # --- FIX: Defer the completion check until after the transaction commits ---
+
         transaction.on_commit(lambda: self.check_completion_after_commit(user.id, quiz.id))
 
         return Response({
@@ -137,30 +122,62 @@ class RecordQuizAnswerView(APIView):
         }, status=status.HTTP_200_OK)
 
     @staticmethod
-    def check_answer(question, raw_answer):
-        """
-        Checks answer correctness. NOTE: This logic should be fully implemented
-        to match all your question types (mcq, multi, short, sort, etc.).
-        """
+    def check_answer(question, data):
+        import unicodedata
+        def norm(s): return unicodedata.normalize("NFKC", str(s or "")).strip().lower()
+
+        q_type = question.question_type
+        raw = data.get("selected_option")
+        sel_text = data.get("selected_answer_text")      # UI sends exact visible text
+        sel_key  = data.get("selected_option_key")       # "option1".."option4"
+
         is_correct = False
         correct_value = None
-        processed_answer = raw_answer
-        q_type = question.question_type
-        
+        processed_answer = raw
+
         if q_type == 'mcq':
-            is_correct = (str(raw_answer) == str(question.correct_option))
-            correct_value = question.correct_option
-        # TODO: Add your logic for 'multi', 'short', 'sort', 'dragdrop' here
-        # Example for 'short':
+            correct_idx = int(question.correct_option or 0)
+            correct_value = correct_idx
+            correct_text = getattr(question, f"option{correct_idx}", None)
+
+            # prefer explicit text or key from UI
+            if sel_text:
+                is_correct = norm(sel_text) == norm(correct_text)
+                processed_answer = sel_text
+            elif sel_key in {"option1","option2","option3","option4"}:
+                chosen_text = getattr(question, sel_key, None)
+                is_correct = norm(chosen_text) == norm(correct_text)
+                processed_answer = sel_key
+            else:
+                # fallback to raw index if provided and valid
+                try:
+                    raw_int = int(raw)
+                except (TypeError, ValueError):
+                    raw_int = None
+                is_correct = (raw_int == correct_idx)
+                processed_answer = raw_int
+
         elif q_type == 'short':
-            is_correct = (str(raw_answer).strip().lower() == str(question.correct_answer).strip().lower())
+            is_correct = norm(raw) == norm(question.correct_answer)
             correct_value = question.correct_answer
+            processed_answer = raw
+        elif q_type == 'multi':
+            selected = data.get("selected_options", []) or []
+            correct  = question.correct_options or []
+            is_correct = sorted(map(str, selected)) == sorted(map(str, correct))
+            correct_value = correct
+            processed_answer = selected
+        elif q_type == 'sort':
+            selected = data.get("selected_options", []) or []
+            correct  = question.correct_options or []
+            is_correct = list(map(str, selected)) == list(map(str, correct))
+            correct_value = correct
+            processed_answer = selected
 
         return is_correct, correct_value, processed_answer
 
     @staticmethod
     def calculate_qor(is_correct, time_spent_ms):
-        """Calculates Quality of Recall based on correctness and time."""
         if not is_correct:
             return 1
         if time_spent_ms is None or time_spent_ms > 15000:
@@ -171,21 +188,7 @@ class RecordQuizAnswerView(APIView):
 
     @staticmethod
     def log_answer(request, quiz, question, ans, corr, is_corr, time_spent, qor, stat):
-        """Logs the answer event, including session_id and attempt_index."""
-        # 🎯 New logic: every time the user hits the *first* question, start a fresh UUID.
-        # Identify the quiz’s first question (by whatever ordering you use—here assumed 'order')
-        first_q = quiz.questions.order_by('id').first()
-        if question.id == first_q.id:
-            # New attempt → brand-new session
-            session_id = uuid4()
-        else:
-            # Subsequent questions → re-use the most recent session_id
-            last_ev = ActivityEvent.objects.filter(
-                user=request.user,
-                metadata__quiz_id=quiz.id,
-                session_id__isnull=False
-            ).order_by('-timestamp').first()
-            session_id = last_ev.session_id if last_ev else uuid4()
+        session_id = get_or_create_quiz_session_id(request.user, quiz.id)
         
         question_ct = ContentType.objects.get_for_model(Question)
         prev_attempts = ActivityEvent.objects.filter(
@@ -207,7 +210,6 @@ class RecordQuizAnswerView(APIView):
             "attempt_index": prev_attempts + 1,
         }
 
-        # ——— NEW: if this is the *first* answer for this quiz by this user, log quiz_started ———
         first_count = ActivityEvent.objects.filter(
             user=request.user,
             event_type='quiz_answer_submitted',
@@ -223,7 +225,6 @@ class RecordQuizAnswerView(APIView):
                 session_id=session_id,
             )
 
-        # Pass session_id along to the central log_event
         log_event(
             user=request.user,
             event_type='quiz_answer_submitted',
@@ -234,15 +235,11 @@ class RecordQuizAnswerView(APIView):
         )
     @staticmethod
     def check_completion_after_commit(user_id, quiz_id):
-        """
-        This method runs *after* the database transaction is committed,
-        ensuring it has an accurate view of all saved answers.
-        """
         try:
             user = User.objects.get(id=user_id)
             quiz = Quiz.objects.get(id=quiz_id)
         except (User.DoesNotExist, Quiz.DoesNotExist):
-            return # Cannot proceed if user or quiz is gone
+            return
 
         total_questions = quiz.questions.count()
         if total_questions == 0:
@@ -250,23 +247,19 @@ class RecordQuizAnswerView(APIView):
 
         q_ct = ContentType.objects.get_for_model(Question)
         
-        # Now we can do a simple, direct count because the transaction is complete.
         answered_count = ActivityEvent.objects.filter(
             user=user, content_type=q_ct, event_type='quiz_answer_submitted', metadata__quiz_id=quiz.id
         ).values('object_id').distinct().count()
 
         if answered_count >= total_questions:
             quiz_ct = ContentType.objects.get_for_model(Quiz)
-            # only once
             if not ActivityEvent.objects.filter(
                 user=user,
                 content_type=quiz_ct,
                 object_id=quiz.id,
                 event_type='quiz_completed'
             ).exists():
-                # ensure attendance_ms is always defined
                 attendance_ms = None
-                # find the first quiz_started timestamp
                 start_ev = ActivityEvent.objects.filter(
                     user=user,
                     content_type=quiz_ct,
@@ -289,7 +282,6 @@ class RecordQuizAnswerView(APIView):
                     },
                     session_id=completion_session,
                 )
-                # Calculate SM-2 for the whole quiz based on the final, committed state
                 qos_list = ActivityEvent.objects.filter(
                     user=user, content_type=q_ct, event_type='quiz_answer_submitted', metadata__quiz_id=quiz.id
                 ).values_list('metadata__quality_of_recall_used', flat=True)
@@ -305,17 +297,34 @@ class QuizListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        queryset = Quiz.objects.select_related('created_by', 'subject', 'course').prefetch_related(
-            'tags', 'questions'
-        ).annotate(
-            attempt_count=Count('activity_events', filter=Q(activity_events__event_type__in=['quiz_submitted', 'quiz_completed']), distinct=True)
-        ).order_by('-created_at')
-        # public list: only published
-        queryset = queryset.filter(status='published')
+        q = Quiz.objects.select_related('created_by','subject','course').prefetch_related('tags','questions')
+        q = q.filter(status='published').order_by('-created_at')
+
+        question_ct = ContentType.objects.get_for_model(Question)
+
+        base = ActivityEvent.objects.filter(
+            content_type=question_ct,
+            event_type='quiz_answer_submitted',
+            metadata__quiz_id=OuterRef('pk')
+        )
+
+        total_sub = base.values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
+        correct_sub = base.filter(metadata__is_correct=True).values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
+        wrong_sub = base.filter(metadata__is_correct=False).values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
+        unique_users_sub = base.values('metadata__quiz_id').annotate(c=Count('user', distinct=True)).values('c')[:1]
+
+        q = q.annotate(
+            attempt_count=Coalesce(Subquery(unique_users_sub, output_field=IntegerField()), 0),
+            correct_count=Coalesce(Subquery(correct_sub, output_field=IntegerField()), 0),
+            wrong_count=Coalesce(Subquery(wrong_sub, output_field=IntegerField()), 0),
+            # optional: total answers if you want it
+            # total_answers=Coalesce(Subquery(total_sub, output_field=IntegerField()), 0),
+        )
+
         username = self.request.query_params.get('created_by')
         if username:
-            queryset = queryset.filter(created_by__username=username)
-        return queryset
+            q = q.filter(created_by__username=username)
+        return q
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -336,7 +345,6 @@ class QuizRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         quiz = self.get_object()
-            # hide drafts from non-owners
         if quiz.status != 'published' and not (request.user.is_authenticated and (request.user == quiz.created_by or request.user.is_staff)):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(quiz)
@@ -345,38 +353,43 @@ class QuizRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         
         question_map = {q['id']: q for q in data.get('questions', [])}
         for stat in question_stats:
-            if stat['id'] in question_map:
-                question_map[stat['id']]['stats'] = {
-                    'attempt_count': stat['attempt_count'],
-                    'correct_count': stat['correct_count'],
-                    'wrong_count': stat['attempt_count'] - stat['correct_count']
+            if stat['question_id'] in question_map:
+                question_map[stat['question_id']]['stats'] = {
+                    'attempt_count': stat['total_attempts'],
+                    'correct_count': stat['correct_attempts'],
+                    'wrong_count': stat['total_attempts'] - stat['correct_attempts']
                 }
         return Response(data)
 
     def get_question_stats(self, quiz):
         question_ct = ContentType.objects.get_for_model(Question)
-        return Question.objects.filter(quiz=quiz).annotate(
-            attempt_count=Count('activity_events', filter=Q(activity_events__content_type=question_ct), distinct=True),
-            correct_count=Count('activity_events', filter=Q(activity_events__content_type=question_ct, activity_events__metadata__is_correct=True), distinct=True)
-        ).values('id', 'attempt_count', 'correct_count')
+        
+        stats = ActivityEvent.objects.filter(
+            content_type=question_ct,
+            metadata__quiz_id=quiz.id,
+            event_type='quiz_answer_submitted'
+        ).values('metadata__question_id').annotate(
+            total_attempts=Count('id'),
+            correct_attempts=Count('id', filter=Q(metadata__is_correct=True))
+        ).values('metadata__question_id', 'total_attempts', 'correct_attempts')
+
+        # The query returns keys like 'metadata__question_id', we rename them for consistency
+        return [
+            {
+                'question_id': s['metadata__question_id'],
+                'total_attempts': s['total_attempts'],
+                'correct_attempts': s['correct_attempts']
+            } for s in stats
+        ]
 
 
 class QuizSubmitView(APIView):
-    """
-    Handles a manual, final 'submit' button click.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        """
-        --- FIX: This view now has only one, correct post method. ---
-        It logs the 'quiz_submitted' event with summary stats.
-        """
         quiz = get_object_or_404(Quiz, pk=pk)
-        # block starting drafts unless owner or staff
         if quiz.status != 'published' and request.user != quiz.created_by and not request.user.is_staff:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        # force new session on explicit start
         session_id = uuid.uuid4()
         q_ct = ContentType.objects.get_for_model(Question)
         
@@ -397,13 +410,10 @@ class QuizSubmitView(APIView):
         return Response({"message": "Quiz submission recorded."}, status=status.HTTP_200_OK)
 
 
-# --- Other Views (from your file) ---
-
 class DynamicQuizView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, permalink):
         quiz = get_object_or_404(Quiz.objects.select_related('created_by', 'subject', 'course').prefetch_related('questions'), permalink=permalink)
-        # hide drafts from non-owners
         user = request.user if request.user.is_authenticated else None
         if quiz.status != 'published' and not (user and (user == quiz.created_by or user.is_staff)):
             return Response(status=status.HTTP_404_NOT_FOUND)

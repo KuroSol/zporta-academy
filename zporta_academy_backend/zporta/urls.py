@@ -35,7 +35,6 @@ urlpatterns = [
     path('api/notifications/',
          include(('notifications.urls','notifications'), namespace='notifications')),
     path('api/user_media/', include('user_media.urls')),
-    path('api/',            include('analytics.urls')),
     path('api/analytics/',  include('analytics.urls')),  # corrected
     path('api/study/',      include('learning.urls')),
     path('api/explorer/',   include('explorer.urls')),
