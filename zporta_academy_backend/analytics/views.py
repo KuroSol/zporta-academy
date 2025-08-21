@@ -67,10 +67,14 @@ class QuizDetailedAnalyticsView(views.APIView):
         quiz_content_type = ContentType.objects.get_for_model(QuizzesQuiz)
         question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
 
+        # Backward-compatible: include events that either carry quiz_id in metadata
+        # OR are tied to any question of this quiz via object_id.
+        quiz_qids = QuizzesQuestion.objects.filter(quiz=quiz_instance).values('id')
         answer_events_for_quiz_questions = ActivityEvent.objects.filter(
             content_type=question_ct,
-            metadata__quiz_id=quiz_id,
             event_type='quiz_answer_submitted'
+        ).filter(
+            Q(metadata__quiz_id=quiz_id) | Q(object_id__in=quiz_qids)
         )
 
         unique_participants = answer_events_for_quiz_questions.values('user').distinct().count()
@@ -95,11 +99,12 @@ class QuizDetailedAnalyticsView(views.APIView):
 
         for q_instance in quiz_questions:
             q_id = q_instance.id
+            # Per-question counts should include all answers to that question,
+            # regardless of whether older rows lack metadata.quiz_id.
             q_events = ActivityEvent.objects.filter(
                 content_type=question_ct,
                 object_id=q_id,
-                event_type='quiz_answer_submitted',
-                metadata__quiz_id=quiz_id,
+                event_type='quiz_answer_submitted'
             )
             q_distinct_answered_users = q_events.values('user').distinct().count()
             q_correct = q_events.filter(metadata__is_correct=True).count()

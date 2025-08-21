@@ -248,10 +248,10 @@ const QuizPage = ({ initialData, permalink }) => {
     const isAnswerSubmitted = !!submittedAnswers[currentQuestionId];
     const currentFeedback = feedback[currentQuestionId];
     const mcqOptions = [
-        { index: 0, text: currentQuestion.option1, img: currentQuestion.option1_image, aud: currentQuestion.option1_audio },
-        { index: 1, text: currentQuestion.option2, img: currentQuestion.option2_image, aud: currentQuestion.option2_audio },
-        { index: 2, text: currentQuestion.option3, img: currentQuestion.option3_image, aud: currentQuestion.option3_audio },
-        { index: 3, text: currentQuestion.option4, img: currentQuestion.option4_image, aud: currentQuestion.option4_audio },
+        { key: 'option1', index: 0, text: currentQuestion.option1, img: currentQuestion.option1_image, aud: currentQuestion.option1_audio },
+        { key: 'option2', index: 1, text: currentQuestion.option2, img: currentQuestion.option2_image, aud: currentQuestion.option2_audio },
+        { key: 'option3', index: 2, text: currentQuestion.option3, img: currentQuestion.option3_image, aud: currentQuestion.option3_audio },
+        { key: 'option4', index: 3, text: currentQuestion.option4, img: currentQuestion.option4_image, aud: currentQuestion.option4_audio },
     ].filter(o => (o.text?.trim() || o.img || o.aud));
 
     // --- Answer Handling ---
@@ -260,11 +260,11 @@ const QuizPage = ({ initialData, permalink }) => {
         setUserAnswers(prev => ({ ...prev, [questionId]: answer }));
     };
 
-    const handleMcqAnswer = (optionIndex) => {
+    const handleMcqAnswer = (optionKey) => {
         if (isAnswerSubmitted) return;
-        const answerValue = optionIndex + 1;
+        const answerValue = Number(optionKey.replace('option','')); // 1..4 from canonical key
         handleAnswerChange(currentQuestionId, answerValue);
-        handleSubmitAnswer(currentQuestionId, answerValue);
+        handleSubmitAnswer(currentQuestionId, answerValue, optionKey);
     };
 
     const handleMultiAnswer = (optionIndex, isChecked) => {
@@ -279,7 +279,7 @@ const QuizPage = ({ initialData, permalink }) => {
         handleAnswerChange(currentQuestionId, newSelection.sort((a, b) => a - b));
     };
 
-    const handleSubmitAnswer = async (questionId, answerOverride = null) => {
+    const handleSubmitAnswer = async (questionId, answerOverride = null, optionKeyOverride = null) => {
           if (!token) {
                 openLoginModal();
                 return;
@@ -306,7 +306,7 @@ const QuizPage = ({ initialData, permalink }) => {
         let correctValueForFeedback = null;
         
         if (question.question_type === 'mcq') {
-            isCorrect = (answer === question.correct_option);
+            isCorrect = (Number(answer) === Number(question.correct_option));
             correctValueForFeedback = question.correct_option;
         } else if (question.question_type === 'multi') {
             const correctSet = new Set(Array.isArray(question.correct_options) ? question.correct_options : []);
@@ -348,14 +348,17 @@ const QuizPage = ({ initialData, permalink }) => {
             try {
                 // Send the timeSpentMs to the backend
                 const cq = questions.find(q => q.id === questionId) || {};
-                const textField = cq.question_type === 'mcq' ? `option${answer}` : null;
-                const selectedText = textField ? cq[textField] : null;
+                const optionKey = null; // avoid DB-order key confusion
+                const selectedText = (cq.question_type === 'mcq' && answer >=1 && answer <=4)
+                  ? cq[`option${answer}`] // this is the shuffled text we showed
+                  : null;
                 await apiClient.post(`/quizzes/${quizData.id}/record-answer/`, {
-                question_id: questionId,
-                selected_option: answer,               // UI 1..4 is fine to keep
-                selected_answer_text: selectedText,    // <<< crucial for shuffle
-                time_spent_ms: timeSpentMs,
-                session_id: sessionId
+                    question_id: questionId,
+                    selected_option: answer,               // 1..4
+                    selected_answer_text: selectedText,    // text
+                    selected_option_key: optionKey,        // null on purpose
+                    time_spent_ms: timeSpentMs,
+                    session_id: sessionId
                 })
             } catch (err) {
                  console.error("Error recording answer:", err);
@@ -432,7 +435,7 @@ const QuizPage = ({ initialData, permalink }) => {
                     <div className={`${styles.optionsGrid} ${styles.mcqOptions}`}>
                         {mcqOptions.map((opt) => (
                         <button
-                            key={opt.index}
+                            key={opt.key}
                             type="button"
                             className={`${styles.optionButton}
                             ${userAnswers[currentQuestionId] === (opt.index + 1) ? styles.selected : ''}
@@ -440,7 +443,7 @@ const QuizPage = ({ initialData, permalink }) => {
                             ${isAnswerSubmitted && userAnswers[currentQuestionId] === (opt.index + 1) && !currentFeedback?.isCorrect ? styles.incorrect : ''}
                             ${isAnswerSubmitted ? styles.disabled : ''}
                             `}
-                            onClick={() => handleMcqAnswer(opt.index)}
+                            onClick={() => handleMcqAnswer(opt.key)}
                             disabled={isAnswerSubmitted}
                         >
                             <div className={styles.optionContent}>

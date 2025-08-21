@@ -51,7 +51,7 @@ class QuizStartView(APIView):
                 metadata={ 'quiz_id': quiz.id, 'started_at': timezone.now().isoformat() },
                 session_id=session_id,
             )
-        return Response({'status': 'quiz_started recorded'}, status=status.HTTP_200_OK)
+        return Response({'status': 'quiz_started recorded', 'session_id': str(session_id)}, status=status.HTTP_200_OK)
 
 class QuestionListCreateView(generics.ListCreateAPIView):
     queryset = Question.objects.all()
@@ -123,39 +123,50 @@ class RecordQuizAnswerView(APIView):
 
     @staticmethod
     def check_answer(question, data):
-        import unicodedata
-        def norm(s): return unicodedata.normalize("NFKC", str(s or "")).strip().lower()
+        import unicodedata, re
+        def norm(s: str):
+            s = unicodedata.normalize("NFKC", str(s or "")).strip().lower()
+            # collapse internal whitespace
+            s = re.sub(r"\s+", " ", s)
+            # strip trailing ":" often sent as "Option 2:" labels from UI
+            s = s[:-1] if s.endswith(":") else s
+            return s
 
         q_type = question.question_type
-        raw = data.get("selected_option")
-        sel_text = data.get("selected_answer_text")      # UI sends exact visible text
-        sel_key  = data.get("selected_option_key")       # "option1".."option4"
+        raw      = data.get("selected_option")        # legacy: 1..4
+        sel_text = data.get("selected_answer_text")   # preferred: exact option text
+        sel_key  = data.get("selected_option_key")    # preferred: "option1".."option4"
 
         is_correct = False
         correct_value = None
         processed_answer = raw
 
         if q_type == 'mcq':
-            correct_idx = int(question.correct_option or 0)
-            correct_value = correct_idx
-            correct_text = getattr(question, f"option{correct_idx}", None)
-
-            # prefer explicit text or key from UI
-            if sel_text:
-                is_correct = norm(sel_text) == norm(correct_text)
-                processed_answer = sel_text
-            elif sel_key in {"option1","option2","option3","option4"}:
-                chosen_text = getattr(question, sel_key, None)
-                is_correct = norm(chosen_text) == norm(correct_text)
-                processed_answer = sel_key
-            else:
-                # fallback to raw index if provided and valid
                 try:
-                    raw_int = int(raw)
+                    correct_idx = int(question.correct_option or 0)
                 except (TypeError, ValueError):
-                    raw_int = None
-                is_correct = (raw_int == correct_idx)
-                processed_answer = raw_int
+                    correct_idx = 0
+                correct_value = correct_idx
+                correct_text = getattr(question, f"option{correct_idx}", None)
+
+                # 1) Best: exact option TEXT (works regardless of shuffle)
+                if sel_text:
+                    is_correct = norm(sel_text) == norm(correct_text)
+                    processed_answer = sel_text
+
+                # 2) Next: exact option KEY (DB order; OK if UI didn’t shuffle)
+                elif isinstance(sel_key, str) and sel_key in {"option1","option2","option3","option4"}:
+                    chosen_text = getattr(question, sel_key, None)
+                    is_correct = norm(chosen_text) == norm(correct_text)
+                    processed_answer = sel_key
+                # 3) Legacy: raw index (1..4)
+                else:
+                    try:
+                        raw_int = int(raw)
+                    except (TypeError, ValueError):
+                        raw_int = None
+                    is_correct = (raw_int == correct_idx)
+                    processed_answer = raw_int
 
         elif q_type == 'short':
             is_correct = norm(raw) == norm(question.correct_answer)
@@ -188,6 +199,8 @@ class RecordQuizAnswerView(APIView):
 
     @staticmethod
     def log_answer(request, quiz, question, ans, corr, is_corr, time_spent, qor, stat):
+        # request payload (fix: avoid NameError: data)
+        data = request.data
         session_id = get_or_create_quiz_session_id(request.user, quiz.id)
         
         question_ct = ContentType.objects.get_for_model(Question)
@@ -198,12 +211,27 @@ class RecordQuizAnswerView(APIView):
             object_id=question.id
         ).count()
 
+        # Canonical fields from payload
+        selected_answer_text = data.get("selected_answer_text")
+        selected_option_key  = data.get("selected_option_key")
+        selected_option      = data.get("selected_option")
+        try:
+            selected_option = int(selected_option) if selected_option is not None else None
+        except (TypeError, ValueError):
+            selected_option = None
+        if not selected_option_key and selected_option in (1, 2, 3, 4):
+            selected_option_key = f"option{selected_option}"
+
         metadata = {
             "quiz_id": quiz.id,
             "question_id": question.id,
-            "submitted_answer": ans,
+            # store both raw and canonical for robustness
+            "selected_option": selected_option,                # 1..4 (legacy)
+            "selected_answer_text": selected_answer_text,      # optional text
+            "selected_option_key": selected_option_key,        # "option1".. "option4"
+            "submitted_answer": ans,                           # processed from check_answer()
             "correct_answer_expected": corr,
-            "is_correct": is_corr,
+            "is_correct": is_corr,                             # use result from check_answer()
             "time_spent_ms": time_spent,
             "quality_of_recall_used": qor,
             "new_interval_days": stat.interval_days if stat else None,
@@ -301,17 +329,25 @@ class QuizListCreateView(generics.ListCreateAPIView):
         q = q.filter(status='published').order_by('-created_at')
 
         question_ct = ContentType.objects.get_for_model(Question)
+        # Subquery of question IDs per quiz
+        quiz_qids_sq = Question.objects.filter(
+            quiz=OuterRef('pk')
+        ).values('id')
 
+        # Backward-compatible ActivityEvent base:
+        # either metadata.quiz_id == quiz.pk OR object_id in this quiz's question IDs
         base = ActivityEvent.objects.filter(
             content_type=question_ct,
-            event_type='quiz_answer_submitted',
-            metadata__quiz_id=OuterRef('pk')
+            event_type='quiz_answer_submitted'
+        ).filter(
+            Q(metadata__quiz_id=OuterRef('pk')) | Q(object_id__in=Subquery(quiz_qids_sq))
         )
 
-        total_sub = base.values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
-        correct_sub = base.filter(metadata__is_correct=True).values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
-        wrong_sub = base.filter(metadata__is_correct=False).values('metadata__quiz_id').annotate(c=Count('id')).values('c')[:1]
-        unique_users_sub = base.values('metadata__quiz_id').annotate(c=Count('user', distinct=True)).values('c')[:1]
+        total_sub = base.values('id').annotate(c=Count('id')).values('c')[:1]
+        correct_sub = base.filter(metadata__is_correct=True).values('id').annotate(c=Count('id')).values('c')[:1]
+        wrong_sub = base.filter(metadata__is_correct=False).values('id').annotate(c=Count('id')).values('c')[:1]
+        unique_users_sub = base.values('user').annotate(c=Count('user', distinct=True)).values('c')[:1]
+
 
         q = q.annotate(
             attempt_count=Coalesce(Subquery(unique_users_sub, output_field=IntegerField()), 0),

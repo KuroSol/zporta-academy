@@ -241,10 +241,10 @@ const QuizCard = ({
   }, [quiz?.id, currentQuestionId, token]);
 
   const mcqOptions = useMemo(() => currentQuestionId ? [
-    { index: 1, text: currentQuestion.option1, img: currentQuestion.option1_image, aud: currentQuestion.option1_audio },
-    { index: 2, text: currentQuestion.option2, img: currentQuestion.option2_image, aud: currentQuestion.option2_audio },
-    { index: 3, text: currentQuestion.option3, img: currentQuestion.option3_image, aud: currentQuestion.option3_audio },
-    { index: 4, text: currentQuestion.option4, img: currentQuestion.option4_image, aud: currentQuestion.option4_audio },
+    { key: 'option1', index: 1, text: currentQuestion.option1, img: currentQuestion.option1_image, aud: currentQuestion.option1_audio },
+    { key: 'option2', index: 2, text: currentQuestion.option2, img: currentQuestion.option2_image, aud: currentQuestion.option2_audio },
+    { key: 'option3', index: 3, text: currentQuestion.option3, img: currentQuestion.option3_image, aud: currentQuestion.option3_audio },
+    { key: 'option4', index: 4, text: currentQuestion.option4, img: currentQuestion.option4_image, aud: currentQuestion.option4_audio },
   ].filter(o => (o.text?.trim() || o.img || o.aud)) : [], [currentQuestion]);
 
   const handleAnswerChange = (questionId, answer) => {
@@ -253,7 +253,7 @@ const QuizCard = ({
     setCardError(null);
   };
 
-  const handleSubmitAnswerForCurrentQuestion = useCallback(async (submittedAnswer) => {
+  const handleSubmitAnswerForCurrentQuestion = useCallback(async (submittedAnswer, optionKeyOverride) => {
     const questionToSubmit = currentQuestion;
     const questionId = questionToSubmit.id;
     if (!questionId || submittedAnswers[questionId] || isLoadingSubmission) return;
@@ -281,7 +281,7 @@ const QuizCard = ({
       // Full correctness checking logic from original file
       switch (questionToSubmit.question_type) {
         case 'mcq':
-          isCorrect = answer === questionToSubmit.correct_option;
+          isCorrect = Number(answer) === Number(questionToSubmit.correct_option);
           correctValue = questionToSubmit.correct_option;
           break;
         case 'multi': {
@@ -321,7 +321,15 @@ const QuizCard = ({
       setSubmittedAnswers(prev => ({ ...prev, [questionId]: true }));
 
       if (token) {
-        const payload = { question_id: questionId, selected_option: answer }; // Simplified for example
+        const selectedText = (questionToSubmit.question_type === 'mcq' && answer >=1 && answer <=4)
+          ? questionToSubmit[`option${answer}`]
+          : null;
+        const payload = {
+          question_id: questionId,
+          selected_option: answer,            // 1..4
+          selected_answer_text: selectedText, // text
+          selected_option_key: null, // avoid DB-order key
+        };
         await apiClient.post(`quizzes/${quiz.id}/record-answer/`, payload, { headers: { Authorization: `Bearer ${token}` } });
         fetchPublicQuizStats();
       }
@@ -381,7 +389,7 @@ const QuizCard = ({
                 onClick={() => {
                   if (isAnswerSubmittedForCurrent) return;
                   handleAnswerChange(currentQuestionId, opt.index);
-                  handleSubmitAnswerForCurrentQuestion(opt.index);
+                  handleSubmitAnswerForCurrentQuestion(opt.index, opt.key);
                 }}
                 disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
               >
