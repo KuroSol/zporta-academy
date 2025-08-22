@@ -24,11 +24,10 @@ import {
 
 import styles from './QuizCard.module.css';
 import { quizPermalinkToUrl } from '../utils/urls';
+// Bring in components for advanced question types
 
-// Stubs for question types are preserved
-const SpeechToTextInput = () => null;
-const FillInTheBlanksQuestion = () => null;
-const SortQuestion = () => null;
+
+// For short answer questions we render a plain text input directly.
 
 const DEFAULT_AVATAR = "https://zportaacademy.com/media/managed_images/zpacademy.png";
 
@@ -60,6 +59,22 @@ const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, o
         return raw || DEFAULT_AVATAR;
     };
 
+      // Collapse multiple answers by the same user
+    const groupedUsers = Object.values(
+        users.reduce((acc, u) => {
+            const key = u.user_id || u.user?.id || u.username || u.user_username;
+            if (!key) return acc;
+            if (!acc[key]) {
+                acc[key] = {
+                    ...u,
+                    answers: []
+                };
+            }
+            acc[key].answers.push(u.answer_text || u.selected_answer_text || '');
+            return acc;
+        }, {})
+    );
+
     return (
         <div className={styles.modalBackdrop} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -74,7 +89,7 @@ const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, o
                         <div className={styles.emptyState}>No users yet.</div>
                     ) : (
                         <ul className={styles.userList}>
-                            {users.map((u, i) => (
+                            {groupedUsers.map((u, i) => (
                                 <li key={`${u.id || u.session_id || 'row'}-${i}`} className={styles.userRow}>
                                     <img
                                         className={styles.userAvatar}
@@ -84,10 +99,17 @@ const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, o
                                     />
                                     <div className={styles.userMeta}>
                                         <div className={styles.username}>@{getUsername(u)}</div>
-                                        <div className={styles.metaLine}>
-                                            {u.answered_at ? new Date(u.answered_at).toLocaleString() : ''}
-                                            {u.user_quiz_score ? ` · ${u.user_quiz_score.correct}/${u.user_quiz_score.total} (${u.user_quiz_score.percent}%)` : ''}
-                                        </div>
+                                            <div className={styles.metaLine}>
+                                              {u.answered_at ? new Date(u.answered_at).toLocaleString() : ''}
+                                              {u.user_quiz_score
+                                                ? ` · ${u.user_quiz_score.correct}/${u.user_quiz_score.total} (${u.user_quiz_score.percent}%)`
+                                                : ''}
+                                            </div>
+                                            {u.answers?.length > 0 && (
+                                              <div className={styles.answerCount}>
+                                                ✅ Correct answers: {u.answers.length} times
+                                              </div>
+                                            )}
                                     </div>
                                 </li>
                             ))}
@@ -433,9 +455,49 @@ const QuizCard = ({
             )}
           </>
         );
-      // ... other cases from your original file
+      case 'short': {
+        // Text input for short answer questions
+        const currentAnswer = typeof currentQUserAnswer === 'string' ? currentQUserAnswer : '';
+        return (
+          <div className={styles.shortAnswerContainer}>
+            <input
+              type="text"
+              className={styles.textInput}
+              value={currentAnswer}
+              onChange={(e) => handleAnswerChange(currentQuestionId, e.target.value)}
+              disabled={isAnswerSubmittedForCurrent || isLoadingSubmission}
+            />
+            {!isAnswerSubmittedForCurrent && (
+              <button
+               onClick={() => handleSubmitAnswerForCurrentQuestion()}
+                className={styles.nextButton}
+                disabled={currentAnswer.trim().length === 0 || isLoadingSubmission}
+              >
+                {isLoadingSubmission ? <Loader2 className={styles.spinner} /> : 'Submit'}
+              </button>
+            )}
+          </div>
+        );
+      }
+      case 'sort': {
+        const href = takeUrl || (quiz?.permalink ? `/quizzes/${quiz.permalink}` : `/quizzes/${quiz?.id || ''}`);
+        return (
+          <div className={styles.nextBridge}>
+            <p>Open this question in the full quiz view.</p>
+            <a className={styles.takeQuizButton} href={href}>Open Quiz</a>
+          </div>
+        );
+      }
+      case 'dragdrop':
+        const href = takeUrl || (quiz?.permalink ? `/quizzes/${quiz.permalink}` : `/quizzes/${quiz?.id || ''}`);
+        return (
+          <div className={styles.nextBridge}>
+            <p>Open this question in the full quiz view.</p>
+            <a className={styles.takeQuizButton} href={href}>Open Quiz</a>
+          </div>
+        );
       default:
-        return <p className={styles.errorText}>This question type is not supported in this view.</p>;
+        return <div>This question type is not supported in this view.</div>;
     }
   };
 

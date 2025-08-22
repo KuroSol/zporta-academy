@@ -356,3 +356,42 @@
 .loadingContainer, .emptyState { padding: 2rem; text-align: center; color: var(--text-secondary); }
 .loadingIcon { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Styles for short answer questions */
+.shortAnswerContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.textInput {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 1rem;
+}
+.nextBridge {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.answerList {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #444;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.answerItem {
+  background: #f3f3f3;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.answerCount {
+  font-size: 0.85rem;
+  color: #007a33;
+  margin-top: 2px;
+}
