@@ -10,7 +10,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
+from django.db.models import Count, Max, Q
+from django.contrib.auth import get_user_model
 
+from .serializers import ParticipantSerializer
+from analytics.models import ActivityEvent
 from analytics.models import QuizAttempt
 from analytics.utils import (log_event, predict_overall_quiz_retention_days,
                              update_memory_stat_item)
@@ -169,6 +174,65 @@ class CorrectUsersForQuestionView(generics.ListAPIView):
         if correct:
             qs = qs.filter(metadata__is_correct=True)
         return qs
+
+class QuizParticipantsView(ListAPIView):
+    """
+    GET /api/analytics/quizzes/<quiz_id>/participants/?page=1
+    Returns unique users who participated in a quiz (started OR submitted answers),
+    with attempts_count and latest joined_at.
+    """
+    serializer_class = ParticipantSerializer
+    pagination_class = _SmallPage
+    permission_classes = [AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        quiz_id = int(self.kwargs["quiz_id"])
+        User = get_user_model()
+
+        quiz_ct = ContentType.objects.get_for_model(QuizzesQuiz)
+        question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
+        question_ids = QuizzesQuestion.objects.filter(quiz_id=quiz_id).values_list("id", flat=True)
+
+        base = (
+            ActivityEvent.objects
+            .filter(
+                Q(event_type="quiz_started", content_type=quiz_ct, object_id=quiz_id)
+                |
+                Q(event_type="quiz_answer_submitted", content_type=question_ct, object_id__in=question_ids)
+                |
+                Q(event_type="quiz_answer_submitted", metadata__quiz_id=quiz_id)
+            )
+            .select_related("user")
+        )
+
+        agg = (
+            base.values("user_id")
+                .annotate(
+                    attempts_count=Count("id"),
+                    joined_at=Max("timestamp"),
+                )
+                .order_by("-joined_at")
+        )
+
+        page = self.paginate_queryset(agg)
+        rows = page if page is not None else agg
+
+        user_map = {u.id: u for u in User.objects.filter(id__in=[r["user_id"] for r in rows])}
+
+        data = []
+        for r in rows:
+            u = user_map.get(r["user_id"])
+            data.append({
+                "id": r["user_id"],
+                "username": getattr(u, "username", "guest") if u else "guest",
+                "profile_image_url": getattr(u, "profile_image_url", "") if u else "",
+                "joined_at": r["joined_at"],
+                "attempts_count": r["attempts_count"],
+            })
+
+        if page is not None:
+            return self.get_paginated_response(data)
+        return Response({"results": data, "count": len(data), "next": None, "previous": None})
 
 class ActivityEventViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ActivityEventSerializer

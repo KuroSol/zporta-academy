@@ -277,4 +277,16 @@ class CorrectAnswerUserRowSerializer(serializers.ModelSerializer):
             return {"correct": correct, "total": total, "percent": percent}
 
         return {"correct": 0, "total": 0, "percent": 0}
-#dhey i think the data also is not accour i just answer the question inside quiz and i even refresh but its keep showing  no one answer correct 
+    
+class ParticipantSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    profile_image_url = serializers.SerializerMethodField()
+    joined_at = serializers.DateTimeField(source='timestamp')
+
+    class Meta:
+        model = ActivityEvent
+        fields = ['id', 'username', 'profile_image_url', 'joined_at']
+
+    def get_profile_image_url(self, obj):
+        profile = getattr(obj.user, 'profile', None)
+        return profile.image.url if profile and getattr(profile, 'image', None) else ''

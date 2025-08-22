@@ -9,6 +9,7 @@ from .views import (
     QuizDetailedAnalyticsView, # Ensure this is imported from .views
     QuizAttemptOverviewView,
     QuizListAPIView,
+    QuizParticipantsView,
     CorrectUsersForQuestionView,
     # suggest_quizzes_based_on_activity, # This can remain commented if not used
 )
@@ -32,6 +33,10 @@ urlpatterns = [
     path('quizzes/<int:quiz_id>/detailed-statistics/', QuizDetailedAnalyticsView.as_view(), name='analytics-quiz-detailed-statistics'),
     # NEW: /api/analytics/quizzes/<quiz_id>/questions/<question_id>/answers/
     path('quizzes/<int:quiz_id>/questions/<int:question_id>/answers/', CorrectUsersForQuestionView.as_view(), name='analytics-correct-users'),
+
+
+    # NEW: /api/analytics/quizzes/<quiz_id>/participants/
+    path('quizzes/<int:quiz_id>/participants/', QuizParticipantsView.as_view(), name='analytics-quiz-participants'),
 
     path('quiz-attempt-overview/',QuizAttemptOverviewView.as_view(),name='quiz-attempt-overview'),
     # Include router URLs. If analytics.urls is included under 'api/analytics/',

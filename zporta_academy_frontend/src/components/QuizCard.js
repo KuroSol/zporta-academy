@@ -132,7 +132,55 @@ const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, o
     );
 };
 
+const ParticipantsModal = ({ isOpen, onClose, users, isLoading, hasNextPage, onLoadMore }) => {
+  if (!isOpen) return null;
 
+  const getUsername = (u) => u.username || 'guest';
+  const getAvatar = (u) => {
+    const raw = u.profile_image_url || '';
+    if (raw && !raw.startsWith('http')) return `${process.env.REACT_APP_API_BASE_URL}${raw}`;
+    return raw || DEFAULT_AVATAR;
+  };
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h4>All Participants</h4>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.modalBody}>
+          {isLoading && users.length === 0 ? (
+            <div className={styles.loadingContainer}><Loader2 size={24} /></div>
+          ) : users.length === 0 ? (
+            <div className={styles.emptyState}>No participants yet.</div>
+          ) : (
+            <ul className={styles.userList}>
+              {users.map((u, i) => (
+                <li key={u.id || i} className={styles.userRow}>
+                  <img className={styles.userAvatar} src={getAvatar(u)} alt={getUsername(u)} />
+                  <div className={styles.userMeta}>
+                    <div className={styles.username}>@{getUsername(u)}</div>
+                    <div className={styles.metaLine}>
+                      {u.joined_at ? new Date(u.joined_at).toLocaleString() : ''}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {hasNextPage && (
+          <div className={styles.modalFooter}>
+            <button onClick={onLoadMore} disabled={isLoading}>
+              {isLoading ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 const QuizCard = ({
   quiz,
   onItemVisible,
@@ -157,6 +205,11 @@ const QuizCard = ({
   const [publicStatsError, setPublicStatsError] = useState(null);
   const [showCorrectUsers, setShowCorrectUsers] = useState(false);
   const [correctUsers, setCorrectUsers] = useState([]);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [participantsPage, setParticipantsPage] = useState(1);
+  const [participantsHasNext, setParticipantsHasNext] = useState(false);
   const [cuPage, setCuPage] = useState(1);
   const [cuHasNext, setCuHasNext] = useState(false);
   const [isLoadingCorrectUsers, setIsLoadingCorrectUsers] = useState(false);
@@ -261,6 +314,22 @@ const QuizCard = ({
       setIsLoadingCorrectUsers(false);
     }
   }, [quiz?.id, currentQuestionId, token]);
+
+
+  // NEW: fetch participants
+  const fetchParticipants = useCallback(async (page = 1) => {
+    if (!quiz?.id) return;
+    setIsLoadingParticipants(true);
+    try {
+      const res = await apiClient.get(`/analytics/quizzes/${quiz.id}/participants/?page=${page}`);
+      const items = Array.isArray(res?.data?.results) ? res.data.results : [];
+      setParticipants(prev => (page === 1 ? items : [...prev, ...items]));
+      setParticipantsHasNext(Boolean(res?.data?.next));
+      setParticipantsPage(page);
+    } finally {
+      setIsLoadingParticipants(false);
+    }
+  }, [quiz?.id]);
 
   const mcqOptions = useMemo(() => currentQuestionId ? [
     { key: 'option1', index: 1, text: currentQuestion.option1, img: currentQuestion.option1_image, aud: currentQuestion.option1_audio },
@@ -520,7 +589,15 @@ const QuizCard = ({
                     <div className={styles.quizStatsLine}>
                         {isLoadingPublicStats ? <Loader2 size={16} className="animate-spin" /> : publicStatsError ? <AlertTriangle size={16} color="var(--incorrect-color)" /> : (
                         <>
-                            <div className={styles.statItem} title="Participants"><Users size={14} /><span>{publicStats.uniqueParticipants}</span></div>
+                        <button
+                          className={styles.statItemClickable}
+                          title="Participants"
+                          onClick={() => { setShowParticipants(true); fetchParticipants(1); }}
+                        >
+                          <Users size={14} />
+                          <span>{publicStats.uniqueParticipants}</span>
+                        </button>
+                      
                             <div className={styles.statItem} title="Correct"><CheckCircle size={14} className={styles.correctText} /><span>{publicStats.totalCorrectAnswersForQuiz}</span></div>
                             <div className={styles.statItem} title="Wrong"><XCircle size={14} className={styles.incorrectText} /><span>{publicStats.totalWrongAnswersForQuiz}</span></div>
                         </>
@@ -612,6 +689,14 @@ const QuizCard = ({
         isLoading={isLoadingCorrectUsers}
         hasNextPage={cuHasNext}
         onLoadMore={() => fetchCorrectUsers(cuPage + 1)}
+      />
+      <ParticipantsModal
+        isOpen={showParticipants}
+        onClose={() => setShowParticipants(false)}
+        users={participants}
+        isLoading={isLoadingParticipants}
+        hasNextPage={participantsHasNext}
+        onLoadMore={() => fetchParticipants(participantsPage + 1)}
       />
     </>
   );
