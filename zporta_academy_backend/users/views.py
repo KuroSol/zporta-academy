@@ -275,6 +275,17 @@ class ProfileView(APIView):
         data['preferences'] = pref_payload
 
         return Response(data, status=HTTP_200_OK)
+    
+    def put(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            # (Optional) reattach preferences block exactly like GET
+            return Response(serializer.data, status=HTTP_200_OK)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+    patch = put
 
 # Register View
 class RegisterView(APIView):

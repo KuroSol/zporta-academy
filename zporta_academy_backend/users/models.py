@@ -21,6 +21,7 @@ class Profile(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    display_name = models.CharField(max_length=60, blank=True, default="")
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='explorer')
     bio = models.TextField(blank=True, null=True)
     active_guide = models.BooleanField(default=False)

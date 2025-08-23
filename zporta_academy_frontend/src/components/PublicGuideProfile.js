@@ -446,7 +446,9 @@ const PublicGuideProfile = () => {
             />
           </div>
           <div className={styles.sidebarInfo}>
-            <h1 className={styles.sidebarUsername}>{profile.username}</h1>
+            <h1 className={styles.sidebarUsername}>
+              {profile.display_name?.trim() || profile.username}
+            </h1>
             <p className={styles.sidebarJoined}>
               Guide since: {new Date(profile.date_joined).toLocaleDateString()}
             </p>

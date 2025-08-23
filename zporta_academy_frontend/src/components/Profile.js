@@ -46,6 +46,10 @@ const Profile = () => {
   const [newEmail, setNewEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
+  // --- Display Name Edit State ---
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [displayNameError, setDisplayNameError] = useState("");
   // --- Password Change State ---
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -99,6 +103,7 @@ const Profile = () => {
       const response = await apiClient.get('/users/profile/');
       setProfile(response.data);
       setNewEmail(response.data.email); // Initialize newEmail with current profile email
+      setNewDisplayName(response.data.display_name || "");
     } catch (err) {
       console.error("Fetch profile error:", err.response ? err.response.data : err.message);
       setError(err.response?.data?.detail || "Failed to fetch profile. Please try again.");
@@ -261,6 +266,40 @@ const Profile = () => {
     }
   };
 
+  
+  const handleDisplayNameEditToggle = () => {
+    setEditingDisplayName(!editingDisplayName);
+    setNewDisplayName(profile?.display_name || "");
+    setDisplayNameError('');
+    setError('');
+  };
+
+  const handleDisplayNameSave = async () => {
+    const value = (newDisplayName || "").trim();
+    if (!value) {
+      setDisplayNameError("Display name cannot be empty.");
+      return;
+    }
+    if (value.length > 50) {
+      setDisplayNameError("Display name must be 50 characters or fewer.");
+      return;
+    }
+    setDisplayNameError('');
+    try {
+      await apiClient.put('/users/profile/', { display_name: value });
+      setEditingDisplayName(false);
+      fetchProfileCallback();
+    } catch (err) {
+      // backend may return {"display_name": ["..."]} or {"detail": "..."}
+      setDisplayNameError(
+        err.response?.data?.display_name?.[0] ||
+        err.response?.data?.detail ||
+        "Failed to update display name."
+      );
+      if (err.response?.status === 401) logout();
+    }
+  };
+
   const toggleChangePasswordForm = () => { setShowChangePassword(!showChangePassword); setChangePasswordMessage({ text: "", type: "error" }); setCurrentPassword(""); setNewPassword(""); setConfirmNewPassword(""); setError(''); };
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -337,7 +376,9 @@ const Profile = () => {
                 </div>
               )}
               
-              <h1 className={styles.username}>{profile.username}</h1>
+              <h1 className={styles.username}>
+                {profile.display_name?.trim() || profile.username}
+              </h1>
               <p className={styles.joinedDate}> Joined: {new Date(profile.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} </p>
              
               <div className={styles.scoreContainer}>
@@ -362,6 +403,56 @@ const Profile = () => {
               </div>
 
               <div className="space-y-5 mt-5"> {/* Tailwind for simple spacing */}
+                {/* Display Name (editable like Email) */}
+                <div className={styles.infoSection}>
+                  <div className={styles.infoLabelContainer}>
+                    <span className={styles.infoLabel}>Display name:</span>
+                    {!editingDisplayName && (
+                      <button
+                        onClick={handleDisplayNameEditToggle}
+                        title="Edit Display Name"
+                        className={styles.editIconButton}
+                      >
+                        <FaEdit size={16} />
+                      </button>
+                    )}
+                  </div>
+                  {editingDisplayName ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={newDisplayName}
+                        onChange={(e) => setNewDisplayName(e.target.value)}
+                        className={styles.infoInput}
+                        placeholder="Your public name"
+                        maxLength={50}
+                      />
+                      {displayNameError && (
+                        <p className={`${styles.errorState} text-xs !p-2 mt-2`}>
+                          {displayNameError}
+                        </p>
+                      )}
+                      <div className={styles.emailEditActions}>
+                        <button
+                          onClick={handleDisplayNameSave}
+                          className={`${styles.sidebarButton} ${styles.uploadBtn} !mt-0 !py-1.5 !px-3`}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleDisplayNameEditToggle}
+                          className={`${styles.sidebarButton} ${styles.cancelBtn} !bg-slate-500 hover:!bg-slate-600 !mt-0 !py-1.5 !px-3`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className={styles.infoValue}>
+                      {profile.display_name?.trim() || "—"}
+                    </span>
+                  )}
+                </div>
                 <div className={styles.infoSection}>
                     <div className={styles.infoLabelContainer}>
                         <span className={styles.infoLabel}>Email:</span>
