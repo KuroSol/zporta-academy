@@ -175,64 +175,42 @@ class CorrectUsersForQuestionView(generics.ListAPIView):
             qs = qs.filter(metadata__is_correct=True)
         return qs
 
-class QuizParticipantsView(ListAPIView):
+class QuizParticipantsView(generics.ListAPIView):
     """
     GET /api/analytics/quizzes/<quiz_id>/participants/?page=1
-    Returns unique users who participated in a quiz (started OR submitted answers),
-    with attempts_count and latest joined_at.
+    Returns unique users who participated in a quiz, ordered by when they last participated.
     """
     serializer_class = ParticipantSerializer
     pagination_class = _SmallPage
     permission_classes = [AllowAny]
 
-    def list(self, request, *args, **kwargs):
-        quiz_id = int(self.kwargs["quiz_id"])
-        User = get_user_model()
+    def get_queryset(self):
+        quiz_id = self.kwargs.get('quiz_id')
+        
+        # 1. Find all users who have a 'quiz_started' event for this quiz.
+        participant_user_ids = ActivityEvent.objects.filter(
+            object_id=quiz_id,
+            content_type__model='quiz',
+            event_type='quiz_started'
+        ).values_list('user_id', flat=True).distinct()
 
-        quiz_ct = ContentType.objects.get_for_model(QuizzesQuiz)
-        question_ct = ContentType.objects.get_for_model(QuizzesQuestion)
-        question_ids = QuizzesQuestion.objects.filter(quiz_id=quiz_id).values_list("id", flat=True)
+        # 2. For each of those users, find the ID of their most recent 'quiz_started' event.
+        latest_event_ids = []
+        for user_id in participant_user_ids:
+            latest_event = ActivityEvent.objects.filter(
+                user_id=user_id,
+                object_id=quiz_id,
+                content_type__model='quiz',
+                event_type='quiz_started'
+            ).order_by('-timestamp').first()
+            if latest_event:
+                latest_event_ids.append(latest_event.id)
 
-        base = (
-            ActivityEvent.objects
-            .filter(
-                Q(event_type="quiz_started", content_type=quiz_ct, object_id=quiz_id)
-                |
-                Q(event_type="quiz_answer_submitted", content_type=question_ct, object_id__in=question_ids)
-                |
-                Q(event_type="quiz_answer_submitted", metadata__quiz_id=quiz_id)
-            )
-            .select_related("user")
-        )
-
-        agg = (
-            base.values("user_id")
-                .annotate(
-                    attempts_count=Count("id"),
-                    joined_at=Max("timestamp"),
-                )
-                .order_by("-joined_at")
-        )
-
-        page = self.paginate_queryset(agg)
-        rows = page if page is not None else agg
-
-        user_map = {u.id: u for u in User.objects.filter(id__in=[r["user_id"] for r in rows])}
-
-        data = []
-        for r in rows:
-            u = user_map.get(r["user_id"])
-            data.append({
-                "id": r["user_id"],
-                "username": getattr(u, "username", "guest") if u else "guest",
-                "profile_image_url": getattr(u, "profile_image_url", "") if u else "",
-                "joined_at": r["joined_at"],
-                "attempts_count": r["attempts_count"],
-            })
-
-        if page is not None:
-            return self.get_paginated_response(data)
-        return Response({"results": data, "count": len(data), "next": None, "previous": None})
+        # 3. Fetch those specific events and crucially, pre-fetch the related user and profile data.
+        queryset = ActivityEvent.objects.filter(id__in=latest_event_ids)\
+                                        .select_related('user', 'user__profile')\
+                                        .order_by('-timestamp')
+        return queryset
 
 class ActivityEventViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ActivityEventSerializer

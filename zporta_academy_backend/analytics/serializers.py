@@ -228,24 +228,24 @@ class QuizListSerializer(serializers.ModelSerializer):
 # --- Users-who-answered-correctly row (for the “Correctly” modal) ---
 class CorrectAnswerUserRowSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True, allow_null=True)
+    display_name = serializers.CharField(source="user.profile.display_name", read_only=True, allow_null=True)
     profile_image_url = serializers.SerializerMethodField()
     answered_at = serializers.DateTimeField(source="timestamp", read_only=True)
     user_quiz_score = serializers.SerializerMethodField()  # DRF will call get_user_quiz_score
 
     class Meta:
         model = ActivityEvent
-        fields = ("username", "profile_image_url", "answered_at", "session_id", "user_quiz_score")
+        fields = ("username", "display_name", "profile_image_url", "answered_at", "session_id", "user_quiz_score")
         read_only_fields = fields
 
     def get_profile_image_url(self, obj):
-        u = getattr(obj, "user", None)
-        if not u:
-            return None
-        prof = getattr(u, "profile", None)
-        if prof and hasattr(prof, "profile_image_url"):
-            return prof.profile_image_url
-        # fallback if you store it on user
-        return getattr(u, "profile_image_url", None)
+        request = self.context.get("request")
+        profile = getattr(obj.user, 'profile', None)
+        if profile and profile.profile_image:
+            if request:
+                return request.build_absolute_uri(profile.profile_image.url)
+            return profile.profile_image.url
+        return None
 
     def get_user_quiz_score(self, obj):
         # Prefer session-bound progress
@@ -280,13 +280,19 @@ class CorrectAnswerUserRowSerializer(serializers.ModelSerializer):
     
 class ParticipantSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')
+    display_name = serializers.CharField(source='user.profile.display_name', read_only=True)
     profile_image_url = serializers.SerializerMethodField()
     joined_at = serializers.DateTimeField(source='timestamp')
 
     class Meta:
         model = ActivityEvent
-        fields = ['id', 'username', 'profile_image_url', 'joined_at']
+        fields = ['id', 'username', 'display_name', 'profile_image_url', 'joined_at']
 
     def get_profile_image_url(self, obj):
+        request = self.context.get("request")
         profile = getattr(obj.user, 'profile', None)
-        return profile.image.url if profile and getattr(profile, 'image', None) else ''
+        if profile and profile.profile_image:
+            if request:
+                return request.build_absolute_uri(profile.profile_image.url)
+            return profile.profile_image.url
+        return None
