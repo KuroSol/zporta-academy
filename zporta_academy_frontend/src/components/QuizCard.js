@@ -148,6 +148,7 @@ const ParticipantsModal = ({ isOpen, onClose, users, isLoading, hasNextPage, onL
     return raw || DEFAULT_AVATAR;
   };
 
+  
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
