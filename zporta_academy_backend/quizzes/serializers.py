@@ -13,6 +13,7 @@ from analytics.models import ActivityEvent
 from tags.serializers import TagSerializer
 from users.models import Profile
 from django.contrib.auth.models import User
+from users.serializers import PublicProfileSerializer 
 # --- Serializers for Drag & Drop Nested Data ---
 import re, unicodedata
 SPLIT_RE = re.compile(r'[\s\u3000,，、;；]+' )  # space, full-width space, commas, etc.
@@ -175,21 +176,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class SimpleUserSerializer(serializers.ModelSerializer):
-    avatar = serializers.CharField(
-        source='profile.image_url',  # or wherever your User → Profile → image field lives
-        read_only=True
-    )
-
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'avatar']
-
 # --- Main Quiz Serializer ---
 # This serializer now correctly handles both reading and writing nested questions.
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, required=False)
-    created_by = SimpleUserSerializer(read_only=True)
+    created_by = PublicProfileSerializer(source='created_by.profile', read_only=True)
     attempt_count = serializers.IntegerField(read_only=True)
     correct_count = serializers.IntegerField(read_only=True)
     wrong_count = serializers.IntegerField(read_only=True)

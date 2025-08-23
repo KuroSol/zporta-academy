@@ -39,6 +39,12 @@ function resolveAvatarUrl(user) {
   }
   return url || DEFAULT_AVATAR;
 }
+// ✅ Unified helper: prefer display_name everywhere, fallback to username(s)
+const getDisplayName = (u) =>
+  (u?.display_name && u.display_name.trim()) ||
+  (u?.user_display_name && u.user_display_name.trim()) ||
+  (u?.user?.display_name && u.user.display_name.trim()) ||
+  u?.username || u?.user_username || u?.user?.username || "guest";
 
 // Helper for rendering media elements
 const RenderCardMedia = ({ url, type, alt = '', className = '', controls = true }) => {
@@ -52,7 +58,7 @@ const RenderCardMedia = ({ url, type, alt = '', className = '', controls = true 
 const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, onLoadMore }) => {
     if (!isOpen) return null;
 
-    const getUsername = (u) => u.user_username || u.username || u.user?.username || 'guest';
+    const getUsername = (u) => getDisplayName(u);
     const getAvatar = (u) => {
         const raw = u.user_profile_image_url || u.profile_image_url || u.user?.profile_image_url || '';
         if (raw && !raw.startsWith('http')) return `${process.env.REACT_APP_API_BASE_URL}${raw}`;
@@ -135,7 +141,7 @@ const UsersCorrectlyModal = ({ isOpen, onClose, users, isLoading, hasNextPage, o
 const ParticipantsModal = ({ isOpen, onClose, users, isLoading, hasNextPage, onLoadMore }) => {
   if (!isOpen) return null;
 
-  const getUsername = (u) => u.username || 'guest';
+  const getUsername = (u) => getDisplayName(u);
   const getAvatar = (u) => {
     const raw = u.profile_image_url || '';
     if (raw && !raw.startsWith('http')) return `${process.env.REACT_APP_API_BASE_URL}${raw}`;
@@ -579,8 +585,15 @@ const QuizCard = ({
                 <div className={styles.cardTitleContainer} style={{ background: cardGradient }}>
                     {quiz.created_by && (
                         <Link to={`/guide/${quiz.created_by.username}`} className={styles.creatorInfo}>
-                        <img src={resolveAvatarUrl(quiz.created_by)} alt={`${quiz.created_by.username}'s avatar`} className={styles.creatorAvatar} onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }} />
-                        <span className={styles.creatorName}>{quiz.created_by.username}</span>
+                          <img
+                            src={resolveAvatarUrl(quiz.created_by)}
+                            alt={`${getDisplayName(quiz.created_by)}'s avatar`}
+                            className={styles.creatorAvatar}
+                            onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
+                          />
+                          <span className={styles.creatorName}>
+                            {getDisplayName(quiz.created_by)}
+                          </span>
                         </Link>
                     )}
                     <h2 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
@@ -615,7 +628,7 @@ const QuizCard = ({
           <div className={styles.expandedContent}>
              <div className={styles.expandedHeader}>
                 <div className={styles.progressIndicator}>
-                    {quiz.created_by.username} | {currentIndex + 1} / {totalQuestions}
+                    {getDisplayName(quiz.created_by)} | {currentIndex + 1} / {totalQuestions}
                 </div>
                 <div className={styles.questionProgress}>
                     {questions.map((q, index) => (
