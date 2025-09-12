@@ -1,6 +1,6 @@
 // src/components/Modal/Modal.js
 import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 import { FaTimes } from 'react-icons/fa';
 
@@ -38,7 +38,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
 
   const contentClass = `${styles.modalContent} ${styles[size] || styles.medium}`;
 
-  return ReactDOM.createPortal(
+  return createPortal(
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={contentClass} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>

@@ -30,11 +30,10 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_og_image_url(self, obj):
         request = self.context.get('request')
-        if obj.og_image:
-            if request:
-                return request.build_absolute_uri(obj.og_image.url)
-            return f"{settings.SITE_URL}{obj.og_image.url}"
-        return None
+        if not obj.og_image:
+            return ""
+        return request.build_absolute_uri(obj.og_image.url) if request else f"{settings.SITE_URL}{obj.og_image.url}" or ""
+
 
     def create(self, validated_data):
         # Create the post normally

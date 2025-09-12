@@ -1,91 +1,33 @@
-// src/pages/quizzes/[username]/[subject]/[date]/[slug]/index.js
-import React from 'react'
-import Head from 'next/head'
-import axios from 'axios'
-import he from 'he'
-import { AuthProvider } from '@/context/AuthContext'
-import { AuthModalProvider } from '@/context/AuthModalContext'
-import QuizPage from '@/components/QuizPage'
+import QuizPage from "@/components/QuizPage";
 
-const QuizRoute = ({ quizData, permalink }) => {
-  if (!quizData) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Quiz not found.</h1>
-      </div>
-    )
-  }
-
-  const data = quizData.quiz || quizData
-
-  // Clean SEO Description fields
-  const cleanDescription = (rawDesc, fallback) => {
-    const decoded = he.decode(rawDesc || '')
-      .replace(/\u00A0/g, ' ')
-      .trim();
-    return decoded || fallback;
-  };
-
-  const description = cleanDescription(
-    data.seo_description,
-    'Interactive quiz on Zporta Academy'
-  );
-
-  const ogDescription = cleanDescription(
-    data.og_description || data.seo_description,
-    'Check out this quiz on Zporta Academy!'
-  );
-
-  const title = data.seo_title || data.title || 'Quiz';
-  const canonical = data.canonical_url || `https://zportaacademy.com/quizzes/${permalink}/`;
-  const ogImage = (data.og_image?.trim())
-    ? data.og_image
-    : 'https://zportaacademy.com/static/default_quiz_image.png';
-
-  return (
-    <AuthProvider>
-      <AuthModalProvider>
-        <Head>
-          <title>{title}</title>
-          <meta name="description" content={description} />
-          <link rel="canonical" href={canonical} />
-
-          {/* Open Graph / Facebook */}
-          <meta property="og:type" content="article" />
-          <meta property="og:site_name" content="Zporta Academy" />
-          <meta property="og:title" content={title} />
-          <meta property="og:description" content={ogDescription} />
-          <meta property="og:url" content={canonical} />
-          <meta property="og:image" content={ogImage} />
-
-          {/* Twitter */}
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content={title} />
-          <meta name="twitter:description" content={ogDescription} />
-          <meta name="twitter:image" content={ogImage} />
-
-          {/* Encourage indexing */}
-          <meta name="robots" content="index,follow" />
-        </Head>
-
-        <QuizPage initialData={data} permalink={permalink} />
-      </AuthModalProvider>
-    </AuthProvider>
-  )
+export default function Page({ quiz, username, subject, date, slug }) {
+  return <QuizPage initialData={quiz} username={username} subject={subject} date={date} slug={slug} />;
 }
 
-export async function getServerSideProps({ params }) {
-  const { username, subject, date, slug } = params;
+export async function getServerSideProps(ctx) {
+  const { username, subject, date, slug } = ctx.params;
   const permalink = `${username}/${subject}/${date}/${slug}`;
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+  const base =
+    process.env.API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://127.0.0.1:8000/api/";
+  const url = `${base.replace(/\/+$/, "")}/quizzes/${permalink}/`;
+
+  let quiz = null;
   try {
-    const res = await axios.get(`${apiBase}quizzes/${permalink}/`);
-    return { props: { quizData: res.data, permalink } };
-  } catch (err) {
-    console.error('SSR fetch error:', err.message);
-    return { props: { quizData: null, permalink } };
+    const r = await fetch(url, { headers: { accept: "application/json" } });
+    if (r.ok) {
+      const data = await r.json();
+      quiz = data.quiz || data;
+    }
+  } catch (e) {
+    console.error("SSR fetch quiz failed:", e);
   }
-}
 
-export default QuizRoute;
+  if (!quiz || quiz.status !== "published" || quiz.quiz_type !== "free") {
+    return { notFound: true };
+  }
+
+  return { props: { quiz, username, subject, date, slug } };
+}

@@ -27,7 +27,7 @@ ALLOWED_HOSTS = [
     'www.zportaacademy.com',   # The www version of your domain
     # Add 'zportaacademy.com', 'www.zportaacademy.com' later when you switch
 ]
-
+QUIZ_ORIGIN = os.environ.get('QUIZ_ORIGIN', 'https://zportaacademy.com')
 # --- STEP 2: Update CSRF_TRUSTED_ORIGINS ---
 # Trust requests coming from your domain via HTTPS (Cloudflare handles the HTTPS)
 CSRF_TRUSTED_ORIGINS = [

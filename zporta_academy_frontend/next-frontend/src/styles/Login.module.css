@@ -1,5 +1,21 @@
-/* Define modern color palette and variables */
-
+/* Define modern color palette and variables 
+:root {
+    --primary-color: #4A90E2; /* A friendly, modern blue 
+    --primary-hover: #357ABD;
+    --secondary-color: #50E3C2; /* A vibrant accent color 
+    --text-dark: #333;
+    --text-light-DEPRECATED: #5a6168; /* This is being replaced by direct color values below 
+    --text-white: #fff;
+    --bg-light: #f7f9fc;
+    --bg-white: #ffffff;
+    --border-color: #dfe3e8;
+    --error-color: #D0021B;
+    --success-color: #7ED321;
+    --info-color: #4A90E2;
+    --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    --border-radius: 12px;
+}
+*/
 .loginPageContainer {
     display: flex;
     justify-content: center;

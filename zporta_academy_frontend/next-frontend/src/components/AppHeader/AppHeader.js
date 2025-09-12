@@ -1,9 +1,8 @@
 import React, { useContext } from 'react';
 import Link from 'next/link';
-import styles from '../../styles/AppHeader.module.css'; // Assuming the CSS module is in the same folder
-import { AuthContext } from '../../context/AuthContext'; // Adjust path as needed to your AuthContext
+import styles from '@/styles/AppHeader.module.css'; // Assuming the CSS module is in the same folder
+import { AuthContext } from '@/context/AuthContext'; // Adjust path as needed to your AuthContext
 import { FaUserCircle } from 'react-icons/fa'; // Example icon
-
 // If you have an SVG or a very optimized small PNG logo, you can import it:
 // import logoImageSrc from '../assets/zporta-logo-icon.svg'; // Example path
 

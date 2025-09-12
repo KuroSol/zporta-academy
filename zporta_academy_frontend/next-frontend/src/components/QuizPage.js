@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import SpeechToTextInput from './SpeechToTextInput'; // Adjust the import path as needed
 import styles from '../styles/QuizPage.module.css';
-import SortQuestion from './SortQuestion';
 import FillInTheBlanksQuestion from './FillInTheBlanksQuestion';
 import { useRouter } from 'next/router';
 import ReportQuizModal from './ReportQuizModal';
@@ -80,7 +79,7 @@ const StatItem = ({ icon, label, value }) => (
 );
 
 // --- Main Quiz Page Component ---
-const QuizPage = ({ initialData, permalink }) => {
+const QuizPage = ({ initialData, permalink: propPermalink, username: pUser, subject: pSubj, date: pDate, slug: pSlug }) => {
     // seed with SSR data so our <Head> is correct on first paint:
     const [quizData, setQuizData] = useState(initialData);
     const [loading, setLoading] = useState(true);
@@ -91,6 +90,18 @@ const QuizPage = ({ initialData, permalink }) => {
     const [feedback, setFeedback] = useState({});
     const [isDeleting, setIsDeleting] = useState(false);
     const [showHint, setShowHint] = useState(null);
+    const router = useRouter();
+
+    // Build permalink from props or router.query during client nav
+    const username = pUser ?? router.query.username;
+    const subject  = pSubj ?? router.query.subject;
+    const date     = pDate ?? router.query.date;
+    const slug     = pSlug ?? router.query.slug;
+    const permalink = propPermalink ?? (
+      [username, subject, date, slug].every(Boolean)
+        ? `${username}/${subject}/${date}/${slug}`
+        : null
+    );
     const shownModalRef = useRef(false);
 
     // --- FIX: Track when each question was shown ---
@@ -121,6 +132,7 @@ const QuizPage = ({ initialData, permalink }) => {
     const isOwner = !!user?.username && !!quizCreatorUsername && user.username === quizCreatorUsername;
 
     const fetchQuiz = useCallback(async () => {
+        if (!permalink) return; // wait until params exist
         setLoading(true);
         setError(null);
         setQuizData(null);
@@ -132,7 +144,9 @@ const QuizPage = ({ initialData, permalink }) => {
         questionStartTimes.current = {}; // Reset timer on new fetch
 
         try {
-            const res = await apiClient.get(`quizzes/${permalink}/`);
+            const url = `/quizzes/${permalink}/`;
+            if (typeof window !== 'undefined') console.log('GET', (apiClient.defaults?.baseURL || '') + url);
+            const res = await apiClient.get(url);
             const fetchedQuizData = res.data?.quiz || res.data;
 
             if (!fetchedQuizData) throw new Error("Quiz data not found in API response.");
@@ -186,7 +200,7 @@ const QuizPage = ({ initialData, permalink }) => {
 
   // as soon as token changes, either fetch or show login modal + stop loader
     useEffect(() => {
-        fetchQuiz(); // always fetch, even if no token
+        if (permalink) fetchQuiz();
     }, [permalink, fetchQuiz]);
     // --- NEW: tell backend “I’ve started this quiz” as soon as it loads ---
     useEffect(() => {
@@ -507,8 +521,7 @@ const QuizPage = ({ initialData, permalink }) => {
                         )}
                     </div>
                 );
-            case 'sort':
-                return <SortQuestion question={currentQuestion} submitted={isAnswerSubmitted} userAnswer={userAnswers[currentQuestionId]} onChange={(order) => handleAnswerChange(currentQuestionId, order)} onSubmit={() => handleSubmitAnswer(currentQuestionId)} feedback={currentFeedback} />;
+           
             case 'dragdrop':
                 if (!currentQuestion?._fill_blank) return <p>Loading question...</p>;
                 return <FillInTheBlanksQuestion question={currentQuestion} disabled={isAnswerSubmitted} onSubmit={(filledMap) => handleSubmitAnswer(currentQuestionId, filledMap)} submittedAnswer={userAnswers[currentQuestionId]} feedback={currentFeedback} />;

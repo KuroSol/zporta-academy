@@ -1,6 +1,6 @@
 // src/components/Quiz/FillInTheBlanksQuestion.js
 import React, { useState, useEffect } from 'react';
-import styles from '../styles/QuizPage.module.css';
+import styles from '@/styles/QuizPage.module.css';
 const FillInTheBlanksQuestion = ({ question, disabled, onSubmit, submittedAnswer, feedback }) => {
     // Destructure _fill_blank from question, providing defaults if _fill_blank or its properties are missing
     const { 

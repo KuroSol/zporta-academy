@@ -1,12 +1,5 @@
-// src/pages/index.js
-export default function Index() {
-  return null;
-}
+import dynamic from "next/dynamic";
 
-export async function getServerSideProps() {
-  const dest =
-    process.env.MAIN_ORIGIN ||
-    process.env.NEXT_PUBLIC_MAIN_ORIGIN ||
-    '/';
-  return { redirect: { destination: dest, permanent: false } };
-}
+const HomePage = dynamic(() => import("@/components/HomePage").then(m => m.default || m), { ssr:false });
+
+export default function Page(){ return <HomePage/>; }

@@ -1,7 +1,9 @@
 // src/components/layout/AppLayout.js
-import { useState } from 'react';
-import AppHeader from '../AppHeader/AppHeader';
-import SidebarMenu from '../SidebarMenu';
+import { useEffect, useRef, useState } from "react";
+import AppHeader from '@/components/AppHeader/AppHeader';
+import SidebarMenu from '@/components/SidebarMenu';
+
+
 
 export default function AppLayout({ children, enabled = true }) {
   if (!enabled) return <>{children}</>;
@@ -12,10 +14,8 @@ export default function AppLayout({ children, enabled = true }) {
     <>
       <AppHeader />
       <SidebarMenu isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
-      {/* keep content below the fixed header */}
-      <main style={{ paddingTop: '55px' }}>
-        {children}
-      </main>
+      <main className="app-shell" style={{ paddingTop: '50px' }}>{children}</main>
+      
     </>
   );
 }

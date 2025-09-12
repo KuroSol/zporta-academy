@@ -35,7 +35,7 @@ DATABASES = {
 }
 
 
-
+QUIZ_ORIGIN = os.environ.get('QUIZ_ORIGIN', 'http://localhost:3000')
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 CURRENT_DOMAIN = 'http://localhost:8000'
