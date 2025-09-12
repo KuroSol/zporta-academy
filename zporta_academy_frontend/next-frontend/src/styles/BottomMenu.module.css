@@ -1,0 +1,70 @@
+/* No :root in modules. Uses global tokens or inline fallback. */
+
+.container{
+  position:fixed;
+  bottom:12px;
+  z-index:1300;
+  pointer-events:none;
+}
+.container *{ pointer-events:auto; }
+
+/* under the sidebar on the LEFT */
+.leftDock{ left: calc(var(--sidebar-width, 64px) + 12px); }
+
+/* optional right edge preset (not used here) */
+.rightEdge{ right:12px; }
+
+.menu{ position:relative; width:50px; height:50px; }
+
+/* background slab when open, expanding to the LEFT */
+.expandLeft.open::before{
+  content:"";
+  position:absolute; right:0; top:0;
+  width:calc(50px + 350px); height:100%;
+  background-color: var(--card-bg, rgba(255,255,255,0.9));
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  border-radius:12px; z-index:-1;
+}
+
+/* yellow hex buttons */
+.button{
+  position:absolute; width:50px; height:50px;
+  clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%);
+  display:flex; align-items:center; justify-content:center;
+  border:none; cursor:pointer; outline:none;
+  transition:transform 160ms ease, opacity 180ms ease;
+  background: var(--primary-color, #FFC107);
+  color: var(--text-on-accent-bg, #1B2735);
+}
+.button:hover,.button:focus-visible{
+  transform:scale(1.1);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0,0,0,.1));
+}
+
+.mainButton{ z-index:2; transform:rotate(0deg); }
+.open .mainButton{ transform:rotate(90deg); }
+
+/* items hidden by default */
+.item{
+  pointer-events:none; transform:translateX(0); opacity:0;
+  background:#1B2735; color:#fff;
+}
+.open .item{ opacity:1; pointer-events:auto; }
+
+/* EXPAND RIGHT→LEFT (negative X) */
+.expandLeft.open .item1{ transform:translateX(-70px); }
+.expandLeft.open .item2{ transform:translateX(-140px); }
+.expandLeft.open .item3{ transform:translateX(-210px); }
+.expandLeft.open .item4{ transform:translateX(-280px); }
+.expandLeft.open .item5{ transform:translateX(-350px); } /* if you enable post */
+
+@media (max-width:480px){
+  .menu{ width:40px; height:40px; }
+  .button{ width:40px; height:40px; font-size:14px; }
+  .expandLeft.open::before{ width:calc(40px + 280px); }
+  .expandLeft.open .item1{ transform:translateX(-56px); }
+  .expandLeft.open .item2{ transform:translateX(-112px); }
+  .expandLeft.open .item3{ transform:translateX(-168px); }
+  .expandLeft.open .item4{ transform:translateX(-224px); }
+  .expandLeft.open .item5{ transform:translateX(-280px); }
+}

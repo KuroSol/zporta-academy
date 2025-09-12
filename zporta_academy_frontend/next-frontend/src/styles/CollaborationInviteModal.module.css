@@ -1,0 +1,240 @@
+/* Styles for CollaborationInviteModal.js */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 20, 30, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--zindex-overlay-backdrop, 1050);
+  backdrop-filter: blur(5px);
+}
+
+.modalContent {
+  background: var(--overlay-panel-bg, #fff);
+  padding: 2rem;
+  border-radius: var(--overlay-panel-radius, 16px);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: var(--overlay-panel-shadow, 0 10px 30px rgba(0,0,0,0.1));
+  animation: slide-up 0.3s ease-out;
+}
+
+.dark .modalContent {
+  background-color: #1f2937; /* gray-800 */
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af; /* gray-400 */
+}
+.closeButton:hover {
+  color: #111827; /* gray-900 */
+}
+.dark .closeButton {
+  color: #6b7280; /* gray-500 */
+}
+.dark .closeButton:hover {
+  color: #f9fafb; /* gray-50 */
+}
+
+.modalHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader svg {
+  margin: 0 auto 0.75rem;
+}
+
+.modalTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #111827); }
+.dark .modalTitle { color: #f9fafb; }
+
+.modalSubtitle { font-size: 0.9rem; color: var(--text-secondary, #6b7280); margin-top: 0.25rem; }
+.dark .modalSubtitle { color: #9ca3af; }
+
+.searchContainer {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af; /* gray-400 */
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.searchInput:focus {
+  outline: none;
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+.dark .searchInput {
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+  color: #f9fafb; /* gray-50 */
+}
+
+.resultsContainer {
+  min-height: 150px;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+.dark .resultsContainer {
+    border-color: #4b5563; /* gray-600 */
+}
+
+
+.loader {
+  display: block;
+  margin: 2rem auto;
+  animation: spin 1s linear infinite;
+  color: #3b82f6; /* blue-500 */
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.errorText, .noResults {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280; /* gray-500 */
+}
+
+.userList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.userListItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+.userListItem:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+.dark .userListItem:hover {
+  background-color: #374151; /* gray-700 */
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userName {
+  font-weight: 600;
+  color: #1f2937; /* gray-800 */
+}
+.dark .userName {
+  color: #f9fafb; /* gray-50 */
+}
+
+.userEmail {
+  font-size: 0.8rem;
+  color: #6b7280; /* gray-500 */
+}
+
+.inviteButton {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: 0.5rem 1rem; border: 1px solid transparent;
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--zporta-gold); color: var(--text-on-primary-bg, #fff);
+  font-weight: 600; transition: var(--transition-smooth, all .3s ease);
+  box-shadow: var(--box-shadow-subtle, 0 1px 3px rgba(0,0,0,.04));
+}
+.inviteButton:hover { background: var(--zporta-gold-dark); box-shadow: var(--box-shadow-light); }
+
+/* Export a separate class for CSS Modules */
+.inviteButtonSent {
+  background-color: #16a34a; /* green-600 */
+  cursor: not-allowed;
+}
+
+.linkShareSection {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb; /* gray-200 */
+}
+.dark .linkShareSection {
+    border-top-color: #4b5563; /* gray-600 */
+}
+.linkShareSection p {
+    font-size: 0.8rem;
+    color: #6b7280; /* gray-500 */
+    margin-bottom: 0.5rem;
+}
+.linkContainer {
+    display: flex;
+    gap: 0.5rem;
+}
+.linkInput {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db; /* gray-300 */
+    border-radius: 6px;
+    background-color: #f9fafb; /* gray-50 */
+    font-size: 0.9rem;
+    color: #4b5563; /* gray-600 */
+}
+.dark .linkInput {
+    background-color: #4b5563; /* gray-600 */
+    border-color: #6b7280; /* gray-500 */
+    color: #d1d5db; /* gray-300 */
+}
+
+.copyButton {
+  flex-shrink: 0; padding: .5rem .75rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--bg-container, #fff); color: var(--text-primary, #111827);
+}
+.modalHeader svg { color: var(--zporta-gold); }

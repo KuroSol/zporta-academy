@@ -1,0 +1,314 @@
+/* DiaryMentions.css (Redesigned) */
+
+
+
+/* --- General Styles for Mentions Page (if different from DiaryList) --- */
+/* Assuming .diary-list-container, .diary-list-title, .search-container, .table-responsive, .diary-table, .pagination are shared from DiaryList.css or DiaryManagement.css */
+/* If DiaryMentions.js uses its own top-level container, style it here. */
+/* For this example, we'll assume it reuses some classes from DiaryList.css for the table and pagination. */
+
+/* --- Modal Specific Styles for DiaryMentions --- */
+/* Base .modal-overlay, .modal-content, .modal-header, .modal-body, .modal-actions from DiaryManagement.css */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;                     /* shorthand for top:0; right:0; bottom:0; left:0 */
+  z-index: 10000;               /* ensure it sits above everything */
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;             /* allow scrolling *inside* the overlay, not the page behind */
+}
+
+/* 2) Constrain the modal content itself so it scrolls internally */
+.modal-content {
+  max-height: 90vh;             /* prevent it from growing beyond viewport */
+  overflow-y: auto;             /* scroll overflow inside the modal only */
+}
+body.modal-open {
+  overflow: hidden;
+}
+/* Modal Title in DiaryMentions */
+.modal-content .modal-header h2 {
+  color: var(--zporta-dark-blue); /* Consistent modal title color */
+  font-size: 1.5rem;
+}
+
+/* Modal Close Button (often in header) */
+.modal-header .action-btn.close-btn { /* From existing DiaryMentions.js structure */
+  background: transparent;
+  border: none;
+  color: var(--zporta-text-secondary);
+  font-size: 1.8rem; /* Adjust for icon size */
+  padding: var(--zporta-spacing-xs);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+  line-height: 1; /* Ensure icon is centered */
+}
+.modal-header .action-btn.close-btn:hover {
+  color: var(--zporta-dark-blue);
+  transform: scale(1.1);
+}
+.modal-header .action-btn.close-btn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+
+/* --- Styling for Note Content and Comments within Modals --- */
+.modal-body .note-full-text div[dangerouslySetInnerHTML], /* Assuming a wrapper for full note text */
+.modal-body div[dangerouslySetInnerHTML] { /* General case for HTML content */
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--zporta-text-primary);
+  margin-bottom: var(--zporta-spacing-md);
+  word-wrap: break-word;
+}
+.modal-body div[dangerouslySetInnerHTML] p:first-child { margin-top: 0; }
+.modal-body div[dangerouslySetInnerHTML] p:last-child { margin-bottom: 0; }
+
+
+.modal-body hr {
+  border: none;
+  border-top: 1px solid var(--zporta-border-color);
+  margin: var(--zporta-spacing-lg) 0;
+}
+
+.modal-body h3 { /* Sub-headings like "Leave a Comment" or "Existing Comments" */
+  color: var(--zporta-dark-blue);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: var(--zporta-spacing-lg);
+  margin-bottom: var(--zporta-spacing-md);
+}
+
+/* CustomEditor for new comments in modal */
+.modal-body .custom-editor-wrapper { /* If CustomEditor is used for new comments */
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  background-color: #FFFFFF;
+}
+.modal-body .custom-editor-wrapper .ql-editor {
+  min-height: 100px; /* Shorter for comment editor */
+  padding: var(--zporta-spacing-sm);
+}
+
+/* --- Comment Item Styling (Existing Comments) --- */
+.comment-item {
+  background-color: var(--zporta-bg-medium); /* Light background for each comment */
+  padding: var(--zporta-spacing-md);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  border: 1px solid darken(var(--zporta-bg-medium), 5%);
+}
+.comment-item:last-child {
+  margin-bottom: 0;
+}
+
+.comment-item p strong { /* Username */
+  color: var(--zporta-dark-blue);
+  font-weight: 700; /* Bolder username */
+  font-size: 0.95rem;
+}
+
+.comment-item div[dangerouslySetInnerHTML] { /* Comment text */
+  margin: var(--zporta-spacing-xs) 0 var(--zporta-spacing-sm) 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--zporta-text-primary);
+}
+
+.comment-item .comment-date {
+  font-size: 0.75rem; /* Smaller date */
+  color: var(--zporta-text-secondary);
+  margin-top: var(--zporta-spacing-xs);
+  text-align: right;
+}
+
+/* --- Action Buttons in Modals (Submit, Edit, Delete Icons) --- */
+/* Submit Button for New Comment */
+.modal-actions .action-submit-btn { /* From existing JS */
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-lg);
+  border-radius: var(--zporta-radius-md);
+  border: none;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.modal-actions .action-submit-btn:hover {
+  background-color: #E6C200; /* Darker gold */
+  transform: scale(1.02);
+}
+.modal-actions .action-submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* Icon Buttons for Managing Comments (Edit, Save, Cancel, Delete) */
+.comment-item .action-btn, /* General action button within a comment item */
+.editing-comment-actions .action-btn { /* Wrapper for save/cancel when editing */
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--zporta-spacing-xs);
+  border-radius: var(--zporta-radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+  font-size: 1.2rem; /* Icon size */
+  margin-left: var(--zporta-spacing-sm); /* Space between icons */
+  line-height: 1; /* Center icon */
+}
+.comment-item .action-btn:first-child,
+.editing-comment-actions .action-btn:first-child {
+    margin-left: 0;
+}
+
+.comment-item .action-btn:hover,
+.editing-comment-actions .action-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+.comment-item .action-btn:active,
+.editing-comment-actions .action-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+.comment-item .action-btn:focus-visible,
+.editing-comment-actions .action-btn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+
+/* Specific Icon Colors */
+.action-btn.edit-btn { /* Edit icon */
+  color: var(--zporta-olive);
+}
+.action-btn.edit-btn:hover {
+  background-color: rgba(var(--zporta-olive), 0.1);
+  color: var(--zporta-olive-lighter);
+}
+
+.action-btn.save-btn { /* Save icon (after edit) */
+  color: var(--zporta-olive-lighter); /* Brighter for save */
+}
+.action-btn.save-btn:hover {
+  background-color: rgba(var(--zporta-olive-lighter), 0.15);
+}
+
+.action-btn.delete-btn { /* Delete icon */
+  color: var(--zporta-error);
+}
+.action-btn.delete-btn:hover {
+  background-color: rgba(var(--zporta-error), 0.1);
+  color: #A02525; /* Darker red */
+}
+
+.action-btn.cancel-btn { /* Cancel icon (after edit) */
+  color: var(--zporta-text-secondary);
+}
+.action-btn.cancel-btn:hover {
+  background-color: rgba(var(--zporta-text-secondary), 0.1);
+  color: var(--zporta-text-primary);
+}
+
+/* --- Edit Textarea for Comments --- */
+.edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid var(--zporta-gold); /* Gold border when editing */
+  border-radius: var(--zporta-radius-md);
+  padding: var(--zporta-spacing-sm);
+  font-family: var(--zporta-font-family);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: var(--zporta-spacing-sm);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(var(--zporta-gold), 0.1); /* Subtle glow */
+  resize: vertical; /* Allow vertical resize */
+}
+.edit-textarea:focus {
+  outline: none;
+  border-color: var(--zporta-gold-accent);
+  box-shadow: 0 0 0 3px rgba(var(--zporta-gold-accent), 0.25);
+}
+
+/* Container for edit mode actions (Save/Cancel buttons below textarea) */
+.editing-comment-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--zporta-spacing-sm);
+    margin-top: var(--zporta-spacing-xs);
+}
+
+/* --- Action Buttons in the Mentions Table (View Note, Manage Comments) --- */
+/* Assuming .diary-table and .diary-action-buttons are styled by DiaryList.css */
+/* If specific overrides are needed for mentions table buttons: */
+.diary-table .diary-action-buttons .diary-action-btn { /* From DiaryMentions.js */
+  background: transparent;
+  border: 1px solid var(--zporta-border-color);
+  color: var(--zporta-dark-blue);
+  padding: var(--zporta-spacing-xs);
+  border-radius: var(--zporta-radius-md);
+  font-size: 1.2rem; /* Icon size */
+  transition: all 0.2s ease;
+}
+.diary-table .diary-action-buttons .diary-action-btn:hover {
+  border-color: var(--zporta-gold);
+  color: var(--zporta-gold);
+  background-color: rgba(var(--zporta-gold), 0.05);
+  transform: translateY(-1px);
+}
+.diary-table .diary-action-buttons .diary-action-btn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+
+/* --- Responsive Adjustments for Modals and Content --- */
+@media (max-width: 768px) {
+  .modal-content .modal-header h2 {
+    font-size: 1.3rem;
+  }
+  .modal-body h3 {
+    font-size: 1.1rem;
+  }
+  .comment-item {
+    padding: var(--zporta-spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  /* Modal content is already full screen from DiaryManagement.css */
+  .modal-content .modal-header h2 {
+    font-size: 1.2rem;
+  }
+  .modal-body {
+    padding-right: 0; /* Remove padding for scrollbar as it's less common on mobile */
+    margin-right: 0;
+  }
+  .modal-body h3 {
+    font-size: 1rem;
+  }
+  .comment-item {
+    padding: var(--zporta-spacing-sm);
+  }
+  .comment-item .action-btn {
+    font-size: 1.1rem; /* Slightly smaller icons on mobile */
+    padding: var(--zporta-spacing-xs) calc(var(--zporta-spacing-xs) - 2px);
+  }
+  .edit-textarea {
+    font-size: 0.85rem;
+  }
+  .modal-actions .action-submit-btn {
+    padding: var(--zporta-spacing-md); /* Full width from DiaryManagement.css, so larger padding */
+  }
+}
+
+/* Ensure .highlight style is available (defined in DiaryManagement.css or DiaryList.css) */
+.highlight {
+  background-color: var(--zporta-gold-lighter);
+  color: var(--zporta-dark-blue);
+  padding: 0.1em 0.2em;
+  border-radius: var(--zporta-radius-sm);
+  font-weight: bold;
+}

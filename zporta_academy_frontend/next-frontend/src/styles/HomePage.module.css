@@ -1,0 +1,537 @@
+/*
+ * HomePage.module.css for Zporta Academy
+ * FINAL & UNIFIED: A hyper-stylish, futuristic design with an in-place expanding search.
+ * This version includes critical fixes for dashboard text visibility, progress bars, and layout.
+ */
+
+/* --- Overall Page Structure --- */
+.pageContainer {
+  width: 100%;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+  background-color: var(--zporta-dark-blue); /* Set the base background for the whole page */
+}
+
+.fullPageLoader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--app-header-height-desktop, 60px));
+    background-color: var(--zporta-dark-blue);
+}
+
+/* --- SECTION 1: NEON HEXAGON HUB --- */
+.hexagonSection {
+    background-color: var(--zporta-dark-blue);
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    background-image: 
+        radial-gradient(circle at var(--mouse-x) var(--mouse-y), hsla(212, 92%, 13%, 1) 0px, transparent 50%),
+        radial-gradient(at 95% 95%, hsla(43, 100%, 52%, .20) 0px, transparent 40%),
+        radial-gradient(at 5% 5%, hsla(43, 100%, 52%, .15) 0px, transparent 35%);
+    color: var(--text-on-dark-bg);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    overflow: hidden;
+    position: relative;
+    transition: background-position 0.4s ease-out; /* Smooths the mouse effect */
+}
+
+.hexagonHeader {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+    z-index: 5;
+}
+
+.hexagonTitle {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -2px;
+    background: linear-gradient(45deg, var(--zporta-gold), #fff, var(--zporta-gold-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    margin: 0;
+    text-shadow: 0 0 30px rgba(255, 182, 6, 0.3);
+}
+
+.hexagonSubtitle {
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    color: var(--header-fg-dim, rgba(255,255,255,0.8));
+    margin-top: 0.75rem;
+    font-weight: 400;
+}
+
+.hexagonContainer {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 4px;
+    width: 100%;
+    max-width: 750px;
+    aspect-ratio: 1.15;
+    transition: all 0.4s ease;
+}
+
+.hexagonContainer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(255, 182, 6, 0.1) 1px, transparent 1px),
+        linear-gradient(60deg, rgba(255, 182, 6, 0.08) 1px, transparent 1px),
+        linear-gradient(120deg, rgba(255, 182, 6, 0.08) 1px, transparent 1px);
+    background-size: 100% 33.333%, 16.666% 100%, 16.666% 100%;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+    opacity: 0.7;
+}
+
+.hexagonContainer::after {
+    content: '';
+    position: absolute;
+    inset: -5%;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg width='750' height='650' viewBox='0 0 750 650' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='neon-glow' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur stdDeviation='5' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Cstyle%3E.connector %7B stroke: %23FFB606; stroke-width: 2; stroke-linecap: round; fill: none; filter: url(%23neon-glow); opacity: 0.5; %7D%3C/style%3E%3Cg class='connector'%3E%3Cpath d='M 187.5 108 L 375 325' /%3E%3Cpath d='M 562.5 108 L 375 325' /%3E%3Cpath d='M 62.5 325 L 375 325' /%3E%3Cpath d='M 687.5 325 L 375 325' /%3E%3Cpath d='M 187.5 542 L 375 325' /%3E%3Cpath d='M 562.5 542 L 375 325' /%3E%3Cpath d='M 187.5 108 L 62.5 325' /%3E%3Cpath d='M 562.5 108 L 687.5 325' /%3E%3Cpath d='M 62.5 325 L 187.5 542' /%3E%3Cpath d='M 687.5 325 L 562.5 542' /%3E%3C/g%3E%3C/svg%3E");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hexagon {
+    position: relative;
+    clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--header-fg-dim);
+    transition: transform 0.3s ease, color 0.3s ease, opacity 0.4s ease, filter 0.4s ease;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 
+        inset 0 0 10px rgba(255, 182, 6, 0.1),
+        0 0 5px rgba(10, 35, 66, 0.5);
+}
+
+.hexagon::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+    box-shadow: 0 0 5px var(--zporta-gold),
+                0 0 10px var(--zporta-gold),
+                0 0 15px var(--zporta-gold-dark);
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    z-index: -1;
+}
+
+.hexagon:hover {
+    transform: scale(1.08);
+    color: #fff;
+}
+
+.hexagon:hover::after {
+    opacity: 1;
+}
+
+.icon {
+    margin-bottom: 0.75rem;
+    transition: transform 0.3s ease, color 0.3s ease, filter 0.3s ease;
+    color: var(--zporta-gold);
+}
+.hexagon:hover .icon {
+    transform: scale(1.1);
+    color: #fff;
+    filter: drop-shadow(0 0 8px #fff);
+}
+
+.label {
+    font-weight: 600;
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    text-align: center;
+}
+
+.hex1 { grid-column: 2 / span 2; grid-row: 1; }
+.hex2 { grid-column: 4 / span 2; grid-row: 1; }
+.hex3 { grid-column: 1 / span 2; grid-row: 2; }
+.hex4 { grid-column: 3 / span 2; grid-row: 2; }
+.hex5 { grid-column: 5 / span 2; grid-row: 2; }
+.hex6 { grid-column: 2 / span 2; grid-row: 3; }
+.hex7 { grid-column: 4 / span 2; grid-row: 3; }
+
+/* --- In-Place Search Expansion Styles --- */
+.hexagonContainer.searchExpanded {
+    /* Change grid layout to make center columns wider */
+    grid-template-columns: 0.5fr 0.5fr 3fr 3fr 0.5fr 0.5fr;
+}
+
+.hexagonContainer.searchExpanded .hexagon:not(.searchHexagon) {
+    opacity: 0.1;
+    transform: scale(0.95);
+    filter: blur(3px);
+    pointer-events: none;
+}
+
+.searchHexagon {
+    z-index: 20;
+}
+
+.searchHexagon.expanded {
+    transform: scale(1.05); /* Slight pop effect instead of large scale */
+    z-index: 30;
+    /* FIX: Remove clip-path to allow dropdown to be visible */
+    clip-path: none;
+    border-radius: var(--border-radius-lg);
+}
+
+.searchInputWrapper {
+    position: relative;
+    width: 85%;
+    display: flex;
+    align-items: center;
+    transition: width 0.4s ease;
+}
+.searchInput {
+    width: 100%;
+    background: rgba(10, 35, 66, 0.7);
+    border: 1px solid rgba(255,182,6,0.4);
+    border-radius: var(--radius-pill);
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    font-size: 0.9rem; /* Keep a consistent base font size */
+    color: #fff;
+    transition: all 0.4s ease;
+    text-align: left;
+    outline: none;
+}
+.searchIcon {
+    position: absolute;
+    left: 0.85rem;
+    color: var(--zporta-gold);
+    pointer-events: none;
+    transition: all 0.4s ease;
+}
+
+.searchHexagon.expanded .searchInputWrapper {
+    width: 90%;
+}
+.searchHexagon.expanded .searchInput {
+    /* Increase padding and font-size slightly for comfort */
+    font-size: 1rem;
+    padding: 0.8rem 1.2rem 0.8rem 3rem;
+}
+.searchHexagon.expanded .searchIcon {
+    font-size: 1.2rem;
+    left: 1rem;
+}
+
+/* Stylish Search Dropdown */
+.searchDropdown {
+    position: absolute;
+    top: 90%; /* Position it just below the center of the hexagon */
+    left: 5%;
+    width: 90%;
+    max-height: 350px;
+    overflow-y: auto;
+    background: linear-gradient(135deg, rgba(10, 35, 66, 0.8), rgba(10, 35, 66, 0.95));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 182, 6, 0.3);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    z-index: 25; /* Below the expanded hex but above other elements */
+    padding: 1rem;
+    opacity: 0;
+    animation: fadeInDropdown 0.4s ease forwards;
+}
+
+@keyframes fadeInDropdown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.searchBlock { margin-bottom: 1rem; }
+.searchBlock:last-child { margin-bottom: 0; }
+
+.searchBlockHeader {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 182, 6, 0.2);
+}
+
+.searchBlockList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.searchBlockLink {
+    color: var(--header-fg-dim);
+    text-decoration: none;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius-md);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.searchBlockLink:hover {
+    color: #fff;
+    background-color: rgba(255, 182, 6, 0.1);
+}
+
+
+/* --- SECTION 2: FUTURISTIC DASHBOARD STYLES --- */
+.homeWrapper { 
+    background-color: var(--zporta-dark-blue);
+    padding-bottom: 3rem; 
+    width: 100%; 
+}
+.homeHeader { 
+    padding: 2rem 1.5rem; 
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 182, 6, 0.2); 
+    text-align: center; 
+    width: 100%; 
+    box-shadow: none;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+.startPlanButton { 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 0.8rem 2rem; 
+    font-size: 1rem; 
+    font-weight: 600; 
+    color: #fff;
+    background: transparent;
+    border: 2px solid var(--zporta-gold); 
+    border-radius: var(--border-radius-pill); 
+    cursor: pointer; 
+    text-shadow: 0 0 10px var(--zporta-gold);
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.3), inset 0 0 10px rgba(255, 193, 7, 0.2); 
+    transition: var(--transition-smooth); 
+    text-decoration: none; 
+}
+.startPlanButton:hover { 
+    transform: translateY(-2px) scale(1.03); 
+    color: var(--zporta-dark-blue);
+    background: var(--zporta-gold);
+    box-shadow: 0 0 25px rgba(255, 193, 7, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.3);
+}
+.startPlanIcon { margin-right: 0.5rem; }
+
+.homeContentGrid { 
+    display: grid; 
+    gap: 1.75rem; 
+    padding: 1.5rem; 
+    max-width: 1300px; 
+    margin: 1.5rem auto 0 auto; 
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); 
+}
+
+/* Glassmorphic Dashboard Card Redesign */
+.dashboardCard {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 182, 6, 0.2);
+    border-radius: var(--border-radius-lg); 
+    padding: 1.5rem; 
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboardCard::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    box-shadow: 0 0 15px var(--zporta-gold), 0 0 25px var(--zporta-gold-dark);
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    z-index: -1;
+    border-radius: var(--border-radius-lg); 
+    pointer-events: none;
+}
+
+.dashboardCard:hover { 
+    transform: translateY(-5px); 
+    border-color: rgba(255, 182, 6, 0.5);
+}
+.dashboardCard:hover::after {
+    opacity: 0.5;
+}
+
+.dashboardCard h2 { 
+    margin: 0 0 1rem 0; 
+    font-size: 1.2rem; 
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 5px var(--zporta-gold);
+    border-bottom: 1px solid rgba(255, 182, 6, 0.3); 
+    padding-bottom: 0.6rem;
+}
+.dashboardCard > p { color: var(--header-fg-dim); }
+
+.cardActionButton { 
+    margin-top: auto; 
+    padding: 0.7rem 1.25rem; 
+    background: transparent; 
+    color: var(--zporta-gold); 
+    border: 1px solid var(--zporta-gold); 
+    border-radius: var(--border-radius-md); 
+    font-weight: 600; 
+    transition: var(--transition-smooth); 
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.2);
+}
+.cardActionButton:hover { 
+    background: var(--zporta-gold); 
+    color: var(--zporta-dark-blue); 
+    transform: scale(1.02); 
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+}
+.enrolledPreviewItem, .lessonHistoryItem {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 182, 6, 0.15);
+    transition: var(--transition-smooth);
+}
+.enrolledPreviewItem:hover, .lessonHistoryItem:hover {
+    background-color: rgba(255, 182, 6, 0.1);
+    border-color: var(--zporta-gold);
+    transform: translateX(5px);
+}
+.enrolledPreviewDetails h3, .lessonHistoryDetails h3 { 
+    color: #fff;
+    /* FIX: Allow text to wrap */
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.7em; /* Reserve space for two lines */
+}
+.lessonCourseContext { color: var(--header-fg-dim); }
+
+/* FIX: Progress Bar Styles Restored & Themed */
+.progressWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; 
+    margin-top: 0.25rem;
+}
+.progressBarContainer {
+  background-color: rgba(0,0,0,0.3);
+  border-radius: var(--border-radius-pill);
+  height: 8px; 
+  flex-grow: 1;
+  overflow: hidden;
+  border: 1px solid rgba(255, 182, 6, 0.2);
+}
+.progressBar {
+  background: var(--zporta-gold);
+  height: 100%;
+  transition: width .5s cubic-bezier(.25,.8,.25,1); 
+  border-radius: var(--border-radius-pill);
+  box-shadow: 0 0 8px var(--zporta-gold);
+}
+.progressText {
+  font-size: 0.75rem; 
+  color: var(--header-fg-dim);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.quizAttemptItem {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 182, 6, 0.15);
+    transition: var(--transition-smooth);
+    color: var(--header-fg-dim);
+}
+.quizAttemptItem:hover {
+    background-color: rgba(255, 182, 6, 0.1);
+    border-color: var(--zporta-gold);
+    transform: scale(1.02);
+}
+.attemptQuiz { color: #fff; }
+.statIconCorrect { color: #2ecc71; } 
+.statIconIncorrect { color: #e74c3c; }
+
+/* FIX: Discover Section Styling */
+.discoverSection {
+    composes: dashboardCard;
+    grid-column: 1 / -1;
+}
+.discoverHeader h3 { color: #fff; text-shadow: 0 0 5px var(--zporta-gold); }
+.discoverSeeAllBtn { 
+    color: var(--zporta-gold); 
+    border: 1px solid var(--zporta-gold);
+    background-color: transparent;
+}
+.discoverSeeAllBtn:hover {
+    background-color: var(--zporta-gold);
+    color: var(--zporta-dark-blue);
+}
+.discoverGrid {
+    /* FIX: Add margin/gap between course cards */
+    gap: 1.5rem;
+}
+.discoverCardLink {
+    composes: dashboardCard;
+    padding: 0; /* Remove parent padding for card with image */
+}
+.discoverImage {
+    /* FIX: Adjust image height */
+    height: 130px;
+    object-fit: cover;
+}
+.discoverInfo { padding: 1rem; }
+.discoverInfo h4 { 
+    color: #fff;
+    /* FIX: Allow wrapping for course titles */
+    white-space: normal;
+}
+.courseTypeLabel { color: var(--zporta-gold); }
+
+.loadingPlaceholder, .emptyStateMessage { color: var(--header-fg-dim); }
+.errorMessage { color: #f8d7da; background-color: rgba(132, 32, 41, 0.5); border: 1px solid #f5c2c7; }
+
+.spinner{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* --- Responsive & Fallbacks --- */
+@media (max-width: 700px) {
+    .hexagonSection { padding: 3rem 1rem; }
+    .hexagonContainer { max-width: 90vw; gap: 6px; }
+}
+
+@media (max-width: 480px) {
+    .homeContentGrid { padding: 1rem; gap: 1rem; }
+    .dashboardCard { padding: 1rem; }
+    .label { font-size: clamp(0.6rem, 3vw, 0.7rem); }
+    .icon { font-size: 1.5em; margin-bottom: 0.4rem; }
+}
+

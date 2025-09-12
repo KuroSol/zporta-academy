@@ -1,0 +1,74 @@
+.guideRequestsContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.guideRequestsContainer h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #333;
+}
+
+.requestsList {
+  list-style: none;
+  padding: 0;
+}
+
+.requestItem {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.requestItem div {
+  margin: 5px 0;
+}
+
+.actionButtons {
+  margin-top: 10px;
+}
+
+.acceptButton,
+.denyButton {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 10px;
+  transition: background 0.3s ease;
+}
+
+.acceptButton {
+  background: #28a745;
+  color: #fff;
+}
+
+.acceptButton:hover {
+  background: #218838;
+}
+
+.denyButton {
+  background: #dc3545;
+  color: #fff;
+}
+
+.denyButton:hover {
+  background: #c82333;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.noRequests {
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}

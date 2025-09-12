@@ -1,0 +1,452 @@
+/* ==========================================================================
+   Enrolled Course Detail Stylesheet (Relies on globals.css)
+   ========================================================================== */
+
+/* --- Global Search Highlight Styles --- */
+.search-match-highlight {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-dark-blue);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.2em;
+}
+.dark .search-match-highlight {
+  background-color: var(--zporta-gold-dark);
+}
+.active-search-match {
+  outline: 2px solid var(--accent-color-interactive);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-md);
+}
+
+/* --- Base Layout & Structure (Right-Side Drawer) --- */
+.pageWrapper {
+  background-color: var(--bg-light);
+  font-family: var(--font-sans);
+  transition: var(--transition);
+  overflow-x: hidden; 
+  position: relative;
+}
+.dark .pageWrapper { background-color: var(--bg-dark); }
+
+.mainContent {
+  width: 100%;
+  transition: filter 0.3s ease-in-out;
+}
+.pageWrapper.sidebarOpen .mainContent {
+  /* Optional: Add a subtle effect to the main content when sidebar is open */
+  filter: brightness(0.7);
+  pointer-events: none; /* Disables interaction with main content */
+}
+
+/* --- Sidebar & Overlay --- */
+.sidebarOverlay {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.6);
+  z-index: 1999;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+  cursor: pointer;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sidebar {
+  width: 320px;
+  max-width: 90vw;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  transform: translateX(100%);
+  box-shadow: var(--shadow-lg);
+  border-left: 1px solid var(--border-light);
+  background-color: var(--bg-card-light);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: transform 0.3s ease-in-out;
+}
+.dark .sidebar {
+  border-left-color: var(--border-dark);
+  background-color: var(--bg-card-dark);
+}
+.pageWrapper.sidebarOpen .sidebar {
+  transform: translateX(0);
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.dark .sidebarHeader { border-bottom-color: var(--border-dark); }
+
+.sidebarCloseButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary-light);
+  padding: 0.25rem;
+  border-radius: var(--radius-pill);
+  transition: var(--transition);
+}
+.sidebarCloseButton:hover {
+  background-color: var(--border-light);
+}
+.dark .sidebarCloseButton { color: var(--text-secondary-dark); }
+.dark .sidebarCloseButton:hover { background-color: var(--border-dark); }
+
+/* --- Floating Menu Toggle --- */
+.floatingMenuToggle {
+  position: fixed;
+  bottom: 1.75rem; 
+  left: 1.5rem;
+  z-index: 1041; 
+  width: 56px;
+  height: 56px;
+  background-image: linear-gradient(to right, var(--zporta-dark-blue), #1E3A5F);
+  color: var(--zporta-gold);
+  border: 2px solid var(--zporta-gold);
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.floatingMenuToggle:hover {
+  transform: scale(1.05) rotate(5deg);
+  box-shadow: var(--shadow-glow), var(--shadow-lg);
+}
+
+/* --- Course Header & Content Area --- */
+.contentArea {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+}
+.courseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 1.5rem;
+}
+.dark .courseHeader { border-bottom-color: var(--border-dark); }
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--accent-color);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.dark .backButton { color: var(--accent-color-interactive); }
+.courseTitle {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--text-primary-light);
+  line-height: 1.2;
+}
+.dark .courseTitle { color: var(--text-primary-dark); }
+.themeToggle {
+  padding: 0.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary-light);
+  transition: var(--transition);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.themeToggle:hover { background-color: var(--border-light); }
+.dark .themeToggle { color: var(--text-secondary-dark); }
+.dark .themeToggle:hover { background-color: var(--border-dark); }
+
+/* --- Search Bar --- */
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-card-light);
+  color: var(--text-primary-light);
+}
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent-color-interactive);
+  box-shadow: var(--shadow-glow);
+}
+.dark .searchInput {
+  background-color: var(--bg-card-dark);
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+.searchInputIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary-light);
+  pointer-events: none;
+}
+.searchResultNavigator {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  color: var(--text-secondary-light);
+}
+.dark .searchResultNavigator { color: var(--text-secondary-dark); }
+.searchResultNavigator button { padding: 0.25rem; border-radius: var(--radius-sm); background: none; border: none; cursor: pointer; }
+.searchResultNavigator button:hover:not(:disabled) { background-color: var(--border-light); }
+.dark .searchResultNavigator button:hover:not(:disabled) { background-color: var(--border-dark); }
+.searchResultNavigator button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+/* --- Course Index Panel (Sidebar) --- */
+.indexPanel {
+  padding: 1rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+.indexTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary-light);
+  margin-bottom: 0.75rem;
+  padding: 0 0.5rem;
+}
+.dark .indexTitle { color: var(--text-secondary-dark); }
+.indexItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  text-align: left;
+  color: var(--text-primary-light);
+  transition: var(--transition);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.dark .indexItem { color: var(--text-primary-dark); }
+.indexItem:hover { background-color: var(--border-light); }
+.dark .indexItem:hover { background-color: var(--border-dark); }
+.indexItemActive {
+  background-color: color-mix(in srgb, var(--accent-color-interactive) 20%, transparent);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+.dark .indexItemActive { color: var(--text-primary-dark); }
+.indexItemIcon {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-pill);
+  display: inline-block;
+}
+.dark .indexItemIcon { border-color: var(--border-dark); }
+
+/* --- Lesson & Quiz Sections --- */
+.lessonSection, .quizSection {
+  background-color: var(--bg-card-light);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: var(--transition);
+}
+.lessonSection:hover, .quizSection:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.dark .lessonSection, .dark .quizSection {
+  background-color: var(--bg-card-dark);
+  border-color: var(--border-dark);
+}
+.lessonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+}
+.lessonTitle, .quizTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary-light);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.dark .lessonTitle, .dark .quizTitle { color: var(--text-primary-dark); }
+.completedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  background-color: #dcfce7;
+  color: #166534;
+  border-radius: var(--radius-pill);
+}
+.dark .completedBadge { background-color: #166534; color: #dcfce7; }
+.lessonContent { padding: 0 1.5rem 1.5rem; }
+.quizSection { padding: 1.5rem; }
+.videoContainer {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+.videoContainer iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+.lessonFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--bg-light);
+}
+.dark .lessonFooter { background-color: var(--bg-dark); border-top-color: var(--border-dark); }
+.quizDescription { margin: 0.5rem 0 1.5rem; color: var(--text-secondary-light); }
+.dark .quizDescription { color: var(--text-secondary-dark); }
+
+/* --- Stylish Buttons --- */
+.markCompleteButton, .startQuizButton, .startQuizButtonSmall, .downloadButton {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: var(--transition);
+  border: none;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+.markCompleteButton:hover, .startQuizButton:hover, .startQuizButtonSmall:hover, .downloadButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.markCompleteButton {
+  background-image: linear-gradient(to right, #16a34a, #15803d);
+  color: white;
+}
+.startQuizButton, .startQuizButtonSmall {
+  background-image: linear-gradient(to right, var(--accent-color-interactive), var(--zporta-gold-dark));
+  color: var(--zporta-dark-blue);
+}
+.downloadButton {
+  background-color: var(--bg-card-light);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary-light);
+  box-shadow: var(--shadow-sm);
+}
+.dark .downloadButton {
+  background-color: var(--bg-card-dark);
+  border-color: var(--border-dark);
+  color: var(--text-secondary-dark);
+}
+
+/* --- Styler (Annotation Toolbar) - FIXED --- */
+.floatingToolbarContainer { 
+  position: fixed; 
+  bottom: 20px; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  z-index: 1000; 
+  display: flex; 
+  align-items: flex-end; 
+  transition: var(--transition); 
+}
+.toolbarContent { 
+  display: flex; 
+  gap: 6px; 
+  padding: 8px; 
+  background-color: rgba(30, 41, 59, 0.9); 
+  backdrop-filter: blur(8px); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: var(--radius-lg); 
+  box-shadow: var(--shadow-lg); 
+  transform-origin: bottom;
+  transition: all 0.2s ease-in-out;
+  max-height: 60px; 
+  overflow: hidden;
+}
+/* FIXED: This rule now properly collapses the toolbar */
+.floatingToolbarContainer.collapsed .toolbarContent { 
+  opacity: 0; 
+  pointer-events: none;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  /* ADDED: Ensure it's completely invisible */
+  visibility: hidden;
+}
+.stylerToolBtn { background-color: transparent; color: #e5e7eb; border: none; width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; }
+.stylerToolBtn:hover { background-color: rgba(255, 255, 255, 0.1); color: #fff; }
+.stylerToolBtn.active { background-color: var(--accent-color-interactive); color: var(--zporta-dark-blue); }
+.separator { width: 1px; height: 24px; background-color: rgba(255, 255, 255, 0.2); margin: auto 4px; }
+.toolbarToggle { background-color: rgba(30, 41, 59, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); color: #e5e7eb; width: 40px; height: 30px; border-radius: var(--radius-md) var(--radius-md) 0 0; margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.stylerWrapper { border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+.dark .stylerWrapper { border-color: var(--border-dark); }
+.stylerEditor { padding: 1.5rem; min-height: 200px; outline: none; color: var(--text-primary-light); }
+.dark .stylerEditor { color: var(--text-primary-dark); }
+.laserActive { cursor: crosshair; }
+.stylerHighlight { background-color: #fef08a; }
+.stylerBox { border: 2px solid #fca5a5; }
+.stylerCircle { border: 2px solid #818cf8; border-radius: 9999px; }
+.stylerNoteAnchor { position: relative; background-color: #e0e7ff; cursor: pointer; }
+.stylerNoteIcon { display: inline-block; width: 16px; height: 16px; background-color: var(--accent-color); color: white; border-radius: 50%; text-align: center; font-size: 10px; line-height: 16px; margin-left: 3px; vertical-align: super; }
+.stylerNotePopup { display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); width: 240px; background-color: #fffbeb; border: 1px solid #facc15; border-radius: var(--radius-md); padding: 12px; box-shadow: var(--shadow-lg); font-size: 14px; color: #422006; z-index: 10; padding-top: 32px; }
+.stylerNoteDeleteBtn { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border: none; background: transparent; color: #a16207; font-size: 20px; cursor: pointer; }
+.stylerNoteDeleteBtn:hover { color: #ef4444; }
+.stylerOverlay { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.2); z-index: 5; }
+.confirmationModalOverlay { position: fixed; inset: 0; background-color: rgba(17, 24, 39, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.confirmationModal { background-color: white; padding: 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; text-align: center; }
+.confirmationModalMessage { margin: 0 0 20px 0; font-size: 16px; }
+.confirmationModalActions { display: flex; justify-content: center; gap: 12px; }
+.confirmationModalActions button { padding: 10px 20px; border-radius: var(--radius-md); border: none; font-weight: 600; cursor: pointer; }
+.confirmationModalActions button:first-child { background-color: #ef4444; color: white; }
+.confirmationModalActions button:last-child { background-color: #e5e7eb; color: #374151; }
+.cursorOverlay { position: absolute; inset: 0; z-index: 10; pointer-events: none; overflow: hidden; }
+.remoteCursor { position: absolute; display: flex; align-items: center; transition: top 0.1s linear, left 0.1s linear; color: var(--accent-color); }
+.cursorName { margin-left: 8px; padding: 2px 8px; background-color: rgba(0, 0, 0, 0.7); color: white; border-radius: 12px; font-size: 12px; white-space: nowrap; }
+.modalOverlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 4500; display: flex; justify-content: center; align-items: center; padding: 1rem; }
+.modalContent { background-color: var(--bg-card-light); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-width: 600px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto; }
+.dark .modalContent { background-color: var(--bg-card-dark); }
+.modalCloseButton { position: absolute; top: 0.75rem; right: 0.75rem; color: var(--text-secondary-light); padding: 0.25rem; border-radius: 9999px; background: none; border: none; cursor: pointer; }
+.dark .modalCloseButton { color: var(--text-secondary-dark); }
+.modalCloseButton:hover { background-color: var(--border-light); }
+.dark .modalCloseButton:hover { background-color: var(--border-dark); }
+.loadingScreen, .errorScreen { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; gap: 1rem; background-color: var(--bg-light); color: var(--text-secondary-light); }
+.dark .loadingScreen, .dark .errorScreen { background-color: var(--bg-dark); color: var(--text-secondary-dark); }
+.errorScreen { color: #dc2626; }
+.dark .errorScreen { color: #f87171; }
+.errorScreen button { padding: 0.5rem 1rem; border-radius: var(--radius-md); background-color: var(--accent-color); color: white; }
+.scrollProgressContainer { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 5000; }
+.scrollProgressBar { height: 100%; background-color: var(--accent-color-interactive); transition: width 0.1s linear; }
+

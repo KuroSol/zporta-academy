@@ -1,0 +1,469 @@
+
+/* --- Base Container Styling --- */
+.diary-list-container {
+  padding: var(--zporta-spacing-lg);
+  font-family: var(--zporta-font-family);
+}
+
+.diary-list-title {
+  color: var(--zporta-dark-blue);
+  text-align: center;
+  margin-bottom: var(--zporta-spacing-lg);
+  font-size: 2rem;
+  font-weight: 700;
+}
+.error {
+  color: var(--zporta-error);
+  background-color: color-mix(in srgb, var(--zporta-error) 10%, #fff);
+  border: 1px solid color-mix(in srgb, var(--zporta-error) 30%, #fff);
+  padding: var(--zporta-spacing-md);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.diary-list-container .error { /* Specific to this container */
+  color: var(--zporta-error);
+  background-color: rgba(var(--zporta-error), 0.1);
+  border: 1px solid rgba(var(--zporta-error), 0.3);
+  padding: var(--zporta-spacing-md);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* --- Search Container Styles --- */
+.search-container {
+  margin-bottom: var(--zporta-spacing-lg);
+  display: flex;
+  justify-content: center;
+}
+
+.search-container input[type="text"] {
+  width: 100%;
+  max-width: 500px;
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
+  font-size: 1rem;
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-md);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #FFFFFF;
+}
+
+.search-container input[type="text"]:focus {
+  border-color: var(--zporta-gold);
+  box-shadow: 0 0 0 3px rgba(var(--zporta-gold), 0.25);
+}
+
+/* --- Diary Entry Card/Item Styling (Alternative to Table) --- */
+/* This is a suggestion for a more modern list view. If table is preferred, style .diary-table instead. */
+.diary-entry-card {
+  background-color: #FFFFFF; /* White card background */
+  border-radius: var(--zporta-radius-lg);
+  padding: var(--zporta-spacing-md);
+  margin-bottom: var(--zporta-spacing-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+  border: 1px solid var(--zporta-border-color);
+}
+
+.diary-entry-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.diary-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--zporta-spacing-sm);
+  padding-bottom: var(--zporta-spacing-sm);
+  border-bottom: 1px solid var(--zporta-bg-medium);
+}
+
+.diary-entry-author, .diary-entry-date { /* For future use if author is displayed */
+  font-size: 0.85rem;
+  color: var(--zporta-text-secondary);
+}
+.diary-entry-date {
+    font-weight: 500;
+}
+
+.diary-entry-content :global(.note-text) { /* injected HTML class */
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--zporta-text-primary);
+  margin-bottom: var(--zporta-spacing-sm);
+  word-wrap: break-word; 
+}
+
+.diary-entry-content .note-text p:first-child { margin-top: 0; }
+.diary-entry-content .note-text p:last-child { margin-bottom: 0; }
+
+
+.diary-entry-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--zporta-spacing-md);
+}
+
+/* --- Table Styling (If you keep the table structure) --- */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-lg);
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.diary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diary-table th,
+.diary-table td {
+  padding: var(--zporta-spacing-md);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--zporta-border-color);
+  font-size: 0.9rem;
+}
+.diary-table tr:last-child td {
+    border-bottom: none;
+}
+
+.diary-table th {
+  background-color: var(--zporta-bg-medium);
+  color: var(--zporta-dark-blue);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.diary-table th:first-child {
+    border-top-left-radius: var(--zporta-radius-lg);
+}
+.diary-table th:last-child {
+    border-top-right-radius: var(--zporta-radius-lg);
+}
+
+
+.diary-table :global(.note-text) {
+  color: var(--zporta-text-primary);
+  line-height: 1.6;
+  margin-bottom: var(--zporta-spacing-xs); 
+}
+.diary-table :global(.note-text p:first-child){ margin-top:0; }
+.diary-table :global(.note-text p:last-child){ margin-bottom:0; }
+
+.diary-table .note-text p:first-child { margin-top: 0; }
+.diary-table .note-text p:last-child { margin-bottom: 0; }
+
+.active {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+  border-color: var(--zporta-gold);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(255,182,6,0.3);
+}
+
+/* --- Action Buttons (Edit, Delete, Comment) --- */
+.diary-action-buttons {
+  display: flex;
+  gap: var(--zporta-spacing-sm);
+  align-items: center;
+  justify-content: flex-start; /* Default for table, flex-end for cards */
+}
+
+.diary-action-buttons button,
+.see-more-btn {
+  background: none;
+  border: 1px solid transparent; /* Base border */
+  padding: var(--zporta-spacing-xs) var(--zporta-spacing-sm);
+  border-radius: var(--zporta-radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--zporta-spacing-xs);
+  font-size: 0.9rem; /* Text size for buttons with text */
+  font-weight: 500;
+}
+.diary-action-buttons button svg { /* For react-icons */
+  font-size: 1.1rem; /* Icon size */
+}
+
+.diary-action-buttons button:hover {
+  transform: translateY(-1px);
+}
+.diary-action-buttons button:active {
+  transform: translateY(0px) scale(0.98);
+}
+.diary-action-buttons button:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+/* Edit Button */
+.diary-edit-btn {
+  color: var(--zporta-olive);
+  border-color: var(--zporta-olive);
+}
+.diary-edit-btn:hover {
+  background-color: rgba(var(--zporta-olive), 0.1);
+  color: var(--zporta-olive-lighter);
+  border-color: var(--zporta-olive-lighter);
+}
+
+/* Delete Button */
+.diary-delete-btn {
+  color: var(--zporta-error);
+  border-color: var(--zporta-error);
+}
+.diary-delete-btn:hover {
+  background-color: rgba(var(--zporta-error), 0.1);
+  border-color: #A02525; /* Darker red */
+  color: #A02525;
+}
+
+/* Comment Button */
+.diary-comment-btn {
+  color: var(--zporta-bronze);
+  border-color: var(--zporta-bronze);
+}
+.diary-comment-btn:hover {
+  background-color: rgba(var(--zporta-bronze), 0.1);
+  color: var(--zporta-bronze-darker);
+  border-color: var(--zporta-bronze-darker);
+}
+
+/* See More Button */
+.see-more-btn {
+  color: var(--zporta-dark-blue);
+  font-weight: 600;
+  padding-left: 0; /* Align with text */
+}
+.see-more-btn:hover {
+  color: var(--zporta-gold);
+  text-decoration: underline;
+}
+.see-more-btn svg {
+  margin-left: var(--zporta-spacing-xs);
+  transition: transform 0.2s ease;
+}
+.see-more-btn:hover svg {
+  transform: translateY(2px);
+}
+
+/* --- Pagination Styling --- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--zporta-spacing-lg);
+  gap: var(--zporta-spacing-xs);
+}
+
+.pagination button {
+  background: #FFFFFF;
+  border: 1px solid var(--zporta-border-color);
+  color: var(--zporta-dark-blue);
+  padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
+  cursor: pointer;
+  border-radius: var(--zporta-radius-md);
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: var(--zporta-bg-medium);
+  border-color: var(--zporta-gold);
+}
+
+.pagination button.active {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+  border-color: var(--zporta-gold);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(var(--zporta-gold), 0.3);
+}
+
+.pagination button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--zporta-bg-medium);
+}
+.pagination button:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+
+/* --- Modal Styling (Refined from DiaryManagement.css for specific list modals) --- */
+/* .modal-overlay and .modal-content styles from DiaryManagement.css are base. */
+/* Add specific styles for DiaryList modals if needed. */
+
+.modal-content .modal-header h2 { /* Modal title in DiaryList */
+  color: var(--zporta-dark-blue);
+  font-size: 1.5rem;
+}
+
+.modal-content .modal-body { /* For editor or comment display */
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.modal-content .modal-body .custom-editor-wrapper { /* If CustomEditor is in modal */
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-md);
+}
+
+/* Modal Action Buttons */
+.modal-actions button.modal-btn-save { /* Specific class for save button in modal */
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+}
+.modal-actions button.modal-btn-save:hover {
+  background-color: #E6C200; /* Darker gold */
+}
+
+.modal-actions button.modal-btn-close { /* Specific class for close/cancel */
+  background-color: var(--zporta-bg-medium);
+  color: var(--zporta-text-secondary);
+  border: 1px solid var(--zporta-border-color);
+}
+.modal-actions button.modal-btn-close:hover {
+  background-color: var(--zporta-border-color);
+  color: var(--zporta-text-primary);
+}
+
+/* Comment Item Styling (within modals) */
+.comment-item {
+  border-top: 1px solid var(--zporta-border-color);
+  padding: var(--zporta-spacing-md) 0;
+  margin-top: var(--zporta-spacing-sm);
+}
+.comment-item:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+.comment-item p strong { /* Username */
+  color: var(--zporta-dark-blue);
+  font-weight: 600;
+}
+.comment-item div[dangerouslySetInnerHTML] { /* Comment text */
+  margin: var(--zporta-spacing-xs) 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.comment-item .comment-date {
+  font-size: 0.8rem;
+  color: var(--zporta-text-secondary);
+  margin-top: var(--zporta-spacing-xs);
+}
+
+/* Highlight for pinned/favorite entries (future) */
+.diary-table tr.pinned-entry td,
+.diary-entry-card.pinned-entry {
+  background-color: var(--zporta-gold-lighter) !important; /* Light gold background */
+  border-left: 4px solid var(--zporta-gold); /* Gold accent border */
+}
+.diary-table tr.pinned-entry td:first-child {
+    border-left: none; /* Avoid double border if table has its own left border */
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+  .diary-list-title {
+    font-size: 1.8rem;
+  }
+  .diary-table th,
+  .diary-table td {
+    padding: var(--zporta-spacing-sm);
+    font-size: 0.85rem;
+  }
+  .diary-action-buttons {
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+  }
+  .diary-action-buttons button, .see-more-btn {
+    font-size: 0.85rem;
+  }
+  .diary-action-buttons button svg {
+    font-size: 1rem;
+  }
+  .pagination button {
+    padding: var(--zporta-spacing-xs) var(--zporta-spacing-sm);
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .diary-list-container {
+    padding: var(--zporta-spacing-md);
+  }
+  .diary-list-title {
+    font-size: 1.6rem;
+  }
+  /* Force table to not be too wide */
+  .table-responsive {
+    overflow-x: auto; /* Ensure horizontal scroll for table on mobile */
+  }
+  .diary-table {
+     /* Consider a card layout for mobile if table is too complex */
+     display: block; /* Switch to block display for rows */
+     width: 100%;
+  }
+  .diary-table thead, .diary-table tbody, .diary-table tr {
+      display: block;
+  }
+  .diary-table thead { display: none; } /* Hide table headers, use data-label */
+
+  .diary-table tr {
+      margin-bottom: var(--zporta-spacing-md);
+      border: 1px solid var(--zporta-border-color);
+      border-radius: var(--zporta-radius-md);
+      padding: var(--zporta-spacing-sm);
+      background-color: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .diary-table td {
+      display: block;
+      text-align: right; /* Align text to right, label to left */
+      padding: var(--zporta-spacing-xs) 0; /* Adjust padding */
+      border-bottom: 1px dashed var(--zporta-bg-medium); /* Separator for cells */
+      font-size: 0.9rem;
+      position: relative;
+      padding-left: 50%; /* Space for label */
+  }
+  .diary-table td:last-child { border-bottom: none; }
+  .diary-table td::before {
+      content: attr(data-label); /* Add data-label attribute in JS/HTML */
+      position: absolute;
+      left: 0;
+      width: 45%;
+      padding-right: var(--zporta-spacing-sm);
+      font-weight: bold;
+      text-align: left;
+      color: var(--zporta-dark-blue);
+  }
+  .diary-table td.actions-cell { /* Special handling for actions cell */
+      text-align: center;
+      padding-left: 0;
+  }
+   .diary-table td.actions-cell::before { display: none; }
+
+  .diary-action-buttons {
+    justify-content: center; /* Center buttons in mobile card view */
+    gap: var(--zporta-spacing-xs);
+  }
+  .diary-action-buttons button {
+    padding: var(--zporta-spacing-xs);
+  }
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

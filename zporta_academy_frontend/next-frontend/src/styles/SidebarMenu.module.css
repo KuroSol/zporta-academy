@@ -1,0 +1,142 @@
+
+
+/* CONTAINER */
+.sidebarMenu{
+  position:fixed;
+  top:var(--app-header-height-desktop);
+  right:0;
+  bottom:0;
+  height:calc(100vh - var(--app-header-height-desktop));
+  background-color:var(--sidebar-bg-color);
+  color:var(--sidebar-text-color);
+  z-index:var(--zindex-sidebar);
+  display:flex; flex-direction:column;
+  box-sizing:border-box;
+  padding:20px 10px;
+  overflow-y:auto; overflow-x:hidden;
+  box-shadow:-3px 0 10px rgba(0,0,0,.25);
+  width:var(--sidebar-width-desktop-collapsed);
+  transform:none; opacity:1;
+  transition:
+    width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+    transform var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+    opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+    top var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+    height var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+.expanded{ width:var(--sidebar-width-expanded); }
+.collapsed .sidebarTitle{ font-size:1.1em; line-height:1.1; margin-top:3px; padding-bottom:3px; }
+.collapsed .profileInfo,
+.collapsed .navList li a span{ display:none; }
+.collapsed .profileHexagon{ width:36px; height:36px; margin-bottom:8px; border-width:1px; }
+.collapsed .icon{ margin-right:0; display:block; text-align:center; width:100%; font-size:18px; }
+.collapsed .navList li a{ padding:8px 0; justify-content:center; margin:2px 0; }
+
+/* HEADER */
+.sidebarHeader{ text-align:center; margin-bottom:5px; padding:10px 0; }
+.sidebarTitle{ font-size:22px; margin:0; color:var(--sidebar-text-color); line-height:1.2; font-weight:600; }
+
+/* PROFILE */
+.profileSection{ text-align:center; margin-bottom:10px; padding:10px 0; }
+.profileHexagon{
+  display:inline-block; cursor:pointer;
+  width:70px; height:70px;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  margin:0 auto 10px auto; overflow:hidden;
+  transition:width .3s ease, height .3s ease, border-width .3s ease;
+  background:#334E68; border:2px solid var(--sidebar-accent-color);
+}
+.profileHexagon img{ display:block; width:100%; height:100%; object-fit:cover; }
+.profileInfo{ margin-top:5px; text-align:center; }
+.profileInfo h3{
+  margin:0 auto; text-align:center; font-size:16px; color:#fff;
+  border-bottom:1px solid var(--sidebar-accent-color);
+  padding-bottom:5px; margin-bottom:10px; font-weight:500; display:inline-block;
+}
+
+/* NAV */
+.navRoot{ flex-grow:1; }
+.navList{ list-style:none; padding:0; margin:0; }
+.navList li{ margin-bottom:0; }
+.navLink{
+  display:flex; align-items:center; text-decoration:none; white-space:nowrap;
+  color:var(--sidebar-text-color); font-size:15px;
+  padding:10px 10px; border-radius:6px; margin:3px 0;
+  transition: color .2s ease, background-color .2s ease, padding-left .2s ease;
+}
+.navLink:hover{ color:var(--sidebar-bg-color); background-color:var(--sidebar-accent-color); padding-left:15px; }
+.navLink:hover .icon{ color:var(--sidebar-bg-color); }
+.navLink.active{ color:var(--sidebar-bg-color); background-color:var(--sidebar-accent-color); font-weight:600; }
+.navLink.active .icon{ color:var(--sidebar-bg-color); }
+.icon{ font-size:20px; margin-right:12px; min-width:20px; text-align:center; transition: margin-right .3s ease, color .2s ease; }
+
+/* NOTIFICATIONS */
+.notificationLink{ position:relative; }
+.notificationBadge{
+  position:absolute; top:-5px; right:-5px;
+  background:red; color:#fff; border-radius:50%;
+  width:18px; height:18px; font-size:12px; line-height:18px; text-align:center; font-weight:bold; padding:0 3px;
+}
+.collapsed .notificationLink{ position:relative; }
+.collapsed .notificationBadge{
+  display:inline-block; position:absolute; top:-3px; right:5px;
+  width:15px; height:15px; font-size:9px; line-height:15px;
+}
+
+/* HANDLE */
+.sidebarUnifiedHandle{
+  position:fixed;
+  top:calc((var(--app-header-height-desktop) / 2) + 50vh - (var(--sidebar-handle-height) / 2));
+  width:var(--sidebar-handle-width); height:var(--sidebar-handle-height);
+  background:transparent; border:none; padding:0; cursor:pointer;
+  z-index:var(--zindex-sidebar-handle);
+  display:flex; align-items:center; justify-content:center;
+  transition:right var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+             top var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+.sidebarUnifiedHandle::before{
+  content:'';
+  position:absolute; left:calc(var(--sidebar-handle-width) - var(--sidebar-handle-visual-width));
+  top:0; width:var(--sidebar-handle-visual-width); height:100%;
+  border-top-left-radius:var(--zporta-radius-md); border-bottom-left-radius:var(--zporta-radius-md);
+  box-shadow:-2px 0 6px rgba(0,0,0,.15);
+  transition:background-color .2s ease;
+}
+.handleIcon{ font-size:16px; position:relative; z-index:1; transition: color .2s ease, transform .2s ease; }
+.sidebarUnifiedHandle:hover::before{ filter:brightness(1.1); }
+.sidebarUnifiedHandle:active .handleIcon{ transform:scale(.9); }
+.isClosed{ right:var(--sidebar-width-desktop-collapsed); }
+.isClosed::before{ background-color:var(--sidebar-handle-bg-closed); }
+.isClosed .handleIcon{ color:var(--sidebar-handle-icon-closed); }
+.isOpen{ right:var(--sidebar-width-expanded); }
+.isOpen::before{ background-color:var(--sidebar-handle-bg-open); }
+.isOpen .handleIcon{ color:var(--sidebar-handle-icon-open); }
+.hasUnread::after{
+  content:''; position:absolute; width:10px; height:10px; background:red; border-radius:50%;
+  bottom:8px; left:50%; transform:translateX(-50%);
+}
+
+/* BACKDROP (shown only on mobile when expanded) */
+.backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.5);
+  z-index:calc(var(--zindex-sidebar) - 1);
+  opacity:0; pointer-events:none; transition:opacity .2s ease;
+  display:none;
+}
+.backdropVisible{ opacity:1; pointer-events:auto; }
+
+/* MOBILE */
+@media (max-width:768px){
+  .sidebarMenu{
+    top:var(--app-header-height-mobile);
+    height:calc(100vh - var(--app-header-height-mobile));
+    width:var(--sidebar-width-expanded);
+    transform:translateX(100%); opacity:0; padding:15px 10px;
+  }
+  .expanded{ transform:translateX(0); opacity:1; }
+  .sidebarUnifiedHandle{
+    top:calc((var(--app-header-height-mobile) / 2) + 50vh - (var(--sidebar-handle-height) / 2));
+  }
+  .isClosed{ right:0; }
+  .backdrop{ display:block; } /* only use backdrop on mobile */
+}

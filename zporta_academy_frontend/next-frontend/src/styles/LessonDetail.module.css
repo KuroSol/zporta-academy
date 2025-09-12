@@ -1,0 +1,862 @@
+/* -----------------------------------------
+  LessonDetail.module.css
+  Styles for the Lesson Detail component.
+  Accordion base styles are now primarily handled by the imported ViewerAccordion.css
+----------------------------------------- */
+
+/* --- Removed Global Accordion Styles --- */
+/* ... (styles remain removed as before) ... */
+/* --- End Removed Global Accordion Styles --- */
+
+
+/* -----------------------------------------
+    Component Base Container & Layout
+----------------------------------------- */
+.lessonDetailContainer {
+  max-width: 900px; /* Max width for readability */
+  margin: 30px auto; /* Center the container with top/bottom margin */
+  padding: clamp(15px, 4vw, 30px); /* Responsive padding */
+  background: var(--zporta-background-light, #fff); /* Light background */
+  border: 1px solid var(--zporta-border-light, #eee); /* Subtle border */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Soft shadow */
+  position: relative; /* Needed for absolute positioning of children like FAB */
+  padding-bottom: 90px; /* Add space at the bottom for FAB */
+  font-family: var(--zporta-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"); /* System font stack */
+}
+
+/* -----------------------------------------
+    Headings & Indicators
+----------------------------------------- */
+.lessonTitle {
+  font-size: clamp(24px, 5vw, 32px); /* Responsive font size */
+  font-weight: 700; /* Bolder title */
+  color: var(--zporta-secondary-color, #2c3e50); /* Dark blue-grey */
+  text-align: center;
+  margin-bottom: 25px;
+  line-height: 1.3;
+}
+.lockedIndicator {
+  margin-left: 10px;
+  font-size: 0.6em; /* Smaller than title */
+  vertical-align: middle; /* Align with text */
+  color: var(--zporta-error-color, #dc3545); /* Use error color */
+  font-weight: 600;
+  background-color: var(--zporta-error-bg, #f8d7da); /* Light red background */
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--zporta-error-border, #f5c6cb);
+}
+
+/* -----------------------------------------
+    Course Info vs Free Lesson Info Banners
+----------------------------------------- */
+.courseInfo,
+.freeLessonInfo {
+  margin: 25px 0;
+  padding: 12px 18px;
+  border: 1px solid; /* Border color set below */
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.courseInfo {
+  background: var(--zporta-info-bg, #e7f3fe); /* Light blue background */
+  border-color: var(--zporta-info-border, #bde0fe);
+  color: var(--zporta-info-text, #0a58ca); /* Darker blue text */
+}
+.courseInfo p {
+  margin: 0; /* Remove default paragraph margin */
+}
+.courseInfo a {
+  color: var(--zporta-info-link, #07408a); /* Even darker blue for link */
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--zporta-info-link, #07408a);
+}
+.courseInfo a:hover {
+  border-bottom-style: solid;
+  text-decoration: none; /* Keep underline off on hover */
+}
+.freeLessonInfo {
+  background: var(--zporta-secondary-bg, #e9f7ef); /* Light green background */
+  border-color: var(--zporta-secondary-border, #a7d7b9);
+  color: var(--zporta-secondary-text, #198754); /* Darker green text */
+}
+.freeLessonInfo p {
+  margin: 0;
+}
+
+/* --- Removed Course Lessons Accordion Styles --- */
+/* ... (styles remain removed as before) ... */
+/* --- End Removed Course Lessons Accordion Styles --- */
+
+
+/* -----------------------------------------
+    Alerts, Messages, Errors
+----------------------------------------- */
+.message { /* Base style for messages */
+  padding: 12px 18px;
+  margin: 20px 0; /* Consistent margin */
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+  border: 1px solid; /* Border color set below */
+}
+.error { /* Error specific styles */
+  background: var(--zporta-error-bg, #f8d7da);
+  color: var(--zporta-error-text, #721c24); /* Dark red text */
+  border-color: var(--zporta-error-border, #f5c6cb);
+}
+.success { /* Success specific styles */
+  background: var(--zporta-success-bg, #d4edda);
+  color: var(--zporta-success-text, #155724); /* Dark green text */
+  border-color: var(--zporta-success-border, #c3e6cb);
+}
+.formError { /* Specific style for errors within the edit form */
+   text-align: left;
+   margin-top: 5px;
+   margin-bottom: 15px;
+}
+
+/* -----------------------------------------
+    Video Embed & Links
+----------------------------------------- */
+.lessonVideoEmbed {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  background: #000; /* Black background while loading */
+  margin: 25px 0;
+  border-radius: 8px; /* Slightly larger radius */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Add shadow to embed */
+}
+.lessonVideoEmbed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0; /* Remove iframe border */
+}
+.lessonVideoLink { /* Style for fallback link if embed fails */
+  margin: 20px 0;
+  padding: 12px 18px;
+  background: var(--zporta-background-medium, #f8f9fa); /* Lighter grey */
+  border: 1px solid var(--zporta-border-light, #dee2e6);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.lessonVideoLink p {
+    margin: 0;
+}
+.lessonVideoLink a {
+  color: var(--zporta-primary-color, #0d6efd); /* Standard link blue */
+  word-break: break-all; /* Prevent long URLs from breaking layout */
+}
+
+/* -----------------------------------------
+    Lesson Content (from dangerouslySetInnerHTML)
+    Applies styles to HTML tags generated by the editor.
+----------------------------------------- */
+.lessonContent {
+  font-size: 1rem; /* Base font size (16px default) */
+  line-height: 1.7; /* Improved readability */
+  color: var(--zporta-text-main, #333); /* Main text color */
+  margin-bottom: 30px;
+}
+/* Headings */
+.lessonContent h1, .lessonContent h2,
+.lessonContent h3, .lessonContent h4,
+.lessonContent h5, .lessonContent h6 {
+  color: var(--zporta-heading-color, #2c3e50); /* Heading color */
+  margin: 1.5em 0 0.75em; /* Spacing around headings */
+  font-weight: 600;
+  line-height: 1.3;
+}
+.lessonContent h1 { font-size: 1.8em; }
+.lessonContent h2 { font-size: 1.5em; }
+.lessonContent h3 { font-size: 1.3em; }
+.lessonContent h4 { font-size: 1.15em; }
+.lessonContent h5 { font-size: 1em; font-weight: 700; } /* Bold h5 */
+.lessonContent h6 { font-size: 0.9em; font-weight: 700; color: #555; } /* Bold, slightly grey h6 */
+
+/* Paragraphs */
+.lessonContent p { margin: 0 0 1.2em; } /* Slightly more space after paragraphs */
+
+/* Links */
+.lessonContent a {
+  color: var(--zporta-primary-color, #0d6efd);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.lessonContent a:hover {
+    color: var(--zporta-primary-hover, #0a58ca);
+    text-decoration: none;
+}
+
+/* Inline Code */
+.lessonContent code {
+  background: var(--zporta-code-bg, #f1f1f1);
+  padding: 0.2em 0.5em; /* More horizontal padding */
+  border-radius: 4px;
+  font-family: var(--zporta-font-mono, Menlo, Monaco, Consolas, "Courier New", monospace);
+  font-size: 0.9em; /* Slightly smaller */
+  color: var(--zporta-code-text, #c7254e); /* Pinkish color often used for code */
+}
+
+/* Code Blocks */
+.lessonContent pre {
+  background: var(--zporta-pre-bg, #f8f9fa); /* Light grey background */
+  border: 1px solid var(--zporta-border-light, #dee2e6);
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto; /* Allow horizontal scrolling */
+  font-family: var(--zporta-font-mono, Menlo, Monaco, Consolas, "Courier New", monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  margin: 1.5em 0;
+}
+.lessonContent pre code { /* Reset styles for code inside pre */
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    color: inherit;
+}
+
+/* Blockquotes */
+.lessonContent blockquote {
+  border-left: 5px solid var(--zporta-border-color, #ccc);
+  padding: 0.5em 1.2em; /* More padding */
+  margin: 1.5em 0;
+  font-style: italic;
+  color: var(--zporta-text-light, #555); /* Slightly lighter text */
+  background: var(--zporta-background-medium, #f9f9f9); /* Subtle background */
+}
+.lessonContent blockquote p {
+    margin-bottom: 0.5em; /* Space between paragraphs in blockquote */
+}
+.lessonContent blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Lists */
+.lessonContent ul, .lessonContent ol {
+  margin: 0 0 1.2em 1.8em; /* Indentation */
+  padding: 0;
+}
+.lessonContent ul li, .lessonContent ol li {
+    margin-bottom: 0.5em; /* Space between list items */
+}
+.lessonContent ul ul, .lessonContent ol ol,
+.lessonContent ul ol, .lessonContent ol ul {
+    margin-top: 0.5em; /* Space before nested lists */
+    margin-bottom: 0.5em;
+}
+
+/* Images */
+.lessonContent img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0; /* Space around images */
+  border-radius: 6px; /* Rounded corners for images */
+  display: block; /* Prevent extra space below */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Subtle shadow */
+}
+
+/* Tables */
+.lessonContent table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+  border: 1px solid var(--zporta-border-color, #ccc);
+}
+.lessonContent th, .lessonContent td {
+  border: 1px solid var(--zporta-border-color, #ccc);
+  padding: 0.6em 0.8em; /* More padding */
+  text-align: left; /* Default alignment */
+}
+.lessonContent th {
+  background: var(--zporta-background-medium, #f9f9f9);
+  font-weight: 600;
+  color: var(--zporta-heading-color, #2c3e50);
+}
+
+/* Horizontal Rule */
+.lessonContent hr {
+    border: 0;
+    height: 1px;
+    background-color: var(--zporta-border-light, #eee);
+    margin: 2em 0;
+}
+
+/* -----------------------------------------
+    Quizzes Section
+----------------------------------------- */
+.lessonQuizzes {
+  margin-top: 40px;
+  padding-top: 25px;
+  border-top: 1px solid var(--zporta-border-light, #eee);
+}
+.lessonQuizzes h2 {
+  font-size: 22px; /* Larger heading */
+  color: var(--zporta-secondary-color, #2c3e50);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* -----------------------------------------
+    Post Metadata & Tags
+----------------------------------------- */
+.postMeta {
+  margin-top: 35px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--zporta-border-light, #eee);
+  color: var(--zporta-text-light, #6c757d); /* Bootstrap's text-muted color */
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+  align-items: center;
+  gap: 5px 15px; /* Row and column gap */
+}
+.postMeta svg { /* Style icons */
+  margin-right: 5px;
+  width: 1em;
+  height: 1em;
+  vertical-align: text-bottom; /* Align icon better with text */
+}
+.lessonTags { /* Style for the tags container */
+  margin-top: 15px;
+  font-size: 14px;
+  color: var(--zporta-text-light, #6c757d);
+}
+.lessonTags strong {
+    color: var(--zporta-text-main, #333);
+    margin-right: 5px;
+}
+
+/* -----------------------------------------
+    Navigation Buttons (Prev / Next)
+----------------------------------------- */
+.lessonNavButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 35px 0 25px;
+}
+.navButton {
+  display: block;
+  flex: 1; /* Allow buttons to grow */
+  max-width: 48%; /* Prevent buttons from becoming too wide */
+  padding: 10px 18px; /* More padding */
+  background: var(--zporta-background-medium, #f8f9fa);
+  border: 1px solid var(--zporta-border-light, #dee2e6);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--zporta-secondary-light, #34495e);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease-in-out; /* Smooth transition */
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis if text is too long */
+}
+.navButton:hover {
+  background: #e9ecef;
+  color: var(--zporta-secondary-color, #2c3e50);
+  border-color: #ced4da;
+  transform: translateY(-1px); /* Slight lift on hover */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.prevButton { text-align: left; }
+.nextButton { text-align: right; }
+.navPlaceholder { /* Empty span to maintain layout when one button is missing */
+    flex: 1;
+    max-width: 48%;
+}
+
+
+/* -----------------------------------------
+    General Buttons & Action Buttons
+----------------------------------------- */
+/* Base button style */
+.btn {
+  display: inline-flex; /* Use inline-flex for icon alignment */
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Space between icon and text */
+  padding: 10px 18px; /* Default padding */
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent; /* Start with transparent border */
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none; /* Prevent text selection */
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.btn:focus { /* Accessibility focus style */
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); /* Example focus ring */
+}
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Primary Button Style */
+.btnPrimary {
+  background: var(--zporta-primary-color, #0d6efd);
+  color: #fff;
+  border-color: var(--zporta-primary-color, #0d6efd);
+}
+.btnPrimary:hover {
+  background: var(--zporta-primary-hover, #0b5ed7);
+  border-color: var(--zporta-primary-hover, #0a58ca);
+  color: #fff;
+}
+
+/* Secondary Button Style (e.g., Cancel) */
+.btnSecondary {
+  background: var(--zporta-secondary-btn-bg, #6c757d); /* Grey background */
+  color: #fff;
+  border-color: var(--zporta-secondary-btn-bg, #6c757d);
+}
+.btnSecondary:hover {
+  background: #5c636a;
+  border-color: #565e64;
+  color: #fff;
+}
+
+/* Completion Button */
+.completeBtn {
+  margin: 30px auto; /* Center the button */
+  display: block; /* Make it a block element for margin auto */
+  width: fit-content; /* Size button to content */
+  padding: 12px 30px; /* Larger padding */
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Completion Indicator */
+.completedIndicator {
+  margin: 30px 0;
+  background: var(--zporta-success-bg, #d1e7dd);
+  border: 1px solid var(--zporta-success-border, #badbcc);
+  color: var(--zporta-success-text, #0f5132);
+  padding: 12px 18px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Owner Action Buttons (Edit/Delete) */
+.lessonActions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--zporta-border-light, #eee);
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 10px;
+}
+.editBtn, .deleteBtn {
+    padding: 8px 15px; /* Slightly smaller padding */
+    font-size: 14px;
+}
+.editBtn {
+    background-color: var(--zporta-warning-btn-bg, #ffc107); /* Yellow */
+    border-color: var(--zporta-warning-btn-bg, #ffc107);
+    color: #000;
+}
+.editBtn:hover {
+    background-color: #ffca2c;
+    border-color: #ffc720;
+    color: #000;
+}
+.deleteBtn {
+    background-color: var(--zporta-danger-btn-bg, #dc3545); /* Red */
+    border-color: var(--zporta-danger-btn-bg, #dc3545);
+    color: #fff;
+}
+.deleteBtn:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+    color: #fff;
+}
+
+/* -----------------------------------------
+    Floating Action Button (FAB) - Radial Menu
+----------------------------------------- */
+.radialMenuContainer {
+  position: fixed; /* Keep it fixed relative to viewport */
+  bottom: clamp(15px, 4vw, 30px); /* Responsive positioning */
+  right: clamp(15px, 4vw, 30px);
+  z-index: 900; /* Ensure it's above most other content */
+}
+.radialMenu {
+  position: relative; /* Anchor for absolute positioned buttons */
+  width: 55px; /* Size of the main button */
+  height: 55px;
+}
+.radialMenuButton { /* Style for ALL buttons in the menu */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%; /* Inherit size from .radialMenu */
+  height: 100%;
+  border-radius: 50%; /* Circular buttons */
+  background: var(--zporta-secondary-color, #34495e); /* Default background */
+  color: #fff; /* Default text/icon color */
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2); /* Add shadow */
+  /* Initial state for animation (hidden and small) */
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg); /* Start small and rotated */
+  transform-origin: center center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), /* Smooth easing */
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s ease;
+}
+/* Main toggle button styles */
+.mainButton {
+  background: var(--zporta-primary-color, #0d6efd);
+  z-index: 2; /* Keep main button above items */
+  opacity: 1; /* Always visible */
+  transform: scale(1) rotate(0deg); /* Visible state */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.mainButton:hover {
+  background: var(--zporta-primary-hover, #0b5ed7);
+}
+/* Styles when the menu is open */
+.radialMenu.open .radialMenuButton { /* Make items visible and positioned */
+  opacity: 1;
+  transform: scale(1) rotate(0deg); /* Normal size and rotation */
+}
+.radialMenu.open .mainButton { /* Rotate main button icon */
+  transform: scale(1) rotate(45deg); /* Rotate plus to 'X' like shape */
+  background-color: var(--zporta-danger-btn-bg, #dc3545); /* Change color when open */
+}
+.radialMenu.open .mainButton:hover {
+    background-color: #bb2d3b;
+}
+
+/* Positioning for individual menu items when open */
+/* Adjust translate values for desired spread */
+.radialMenu.open .item1 { transform: translate(-75px, 0); transition-delay: 0.05s; } /* Left */
+.radialMenu.open .item2 { transform: translate(-53px, -53px); transition-delay: 0.1s; } /* Top-Left */
+.radialMenu.open .item3 { transform: translate(0, -75px); transition-delay: 0.15s; } /* Top */
+
+
+/* --- FIX: Hover effect for individual items --- */
+/* Remove the old generic hover rule that caused the issue */
+/* .radialMenuButton.item:hover { ... } */
+
+/* Add specific hover rules for each item WHEN THE MENU IS OPEN */
+/* These rules combine the necessary translation with the desired scale effect */
+.radialMenu.open .item1:hover {
+    transform: translate(-75px, 0) scale(1.1); /* Keep translate, add scale */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25); /* Optional: Enhance shadow */
+    z-index: 1; /* Ensure hovered item is visually on top if overlapping slightly */
+}
+.radialMenu.open .item2:hover {
+    transform: translate(-53px, -53px) scale(1.1); /* Keep translate, add scale */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    z-index: 1;
+}
+.radialMenu.open .item3:hover {
+    transform: translate(0, -75px) scale(1.1); /* Keep translate, add scale */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    z-index: 1;
+}
+/* --- END FIX --- */
+
+
+/* -----------------------------------------
+    Edit Mode Form Styles
+----------------------------------------- */
+.editLessonForm {
+  background: var(--zporta-background-medium, #f8f9fa);
+  padding: clamp(15px, 4vw, 30px);
+  border: 1px solid var(--zporta-border-light, #dee2e6);
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+.modalFormTitle { /* Reusing class name, ensure it's styled appropriately */
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--zporta-heading-color, #2c3e50);
+    margin-bottom: 25px;
+    text-align: center;
+}
+.formGroup {
+  margin-bottom: 20px; /* More space between form groups */
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 8px; /* More space below label */
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--zporta-text-light, #555);
+}
+.required { /* Style for the asterisk */
+    color: var(--zporta-error-color, #dc3545);
+    margin-left: 2px;
+}
+.inputField,
+.selectField,
+.textareaField { /* Common styles for form inputs */
+  width: 100%;
+  padding: 10px 12px; /* Consistent padding */
+  border: 1px solid var(--zporta-border-color, #ced4da);
+  border-radius: 5px;
+  font-size: 1rem;
+  line-height: 1.5;
+  background-color: var(--zporta-background-light, #fff);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.inputField:focus,
+.selectField:focus,
+.textareaField:focus {
+    border-color: var(--zporta-primary-color, #86b7fe); /* Highlight border on focus */
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); /* Focus ring */
+}
+.editorLabel { /* Specific label style for editor */
+    margin-bottom: 10px;
+}
+.editorContainer { /* Wrapper for the CustomEditor */
+    border: 1px solid var(--zporta-border-color, #ced4da);
+    border-radius: 5px;
+    padding: 5px; /* Optional padding around the editor */
+    background-color: #fff;
+}
+.editorContainer:focus-within { /* Apply focus styles when editor inside is focused */
+    border-color: var(--zporta-primary-color, #86b7fe);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+.formActions { /* Container for Save/Cancel buttons */
+  display: flex;
+  gap: 15px; /* More space between buttons */
+  margin-top: 30px;
+  justify-content: flex-end; /* Align buttons to the right */
+}
+
+
+/* --- Styles for New Quiz Management Section --- */
+
+/* Ensure base fieldset styles exist (you likely have similar already) */
+.formSection {
+  border: 1px solid var(--zporta-border-light, #eee);
+  border-radius: 8px;
+  padding: 20px 25px;
+  margin: 20px 0;
+  background-color: var(--zporta-background-light, #fff);
+}
+
+.formSection legend {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--zporta-secondary-color, #2c3e50);
+  padding: 0 10px;
+  margin-left: 15px;
+}
+
+/* Specific class for this section (optional, for overrides) */
+.quizManagementSection {
+  /* Add overrides here if needed */
+}
+
+/* Area containing the list */
+.contentListArea {
+  min-height: 80px;
+  display: flex; /* Important for vertical centering of the 'no content' message */
+}
+
+/* Scrollable box */
+.scrollableBox {
+  width: 100%;
+  max-height: 200px; /* Or your preferred height */
+  overflow-y: auto;
+  border: 1px solid var(--zporta-border-color, #ccc);
+  border-radius: 5px;
+  padding: 10px 15px;
+  background: var(--zporta-background-medium, #f8f9fa);
+}
+/* Optional: Scrollbar styling */
+.scrollableBox::-webkit-scrollbar { width: 6px; }
+.scrollableBox::-webkit-scrollbar-thumb { background: var(--zporta-border-color, #ccc); border-radius: 3px; }
+.scrollableBox::-webkit-scrollbar-thumb:hover { background: var(--zporta-primary-color, #0d6efd); }
+
+/* Individual list item */
+.contentItem {
+  display: flex;
+  justify-content: space-between; /* Key for layout */
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px dashed var(--zporta-border-light, #eee);
+}
+.contentItem:last-child {
+  border-bottom: none;
+}
+
+/* Quiz title text */
+/* ─── Quiz-Management Form Section ─── */
+.formSection {
+  border: 1px solid var(--zporta-border-light, #ddd);
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin: 20px 0;
+  background: var(--zporta-background-light, #fff);
+}
+.formSection legend {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--zporta-secondary-color, #2c3e50);
+  padding: 0 8px;
+  margin-left: 10px;
+}
+
+/* Attached quizzes list */
+.attachedContentList {
+  margin-bottom: 15px;
+}
+.attachedContentList h3 {
+  font-size: 15px;
+  color: var(--zporta-secondary-light, #555);
+  margin-bottom: 10px;
+}
+.attachedContentList ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.attachedContentList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--zporta-border-light, #eee);
+}
+.attachedContentList li:last-child {
+  border-bottom: none;
+}
+
+/* Detach button */
+.detachBtn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--zporta-danger-border-light, #f5c6cb);
+  background-color: var(--zporta-danger-bg-light, #fdecea);
+  color: var(--zporta-danger-text, #a94442);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+.detachBtn:hover {
+  background-color: var(--zporta-danger-btn-bg, #dc3545);
+  color: #fff;
+  border-color: var(--zporta-danger-btn-bg, #dc3545);
+}
+
+/* Attach-new panel */
+.contentSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.contentSectionHeader select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--zporta-border-color, #ccc);
+  border-radius: 4px;
+  font-size: 14px;
+}
+.addBtn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--zporta-success-border-light, #d6e9c6);
+  background-color: var(--zporta-success-bg-light, #eafaf1);
+  color: var(--zporta-success-text, #3c763d);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+.addBtn:hover {
+  background-color: var(--zporta-success-btn-bg, #2ecc71);
+  color: #fff;
+  border-color: var(--zporta-success-btn-bg, #2ecc71);
+}
+
+/* Inline form-error text */
+.formError {
+  color: var(--zporta-error-color, #e74c3c);
+  font-size: 13px;
+  margin-top: 5px;
+  text-align: left;
+}
+/* -----------------------------------------
+    Responsive Adjustments
+----------------------------------------- */
+@media (max-width: 960px) {
+  .lessonDetailContainer {
+      padding: 20px; /* Reduce padding on medium screens */
+      margin: 20px 15px; /* Add side margin */
+  }
+}
+
+@media (max-width: 768px) {
+  .navButton { font-size: 13px; padding: 8px 14px; }
+  .lessonNavButtons { flex-direction: column; gap: 10px; } /* Stack nav buttons */
+  .navButton, .navPlaceholder { max-width: 100%; } /* Full width when stacked */
+  .prevButton { text-align: center; } /* Center text when stacked */
+  .nextButton { text-align: center; }
+  .lessonActions { justify-content: center; } /* Center edit/delete buttons */
+}
+
+@media (max-width: 480px) {
+  .lessonDetailContainer {
+      padding: 15px;
+      padding-bottom: 80px; /* Ensure space for FAB */
+      margin: 15px 10px;
+      border-radius: 8px; /* Slightly smaller radius */
+  }
+  .lessonTitle { font-size: 22px; }
+  .btn { padding: 9px 15px; font-size: 13px; } /* Slightly smaller buttons */
+  .completeBtn { padding: 10px 25px; font-size: 14px; }
+  .editBtn, .deleteBtn { padding: 7px 12px; font-size: 13px; }
+  .radialMenuContainer { bottom: 15px; right: 15px; } /* Adjust FAB position */
+  .radialMenu { width: 50px; height: 50px; } /* Smaller FAB */
+  /* Adjust item positions for smaller FAB */
+  .radialMenu.open .item1 { transform: translate(-65px, 0); }
+  .radialMenu.open .item2 { transform: translate(-46px, -46px); }
+  .radialMenu.open .item3 { transform: translate(0, -65px); }
+ /* FIX: Adjust hover transforms for smaller FAB */
+  .radialMenu.open .item1:hover { transform: translate(-65px, 0) scale(1.1); }
+  .radialMenu.open .item2:hover { transform: translate(-46px, -46px) scale(1.1); }
+  .radialMenu.open .item3:hover { transform: translate(0, -65px) scale(1.1); }
+  /* END FIX */
+  .formGroup { margin-bottom: 15px; } /* Less space in forms */
+  .formActions { gap: 10px; }
+}

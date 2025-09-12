@@ -1,0 +1,474 @@
+
+/* --- Base Containers --- */
+/* Restore list markers inside lesson content only */
+.lessonTemplate ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0 1rem; }
+.lessonTemplate ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0 1rem; }
+.lessonTemplate li { margin: 0.25rem 0; }
+
+.courseDetailContainer {
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: var(--font-family);
+    color: var(--dark-color);
+    box-sizing: border-box;
+}
+
+.loadingContainer, .errorContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    font-size: 1.25rem;
+    color: var(--medium-color);
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- Header --- */
+.header {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background-color: var(--dark-color);
+}
+
+.coverImage {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.coverImagePlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--medium-color);
+    background-color: var(--light-color);
+}
+
+.headerOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.5rem;
+}
+
+.headerContent {
+    color: var(--white-color);
+}
+
+.subjectPill {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.courseTitle {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    line-height: 1.2;
+}
+
+.tagContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tag {
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+/* --- Main Layout --- */
+.mainContent {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile first */
+    gap: 2rem;
+}
+
+.leftColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+}
+
+.rightColumn {
+    /* Sticky sidebar on larger screens */
+}
+
+/* --- Content Sections --- */
+.contentSection {
+    background-color: var(--white-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.description {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--medium-color);
+    word-wrap: break-word;
+}
+
+.description h1, .description h2, .description h3 {
+    color: var(--dark-color);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.description p {
+    margin-bottom: 1em;
+}
+
+/* Content List (Lessons/Quizzes) */
+.contentList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contentList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+.contentList li:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+.contentList li span {
+    flex-grow: 1;
+    margin-right: 1rem;
+}
+
+
+/* --- Sidebar --- */
+.sidebarCard {
+    background-color: var(--white-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    position: sticky;
+    top: 2rem;
+}
+
+.enrollMessage {
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--medium-color);
+    margin-top: 1rem;
+}
+
+/* --- Buttons --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.btnPrimary {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+.btnPrimary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+.btnSecondary {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border-color: var(--border-color);
+}
+.btnSecondary:hover:not(:disabled) {
+    background-color: var(--border-color);
+}
+.btnSuccess {
+    background-color: var(--success-color);
+    color: var(--white-color);
+}
+.btnSuccess:hover:not(:disabled) {
+    background-color: var(--success-hover);
+}
+.btnDanger {
+    background-color: var(--danger-color);
+    color: var(--white-color);
+}
+.btnDanger:hover:not(:disabled) {
+    background-color: var(--danger-hover);
+}
+.btnWarning {
+    background-color: var(--warning-color);
+    color: var(--white-color);
+}
+.btnWarning:hover:not(:disabled) {
+    background-color: var(--warning-hover);
+}
+.btnIcon {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+.btnBlock {
+    width: 100%;
+}
+
+/* --- Edit Mode & Forms --- */
+.editForm, .adminSection {
+    background-color: var(--white-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.formHeader {
+    font-size: 1.75rem;
+    margin: 0 0 2rem 0;
+}
+
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.inputField, .dropdown {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background-color: var(--white-color);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+.inputField:focus, .dropdown:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.formActions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.formError {
+    background-color: #fef2f2;
+    color: var(--danger-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--danger-color);
+    margin-top: 1rem;
+}
+
+/* Admin Sections */
+.attachedList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.attachedList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+}
+.detachBtn {
+    background: none;
+    border: none;
+    color: var(--medium-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    line-height: 0;
+}
+.detachBtn:hover {
+    background-color: #fee2e2;
+    color: var(--danger-color);
+}
+
+.addContentForm {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.addContentForm .dropdown {
+    flex-grow: 1;
+}
+
+.statusBox {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background-color: var(--light-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+}
+.statusPill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-weight: 600;
+    color: var(--white-color);
+}
+.statusDraft { background-color: var(--warning-color); }
+.statusPublished { background-color: var(--success-color); }
+.statusMessage { font-style: italic; color: var(--medium-color); }
+
+.dangerZone {
+    border-color: var(--danger-color);
+    background-color: #fef2f2;
+}
+.dangerZone .sectionTitle { color: var(--danger-hover); }
+.dangerContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.dangerContent p {
+    margin: 0;
+    color: #991b1b;
+}
+
+/* Accordion Styles for Edit Mode */
+.accordionContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.accordionItem {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+.accordionHeader {
+    width: 100%;
+    background-color: var(--light-color);
+    padding: 1rem;
+    border: none;
+    text-align: left;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0;
+}
+.accordionHeader:hover {
+    background-color: var(--border-color);
+}
+.accordionContent {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+
+/* --- Responsive Design --- */
+
+@media (min-width: 768px) {
+    .headerOverlay {
+        padding: 2rem;
+    }
+    .courseTitle {
+        font-size: 3rem;
+    }
+    .mainContent {
+        grid-template-columns: minmax(0, 2.5fr) 1fr;
+    }
+    .editForm, .adminSection {
+        padding: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .coverImage {
+        height: 400px;
+    }
+    .courseTitle {
+        font-size: 3.5rem;
+    }
+}
