@@ -5,24 +5,29 @@ import styles from '@/styles/posts/PostDetail.module.css';
 // Helper function to format dates, consistent with the list view
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('en-US', {
+  
+  const date = new Date(dateString);
+
+  // An invalid date's getTime() returns NaN. This check prevents the app from crashing.
+  if (isNaN(date.getTime())) {
+    // If the date format from the API is unrecognized, return the original string.
+    return dateString;
+  }
+
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
 };
 
-// SVG Icon for the arrow
-const ArrowIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-    <polyline points="12 5 19 12 12 19"></polyline>
-  </svg>
-);
-
-
 export default function PostDetail({ post, previousPost, nextPost }) {
-  if (!post) return <div className={styles.notFound}>Post not found.</div>;
+  // This component now ONLY receives props. It doesn't know about `params`.
+  if (!post) {
+    // A simple loading or not-found state can be handled here if needed,
+    // but the main not-found logic is on the page.
+    return <div className={styles.notFound}>Post not found.</div>;
+  }
 
   return (
     <div className={styles.pageWrapper}>
@@ -86,3 +91,4 @@ export default function PostDetail({ post, previousPost, nextPost }) {
     </div>
   );
 }
+

@@ -4,11 +4,20 @@ import PostDetail from '@/components/PostDetail';
 
 export async function getServerSideProps({ params, req }){
   const permalink = `${params.username}/post/${params.year}/${params.month}/${params.day}/${params.slug}`;
-  const { data } = await apiClient.get(`/posts/${encodeURI(permalink)}/`, { headers:{ cookie:req?.headers?.cookie||'' }});
-  return { props:{ post:data } };
+  // fetch full list (newest first)
+  const listRes = await apiClient.get('/posts/?ordering=-created_at&page_size=1000', {
+    headers:{ cookie:req?.headers?.cookie||'' }
+  });
+  const items = Array.isArray(listRes.data) ? listRes.data : (listRes.data?.results || []);
+  const idx = items.findIndex(p => p.permalink === permalink);
+  if (idx < 0) return { notFound: true };
+  const post = items[idx];
+  const previousPost = idx > 0 ? items[idx - 1] : null; // older
+  const nextPost = idx < items.length - 1 ? items[idx + 1] : null; // newer
+  return { props:{ post, previousPost, nextPost } };
 }
 
-export default function Page({ post }){
+export default function Page({ post, previousPost, nextPost }){
   const site  = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.zportaacademy.com';
   const url   = `${site}/posts/${post.permalink}`;
   const title = post.seo_title || post.title;
@@ -43,7 +52,7 @@ export default function Page({ post }){
             datePublished: post.created_at, image:[img], mainEntityOfPage:url
           })}} />
       </Head>
-      <PostDetail post={post}/>
+      <PostDetail post={post} previousPost={previousPost} nextPost={nextPost}/>
     </>
   );
 }
