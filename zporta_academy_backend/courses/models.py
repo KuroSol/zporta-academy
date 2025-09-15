@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.conf import settings
 from django_ckeditor_5.fields import CKEditor5Field
 import uuid
 from django.utils import timezone
@@ -92,6 +93,14 @@ class Course(models.Model):
             text = soup.get_text()
             self.og_description = text[:200]
         
+        # --- SEO absolutes (set once if missing) ---
+        base = getattr(settings, "SITE_URL", "").rstrip("/")
+        if base:
+            if not self.canonical_url and self.permalink:
+                self.canonical_url = f"{base}/courses/{self.permalink}/"
+            if not self.og_image and self.cover_image:
+                # Make cover_image absolute for social previews
+                self.og_image = f"{base}{self.cover_image.url}"
         super(Course, self).save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):

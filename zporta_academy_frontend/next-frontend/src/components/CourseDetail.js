@@ -69,7 +69,7 @@ const sanitizeContentViewerHTML = (htmlString) => {
 };
 
 // --- Main Course Detail Component ---
-const CourseDetail = () => {
+const CourseDetail = ({ initialCourse=null, initialLessons=[], initialSeo=null }) => {
  const router = useRouter();
  const { username, date, subject, slug: courseTitle } = router.query || {};
  const permalink = (username && date && subject && courseTitle)
@@ -77,8 +77,8 @@ const CourseDetail = () => {
  const isEditRoute = router.asPath?.startsWith("/admin/courses/edit/");
 
   // --- State Variables (From your original file, UNCHANGED) ---
-  const [course, setCourse] = useState(null);
-  const [lessons, setLessons] = useState([]);
+  const [course, setCourse] = useState(initialCourse);
+  const [lessons, setLessons] = useState(initialLessons);
   const [userLessonsForDropdown, setUserLessonsForDropdown] = useState([])
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,20 +119,17 @@ const CourseDetail = () => {
       setLoading(false);
       return;
     }
-    if (!token) {
-      setError("Please log in to view course details.");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
+    // Public fetch allowed. Token optional.
+    setLoading(!initialCourse); // if SSR provided data, skip spinner
     setError("");
     setStatusUpdateMessage("");
 
     const fetchInitialData = async () => {
+      if (initialCourse) { setLoading(false); return; }
       let courseId = null;
       try {
         const [courseRes, userLessonsRes, subjectsRes, userQuizzesRes] = await Promise.allSettled([
+          // public endpoint
           apiClient.get(`/courses/${permalink}/`),
           apiClient.get("/lessons/my/"),
           apiClient.get("/subjects/"),

@@ -13,6 +13,8 @@ class LessonSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'content', 'created_at', 'permalink']
 
 class CourseSerializer(serializers.ModelSerializer):
+    cover_image_url = serializers.SerializerMethodField()
+    og_image_url    = serializers.SerializerMethodField()
     enrolled_count  = serializers.IntegerField(read_only=True)
     completed_count = serializers.IntegerField(read_only=True)
     is_locked = serializers.BooleanField(read_only=True)
@@ -21,6 +23,8 @@ class CourseSerializer(serializers.ModelSerializer):
     lesson_count = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_draft = serializers.BooleanField(read_only=True)
+    subject_name = serializers.SerializerMethodField()
+    tag_names    = serializers.SerializerMethodField()
     allowed_testers = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), many=True, required=False
     )
@@ -28,8 +32,9 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'description', 'price', 'permalink', 'course_url', 'cover_image','is_locked',
-            'tags', 'subject', 'created_by', 'created_at', 'unique_code', 'course_type',
+            'id','title','description','price','permalink','course_url',
+            'cover_image','cover_image_url','og_image','og_image_url','is_locked',
+            'tags','tag_names','subject','subject_name','created_by','created_at','unique_code','course_type',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'lesson_count', 'is_owner', 'is_draft', 'allowed_testers',
@@ -37,6 +42,11 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink', 'unique_code', 'is_draft']
     
+    def _abs(self, request, url_or_path):
+        if not url_or_path:
+            return None
+        return request.build_absolute_uri(url_or_path)
+
     def create(self, validated_data):
         # Pop many-to-many fields safely
         tags_data = validated_data.pop('tags', None) or []
@@ -113,3 +123,24 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_is_owner(self, obj):
         request = self.context.get('request')
         return request.user.is_authenticated and request.user == obj.created_by
+
+    def get_subject_name(self, obj):
+        return obj.subject.name if obj.subject else None
+
+    def get_tag_names(self, obj):
+        return list(obj.tags.values_list('name', flat=True))
+
+    def get_cover_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.cover_image:
+            return self._abs(request, obj.cover_image.url)
+        return None
+
+    def get_og_image_url(self, obj):
+        request = self.context.get('request')
+        # og_image is a URLField (may already be absolute). If blank, fall back to cover_image.
+        if obj.og_image:
+            return obj.og_image if obj.og_image.startswith('http') else self._abs(request, obj.og_image)
+        if obj.cover_image:
+            return self._abs(request, obj.cover_image.url)
+        return None
