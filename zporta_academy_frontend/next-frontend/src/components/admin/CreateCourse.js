@@ -173,8 +173,11 @@ const CreateCourse = () => {
         if (!subject) { setMessage('Please select a Subject.'); return; }
         if (!editorContent || !editorContent.trim()) { setMessage('Course Description cannot be empty.'); return; }
         if (courseType === 'premium' && (!price || parseFloat(price) <= 0)) { setMessage('Valid Price is required for Premium courses.'); return; }
-        
-        const testerList = testers.split(',').map(t => t.trim()).filter(Boolean);
+
+        // normalize testers input and validate count
+        const testersStr = String(testers ?? '');
+        const testerList = testersStr.split(',').map(t => t.trim()).filter(Boolean);
+
         if (testerList.length > 3) { setMessage('You can only assign a maximum of 3 testers.'); return; }
 
         setSubmitting(true);
@@ -183,10 +186,15 @@ const CreateCourse = () => {
         formData.append('title', title.trim());
         formData.append('description', editorContent);
         formData.append('subject', subject);
-        formData.append('is_draft', isDraft);
         formData.append('course_type', courseType);
         formData.append('price', courseType === 'premium' ? parseFloat(price).toFixed(2) : '0.00');
         if (coverImage) formData.append('cover_image', coverImage);
+        // publish flag understood by backend serializer
+        if (!isDraft) formData.append('publish', 'true');
+        // testers: send at create-time when publishing
+        if (!isDraft) {
+          testerList.forEach(t => formData.append('allowed_testers', t));
+        }
 
         let courseData = null;
         let attachmentErrors = [];
@@ -223,12 +231,7 @@ const CreateCourse = () => {
                 });
             }
 
-            if (testerList.length > 0 && !isDraft) {
-                 attachmentPromises.push(
-                    apiClient.post(`/courses/${coursePermalink}/assign-testers/`, { testers: testerList })
-                        .catch(err => ({ type: 'Testers', id: testerList.join(', '), error: err }))
-                 );
-            }
+
 
             if (attachmentPromises.length > 0) {
                 setMessage('Attaching Lessons/Quizzes/Testers...');

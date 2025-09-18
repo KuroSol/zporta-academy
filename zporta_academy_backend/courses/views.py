@@ -57,7 +57,10 @@ class PublishCourseView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, permalink):
-        course = get_object_or_404(Course.all_objects, permalink=permalink, created_by=request.user)
+        course = get_object_or_404(Course.all_objects, permalink=permalink)
+        if not (request.user == course.created_by or request.user.is_staff or request.user.is_superuser):
+            return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+ 
         course.is_draft = False
         course.save()
         return Response({"message": "Course published successfully."})
@@ -86,7 +89,12 @@ class DraftCourseDetailView(APIView):
     def get(self, request, permalink):
         # Use all_objects to access drafts.
         course = get_object_or_404(Course.all_objects, permalink=permalink, is_draft=True)
-        if course.created_by != request.user and request.user not in course.allowed_testers.all():
+        if not (
+            request.user == course.created_by
+            or request.user in course.allowed_testers.all()
+            or request.user.is_staff
+            or request.user.is_superuser
+        ):
             return Response({"error": "You don't have permission to view this draft."}, status=403)
         lessons = Lesson.objects.filter(course=course)
         return Response({
@@ -150,6 +158,7 @@ class CourseListCreateView(generics.ListCreateAPIView):
         return [IsAuthenticated()]
     
     def perform_create(self, serializer):
+        # serializer.create already respects 'publish' flag
         serializer.save(created_by=self.request.user)
 
 class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -177,7 +186,12 @@ class CourseDetailView(APIView):
         course = get_object_or_404(Course.all_objects, permalink=permalink)
         # If the course is a draft, only allow access to the creator or allowed testers.
         if course.is_draft:
-            if not request.user.is_authenticated or (request.user != course.created_by and request.user not in course.allowed_testers.all()):
+            if not request.user.is_authenticated or not (
+                request.user == course.created_by
+                or request.user in course.allowed_testers.all()
+                or request.user.is_staff
+                or request.user.is_superuser
+            ):
                 raise Http404("Course not found.")
         lessons = Lesson.objects.filter(course=course).order_by(
             Case(When(course__isnull=True, then=Value(0)), default=Value(1), output_field=IntegerField()),
@@ -207,7 +221,12 @@ class DynamicCourseView(APIView):
         
         # If the course is a draft, only allow access to the creator or allowed testers.
         if course.is_draft:
-            if not request.user.is_authenticated or (request.user != course.created_by and request.user not in course.allowed_testers.all()):
+            if not request.user.is_authenticated or not (
+                request.user == course.created_by
+                or request.user in course.allowed_testers.all()
+                or request.user.is_staff
+                or request.user.is_superuser
+            ):
                 raise Http404("Course not found.")
                 
         lessons = Lesson.objects.filter(course=course).order_by('title')

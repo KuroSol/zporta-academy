@@ -17,6 +17,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [quizzes, setQuizzes] = useState([]);
     const [selectedQuizzes, setSelectedQuizzes] = useState([]);
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+    const [courses, setCourses] = useState([]);
+    const [selectedCourse, setSelectedCourse] = useState('');
     
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -42,10 +44,11 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         setLoading(true);
         setMessage('');
         try {
-            const [subjectsRes, quizzesRes, templatesRes] = await Promise.all([
+            const [subjectsRes, quizzesRes, templatesRes, myCoursesRes] = await Promise.all([
                 apiClient.get('/subjects/'),
                 apiClient.get('/quizzes/my/'),
-                apiClient.get('/lessons/templates/') // Endpoint for admin-defined LessonTemplates
+                apiClient.get('/lessons/templates/'), // Endpoint for admin-defined LessonTemplates
+                apiClient.get('/courses/my/')
             ]);
 
             // Subject handling (restored from your reliable older version)
@@ -76,6 +79,14 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             } else {
                 console.error("Invalid data format for lesson templates:", templatesRes.data);
                 setLessonTemplates([]);
+            }
+
+            // Courses (owned by user)
+            if (Array.isArray(myCoursesRes.data)) {
+                setCourses(myCoursesRes.data);
+            } else {
+                console.error("Invalid data format for courses:", myCoursesRes.data);
+                setCourses([]);
             }
 
         } catch (error) {
@@ -206,6 +217,21 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
             let overallMessage = `Draft "${newLessonData.title}" saved!`;
             let overallMessageType = 'success';
+
+            // Optional: attach to a course first, if selected
+            if (selectedCourse && lessonPermalink) {
+                try {
+                    setMessage('Lesson saved. Attaching to selected course...');
+                    await apiClient.post(`/lessons/${lessonPermalink}/attach-course/`, {
+                        course_id: selectedCourse
+                    });
+                    overallMessage = `Lesson saved and attached to course successfully!`;
+                } catch (attachErr) {
+                    console.error('Attach course error:', attachErr.response?.data || attachErr.message);
+                    overallMessage = `Lesson saved, but failed to attach to course: ${attachErr.response?.data?.error || attachErr.message || 'Unknown error'}`;
+                    overallMessageType = 'warning';
+                }
+            }
 
             if (selectedQuizzes.length > 0 && lessonPermalink) {
                 setMessage('Lesson saved. Attaching quizzes...'); 
@@ -412,10 +438,10 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 value={customJS}
                                 onChange={(e) => setCustomJS(e.target.value)}
                                 placeholder={`// Example
-// (function(root){
-//   const btn = root.querySelector('.my-button');
-//   if(btn) btn.addEventListener('click', ()=>alert('Hi from this lesson only!'));
-// })(document.querySelector('[data-lesson-root]'));`}
+                                // (function(root){
+                                //   const btn = root.querySelector('.my-button');
+                                //   if(btn) btn.addEventListener('click', ()=>alert('Hi from this lesson only!'));
+                                // })(document.querySelector('[data-lesson-root]'));`}
                                 disabled={submitting || loading}
                                 className={styles.inputField}
                             />
@@ -426,7 +452,34 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         </div>
                     </div>
                 </fieldset>
-
+                {/* Section 2.5: Attach to Course (Optional) */}
+                <fieldset className={styles.formSection}>
+                    <legend>Attach to Course (Optional)</legend>
+                    <div className={styles.formGrid}>
+                        <div className={styles.formGroup}>
+                            <label htmlFor="attachCourseSelect">Attach to an existing course</label>
+                            <select
+                                id="attachCourseSelect"
+                                className={styles.selectField}
+                                value={selectedCourse}
+                                onChange={(e) => setSelectedCourse(e.target.value)}
+                                disabled={submitting || loading || courses.length === 0}
+                            >
+                                <option value="">
+                                    {courses.length === 0 ? 'No courses found' : 'Do not attach (standalone lesson)'}
+                                </option>
+                                {courses.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.title}{c.is_draft ? ' (draft)' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className={styles.fieldHelpText}>
+                                Optional. If selected, the lesson will be attached to this course after it’s created.
+                            </p>
+                        </div>
+                    </div>
+                </fieldset>
 
                 {/* Section 3: Attach Quizzes */}
                 <fieldset className={styles.formSection}>

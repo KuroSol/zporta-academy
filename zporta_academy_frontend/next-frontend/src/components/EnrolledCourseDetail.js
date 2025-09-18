@@ -656,33 +656,23 @@ function EnrolledCourseStudyPage() {
         const course = enrollment.course_snapshot || enrollment.course;
         if (!course) throw new Error("Course data not found in enrollment.");
         
-        // **FIX**: Restore detailed lesson fetching to get nested quizzes
-        const lessonsData = await Promise.all(
-          (course.lessons || []).map(lsn =>
-            apiClient.get(`/lessons/${lsn.permalink || lsn.id}/`)
-              .then(res => res.data.lesson)
-              .catch(err => {
-                console.error(`Failed to fetch lesson ${lsn.id}:`, err);
-                return { ...lsn, title: `${lsn.title} (Error)`, content: '' }; // Graceful fallback
-              })
-          )
-        );
-
-        const sortedLessons = lessonsData.sort((a,b) => a.order - b.order);
-        
-        // **FIX**: Correctly extract quizzes from the detailed lesson data
-        const allQuizzes = sortedLessons.flatMap(l => l.quizzes || []);
+        // Use lessons from the course payload; avoid per-lesson fetch (draft lessons can 404)
+        const lessonsData = Array.isArray(course.lessons)
+          ? course.lessons.filter(l => l.status === 'published' || !l.status)
+          : [];
+        // Quizzes are already nested per lesson by the serializer
+        const allQuizzes = lessonsData.flatMap(l => Array.isArray(l.quizzes) ? l.quizzes : []);
 
         if (isMounted) {
             setCourseData(course);
-            setLessons(sortedLessons);
-            setQuizzes(allQuizzes); // Use quizzes extracted from lessons
+            setLessons(lessonsData);
+            setQuizzes(allQuizzes);setQuizzes(allQuizzes); // Use quizzes extracted from lessons
             
             const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/`);
             if (!isMounted) return;
             setCompletedLessons(new Set(completions.map(c => c.lesson.id)));
             
-            if (sortedLessons.length > 0) setActiveContentId(`lesson-${sortedLessons[0].id}`);
+            if (lessonsData.length > 0) setActiveContentId(`lesson-${lessonsData[0].id}`);
             else if (course.quizzes?.length > 0) setActiveContentId(`quiz-${course.quizzes[0].id}`);
         }
       } catch (err) {

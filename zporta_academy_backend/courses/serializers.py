@@ -23,6 +23,9 @@ class CourseSerializer(serializers.ModelSerializer):
     lesson_count = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_draft = serializers.BooleanField(read_only=True)
+    # allow publish via a dedicated write-only flag
+    publish = serializers.BooleanField(write_only=True, required=False, default=False)
+
     subject_name = serializers.SerializerMethodField()
     tag_names    = serializers.SerializerMethodField()
     allowed_testers = serializers.PrimaryKeyRelatedField(
@@ -39,6 +42,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'og_title', 'og_description', 'og_image',
             'lesson_count', 'is_owner', 'is_draft', 'allowed_testers',
             'enrolled_count', 'completed_count',
+            'publish',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink', 'unique_code', 'is_draft']
     
@@ -51,10 +55,12 @@ class CourseSerializer(serializers.ModelSerializer):
         # Pop many-to-many fields safely
         tags_data = validated_data.pop('tags', None) or []
         allowed_testers_data = validated_data.pop('allowed_testers', None) or []
+        publish_flag = bool(validated_data.pop('publish', False))
         
         user = self.context['request'].user
         validated_data['created_by'] = user
-        validated_data['is_draft'] = True  # New courses start as drafts
+        # respect publish flag
+        validated_data['is_draft'] = not publish_flag
         
         # Use all_objects manager to create the course (bypassing published filtering)
         course = Course.all_objects.create(**validated_data)
@@ -106,6 +112,14 @@ class CourseSerializer(serializers.ModelSerializer):
                     media.save()
         
         return course
+    def update(self, instance, validated_data):
+        # allow publish via flag on update
+        publish_flag = validated_data.pop('publish', None)
+        obj = super().update(instance, validated_data)
+        if publish_flag is True and obj.is_draft:
+            obj.is_draft = False
+            obj.save(update_fields=['is_draft'])
+        return obj
     
     def get_course_url(self, obj):
         request = self.context.get('request')

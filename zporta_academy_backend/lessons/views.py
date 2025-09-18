@@ -18,6 +18,7 @@ from rest_framework import viewsets
 from rest_framework import viewsets
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.db import transaction
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -328,7 +329,57 @@ class DetachQuizFromLessonView(APIView):
         quiz.save()
         serializer = QuizSerializer(quiz, context={"request": request})
         return Response({"message": "Quiz detached successfully.", "quiz": serializer.data})
-    
+
+
+class AttachCourseToLessonView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, permalink):
+        # Only the lesson owner can attach a course
+        lesson = get_object_or_404(Lesson, permalink=permalink, created_by=request.user)
+        if lesson.is_locked:
+            return Response({"error": "This lesson is locked and cannot be modified."}, status=status.HTTP_403_FORBIDDEN)
+
+        course_id = request.data.get("course_id")
+        if not course_id:
+            return Response({"error": "course_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Allow attaching even to draft courses owned by the user
+        course = get_object_or_404(Course.all_objects, id=course_id, created_by=request.user)
+
+        if lesson.course is not None:
+            return Response({"error": "This lesson is already attached to a course. Detach first."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        lesson.course = course
+        lesson.save(update_fields=["course"])
+
+        data = LessonSerializer(lesson, context={"request": request}).data
+        return Response({"message": "Lesson attached to course.", "lesson": data}, status=status.HTTP_200_OK)
+
+
+class DetachCourseFromLessonView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, permalink):
+        # Only the lesson owner can detach its course
+        lesson = get_object_or_404(Lesson, permalink=permalink, created_by=request.user)
+        if lesson.is_locked:
+            return Response({"error": "This lesson is locked and cannot be modified."}, status=status.HTTP_403_FORBIDDEN)
+
+        if lesson.course is None:
+            return Response({"error": "This lesson is not attached to any course."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        lesson.course = None
+        lesson.save(update_fields=["course"])
+
+        data = LessonSerializer(lesson, context={"request": request}).data
+        return Response({"message": "Lesson detached from course.", "lesson": data}, status=status.HTTP_200_OK)
+
+
 class LessonTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = LessonTemplate.objects.all()
     serializer_class = LessonTemplateSerializer
