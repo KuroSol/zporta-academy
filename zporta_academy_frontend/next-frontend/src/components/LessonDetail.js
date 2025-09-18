@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
+import root from "react-shadow";
 import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -163,6 +164,23 @@ const sanitizeContentViewerHTML = (htmlString) => {
         return htmlString;
     }
 };
+// --- CSS Sanitization/Scoping Helper ---
+const sanitizeLessonCss = (css) => {
+  if (!css) return "";
+
+  // optional: extract a Google Fonts @import to add as <link> (see below)
+  // const fontMatch = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
+  // const fontHref = fontMatch?.[1];
+
+  // strip imports from the css string we inline
+  let out = css.replace(/@import[^;]+;/gi, "");
+
+  // scope variables to host; scope base element rules to the shadow container
+  out = out.replace(/:root\b/g, ":host");
+  out = out.replace(/\b(html|body)\b/g, ".lesson-content");
+
+  return out;
+};
 
 // --- Main Lesson Detail Component ---
 const LessonDetail = () => {
@@ -185,6 +203,7 @@ const LessonDetail = () => {
     const [editLesson, setEditLesson] = useState({}); // Holds the lesson data being edited
     const [subjects, setSubjects] = useState([]); // List of available subjects for the edit form dropdown
     const [courseLessons, setCourseLessons] = useState([]); // List of all lessons in the same course (if applicable)
+    const [editorHtml, setEditorHtml] = useState("");       // hold editor HTML
     const [prevLesson, setPrevLesson] = useState(null); // Link to the previous lesson in the course sequence
     const [nextLesson, setNextLesson] = useState(null); // Link to the next lesson in the course sequence
 
@@ -199,7 +218,7 @@ const LessonDetail = () => {
     // --- Refs ---
     const editorRef = useRef(null); // Ref to access the CustomEditor component instance (for getting content)
     const lessonContentDisplayRef = useRef(null); // Ref for the div rendering dangerouslySetInnerHTML (for accordion init)
-    // const lessonsAccordionRef = useRef(null); // Ref for the separate course lessons accordion (if needed) - Currently unused by the primary accordion logic
+    const lessonJsTagRef = useRef(null);          // Track injected <script> for cleanup
 
     // Utility function to strip HTML tags for creating meta descriptions
     const stripHTML = (html) => {
@@ -298,7 +317,7 @@ const LessonDetail = () => {
                     if (err.response?.status === 401 || err.response?.status === 403) {
                          setError("Unauthorized. Please log in again.");
                          logout();
-                         navigate('/login');
+                         router.push('/login');
                     }
                 }
             } finally {
@@ -391,11 +410,64 @@ const LessonDetail = () => {
     // Dependencies: Re-run if edit mode changes, lesson content changes, OR courseLessons changes.
     }, [editMode, lessonData?.lesson?.content, courseLessons]); // <--- Added courseLessons here!
 
+    // --- Per-lesson Custom JS Injection (scoped + cleanup) ---
+    useEffect(() => {
+    if (editMode) return;
+    const code = (lessonData?.lesson?.custom_js || "").replace(/<\/?script[^>]*>/gi, ""); // strip any <script> wrappers
+    if (!code) return;
 
+    // find the shadow host
+    const host = document.querySelector('[data-lesson-root]');
+    if (!host) return;
 
+    // build a wrapper that runs user's code with `document` pointing to the shadow
+    const wrapped = `
+        (() => {
+        const host = document.querySelector('[data-lesson-root]');
+        if (!host) return;
+        const doc = host.shadowRoot || host;
+        try {
+            // Run user's code NOW, with doc shadow-Scoped as "document"
+            (function(document, root){
+            ${code}
+            })(doc, host);
+        } catch(e){ console.error('Lesson custom_js error:', e); }
+        })();
+    `;
 
-    // --- Action Handlers ---
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.appendChild(document.createTextNode(wrapped));
+    document.body.appendChild(s);
+    lessonJsTagRef.current = s;
 
+    return () => {
+        if (lessonJsTagRef.current?.parentNode) {
+        lessonJsTagRef.current.parentNode.removeChild(lessonJsTagRef.current);
+        }
+        lessonJsTagRef.current = null;
+    };
+    }, [editMode, lessonData?.lesson?.custom_js, lessonData?.lesson?.permalink]);
+
+    
+    // --- Optional: load Google Fonts inside the shadow root ---
+    useEffect(() => {
+        const css = lessonData?.lesson?.custom_css || "";
+        const m = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
+        const fontHref = m?.[1];
+        if (!fontHref) return;
+
+        const host = document.querySelector('[data-lesson-root]');
+        if (!host) return;
+        const root = host.shadowRoot || host;
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = fontHref;
+        root.appendChild(link);
+
+        return () => { link.remove?.(); };
+    }, [lessonData?.lesson?.custom_css]);
     // Marks the current lesson as complete for the user
     const handleCompleteLesson = async () => {
         if (!lessonData?.lesson?.id || !permalink || isCompleted) return; // Guard clauses
@@ -449,6 +521,7 @@ const LessonDetail = () => {
             tags: Array.isArray(lessonData.lesson.tags_output) ? lessonData.lesson.tags_output.join(', ') : '',
             subject_id: lessonData.lesson.subject || null // Use subject ID
         });
+        setEditorHtml(lessonData.lesson.content || "");
         setEditMode(true); // Switch to edit mode
         setError(''); // Clear any previous errors
     };
@@ -467,8 +540,13 @@ const LessonDetail = () => {
             alert("Cannot save: Editor not ready, lesson data missing, or lesson is locked.");
             return;
         }
-        // Get the latest content from the CustomEditor instance
-        const updatedContent = editorRef.current.getContent();
+        // Get latest HTML safely (supports editors without getContent())
+        const updatedContent =
+            (editorRef.current && typeof editorRef.current.getContent === 'function'
+                ? editorRef.current.getContent()
+                : (editorRef.current && typeof editorRef.current.getHTML === 'function'
+                    ? editorRef.current.getHTML()
+                    : editorHtml)) || "";
 
         // Basic validation
         if (!editLesson.title?.trim() || !updatedContent?.trim() || !editLesson.subject_id) {
@@ -508,6 +586,21 @@ const LessonDetail = () => {
             setError(errorMsg);
             alert("Error updating lesson: " + errorMsg);
             if (err.response?.status === 401 || err.response?.status === 403) logout(); // Handle auth errors
+        }
+    };
+
+    // Publish (owner, draft -> published) with confirm
+    const handlePublish = async () => {
+        if (!permalink) return;
+        if (!window.confirm("Publish this lesson now? It will become visible to everyone.")) return;
+        try {
+            const res = await apiClient.post(`/lessons/${permalink}/publish/`);
+            setLessonData(prev => ({ ...prev, lesson: res.data }));
+            alert("Lesson published.");
+            setEditMode(false);
+        } catch (err) {
+            console.error("Publish error:", err.response?.data || err.message);
+            alert(err.response?.data?.detail || "Failed to publish.");
         }
     };
 
@@ -627,7 +720,7 @@ const LessonDetail = () => {
                 content={seo?.description || stripHTML(lesson.content || '').substring(0, 160)}
             />
             {/* accent + per-lesson CSS */}
-            <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}${extraCss}`}</style>
+            <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
             {(() => {
                 const base = process.env.NEXT_PUBLIC_SITE_URL || '';
                 const canonical = seo?.canonical_url || (base && permalink ? `${base}/lessons/${permalink}` : null);
@@ -781,9 +874,9 @@ const LessonDetail = () => {
                         <div className={styles.editorContainer}>
                             <CustomEditor
                                 ref={editorRef} // Assign the ref
-                                initialContent={editLesson.content} // Pass initial content
+                                initialContent={editorHtml} // Pass initial content
                                 mediaCategory="lesson" // Specify media category for uploads
-                                editable={true} // Ensure editor is editable
+                                onSave={(html) => setEditorHtml(html)} // capture content for editors without getContent()
                                 // isDisabled={submittingEdit} // Pass disabled state if editor supports it
                             />
                             {/* Hidden input for label association if needed by accessibility tools */}
@@ -801,6 +894,17 @@ const LessonDetail = () => {
                             {/* {submittingEdit ? 'Saving...' : 'Save Changes'} */}
                             Save Changes
                         </button>
+                        {/* Show Publish if owner & currently draft */}
+                        {isOwner && lesson?.status === 'draft' && (
+                          <button
+                            type="button"
+                            className={`${styles.btn} ${styles.btnWarning}`}
+                            onClick={handlePublish}
+                          >
+                            Publish
+                          </button>
+                        )}
+                        
                         <button
                             type="button" // Important: type="button" to prevent form submission
                             className={`${styles.btn} ${styles.btnSecondary}`}
@@ -902,14 +1006,20 @@ const LessonDetail = () => {
                         return null; // Return null if no video URL
                     })()}
 
-                    {/* Lesson Content (Rendered HTML) */}
-                    {/* This div contains the main lesson content, including any accordions */}
+                    {/* Lesson Content (Scoped in Shadow DOM) */}
+                    <root.div className={styles.lessonShadowRoot} data-lesson-root>
+                    <style>
+                        {`
+                        :host{--accent-color:${accent};}
+                        ${sanitizeLessonCss(lesson.custom_css || "")}
+                        `}
+                    </style>
                     <div
-                        ref={lessonContentDisplayRef} // Assign ref for accordion initialization
-                        className={`displayed-content ${styles.lessonContent}`} // Apply styles
-                        // Use the sanitization function before setting innerHTML
+                        ref={lessonContentDisplayRef}
+                        className="lesson-content"
                         dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
                     />
+                    </root.div>
 
                     {/* Quizzes Section */}
                     {lesson.quizzes?.length > 0 && (

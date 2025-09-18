@@ -17,6 +17,7 @@ from .serializers import LessonTemplateSerializer
 from rest_framework import viewsets
 from rest_framework import viewsets
 from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -24,13 +25,13 @@ class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
 
     def get_queryset(self):
-        return Lesson.objects.all().annotate(
-            completed_count=Count(
-                'learningrecord',
-                filter=Q(learningrecord__is_completed=True),
-                distinct=True
-            )
+        qs = Lesson.objects.all().annotate(
+            completed_count=Count('completions', distinct=True)
         )
+        user = self.request.user
+        if user.is_authenticated:
+            return qs.filter(Q(status=Lesson.PUBLISHED) | Q(created_by=user))
+        return qs.filter(status=Lesson.PUBLISHED)
 
 class EnrollmentLessonCompletionsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -102,11 +103,21 @@ class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
 
     def get_queryset(self):
-        queryset = Lesson.objects.all()
+        user = self.request.user
+        qs = Lesson.objects.all()
         username = self.request.query_params.get('created_by')
+
         if username:
-            queryset = queryset.filter(created_by__username=username)
-        return queryset
+            qs = qs.filter(created_by__username=username)
+            # If looking at someone else’s lessons, only show published
+            if not (user.is_authenticated and user.username == username):
+                qs = qs.filter(status=Lesson.PUBLISHED)
+            return qs
+
+        # No username filter: show published to public; owner sees own drafts too
+        if user.is_authenticated:
+            return qs.filter(Q(status=Lesson.PUBLISHED) | Q(created_by=user))
+        return qs.filter(status=Lesson.PUBLISHED)
 
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -154,6 +165,14 @@ class DynamicLessonView(APIView):
 
     def get(self, request, permalink):
         lesson = get_object_or_404(Lesson, permalink=permalink)
+        # --- DRAFT PRIVACY: only creator (or staff) can see ---
+        if lesson.status == Lesson.DRAFT:
+            if not request.user.is_authenticated or (
+                lesson.created_by != request.user and not request.user.is_staff
+            ):
+                # Hide existence of drafts from others
+                return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+            
         seo = {
             "title": lesson.seo_title or lesson.title,
             "description": lesson.seo_description,
@@ -252,6 +271,24 @@ class MarkLessonCompleteView(APIView):
             payload["completed_at"] = completion.completed_at
 
         return Response(payload, status=status_code)
+
+class PublishLessonView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, permalink):
+        lesson = get_object_or_404(Lesson, permalink=permalink)
+        if lesson.created_by != request.user and not request.user.is_staff:
+            return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+        # (Premium rules ignored for now)
+        lesson.status = Lesson.PUBLISHED
+        lesson.published_at = timezone.now()
+        lesson.save(update_fields=["status", "published_at"])
+
+        data = LessonSerializer(lesson, context={"request": request}).data
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class AddQuizToLessonView(APIView):
     permission_classes = [IsAuthenticated]
 

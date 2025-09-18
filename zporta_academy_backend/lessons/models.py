@@ -10,6 +10,7 @@ from pykakasi import kakasi
 from django.contrib.auth.models import User
 from django.utils import timezone
 from bs4 import BeautifulSoup
+from django.core.exceptions import ValidationError
 
 class LessonTemplate(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -40,6 +41,12 @@ class Lesson(models.Model):
     content = models.TextField()
     video_url = models.URLField(blank=True)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, related_name='lessons')
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    STATUS_CHOICES = [(DRAFT, "Draft"), (PUBLISHED, "Published")]
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=DRAFT, db_index=True)
+    is_premium = models.BooleanField(default=False, db_index=True)
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons')
     tags = models.ManyToManyField(Tag, blank=True, related_name='lessons')
     template_ref = models.ForeignKey(
@@ -52,9 +59,20 @@ class Lesson(models.Model):
     )
     permalink = models.SlugField(max_length=255, unique=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    def clean(self):
+        # Premium lessons must belong to a course.
+        if self.is_premium and not self.course_id:
+            raise ValidationError("Premium lessons must be attached to a course.")
+        return super().clean()
     created_at = models.DateTimeField(auto_now_add=True)
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
-
+    custom_js = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Optional user‑defined JavaScript to execute only on this lesson page"
+    )
     # SEO fields
     seo_title = models.CharField(max_length=200, blank=True)
     seo_description = models.TextField(max_length=160, blank=True)

@@ -30,6 +30,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [template, setTemplate] = useState('modern'); // Built-in template choice (e.g., 'modern', 'minimal')
     const [accentColor, setAccentColor] = useState('#222E3B'); // Lesson accent color
     const [customCSS, setCustomCSS] = useState(''); // Lesson-specific custom CSS
+    const [customJS,  setCustomJS]  = useState(''); // Lesson-specific custom JS (scoped to this lesson)
+
 
     const router = useRouter();
     const editorRef = useRef(null);
@@ -156,7 +158,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         setTimeout(() => setMessage(''), 3000);
     };
     
-    const handleSaveLesson = async () => {
+   const handleSaveLesson = async (publishAfter = false) => {
         setMessage(''); 
         setMessageType('error');
 
@@ -171,22 +173,28 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             return; 
         }
         if (!title.trim()) { setMessage('Lesson Title is required.'); return; }
-        if (!subject) { setMessage('Please select a Subject.'); return; }
+        if (!subject) { setMessage('Subject is required.'); return; }
         if (!editorContent || !editorContent.trim()) { setMessage('Lesson Content cannot be empty.'); return; }
 
         setSubmitting(true);
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
         const payload = {
-            title: title.trim(),
-            content: editorContent,
-            subject: subject,
-            tags: tagsArray,
-            template: template, // Built-in template choice
-            accent_color: accentColor,
-            custom_css: customCSS,
-            template_ref: selectedTemplateRef || null, // Admin-defined template ID
+        title: title.trim(),
+        content: editorContent,
+        subject,                 // always required
+        tags: tagsArray,
+        template: template,
+        accent_color: accentColor,
+        custom_css: customCSS,
+        template_ref: selectedTemplateRef || null,
         };
+
+        // strip accidental <script> wrappers before sending
+        if (customJS.trim()) {
+        payload.custom_js = customJS.replace(/<\/?script[^>]*>/gi, '');
+        }
+
         if (videoUrl.trim()) {
             payload.video_url = videoUrl.trim();
         }
@@ -196,7 +204,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             const newLessonData = response.data;
             const lessonPermalink = newLessonData.permalink;
 
-            let overallMessage = `Lesson "${newLessonData.title}" saved!`;
+            let overallMessage = `Draft "${newLessonData.title}" saved!`;
             let overallMessageType = 'success';
 
             if (selectedQuizzes.length > 0 && lessonPermalink) {
@@ -219,13 +227,26 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 }
             }
             
+            // If user chose Publish, do it after attachments
+            if (publishAfter && lessonPermalink) {
+                try {
+                    await apiClient.post(`/lessons/${lessonPermalink}/publish/`);
+                    overallMessage = `Lesson published!`;
+                    overallMessageType = 'success';
+                } catch (pubErr) {
+                    console.error('Publish error:', pubErr.response?.data || pubErr.message);
+                    overallMessage = `Draft saved, but publish failed: ${pubErr.response?.data?.detail || pubErr.message || 'Unknown error'}`;
+                    overallMessageType = 'warning';
+                }
+            }
+
             setMessage(overallMessage);
             setMessageType(overallMessageType);
             
             if (isModalMode && onSuccess) {
                 onSuccess(newLessonData); 
             } else {
-                setTimeout(() => router.push('/admin/lessons'), overallMessageType === 'success' ? 2000 : 4000);
+                setTimeout(() => router.push('/admin/lessons'), overallMessageType === 'success' ? 1500 : 3000);
             }
         } catch (error) {
             console.error('Error creating lesson:', error.response ? error.response.data : error.message);
@@ -246,8 +267,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             setMessage(errorMsg);
             setMessageType('error');
             if (error.response?.status === 401 || error.response?.status === 403) {
-                logout();
-                if(!isModalMode) navigate('/login');
+            logout();
+            if (!isModalMode) router.push('/login');
             }
         } finally {
             setSubmitting(false);
@@ -381,6 +402,28 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 If an admin template is selected, its CSS will appear here; you can modify it.
                             </p>
                         </div>
+                        
+                        {/* Custom JS (scoped to this lesson only) */}
+                        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                            <label htmlFor="customJS">Custom JS (runs only on this lesson)</label>
+                            <textarea
+                                id="customJS"
+                                rows="6"
+                                value={customJS}
+                                onChange={(e) => setCustomJS(e.target.value)}
+                                placeholder={`// Example
+// (function(root){
+//   const btn = root.querySelector('.my-button');
+//   if(btn) btn.addEventListener('click', ()=>alert('Hi from this lesson only!'));
+// })(document.querySelector('[data-lesson-root]'));`}
+                                disabled={submitting || loading}
+                                className={styles.inputField}
+                            />
+                            <p className={styles.fieldHelpText}>
+                                Inline JS only. External <code>&lt;script src&gt;</code> is blocked by the API validator.
+                                Your code receives no globals—prefer selecting elements under this lesson root.
+                            </p>
+                        </div>
                     </div>
                 </fieldset>
 
@@ -449,13 +492,25 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
                 {/* Action Buttons */}
                 <div className={styles.formActions}>
-                    {isModalMode && (
-                        <button type="button" onClick={onClose} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`} disabled={submitting}>
-                            Cancel
-                        </button>
-                    )}
-                    <button type="button" onClick={handleSaveLesson} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={submitting || loading}>
-                        {submitting ? 'Saving...' : (isModalMode ? 'Create Lesson' : 'Save Lesson')}
+                    {/* Save as Draft (private) */}
+                    <button
+                        type="button"
+                        onClick={() => handleSaveLesson(false)}
+                        className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                        disabled={submitting || loading || !subject}
+                        title="Save as private draft (only you can see it)"
+                    >
+                        {submitting ? 'Saving…' : 'Save Draft'}
+                    </button>
+                    {/* Publish (requires subject) */}
+                    <button
+                        type="button"
+                        onClick={() => handleSaveLesson(true)}
+                        className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}
+                        disabled={submitting || loading || !subject}
+                        title="Publish (visible to everyone)"
+                    >
+                        {submitting ? 'Publishing…' : 'Publish'}
                     </button>
                 </div>
             </form>

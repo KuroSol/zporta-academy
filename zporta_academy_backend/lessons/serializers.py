@@ -49,7 +49,7 @@ class LessonSerializer(serializers.ModelSerializer):
     tags_output = serializers.SerializerMethodField(read_only=True)
     # Input/Output field for subject (handles ID)
     subject = serializers.PrimaryKeyRelatedField(
-        queryset=Subject.objects.all(), allow_null=True, required=False
+        queryset=Subject.objects.all(), allow_null=False, required=True
     )
     # Output field for subject name
     subject_name = serializers.CharField(source='subject.name', read_only=True)
@@ -66,7 +66,7 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = [
             'id', 'title', 'content', 'video_url', 'content_type',
-            'template', 'accent_color', 'custom_css', 'template_ref',
+            'template', 'accent_color', 'custom_css', 'custom_js', 'template_ref',
             'template_name', 
             'subject',         # Expects/returns Subject ID
             'subject_name',    # Read-only Subject Name
@@ -75,6 +75,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'tags',            # <-- write_only input field (MUST be in fields)
             'tags_output',     # <-- read_only output field
             'permalink', 'created_by', 'created_at', 'is_locked',
+            'status', 'published_at',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'quizzes',         # the quizzes already attached to *this* lesson
@@ -83,7 +84,8 @@ class LessonSerializer(serializers.ModelSerializer):
         # Define fields not settable via API or derived
         read_only_fields = [
             'id', 'permalink', 'created_by', 'created_at', 'is_locked',
-            'subject_name', 'course_title', 'tags_output'
+            'subject_name', 'course_title', 'tags_output',
+            'published_at'
          ]
         
     template_name = serializers.CharField(source='template_ref.name', read_only=True)
@@ -175,9 +177,9 @@ class LessonSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags', [])
         # Subject instance is already in validated_data['subject'] from PrimaryKeyRelatedField
 
+        # created_by is set in the view's perform_create; do not override here
         request = self.context.get("request")
         user = request.user if request else None
-        validated_data['created_by'] = user # Set creator
 
         # Create the Lesson object
         lesson = Lesson.objects.create(**validated_data)
@@ -206,7 +208,13 @@ class LessonSerializer(serializers.ModelSerializer):
              self._process_lesson_media(instance, new_content, user) # Process linking/unlinking
 
         # Update standard fields (including subject via PrimaryKeyRelatedField)
+        prev_status = instance.status
         instance = super().update(instance, validated_data)
+        # auto-set published_at the first time it becomes published
+        if prev_status != 'published' and instance.status == 'published' and not instance.published_at:
+            from django.utils import timezone
+            instance.published_at = timezone.now()
+            instance.save(update_fields=['published_at'])
 
         # Handle tags update (clear existing, add new)
         if tags_data is not None: # Check if tags were actually passed in request
@@ -218,7 +226,15 @@ class LessonSerializer(serializers.ModelSerializer):
 
         return instance
     
-
+    def validate_custom_js(self, value):
+        if not value:
+            return value
+        lowered = value.lower()
+        # Disallow ANY <script> wrapper; store plain JS only
+        if "<script" in lowered:
+            raise serializers.ValidationError("Remove <script> tags. Paste plain JS only.")
+        return value.strip()
+        
 class LessonTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = LessonTemplate

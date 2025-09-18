@@ -404,6 +404,12 @@
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
+/* Monospace feel when editing JS/CSS (optional) */
+#customCSS.inputField,
+#customJS.inputField {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    white-space: pre;
+}
 .inputField:focus,
 .selectField:focus {
     border-color: #007bff;

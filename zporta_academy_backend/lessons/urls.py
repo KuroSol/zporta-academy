@@ -14,6 +14,7 @@ from .views import (
     DetachQuizFromLessonView,
     RecentLessonCompletionsView,
     LessonTemplateViewSet,
+    PublishLessonView,
 )
 
 # 1) Register the "templates" endpoint with a router
@@ -36,6 +37,9 @@ urlpatterns = [
     path('<path:permalink>/complete/',
          MarkLessonCompleteView.as_view(),
          name='lesson-complete'),
+     path('<path:permalink>/publish/',
+         PublishLessonView.as_view(),
+         name='lesson-publish'),
     path('<path:permalink>/enrollment-status/',
          LessonEnrollmentCompletionStatusView.as_view(),
          name='lesson-enrollment-status'),
