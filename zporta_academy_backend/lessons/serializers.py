@@ -33,6 +33,9 @@ class SimpleLessonCompletionSerializer(serializers.ModelSerializer):
 
 class LessonSerializer(serializers.ModelSerializer):
     is_locked = serializers.BooleanField(read_only=True)
+    # Flag indicating whether this lesson is premium.  If set to True,
+    # the lesson must be attached to a premium course.
+    is_premium = serializers.BooleanField(required=False)
 
     content_type = serializers.ChoiceField(
     choices=Lesson.CONTENT_TYPE_CHOICES,
@@ -75,6 +78,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'tags',            # <-- write_only input field (MUST be in fields)
             'tags_output',     # <-- read_only output field
             'permalink', 'created_by', 'created_at', 'is_locked',
+            'is_premium',      # Allow clients to mark lessons as premium or free.
             'status', 'published_at',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
@@ -171,6 +175,38 @@ class LessonSerializer(serializers.ModelSerializer):
         except Exception as e:
              print(f"Error processing media for lesson {lesson_instance.id}: {e}")
 
+    def validate(self, data):
+        """
+        Enforce premium rules only when publishing.
+        Premium drafts are allowed without a course.
+        """
+        # Determine the intended premium flag.  If not provided in the payload,
+        # fall back to the instance value (for updates).
+        is_premium = data.get('is_premium', getattr(self.instance, 'is_premium', False))
+        # Determine the intended course.  For creation this will be in data;
+        # for updates fall back to the current instance.
+        course = data.get('course', getattr(self.instance, 'course', None))
+        # Determine the intended status (if being changed).  Default to existing status or draft.
+        if self.instance:
+            current_status = self.instance.status
+        else:
+            current_status = Lesson.DRAFT
+        status_value = data.get('status', current_status)
+
+        # Only enforce when publishing:
+        if status_value == Lesson.PUBLISHED:
+            # Premium rule
+            if is_premium and (not course or getattr(course, "course_type", None) != "premium"):
+                raise serializers.ValidationError({
+                    "status": "Premium lessons cannot be published unless attached to a premium course."
+                })
+            # Course must not be draft
+            if course and getattr(course, "is_draft", False):
+                raise serializers.ValidationError({
+                    "status": "Cannot publish a lesson while its course is in draft. Publish the course first or save the lesson as draft."
+                })
+
+        return data
 
     # --- create Method ---
     def create(self, validated_data):

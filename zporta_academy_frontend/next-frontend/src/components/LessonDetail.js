@@ -199,6 +199,7 @@ const LessonDetail = () => {
     const [isCompleted, setIsCompleted] = useState(false); // User's completion status for this lesson
     const [loading, setLoading] = useState(true); // Loading indicator state
     const [error, setError] = useState(""); // Error message state
+    const [gateInfo, setGateInfo] = useState(null); // { message, course:{ title, permalink } }
     const [editMode, setEditMode] = useState(false); // Controls whether the edit form is shown
     const [editLesson, setEditLesson] = useState({}); // Holds the lesson data being edited
     const [subjects, setSubjects] = useState([]); // List of available subjects for the edit form dropdown
@@ -234,13 +235,12 @@ const LessonDetail = () => {
         let isMounted = true; // Flag to prevent state updates on unmounted component
 
         const initialize = async () => {
-            // 1. Guard Clauses: Check for token and valid permalink
-            if (!token || !permalink) {
+            // 1) Only guard on permalink. Token is NOT required to view a gated screen.
+            if (!permalink) {
                 if (isMounted) {
                     setLoading(false);
-                    setError(!permalink ? "Invalid URL." : "Login required.");
+                    setError("Invalid URL.");
                 }
-                if (!token) router.push("/login"); // Redirect to login if no token
                 return;
             }
 
@@ -251,33 +251,52 @@ const LessonDetail = () => {
             }
 
             try {
-                // 3. Fetch Core Data in Parallel
-                const [lessonRes, statusRes, subjectsRes] = await Promise.all([
-                    apiClient.get(`/lessons/${permalink}/`), // Get lesson content, metadata, quizzes
-                    apiClient.get(`/lessons/${permalink}/enrollment-status/`), // Get enrollment/completion status
-                    apiClient.get("/subjects/"), // Get list of all subjects
-                ]);
+                // 3) Fetch lesson first
+                const lessonRes = await apiClient.get(`/lessons/${permalink}/`);
+                if (!isMounted) return;
+
+                // If backend gates premium, it returns 200 with { access:'gated', lesson:null, course, message }
+                if (lessonRes?.data?.access === 'gated' && !lessonRes.data.lesson) {
+                    setGateInfo({
+                        message: lessonRes.data.message,
+                        course: lessonRes.data.course
+                    });
+                    setLessonData({ lesson: null, seo: lessonRes.data.seo || null });
+                } else {
+                    setLessonData(lessonRes.data);
+                }
+
+                // 4) Fetch subjects (public)
+                const subjectsRes = await apiClient.get("/subjects/");
+                if (!isMounted) return;
+                setSubjects(subjectsRes.data || []);
+
+                // 5) Enrollment/completion only if logged-in AND not gated
+                let statusRes = null;
+                if (token && !lessonRes?.data?.access) {
+                    statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
+                    if (!isMounted) return;
+                    setIsEnrolled(statusRes.data.is_enrolled);
+                    setIsCompleted(statusRes.data.is_completed);
+                } else {
+                    setIsEnrolled(false);
+                    setIsCompleted(false);
+                }
 
                 if (!isMounted) return; // Exit if component unmounted during fetch
 
-                // 4a. Set attached quizzes
-                setQuizzes(lessonRes.data.lesson.quizzes || []);
+                // 6) Quizzes attached to the lesson (when not gated)
+                setQuizzes(lessonRes.data.lesson?.quizzes || []);
 
                 // 4b. Fetch user’s quizzes for dropdown
-                const userQuizzesRes = await apiClient.get('/quizzes/my/');
+                const userQuizzesRes = token ? await apiClient.get('/quizzes/my/') : { data: [] };
                 if (!isMounted) return;
                 const notAttached = Array.isArray(userQuizzesRes.data)
                 ? userQuizzesRes.data.filter(q => !q.lesson)      // only quizzes not bound to any lesson
                 : [];
                 setAvailableQuizzes(notAttached);
 
-                // 4. Store Core Data in State
-                setLessonData(lessonRes.data);
-                setIsEnrolled(statusRes.data.is_enrolled);
-                setIsCompleted(statusRes.data.is_completed);
-                setSubjects(subjectsRes.data || []);
-
-                // 5. Fetch Related Course Lessons (if applicable)
+                // 4. Fetch Related Course Lessons (if applicable)
                 const coursePermalink = lessonRes.data.lesson.course_data?.permalink;
                 if (coursePermalink) {
                     // Fetch details of the course this lesson belongs to
@@ -307,17 +326,18 @@ const LessonDetail = () => {
             } catch (err) {
                 console.error("Error fetching initial data:", err.response ? err.response.data : err.message);
                 if (isMounted) {
-                    // Set appropriate error messages based on status code
                     if (err.response?.status === 404) {
                         setError("Lesson or related data not found.");
+                    } else if (err.response?.status === 401) {
+                        // only 401 forces logout
+                        setError("Unauthorized. Please log in again.");
+                        logout();
+                        router.push('/login');
+                    } else if (err.response?.status === 403) {
+                        // 403 == forbidden/gated (older backend). Do NOT logout; show friendly msg.
+                        setError(err.response?.data?.detail || "You don't have access to this lesson.");
                     } else {
                         setError("An error occurred while loading lesson data.");
-                    }
-                    // Logout user if unauthorized
-                    if (err.response?.status === 401 || err.response?.status === 403) {
-                         setError("Unauthorized. Please log in again.");
-                         logout();
-                         router.push('/login');
                     }
                 }
             } finally {
@@ -481,7 +501,7 @@ const LessonDetail = () => {
             const errorMsg = err.response?.data?.detail || "Failed to mark lesson complete.";
             setError(errorMsg);
             alert("Error: " + errorMsg);
-            if (err.response?.status === 401 || err.response?.status === 403) logout(); // Handle auth errors
+            if (err.response?.status === 401) logout(); // only 401
         }
     };
 
@@ -502,7 +522,7 @@ const LessonDetail = () => {
             const errorMsg = err.response?.data?.detail || "Failed to delete lesson.";
             setError(errorMsg);
             alert("Error deleting lesson: " + errorMsg);
-            if (err.response?.status === 401 || err.response?.status === 403) logout(); // Handle auth errors
+            if (err.response?.status === 401) logout(); // only 401
         }
     };
 
@@ -585,7 +605,7 @@ const LessonDetail = () => {
             const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || "Failed to update lesson.";
             setError(errorMsg);
             alert("Error updating lesson: " + errorMsg);
-            if (err.response?.status === 401 || err.response?.status === 403) logout(); // Handle auth errors
+            if (err.response?.status === 401) logout(); // only 401
         }
     };
 
@@ -695,7 +715,31 @@ const LessonDetail = () => {
     // 2. Error State (if lessonData hasn't loaded at all)
     if (error && !lessonData) return <p className={styles.error} style={{ color: 'red', padding: '20px', textAlign: 'center' }}>{error}</p>;
 
-    // 3. Not Found State
+    // 3. Gated (premium) State (backend returns 200 with access:'gated')
+    if (gateInfo && !lessonData?.lesson) {
+        return (
+            <div className={styles.lessonDetailContainer}>
+                <h1 className={styles.lessonTitle}>Premium lesson</h1>
+                <p className={`${styles.message} ${styles.warning}`}>
+                    {gateInfo.message || 'This lesson belongs to a premium course.'}
+                </p>
+                <div style={{ display:'flex', gap:12, justifyContent:'center', marginTop:12 }}>
+                    {gateInfo.course?.permalink && (
+                        <Link href={`/courses/${gateInfo.course.permalink}`} className={`${styles.btn} ${styles.btnPrimary}`}>
+                            Go to course: {gateInfo.course.title}
+                        </Link>
+                    )}
+                    {!token && (
+                        <Link href={`/login`} className={`${styles.btn} ${styles.btnSecondary}`}>
+                            Log in
+                        </Link>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // 4. Not Found State
     if (!lessonData?.lesson) return <p style={{ padding: '20px', textAlign: 'center' }}>Lesson not found.</p>;
 
     // --- Prepare Data for Rendering ---

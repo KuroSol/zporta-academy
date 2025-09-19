@@ -187,13 +187,20 @@ class DynamicLessonView(APIView):
                 "title": lesson.course.title,
                 "permalink": lesson.course.permalink,
             }
+            # Allow creator and staff to always view/manage
+            if request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff):
+                serializer = LessonSerializer(lesson, context={"request": request})
+                return Response({"lesson": serializer.data, "seo": seo})
+
+            # For everyone else, show a gated response (200), not 403, to avoid global logout.
             if not request.user.is_authenticated:
                 return Response({
                     "lesson": None,
                     "seo": seo,
-                    "message": f"This lesson is connected to a premium course: {lesson.course.title}. Please log in and enroll to access it.",
+                    "access": "gated",
+                    "message": f"This lesson belongs to a premium course: {lesson.course.title}. Log in and enroll to access.",
                     "course": attached_course,
-                }, status=status.HTTP_403_FORBIDDEN)
+                }, status=status.HTTP_200_OK)
             course_ct = ContentType.objects.get_for_model(lesson.course)
             enrollment_exists = Enrollment.objects.filter(
                 user=request.user,
@@ -205,9 +212,10 @@ class DynamicLessonView(APIView):
                 return Response({
                     "lesson": None,
                     "seo": seo,
-                    "message": f"This lesson is connected to a premium course: {lesson.course.title}. Please enroll in the course to access it.",
+                    "access": "gated",
+                    "message": f"This lesson belongs to a premium course: {lesson.course.title}. Enroll to access.",
                     "course": attached_course,
-                }, status=status.HTTP_403_FORBIDDEN)
+                }, status=status.HTTP_200_OK)
         serializer = LessonSerializer(lesson, context={"request": request})
         return Response({
             "lesson": serializer.data,
@@ -281,7 +289,31 @@ class PublishLessonView(APIView):
         if lesson.created_by != request.user and not request.user.is_staff:
             return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
-        # (Premium rules ignored for now)
+        # Enforce premium publishing rules:
+        # If the lesson is marked as premium, it must be attached to a premium course before it can be published.
+        if lesson.is_premium:
+            # Ensure an attached course exists
+            if not lesson.course:
+                return Response(
+                    {"detail": "Premium lessons must be attached to a premium course before publishing."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Ensure the attached course is premium
+            if getattr(lesson.course, "course_type", None) != "premium":
+                return Response(
+                    {"detail": "Premium lessons must be attached to a premium course before publishing."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Enforce course draft rule (for both free and premium)
+        if lesson.course and getattr(lesson.course, "is_draft", False):
+            return Response(
+                {"detail": "Cannot publish a lesson while its course is in draft. Publish the course first or save the lesson as draft."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+        # After passing validations, publish the lesson.
         lesson.status = Lesson.PUBLISHED
         lesson.published_at = timezone.now()
         lesson.save(update_fields=["status", "published_at"])
@@ -352,11 +384,32 @@ class AttachCourseToLessonView(APIView):
             return Response({"error": "This lesson is already attached to a course. Detach first."},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # Business rule: ensure that premium lessons only attach to premium courses
+        if lesson.is_premium and getattr(course, "course_type", None) != "premium":
+            return Response(
+                {"error": "Premium lessons can only be attached to a premium course."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # Optionally, prevent attaching free lessons to premium courses
+        if not lesson.is_premium and getattr(course, "course_type", None) == "premium":
+            return Response(
+                {"error": "Free lessons cannot be attached to a premium course."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         lesson.course = course
-        lesson.save(update_fields=["course"])
+        # If attaching to a draft course and lesson is published, revert to draft
+        if getattr(course, "is_draft", False) and lesson.status == Lesson.PUBLISHED:
+            lesson.status = Lesson.DRAFT
+            lesson.published_at = None
+            lesson.save(update_fields=["course", "status", "published_at"])
+            msg = "Lesson attached to draft course. Lesson status reverted to draft."
+        else:
+            lesson.save(update_fields=["course"])
+            msg = "Lesson attached to course."
 
         data = LessonSerializer(lesson, context={"request": request}).data
-        return Response({"message": "Lesson attached to course.", "lesson": data}, status=status.HTTP_200_OK)
+        return Response({"message": msg, "lesson": data}, status=status.HTTP_200_OK)
 
 
 class DetachCourseFromLessonView(APIView):
@@ -373,11 +426,21 @@ class DetachCourseFromLessonView(APIView):
             return Response({"error": "This lesson is not attached to any course."},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # Detach the course
         lesson.course = None
-        lesson.save(update_fields=["course"])
+        # If the lesson is premium and currently published, revert to draft since it
+        # no longer satisfies the premium publishing rules.
+        message = "Lesson detached from course."
+        if lesson.is_premium and lesson.status == Lesson.PUBLISHED:
+            lesson.status = Lesson.DRAFT
+            lesson.published_at = None
+            message += " Status reverted to draft because premium lessons require a premium course."
+            lesson.save(update_fields=["course", "status", "published_at"])
+        else:
+            lesson.save(update_fields=["course"])
 
         data = LessonSerializer(lesson, context={"request": request}).data
-        return Response({"message": "Lesson detached from course.", "lesson": data}, status=status.HTTP_200_OK)
+        return Response({"message": message, "lesson": data}, status=status.HTTP_200_OK)
 
 
 class LessonTemplateViewSet(viewsets.ReadOnlyModelViewSet):

@@ -74,6 +74,46 @@
     border-color: var(--zporta-warning-color);
 }
 
+/* Inline notes and access badges */
+.inlineNote {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--zporta-secondary-light);
+    background: var(--zporta-background-light);
+    border: 1px dashed var(--zporta-border-light);
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+.inlineAccess {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+.inlineAccessOption {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--zporta-secondary-light);
+}
+.badgePremium {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #2f2f2f;
+    color: #ffd166; /* warm gold/amber, matches Zporta accent */
+    font-weight: 600;
+    font-size: 12px;
+}
+.badgeFree {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef6f0;
+    color: #2b7a0b;
+    font-weight: 600;
+    font-size: 12px;
+}
 /* --- Form Structure --- */
 .lessonForm { 
     display: flex;

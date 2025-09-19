@@ -19,6 +19,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState('');
+    // Premium flag
+    const [isPremium, setIsPremium] = useState(false);
     
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -150,6 +152,27 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
     const handleSubjectChange = (e) => setSubject(e.target.value);
 
+    // When premium toggled, clear incompatible course choice
+    useEffect(() => {
+        if (!selectedCourse) return;
+        const courseObj = courses.find(c => String(c.id) === String(selectedCourse));
+        if (!courseObj) return;
+        // UI mirror of backend rules:
+        // - premium lesson -> must attach to premium course
+        // - free lesson    -> cannot attach to premium course
+        const allowed = isPremium
+            ? courseObj.course_type === 'premium'
+            : courseObj.course_type !== 'premium';
+        if (!allowed) setSelectedCourse('');
+    }, [isPremium, selectedCourse, courses]);
+
+    const filteredCourses = React.useMemo(() => {
+        if (!Array.isArray(courses)) return [];
+        return isPremium
+            ? courses.filter(c => c.course_type === 'premium')
+            : courses.filter(c => c.course_type !== 'premium'); // hide premium courses for free lessons
+    }, [courses, isPremium]);
+
     const handleQuizToggle = (quizId) => {
         setSelectedQuizzes(prev =>
             prev.includes(quizId)
@@ -201,6 +224,9 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         template_ref: selectedTemplateRef || null,
         };
 
+        // premium flag
+        payload.is_premium = !!isPremium;
+
         // strip accidental <script> wrappers before sending
         if (customJS.trim()) {
         payload.custom_js = customJS.replace(/<\/?script[^>]*>/gi, '');
@@ -228,7 +254,10 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                     overallMessage = `Lesson saved and attached to course successfully!`;
                 } catch (attachErr) {
                     console.error('Attach course error:', attachErr.response?.data || attachErr.message);
-                    overallMessage = `Lesson saved, but failed to attach to course: ${attachErr.response?.data?.error || attachErr.message || 'Unknown error'}`;
+                    // Surface backend premium rule messages clearly
+                    const attachMsg = attachErr.response?.data?.error || attachErr.response?.data?.detail || attachErr.message || 'Unknown error';
+                    overallMessage = `Lesson saved, but failed to attach to course: ${attachMsg}`;
+
                     overallMessageType = 'warning';
                 }
             }
@@ -255,13 +284,29 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             
             // If user chose Publish, do it after attachments
             if (publishAfter && lessonPermalink) {
+                // Friendly client-side guard for premium rule (backend also enforces)
+                if (isPremium && !selectedCourse) {
+                    setMessage('Draft saved. Premium lessons must be attached to a premium course before publishing.');
+                    setMessageType('warning');
+                    setSubmitting(false);
+                    return;
+                }
+                // Guard: if selected course is draft, block publish
+                const courseObj = filteredCourses.find(c => String(c.id) === String(selectedCourse));
+                if (courseObj && courseObj.is_draft) {
+                    setMessage('Draft saved. You cannot publish a lesson while its course is in draft. Publish the course first or keep the lesson as draft.');
+                    setMessageType('warning');
+                    setSubmitting(false);
+                    return;
+                }
                 try {
                     await apiClient.post(`/lessons/${lessonPermalink}/publish/`);
                     overallMessage = `Lesson published!`;
                     overallMessageType = 'success';
                 } catch (pubErr) {
                     console.error('Publish error:', pubErr.response?.data || pubErr.message);
-                    overallMessage = `Draft saved, but publish failed: ${pubErr.response?.data?.detail || pubErr.message || 'Unknown error'}`;
+                    const pubMsg = pubErr.response?.data?.detail || pubErr.response?.data?.error || pubErr.message || 'Unknown error';
+                    overallMessage = `Draft saved, but publish failed: ${pubMsg}`;
                     overallMessageType = 'warning';
                 }
             }
@@ -354,6 +399,44 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         <div className={styles.formGroup}>
                             <label htmlFor="lessonTags">Tags (Optional, comma-separated)</label>
                             <input id="lessonTags" className={styles.inputField} type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., algebra, math, basics" disabled={submitting || loading} />
+                        </div>
+                        
+                        {/* Access Type */}
+                        <div className={styles.formGroup}>
+                            <label htmlFor="lessonAccessType">Access</label>
+                            <div className={styles.inlineAccess}>
+                                <label className={styles.inlineAccessOption}>
+                                    <input
+                                        type="radio"
+                                        name="access"
+                                        value="free"
+                                        checked={!isPremium}
+                                        onChange={() => setIsPremium(false)}
+                                        disabled={submitting || loading}
+                                    />
+                                    <span className={styles.badgeFree}>Free</span>
+                                </label>
+                                <label className={styles.inlineAccessOption}>
+                                    <input
+                                        type="radio"
+                                        name="access"
+                                        value="premium"
+                                        checked={isPremium}
+                                        onChange={() => setIsPremium(true)}
+                                        disabled={submitting || loading}
+                                    />
+                                    <span className={styles.badgePremium}>Premium</span>
+                                </label>
+                            </div>
+                            {isPremium ? (
+                                <div className={styles.inlineNote}>
+                                    Premium lessons <strong>must be attached</strong> to a <strong>premium course</strong> before publishing.
+                                </div>
+                            ) : (
+                                <div className={styles.inlineNote}>
+                                    Free lessons can be published standalone or attached to a free course.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </fieldset>
@@ -454,7 +537,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 </fieldset>
                 {/* Section 2.5: Attach to Course (Optional) */}
                 <fieldset className={styles.formSection}>
-                    <legend>Attach to Course (Optional)</legend>
+                    <legend>Attach to Course {isPremium ? '(Required for Premium before publish)' : '(Optional)'}</legend>
+ 
                     <div className={styles.formGrid}>
                         <div className={styles.formGroup}>
                             <label htmlFor="attachCourseSelect">Attach to an existing course</label>
@@ -463,20 +547,29 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 className={styles.selectField}
                                 value={selectedCourse}
                                 onChange={(e) => setSelectedCourse(e.target.value)}
-                                disabled={submitting || loading || courses.length === 0}
+                                disabled={submitting || loading || filteredCourses.length === 0}
                             >
                                 <option value="">
-                                    {courses.length === 0 ? 'No courses found' : 'Do not attach (standalone lesson)'}
+                                    {filteredCourses.length === 0
+                                      ? (isPremium ? 'No premium courses found' : 'No free courses found')
+                                      : (isPremium ? 'Select a premium course' : 'Do not attach (standalone lesson)')}
                                 </option>
-                                {courses.map((c) => (
+                                {filteredCourses.map((c) => (
                                     <option key={c.id} value={c.id}>
-                                        {c.title}{c.is_draft ? ' (draft)' : ''}
+                                        {c.title}{c.is_draft ? ' (draft)' : ''}{c.course_type === 'premium' ? ' • Premium' : ''}
                                     </option>
                                 ))}
                             </select>
                             <p className={styles.fieldHelpText}>
-                                Optional. If selected, the lesson will be attached to this course after it’s created.
+                                {isPremium
+                                  ? 'Premium lessons must be attached to a premium course before publishing.'
+                                  : 'Optional. If selected, the lesson will be attached to this course after it’s created.'}
                             </p>
+                            {!!selectedCourse && filteredCourses.find(c => String(c.id) === String(selectedCourse))?.is_draft && (
+                                <p className={styles.inlineNote}>
+                                    The selected course is <strong>Draft</strong>. You can save this lesson as draft, but you must publish the course before publishing the lesson.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </fieldset>
@@ -561,7 +654,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         onClick={() => handleSaveLesson(true)}
                         className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}
                         disabled={submitting || loading || !subject}
-                        title="Publish (visible to everyone)"
+                        title={isPremium ? "Publish (requires attaching to a premium course first)" : "Publish (visible to everyone)"}
                     >
                         {submitting ? 'Publishing…' : 'Publish'}
                     </button>

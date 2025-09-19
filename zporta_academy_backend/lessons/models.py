@@ -62,10 +62,18 @@ class Lesson(models.Model):
     published_at = models.DateTimeField(null=True, blank=True)
 
     def clean(self):
-        # Premium lessons must belong to a course.
-        if self.is_premium and not self.course_id:
-            raise ValidationError("Premium lessons must be attached to a course.")
+        """
+        Enforce business rules for premium lessons **only when publishing**.
+        Premium drafts are allowed to be unattached.
+        """
+        if self.is_premium and self.status == self.PUBLISHED:
+            if not self.course:
+                raise ValidationError({"course": "Premium lessons must be attached to a premium course to publish."})
+            if getattr(self.course, "course_type", None) != "premium":
+                raise ValidationError({"course": "Premium lessons must be attached to a premium course to publish."})
+            
         return super().clean()
+
     created_at = models.DateTimeField(auto_now_add=True)
     is_locked = models.BooleanField(default=False, help_text="Prevent editing after enrollment.")
     custom_js = models.TextField(
