@@ -9,8 +9,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 # ─── NEW: import sitemap machinery ─────────────────────────────
-from django.contrib.sitemaps.views import sitemap
-from seo.sitemaps import QuizSitemap, CourseSitemap, LessonSitemap
+from django.contrib.sitemaps.views import index, sitemap
+from seo.sitemaps import QuizSitemap, CourseSitemap, LessonSitemap, PostSitemap
 
 urlpatterns = [
     path('administration-zporta-repersentiivie/', admin.site.urls),
@@ -43,14 +43,16 @@ urlpatterns = [
     path('', include('seo.urls')),
 ]
 
-# ─── NEW: sitemap endpoint ──────────────────────────────────
-sitemaps = {
+# ─── NEW: sitemap index + section files ─────────────────────
+SITEMAPS = {
     "quizzes": QuizSitemap,
     "courses": CourseSitemap,
     "lessons": LessonSitemap,
+    "posts":   PostSitemap,
 }
 urlpatterns += [
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    path("sitemap.xml", index,   {"sitemaps": SITEMAPS}, name="sitemap-index"),
+    path("sitemap-<section>.xml", sitemap, {"sitemaps": SITEMAPS}, name="sitemap-section"),
 ]
 
 # ─── LEAVE THIS AS-IS ───────────────────────────────────────
