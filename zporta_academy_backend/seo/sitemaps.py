@@ -8,7 +8,7 @@ from django.utils.text import slugify
 from quizzes.models import Quiz
 from courses.models import Course
 from lessons.models import Lesson
-
+from posts.models import Post
 
 def _lastmod(obj):
     """
@@ -57,8 +57,8 @@ class CourseSitemap(Sitemap):
     priority   = 0.6
 
     def items(self):
-        # Only published, non-premium courses
-        return Course.objects.filter(course_type="free", is_draft=False)
+        # Only published courses (free or premium are OK)
+        return Course.objects.filter(is_draft=False)
 
     def location(self, obj):
         return f"/courses/{obj.permalink}/"
@@ -73,13 +73,33 @@ class LessonSitemap(Sitemap):
     priority   = 0.5
 
     def items(self):
-        # Public lessons = no course OR parent course is free
+        """
+        Public lessons:
+          - must be free (exclude premium lessons outright)
+          - and either have no course or the parent course is free
+        """
         return Lesson.objects.filter(
-            Q(course__isnull=True) | Q(course__course_type="free")
-        )
+            Q(lesson_type="free") &
+            (Q(course__isnull=True) | Q(course__course_type="free"))
+        ).order_by("id")
 
     def location(self, obj):
         return f"/lessons/{obj.permalink}/"
+
+    def lastmod(self, obj):
+        return _lastmod(obj)
+
+
+class PostSitemap(Sitemap):
+    protocol   = "https"
+    changefreq = "weekly"
+    priority   = 0.5
+
+    def items(self):
+        return Post.objects.all().order_by("-created_at")
+
+    def location(self, obj):
+        return f"/posts/{obj.permalink}/"
 
     def lastmod(self, obj):
         return _lastmod(obj)
