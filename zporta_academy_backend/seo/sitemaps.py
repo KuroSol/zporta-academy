@@ -75,11 +75,11 @@ class LessonSitemap(Sitemap):
     def items(self):
         """
         Public lessons:
-          - must be free (exclude premium lessons outright)
-          - and either have no course or the parent course is free
+          - exclude premium lessons
+          - and either have no course OR the parent course is free
         """
         return Lesson.objects.filter(
-            Q(lesson_type="free") &
+            Q(is_premium=False) &
             (Q(course__isnull=True) | Q(course__course_type="free"))
         ).order_by("id")
 
