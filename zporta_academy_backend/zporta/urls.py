@@ -28,7 +28,6 @@ urlpatterns = [
     path('api/lessons/',    include('lessons.urls')),
     path('api/quizzes/',    include('quizzes.urls')),
     path('quizzes/<path:permalink>/', DynamicQuizView.as_view(), name='dynamic_quiz'),
-    path('<slug:permalink>/', DynamicPageView.as_view(),         name='dynamic_page'),
     path('api/notes/',      include('notes.urls')),
     path('api/payments/',   include('payments.urls')),
     path('api/social/',     include('social.urls')),
@@ -51,10 +50,15 @@ SITEMAPS = {
     "posts":   PostSitemap,
 }
 urlpatterns += [
-    path("sitemap.xml", index,   {"sitemaps": SITEMAPS}, name="sitemap-index"),
+    path("sitemap.xml", index, {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap-section"}, name="sitemap-index"),
     path("sitemap-<section>.xml", sitemap, {"sitemaps": SITEMAPS}, name="sitemap-section"),
 ]
 
 # ─── LEAVE THIS AS-IS ───────────────────────────────────────
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# place the catch-all LAST so it doesn't swallow /sitemap.xml
+urlpatterns += [
+    path('<slug:permalink>/', DynamicPageView.as_view(), name='dynamic_page'),
+]
