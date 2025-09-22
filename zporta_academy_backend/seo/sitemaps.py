@@ -26,6 +26,7 @@ class QuizSitemap(Sitemap):
     protocol   = "https"
     changefreq = "daily"
     priority   = 0.7
+    cache_timeout = 0  # disable cache to flush stale empty section
 
     def items(self):
         # Only free quizzes
@@ -55,6 +56,7 @@ class CourseSitemap(Sitemap):
     protocol   = "https"
     changefreq = "weekly"
     priority   = 0.6
+    cache_timeout = 0
 
     def items(self):
         # Only published courses (free or premium are OK)
@@ -71,6 +73,7 @@ class LessonSitemap(Sitemap):
     protocol   = "https"
     changefreq = "monthly"
     priority   = 0.5
+    cache_timeout = 0
 
     def items(self):
         """
@@ -94,7 +97,8 @@ class PostSitemap(Sitemap):
     protocol   = "https"
     changefreq = "weekly"
     priority   = 0.5
-
+    cache_timeout = 0
+    
     def items(self):
         return Post.objects.all().order_by("-created_at")
 
