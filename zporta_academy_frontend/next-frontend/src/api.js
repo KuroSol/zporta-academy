@@ -1,7 +1,7 @@
 // src/api.js
 import axios from "axios";
 
-const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/")
+const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "/api")
   .replace(/\/+$/, ""); // strip trailing slash
 
 const getToken = () => {
