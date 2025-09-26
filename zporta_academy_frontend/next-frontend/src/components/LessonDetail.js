@@ -218,6 +218,7 @@ const LessonDetail = () => {
 
     // --- Refs ---
     const editorRef = useRef(null); // Ref to access the CustomEditor component instance (for getting content)
+    const editorWrapRef = useRef(null); // NEW: wrapper to read DOM as fallback
     const lessonContentDisplayRef = useRef(null); // Ref for the div rendering dangerouslySetInnerHTML (for accordion init)
     const lessonJsTagRef = useRef(null);          // Track injected <script> for cleanup
 
@@ -553,20 +554,38 @@ const LessonDetail = () => {
         setEditLesson({}); // Clear edit form state
     };
 
+    // Helper to always fetch the live HTML from editor (API or DOM)
+    const getLiveEditorHTML = () => {
+      // Prefer editor API if available
+      if (editorRef.current) {
+        if (typeof editorRef.current.getHTML === "function") return editorRef.current.getHTML();
+        if (typeof editorRef.current.getContent === "function") return editorRef.current.getContent();
+        if (editorRef.current.editor?.getHTML) return editorRef.current.editor.getHTML();        // TipTap-style
+        if (editorRef.current.quill?.root?.innerHTML) return editorRef.current.quill.root.innerHTML; // Quill-style
+      }
+      // Fallback: read the DOM
+      const root = editorWrapRef.current;
+      const el = root?.querySelector('[contenteditable="true"], .ProseMirror, .ql-editor');
+      return el?.innerHTML || "";
+    };
+
     // Saves the edited lesson data
     const handleSaveEdit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
-        if (!editorRef.current || !lessonData?.lesson || lessonData.lesson.is_locked) {
-            alert("Cannot save: Editor not ready, lesson data missing, or lesson is locked.");
-            return;
-        }
-        // Get latest HTML safely (supports editors without getContent())
-        const updatedContent =
-            (editorRef.current && typeof editorRef.current.getContent === 'function'
-                ? editorRef.current.getContent()
-                : (editorRef.current && typeof editorRef.current.getHTML === 'function'
-                    ? editorRef.current.getHTML()
-                    : editorHtml)) || "";
+      e.preventDefault();
+      // 1) Capture fresh content NOW
+      const updatedContent = (getLiveEditorHTML() || editorHtml || "").trim();
+
+    // 2) SHOW what you will send
+    const debugClient = {
+      from: "client->server",
+      title: (editLesson.title || "").slice(0,80),
+      content_len: updatedContent.length,
+      content_start: updatedContent.slice(0,80),
+      content_end: updatedContent.slice(-80),
+      video_url: editLesson.video_url || "",
+      subject: editLesson.subject_id,
+    };
+    //alert("PAYLOAD PREVIEW:\n" + JSON.stringify(debugClient, null, 2));
 
         // Basic validation
         if (!editLesson.title?.trim() || !updatedContent?.trim() || !editLesson.subject_id) {
@@ -592,6 +611,17 @@ const LessonDetail = () => {
 
             // Make the PUT request to update the lesson
             const response = await apiClient.put(`/lessons/${permalink}/update/`, payload);
+
+            // 3) SHOW what the server returned
+            const srv = response?.data || {};
+            const serverDebug = {
+            from: "server->client",
+            saved_title: (srv.title || "").slice(0,80),
+            saved_len: (srv.content || "").length,
+            saved_start: (srv.content || "").slice(0,80),
+            saved_end: (srv.content || "").slice(-80),
+            };
+            //alert("SERVER RESPONSE PREVIEW:\n" + JSON.stringify(serverDebug, null, 2));
 
             // Update the local lessonData state with the response from the server
             // This ensures the displayed data reflects the saved changes
@@ -915,12 +945,14 @@ const LessonDetail = () => {
                     {/* Content Editor */}
                     <div className={styles.formGroup}>
                         <label className={styles.editorLabel} htmlFor="editLessonContent">Content: <span className={styles.required}>*</span></label>
-                        <div className={styles.editorContainer}>
+                        <div className={styles.editorContainer} ref={editorWrapRef}>
                             <CustomEditor
                                 ref={editorRef} // Assign the ref
                                 initialContent={editorHtml} // Pass initial content
                                 mediaCategory="lesson" // Specify media category for uploads
-                                onSave={(html) => setEditorHtml(html)} // capture content for editors without getContent()
+                                onChange={(html) => setEditorHtml(html)} // capture content
+                                onUpdate={(html) => setEditorHtml(html)} // safe no-op if unsupported
+                                onSave={(html) => setEditorHtml(html)}   // safe no-op if unsupported
                                 // isDisabled={submittingEdit} // Pass disabled state if editor supports it
                             />
                             {/* Hidden input for label association if needed by accessibility tools */}

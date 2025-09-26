@@ -566,7 +566,31 @@ const Profile = () => {
                           <div className={styles.cardContent}>
                             <h3 className={styles.cardTitle} title={lesson.title}>{lesson.title}</h3>
                             <div className={`${styles.cardDescription} prose prose-sm max-w-none`} dangerouslySetInnerHTML={{ __html: stripHTML(lesson.content).substring(0,150) + (stripHTML(lesson.content).length > 150 ? '...' : '') || "No content." }} />
-                            <button onClick={() => router.push(`/lessons/${lesson.permalink}`)} className={styles.cardButton}> Read Full Lesson </button>
+                            <button
+                              onClick={async () => {
+                                const go = async (p) => router.push(`/lessons/${p}`);
+                                const p0 = String(lesson.permalink || "").replace(/^\/+|\/+$/g, "");
+                                if (!p0) return;
+                                // quick normalization for common typo
+                                const candidates = [p0, p0.replace("bussiness-", "business-")];
+                                for (const p of candidates) {
+                                  try {
+                                    // HEAD is cheap and fast; use GET if HEAD not allowed
+                                    await apiClient.head(`/lessons/${p}/`);
+                                    return go(p);
+                                  } catch (e) {
+                                    if (e?.response?.status === 404) continue;
+                                    // non-404 network errors should not block navigation; try anyway
+                                    return go(p);
+                                  }
+                                }
+                                // fallback: show message
+                                alert("Lesson link is outdated. Open it from Explorer for now.");
+                              }}
+                              className={styles.cardButton}
+                            >
+                              Read Full Lesson
+                            </button>
                           </div>
                         </div>
                       ))}

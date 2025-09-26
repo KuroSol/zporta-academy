@@ -20,7 +20,9 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.db import transaction
 from rest_framework.viewsets import ModelViewSet
-
+from django.utils.cache import patch_cache_control
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
@@ -129,6 +131,7 @@ class LessonListCreateView(generics.ListCreateAPIView):
         serializer.save(created_by=self.request.user)
 
 
+@method_decorator(never_cache, name="dispatch")
 class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve, update, or delete a lesson by its permalink.
@@ -190,7 +193,10 @@ class DynamicLessonView(APIView):
             # Allow creator and staff to always view/manage
             if request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff):
                 serializer = LessonSerializer(lesson, context={"request": request})
-                return Response({"lesson": serializer.data, "seo": seo})
+                resp = Response({"lesson": serializer.data, "seo": seo})
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
 
             # For everyone else, show a gated response (200), not 403, to avoid global logout.
             if not request.user.is_authenticated:
@@ -201,6 +207,9 @@ class DynamicLessonView(APIView):
                     "message": f"This lesson belongs to a premium course: {lesson.course.title}. Log in and enroll to access.",
                     "course": attached_course,
                 }, status=status.HTTP_200_OK)
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
             course_ct = ContentType.objects.get_for_model(lesson.course)
             enrollment_exists = Enrollment.objects.filter(
                 user=request.user,
@@ -216,6 +225,9 @@ class DynamicLessonView(APIView):
                     "message": f"This lesson belongs to a premium course: {lesson.course.title}. Enroll to access.",
                     "course": attached_course,
                 }, status=status.HTTP_200_OK)
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
         serializer = LessonSerializer(lesson, context={"request": request})
         return Response({
             "lesson": serializer.data,

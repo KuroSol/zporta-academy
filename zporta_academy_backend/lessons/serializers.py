@@ -232,33 +232,39 @@ class LessonSerializer(serializers.ModelSerializer):
         return lesson
 
     # --- update Method ---
+    # AFTER (Correct)
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags', None)
-        # Subject is handled by super().update() via PrimaryKeyRelatedField
-
-        # Process media BEFORE calling super().update() if content is changing
+        import logging
+        logger = logging.getLogger(__name__)
+        before = (instance.content or "")
         new_content = validated_data.get('content')
-        if new_content is not None and new_content != instance.content:
-             request = self.context.get("request")
-             user = request.user if request else None
-             self._process_lesson_media(instance, new_content, user) # Process linking/unlinking
+        logger.info("Lesson %s BEFORE len=%s", instance.id, len(before))
+        tags_data = validated_data.pop('tags', None)
 
-        # Update standard fields (including subject via PrimaryKeyRelatedField)
+        if new_content is not None and new_content != instance.content:
+            request = self.context.get("request")
+            user = request.user if request else None
+            self._process_lesson_media(instance, new_content, user)
+
         prev_status = instance.status
+        print("DATA TO BE SAVED:", validated_data.keys()) 
         instance = super().update(instance, validated_data)
-        # auto-set published_at the first time it becomes published
+        
+        # The refresh_from_db line is now gone.
+        
+        after = (instance.content or "")
+        logger.info("Lesson %s AFTER  len=%s", instance.id, len(after))
+
         if prev_status != 'published' and instance.status == 'published' and not instance.published_at:
             from django.utils import timezone
             instance.published_at = timezone.now()
             instance.save(update_fields=['published_at'])
 
-        # Handle tags update (clear existing, add new)
-        if tags_data is not None: # Check if tags were actually passed in request
+        if tags_data is not None:
             instance.tags.clear()
             for tag_name in tags_data:
                 tag_instance, _ = Tag.objects.get_or_create(name=tag_name)
                 instance.tags.add(tag_instance)
-        # No explicit instance.save() needed just for M2M
 
         return instance
     

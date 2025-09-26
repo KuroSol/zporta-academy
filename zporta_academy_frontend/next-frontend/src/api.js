@@ -1,7 +1,7 @@
 // src/api.js
 import axios from "axios";
 
-const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000")
+const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/")
   .replace(/\/+$/, ""); // strip trailing slash
 
 const getToken = () => {
@@ -11,7 +11,7 @@ const getToken = () => {
 
 const apiClient = axios.create({
   baseURL: BASE,            // no trailing slash
-  timeout: 10000,
+  timeout: 30000,
   withCredentials: true,
 });
 
