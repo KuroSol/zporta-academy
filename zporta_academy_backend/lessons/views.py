@@ -260,11 +260,24 @@ class UserLessonsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        lessons = Lesson.objects.filter(created_by=request.user)
-        serializer = LessonSerializer(lessons, many=True)
+        lessons = Lesson.objects.filter(created_by=request.user).order_by('-created_at')
+        serializer = LessonSerializer(lessons, many=True, context={"request": request})
         return Response(serializer.data)
 
+class UserUnattachedLessonsView(APIView):
+    """
+    Returns all lessons created by the authenticated user that are NOT attached to any course.
+    Use this for the 'Add lesson to course' dropdown.
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        lessons = Lesson.objects.filter(
+            created_by=request.user,
+            course__isnull=True
+        ).order_by('-created_at')
+        serializer = LessonSerializer(lessons, many=True, context={"request": request})
+        return Response(serializer.data)
 
 class MarkLessonCompleteView(APIView):
     """

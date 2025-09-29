@@ -1,210 +1,232 @@
 /* CreateCourse.module.css */
-/* --- Theme Variables (Zporta Theme) --- */
 
-
-/* --- General Container & Page Styling --- */
-.createCourseContainer { /* Also used by CreateLesson for standalone page */
-    max-width: 1000px;
-    margin: 30px auto;
-    padding: 30px 35px; /* Increased padding */
-    border-radius: var(--zporta-border-radius);
-    background: var(--zporta-background-light);
-    box-shadow: var(--zporta-box-shadow);
+/* --- Page Layout --- */
+.createCoursePage {
+    display: flex;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
     font-family: var(--zporta-font-family);
-    border: 1px solid var(--zporta-border-light);
 }
 
-.createCourseContainer h2,
-.modalFormTitle { /* Shared title style */
-    font-size: 28px; /* Slightly larger */
-    color: var(--zporta-secondary-color);
-    text-align: center;
-    margin-bottom: 30px; /* Increased spacing */
-    font-weight: 600;
-    padding-bottom: 15px;
+.mainContent {
+    flex: 1;
+    min-width: 0; /* Prevents flex item from overflowing */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sidebar {
+    flex-basis: 380px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 2rem;
+    align-self: flex-start; /* Important for sticky positioning */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--zporta-border-light);
 }
 
-/* --- Loading State --- */
-.loading {
-    text-align: center;
-    padding: 60px 20px;
-    font-size: 18px;
-    color: var(--zporta-secondary-light);
-    font-family: var(--zporta-font-family);
+.header h2 {
+    font-size: 2rem;
+    color: var(--zporta-secondary-color);
+    margin: 0;
 }
 
-/* --- Message Styling (Shared by CreateCourse and CreateLesson) --- */
-.message {
-    padding: 12px 18px;
-    margin-bottom: 20px;
+.headerActions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* --- Stepper / Progress Bar --- */
+.stepper {
+    display: flex;
+    align-items: center;
+    background-color: var(--zporta-background-medium);
+    padding: 1rem;
     border-radius: var(--zporta-border-radius);
-    font-size: 14px;
-    text-align: center;
+}
+
+.stepItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    padding: 0.5rem;
+    border-radius: 99px; /* Pill shape */
+}
+
+.stepCounter {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    background-color: var(--zporta-background-dark);
+    color: var(--zporta-secondary-light);
+    border: 2px solid var(--zporta-border-color);
+    transition: all 0.2s ease-in-out;
+}
+
+.stepTitle {
     font-weight: 500;
-    border-width: 1px;
-    border-style: solid;
+    color: var(--zporta-secondary-light);
+    transition: color 0.2s ease-in-out;
+    white-space: nowrap;
 }
 
-.error {
-    background-color: var(--zporta-error-bg);
-    color: var(--zporta-error-color);
-    border-color: var(--zporta-error-color);
+.stepItem:hover .stepCounter {
+    border-color: var(--zporta-primary-light);
+}
+.stepItem:hover .stepTitle {
+    color: var(--zporta-text-color);
 }
 
-.success {
-    background-color: var(--zporta-success-bg);
-    color: var(--zporta-success-color);
+.stepItem.active .stepCounter {
+    background-color: var(--zporta-primary-color);
+    color: white;
+    border-color: var(--zporta-primary-color);
+}
+.stepItem.active .stepTitle {
+    color: var(--zporta-secondary-color);
+    font-weight: 600;
+}
+
+.stepItem.completed .stepCounter {
+    background-color: var(--zporta-success-color);
+    color: white;
     border-color: var(--zporta-success-color);
 }
-
-.warning { /* Added warning style */
-    background-color: var(--zporta-warning-bg);
-    color: var(--zporta-warning-color);
-    border-color: var(--zporta-warning-color);
+.stepItem.completed .stepTitle {
+    color: var(--zporta-text-color);
+}
+.stepItem.completed:hover .stepCounter {
+    background-color: var(--zporta-success-hover);
 }
 
-
-/* --- Form Structure (Shared & Base for CreateLesson) --- */
-.courseForm, .lessonForm { /* Shared form styling */
-    display: flex;
-    flex-direction: column;
-    gap: 30px; /* Increased gap between sections */
+.stepConnector {
+    flex-grow: 1;
+    height: 2px;
+    background-color: var(--zporta-border-color);
+    margin: 0 1rem;
 }
 
-.formSection { /* Fieldset */
+/* --- General Form Styling --- */
+.stepContent {
+    background: var(--zporta-background-light);
     border: 1px solid var(--zporta-border-light);
     border-radius: var(--zporta-border-radius);
-    padding: 25px; /* Increased padding */
-    margin: 0;
-    background-color: var(--zporta-background-medium); /* Subtle background for sections */
+    padding: 2rem;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
-.formSection legend {
-    font-size: 20px; /* Slightly larger legend */
-    font-weight: 600;
-    color: var(--zporta-secondary-color);
-    padding: 0 10px;
-    margin-left: 10px;
-    background-color: var(--zporta-background-medium); /* Match fieldset background */
+.formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.5s ease-in-out;
 }
 
-.formGrid { /* Used in CreateCourse, adaptable for CreateLesson if needed */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.formGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
-    gap: 25px; /* Gap between grid items */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
 }
 
-/* --- Form Elements (Shared & Base for CreateLesson) --- */
 .formGroup {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Space between label and input */
+    gap: 0.5rem;
+}
+
+.formGroup.fullWidth {
+    grid-column: 1 / -1;
 }
 
 .formGroup label {
-    font-size: 14px;
-    font-weight: 500; /* Slightly less bold */
+    font-size: 0.875rem;
+    font-weight: 500;
     color: var(--zporta-secondary-light);
 }
 
 .required {
-    color: var(--zporta-required-color);
-    margin-left: 3px;
-    font-weight: bold;
+    color: var(--zporta-error-color);
+    margin-left: 2px;
 }
 
-/* Standard input, select, textarea styling */
 .formGroup input[type="text"],
 .formGroup input[type="number"],
-.formGroup input[type="email"],
-.formGroup input[type="url"], /* Added for videoUrl */
-.formGroup select,
-.formGroup textarea,
-.inputField, /* Class from CreateLesson */
-.selectField { /* Class from CreateLesson */
-    padding: 12px 15px; /* Increased padding */
+.formGroup select {
+    padding: 12px 15px;
     border: 1px solid var(--zporta-border-color);
-    border-radius: calc(var(--zporta-border-radius) - 2px); /* Slightly smaller radius for inputs */
-    font-size: 14px;
+    border-radius: var(--zporta-border-radius);
+    font-size: 1rem;
     color: var(--zporta-text-color);
-    background-color: var(--zporta-background-light);
+    background-color: var(--zporta-background-medium);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     width: 100%;
     box-sizing: border-box;
 }
 
 .formGroup input:focus,
-.formGroup select:focus,
-.formGroup textarea:focus,
-.inputField:focus,
-.selectField:focus {
+.formGroup select:focus {
     border-color: var(--zporta-primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--zporta-primary-color), 0.2); /* Adjusted focus ring */
+    box-shadow: 0 0 0 3px var(--zporta-primary-light);
     outline: none;
-}
-
-.formGroup input::placeholder,
-.formGroup textarea::placeholder,
-.inputField::placeholder {
-    color: var(--zporta-text-light);
-    opacity: 0.8;
-}
-
-/* Radio Button Group */
-.radioGroup {
-    display: flex;
-    gap: 20px; /* Horizontal gap */
-    align-items: center;
-    margin-top: 8px;
-    flex-wrap: wrap; /* Allow wrapping */
-}
-
-.radioLabel {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: normal;
-    color: var(--zporta-text-color);
-}
-
-.radioLabel input[type="radio"] {
-   accent-color: var(--zporta-primary-color);
-   cursor: pointer;
-   width: 16px; /* Explicit size */
-   height: 16px;
-   margin-right: 4px; /* Ensure proper spacing */
-}
-
-/* File Input Styling */
-.fileInputButton {
-    padding: 10px 18px;
-    border: 1px solid var(--zporta-primary-color);
     background-color: var(--zporta-background-light);
-    color: var(--zporta-primary-color);
-    border-radius: calc(var(--zporta-border-radius) - 2px);
+}
+
+/* --- File Input --- */
+.fileInputArea {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.fileInputButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 10px 18px;
+    border: 1px solid var(--zporta-border-color);
+    background-color: var(--zporta-background-light);
+    color: var(--zporta-secondary-color);
+    border-radius: var(--zporta-border-radius);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    display: inline-block;
-    width: auto;
-    margin-top: 5px;
+    transition: all 0.2s ease;
 }
 
 .fileInputButton:hover {
-    background-color: var(--zporta-primary-color);
-    color: var(--zporta-background-light);
+    background-color: var(--zporta-background-medium);
+    border-color: var(--zporta-primary-color);
+    color: var(--zporta-primary-color);
 }
 
 .imagePreviewContainer {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    position: relative;
+    gap: 1rem;
     background-color: var(--zporta-background-medium);
     padding: 8px;
     border-radius: var(--zporta-border-radius);
@@ -212,390 +234,425 @@
 }
 
 .imagePreview {
-    max-width: 120px;
-    max-height: 70px;
+    width: 120px;
+    height: 70px;
     border-radius: calc(var(--zporta-border-radius) - 4px);
-    border: 1px solid var(--zporta-border-light);
     object-fit: cover;
 }
 
 .fileName {
-    font-size: 13px;
+    font-size: 0.875rem;
     color: var(--zporta-text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 220px;
 }
 
 .clearImageButton {
-    background: rgba(44, 62, 80, 0.6); /* Darker, semi-transparent */
+    background: var(--zporta-secondary-color);
     color: white;
     border: none;
     border-radius: 50%;
     width: 24px;
     height: 24px;
-    font-size: 14px;
+    font-size: 1.2rem;
     line-height: 24px;
-    text-align: center;
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    padding: 0;
-    margin-left: auto; /* Push to the right if needed, or adjust layout */
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 .clearImageButton:hover {
-    background: var(--zporta-secondary-color);
+    background: var(--zporta-error-color);
+    transform: scale(1.1);
 }
 
-
-/* --- Content Selection (Lessons/Quizzes - Shared by CreateCourse & CreateLesson for Quizzes) --- */
-.contentSelectionGrid { /* Used in CreateCourse */
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-}
-
-.addContentSection { /* Container for "Available Lessons/Quizzes" */
-    background: var(--zporta-background-light); /* Lighter than formSection */
-    border: 1px solid var(--zporta-border-light);
+/* --- Editor --- */
+.editorContainer {
+    border: 1px solid var(--zporta-border-color);
     border-radius: var(--zporta-border-radius);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    min-height: 250px; /* Ensure some height */
+    padding: 5px;
+    min-height: 300px;
+    background-color: var(--zporta-background-light);
 }
 
+/* --- Content Selection (Lessons/Quizzes) --- */
 .contentSectionHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding-bottom: 10px;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--zporta-border-light);
 }
 
 .contentSectionHeader h3 {
-    font-size: 16px;
+    font-size: 1.25rem;
     color: var(--zporta-secondary-color);
     margin: 0;
-    font-weight: 600;
 }
 
-/* Button to create new content (lesson/quiz) */
 .createContentBtn {
-    display: inline-flex; /* For aligning icon and text */
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px; /* Adjusted padding */
-    background-color: var(--zporta-primary-color);
-    color: var(--zporta-background-light);
-    border: none;
-    border-radius: calc(var(--zporta-border-radius) - 2px);
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
+    padding: 8px 16px;
+    background-color: var(--zporta-primary-light);
+    color: var(--zporta-primary-color);
+    border: 1px solid var(--zporta-primary-light);
+    border-radius: var(--zporta-border-radius);
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
 }
 
-.createContentBtn:hover:not(:disabled) {
-    background-color: var(--zporta-primary-hover);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-.createContentBtn:disabled {
-    background-color: var(--zporta-border-color);
-    cursor: not-allowed;
-    opacity: 0.7;
+.createContentBtn:hover {
+    background-color: var(--zporta-primary-color);
+    color: white;
 }
 
 .contentListArea {
-     min-height: 100px; /* Ensure area has some height */
-     display: flex;
-     flex-direction: column; /* Ensure scrollbox takes width */
-     flex-grow: 1; /* Allow it to take available vertical space */
+    flex-grow: 1;
 }
 
 .scrollableBox {
-    flex-grow: 1; /* Takes available space in contentListArea */
-    max-height: 200px; /* Default max height */
+    max-height: 300px;
     overflow-y: auto;
     border: 1px solid var(--zporta-border-color);
-    border-radius: calc(var(--zporta-border-radius) - 2px);
-    padding: 10px;
-    background: var(--zporta-background-light);
-    margin-top: 5px; /* Space from header if no items */
+    border-radius: var(--zporta-border-radius);
+    padding: 0.5rem;
+    background: var(--zporta-background-medium);
 }
-
-.scrollableBox::-webkit-scrollbar { width: 8px; }
-.scrollableBox::-webkit-scrollbar-track { background: var(--zporta-background-medium); border-radius: 4px; }
-.scrollableBox::-webkit-scrollbar-thumb { background: var(--zporta-border-color); border-radius: 4px; }
-.scrollableBox::-webkit-scrollbar-thumb:hover { background: var(--zporta-primary-color); }
 
 .contentItem {
     display: flex;
     align-items: center;
-    padding: 8px 5px;
-    font-size: 14px;
-    border-bottom: 1px dashed var(--zporta-border-light);
+    padding: 0.75rem;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--zporta-border-light);
     transition: background-color 0.2s ease;
-    color: var(--zporta-text-color);
 }
-.contentItem:last-child { border-bottom: none; }
-.contentItem:hover { background-color: var(--zporta-primary-light); }
+.contentItem:last-child {
+    border-bottom: none;
+}
+.contentItem:hover {
+    background-color: var(--zporta-primary-light);
+}
 
 .contentItem input[type="checkbox"] {
-    margin-right: 12px;
-    cursor: pointer;
+    margin-right: 1rem;
+    width: 18px;
+    height: 18px;
     accent-color: var(--zporta-primary-color);
-    width: 15px;
-    height: 15px;
+    cursor: pointer;
 }
+.contentItem input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    accent-color: var(--zporta-border-color);
+}
+
 .contentItem label {
     cursor: pointer;
-    color: var(--zporta-text-color); /* Match general text */
     flex-grow: 1;
-    font-weight: normal; /* Override potential bold from .formGroup label */
 }
+
 .contentItem input[type="checkbox"]:disabled + label {
     cursor: not-allowed;
     color: var(--zporta-text-light);
     text-decoration: line-through;
 }
+
 .alreadyAttached {
-    font-size: 12px;
-    color: var(--zporta-attached-color);
+    font-size: 0.8rem;
+    color: var(--zporta-warning-color);
     margin-left: 8px;
     font-style: italic;
     font-weight: 500;
 }
 
 .noContentMessage {
-    padding: 20px;
+    padding: 2rem;
     color: var(--zporta-text-light);
-    font-style: italic;
     text-align: center;
-    width: 100%;
-    margin: auto; /* Center in flex container */
-    font-size: 14px;
+    font-style: italic;
 }
 
-/* --- Editor Container (Shared by CreateCourse & CreateLesson) --- */
-.editorContainer {
-    margin-top: 10px;
-    border: 1px solid var(--zporta-border-color);
-    border-radius: var(--zporta-border-radius);
-    padding: 5px; /* Minimal padding around the editor toolbar/content */
-    min-height: 250px; /* Default height */
-    background-color: var(--zporta-background-light);
+/* --- Radio Buttons & Settings --- */
+.radioGroup {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
 }
-.editorPlaceholder { /* For when editor is disabled */
-    padding: 20px;
-    text-align: center;
-    color: var(--zporta-text-light);
-    font-style: italic;
-    min-height: 200px; /* Match editor min-height */
+
+.radioLabel {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--zporta-border-light);
-    border-radius: var(--zporta-border-radius);
+    gap: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
 }
 
+.radioLabel input[type="radio"] {
+    accent-color: var(--zporta-primary-color);
+    width: 18px;
+    height: 18px;
+}
 
-/* --- Notes/Helper Text --- */
 .fieldNote {
-    font-size: 12px;
+    font-size: 0.8rem;
     color: var(--zporta-text-light);
-    margin-top: 6px;
     font-style: italic;
+    margin-top: 0.25rem;
 }
 
-/* --- Action Buttons Area (Shared: Save/Cancel/Publish) --- */
-.formActions, /* New general class for form actions */
-.courseSaveButtonArea, /* Legacy, can be replaced by formActions */
-.modalActions { /* From CreateLesson, harmonized */
+.warningMessage {
+    background-color: var(--zporta-warning-bg);
+    color: var(--zporta-warning-color);
+    border: 1px solid var(--zporta-warning-color);
+    padding: 1rem;
+    border-radius: var(--zporta-border-radius);
+    margin-top: 1rem;
+    font-size: 0.875rem;
+}
+
+/* --- Messages and Feedback --- */
+.message {
+    padding: 1rem;
+    border-radius: var(--zporta-border-radius);
+    font-weight: 500;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+}
+.message.error { background-color: var(--zporta-error-bg); color: var(--zporta-error-color); border-color: var(--zporta-error-color); }
+.message.success { background-color: var(--zporta-success-bg); color: var(--zporta-success-color); border-color: var(--zporta-success-color); }
+.message.warning { background-color: var(--zporta-warning-bg); color: var(--zporta-warning-color); border-color: var(--zporta-warning-color); }
+.message.info { background-color: #eaf5ff; color: #3498db; border-color: #3498db; }
+
+/* --- Navigation Buttons --- */
+.navigationActions {
     display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 25px;
-    padding-top: 25px;
+    justify-content: space-between;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--zporta-border-light);
 }
 
-/* --- Zporta Button Styling (Primary, Secondary, etc.) --- */
-.zportaBtn { /* Base button style */
-    padding: 12px 28px; /* Generous padding */
+.zportaBtn {
+    padding: 12px 28px;
     border: none;
     border-radius: var(--zporta-border-radius);
-    font-size: 15px; /* Slightly larger */
-    font-weight: 600; /* Bolder */
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    text-decoration: none; /* For Link components styled as buttons */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    transition: all 0.2s ease;
 }
 
-.zportaBtn:hover:not(:disabled) {
-    box-shadow: var(--zporta-box-shadow-hover);
-    transform: translateY(-1px); /* Subtle lift */
+.zportaBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
-.zportaBtn:active:not(:disabled) {
-    transform: translateY(0px); /* Press effect */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.zportaBtnPrimary { /* Main action button */
+.zportaBtnPrimary {
     background-color: var(--zporta-primary-color);
-    color: var(--zporta-background-light);
+    color: white;
 }
 .zportaBtnPrimary:hover:not(:disabled) {
     background-color: var(--zporta-primary-hover);
+    box-shadow: var(--zporta-box-shadow-hover);
 }
 
-.zportaBtnSecondary { /* Cancel or alternative action */
+.zportaBtnSecondary {
     background-color: var(--zporta-background-medium);
     color: var(--zporta-secondary-light);
     border: 1px solid var(--zporta-border-color);
 }
 .zportaBtnSecondary:hover:not(:disabled) {
     background-color: var(--zporta-background-dark);
-    border-color: var(--zporta-border-color); /* Keep border consistent or slightly darken */
     color: var(--zporta-secondary-color);
 }
 
-.disabledBtn,
-.zportaBtn:disabled {
-    background-color: #bdc3c7 !important; /* Greyed out, important to override specifics */
-    color: #7f8c8d !important;
-    cursor: not-allowed;
-    opacity: 0.6;
-    box-shadow: none;
-    transform: none;
+/* --- Preview Sidebar --- */
+.previewContainer {
+    background: var(--zporta-background-medium);
+    border: 1px solid var(--zporta-border-light);
+    border-radius: var(--zporta-border-radius);
+    padding: 1.5rem;
 }
 
+.previewTitle {
+    text-align: center;
+    font-size: 1.25rem;
+    color: var(--zporta-secondary-color);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--zporta-border-light);
+}
+
+.previewCard {
+    background: var(--zporta-background-light);
+    border-radius: var(--zporta-border-radius);
+    box-shadow: var(--zporta-box-shadow);
+    overflow: hidden;
+}
+
+.previewImageContainer {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: var(--zporta-background-dark);
+}
+
+.previewImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.previewImagePlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--zporta-text-light);
+    gap: 0.5rem;
+}
+
+.previewImagePlaceholder span {
+    font-size: 0.875rem;
+}
+
+.previewContent {
+    padding: 1rem;
+}
+
+.previewCourseTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--zporta-secondary-color);
+    margin: 0 0 0.25rem 0;
+    min-height: 20px;
+}
+
+.previewCourseSubject {
+    font-size: 0.8rem;
+    color: var(--zporta-text-light);
+    margin: 0 0 1rem 0;
+    min-height: 16px;
+}
+
+.previewPriceBadge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 99px;
+    margin-bottom: 1rem;
+}
+.previewPriceBadge[data-type="free"] {
+    background-color: var(--zporta-success-bg);
+    color: var(--zporta-success-color);
+}
+.previewPriceBadge[data-type="premium"] {
+    background-color: var(--zporta-primary-light);
+    color: var(--zporta-primary-color);
+}
+
+.previewDescription {
+    font-size: 0.875rem;
+    color: var(--zporta-text-color);
+    max-height: 150px;
+    overflow-y: auto;
+    word-break: break-word;
+}
+.previewDescription > *:first-child { margin-top: 0; }
+.previewDescription > *:last-child { margin-bottom: 0; }
+
+
+/* --- Loading State --- */
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 1.2rem;
+    color: var(--zporta-secondary-light);
+}
 
 /* --- Responsive Design --- */
-/* Tablet */
-@media (max-width: 900px) {
-    .createCourseContainer {
-        max-width: 95%;
-        padding: 25px 20px;
-        margin: 20px auto;
+@media (max-width: 1200px) {
+    .createCoursePage {
+        flex-direction: column-reverse;
+        gap: 2rem;
     }
-    .formGrid {
-         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-         gap: 20px;
-    }
-    .contentSelectionGrid {
-        grid-template-columns: 1fr; /* Stack lesson/quiz selection */
-        gap: 20px;
-    }
-    .createCourseContainer h2, .modalFormTitle {
-        font-size: 24px;
-        margin-bottom: 25px;
-    }
-    .formSection legend {
-        font-size: 18px;
-    }
-    .zportaBtn {
-        padding: 10px 22px;
-        font-size: 14px;
-    }
-    .scrollableBox {
-        max-height: 180px;
+    .sidebar {
+        position: static;
+        top: auto;
+        flex-basis: auto;
+        width: 100%;
     }
 }
 
-/* Mobile */
-@media (max-width: 600px) {
-    .createCourseContainer {
-        max-width: 100%;
-        margin: 15px auto;
-        padding: 20px 15px;
-        border-radius: calc(var(--zporta-border-radius) - 2px);
-        box-shadow: none; /* Flatter on mobile */
-        border: none; /* Remove border for edge-to-edge feel */
+@media (max-width: 768px) {
+    .createCoursePage {
+        margin: 1rem auto;
+        padding: 0 1rem;
     }
-    .courseForm, .lessonForm {
-        gap: 20px;
+    .header h2 {
+        font-size: 1.5rem;
+    }
+    .stepper {
+        padding: 0.5rem;
+        overflow-x: auto;
+        justify-content: flex-start;
+    }
+    .stepTitle {
+        display: none; /* Hide title on smaller screens for space */
+    }
+    .stepConnector {
+        margin: 0 0.5rem;
+    }
+    .stepContent {
+        padding: 1.5rem;
     }
     .formGrid {
-        grid-template-columns: 1fr; /* Force single column */
-        gap: 18px;
+        grid-template-columns: 1fr;
     }
-    .formSection {
-        padding: 20px 15px;
-        background-color: var(--zporta-background-light); /* Can make sections less distinct on mobile */
+    .contentSectionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
-    .createCourseContainer h2, .modalFormTitle {
-        font-size: 22px;
-        margin-bottom: 20px;
+    .createContentBtn {
+        width: 100%;
+        justify-content: center;
     }
-
-    .formGroup input[type="text"],
-    .formGroup input[type="number"],
-    .formGroup input[type="email"],
-    .formGroup input[type="url"],
-    .formGroup select,
-    .formGroup textarea,
-    .inputField,
-    .selectField,
-    .formGroup label,
-    .contentItem label,
-    .radioLabel,
-    .fileInputButton,
-    .fileName {
-        font-size: 14px; /* Maintain readability */
-    }
-    .formGroup input[type="text"],
-    .formGroup input[type="number"],
-    .formGroup input[type="email"],
-    .formGroup input[type="url"],
-    .formGroup select,
-    .formGroup textarea,
-    .inputField,
-    .selectField {
-        padding: 10px 12px;
-    }
-
-    .scrollableBox {
-         max-height: 160px;
-    }
-    .imagePreview {
-        max-width: 100px;
-        max-height: 60px;
-    }
-    .formActions,
-    .courseSaveButtonArea,
-    .modalActions {
-        flex-direction: column-reverse; /* Stack buttons */
-        gap: 10px;
+    .navigationActions {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
     }
     .zportaBtn {
         width: 100%;
-        padding: 12px;
-        font-size: 15px; /* Ensure tap target is good */
     }
-    .radioGroup {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+}
+
+@media (max-width: 480px) {
+     .createCoursePage {
+        margin: 0;
+        padding: 0;
+        background: var(--zporta-background-light);
     }
-    .contentSectionHeader {
-        flex-direction: column; /* Stack title and button */
-        align-items: flex-start;
-        gap: 8px;
-   }
-   .contentSectionHeader .createContentBtn {
-       width: 100%; /* Full width create button in this context */
-   }
-   .contentListArea .scrollableBox {
-        max-height: 150px;
+    .mainContent {
+        gap: 1rem;
+    }
+    .header {
+        padding: 1rem;
+    }
+    .stepper {
+        border-radius: 0;
+    }
+    .stepContent {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+        padding: 1rem;
+    }
+    .navigationActions {
+        padding: 1rem;
+    }
+    .sidebar {
+        padding: 0 1rem 1rem 1rem;
     }
 }

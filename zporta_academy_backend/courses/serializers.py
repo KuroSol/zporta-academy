@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'content', 'created_at', 'permalink', 'is_premium']
+        fields = ['id', 'title', 'content', 'created_at', 'permalink', 'is_premium', 'course']
 
 class CourseSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()

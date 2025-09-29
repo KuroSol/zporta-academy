@@ -65,6 +65,34 @@ class PublishCourseView(APIView):
         course.save()
         return Response({"message": "Course published successfully."})
 
+class UnpublishCourseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, permalink):
+        course = get_object_or_404(Course.all_objects, permalink=permalink)
+        # only owner, staff, or superuser can unpublish
+        if not (request.user == course.created_by or request.user.is_staff or request.user.is_superuser):
+            return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+        # cannot change locked courses
+        if getattr(course, "is_locked", False):
+            return Response({"error": "This course is locked and cannot be modified."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # only allow unpublish when no one enrolled
+        has_enrollments = Enrollment.objects.filter(
+            enrollment_type="course",
+            object_id=course.id
+        ).exists()
+        if has_enrollments:
+            return Response({"error": "Cannot set to draft because enrollments exist."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        course.is_draft = True
+        course.save(update_fields=["is_draft"])
+        return Response({"message": "Course set to draft successfully."})
+
+
 class SuggestedCoursesView(generics.ListAPIView):
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
@@ -184,6 +212,8 @@ class CourseDetailView(APIView):
 
     def get(self, request, permalink):
         course = get_object_or_404(Course.all_objects, permalink=permalink)
+        # optional public preview flag
+        as_public = str(request.query_params.get("as_public", "")).lower() in ("1", "true", "yes")
         # If the course is a draft, only allow access to the creator or allowed testers.
         if course.is_draft:
             if not request.user.is_authenticated or not (
@@ -201,6 +231,7 @@ class CourseDetailView(APIView):
         return Response({
             "course": CourseSerializer(course, context={"request": request}).data,
             "lessons": LessonSerializer(lessons, many=True).data,
+            "view_mode": "public" if as_public else "default",
             "seo": {
                 "title": course.seo_title or course.title,
                 "description": course.seo_description or "Learn more about this course.",

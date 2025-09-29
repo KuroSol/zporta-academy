@@ -70,7 +70,7 @@
   margin: 0; /* Remove default paragraph margin */
 }
 .courseInfo a {
-  color: var(--zporta-info-link, #07408a); /* Even darker blue for link */
+  color: var(--zporta-info-link, #f39c12); /* Even darker blue for link */
   font-weight: 600;
   text-decoration: none;
   border-bottom: 1px dotted var(--zporta-info-link, #07408a);

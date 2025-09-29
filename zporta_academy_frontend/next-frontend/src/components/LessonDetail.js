@@ -208,6 +208,11 @@ const LessonDetail = () => {
     const [prevLesson, setPrevLesson] = useState(null); // Link to the previous lesson in the course sequence
     const [nextLesson, setNextLesson] = useState(null); // Link to the next lesson in the course sequence
 
+    // Styling state for editing – holds accent colour, CSS and JS for this lesson
+    const [accentColor, setAccentColor] = useState('#222E3B'); // default accent colour
+    const [customCSS, setCustomCSS] = useState('');            // lesson-specific custom CSS
+    const [customJS, setCustomJS] = useState('');              // lesson-specific custom JS (plain JS, no <script> tags)
+
     // Quiz state
     const [quizzes, setQuizzes] = useState([]);                           // attached to this lesson
     const [availableQuizzes, setAvailableQuizzes] = useState([]);         // user’s quizzes not yet attached
@@ -543,6 +548,11 @@ const LessonDetail = () => {
             subject_id: lessonData.lesson.subject || null // Use subject ID
         });
         setEditorHtml(lessonData.lesson.content || "");
+        
+        // Populate styling fields from the existing lesson
+        setAccentColor(lessonData.lesson.accent_color || '#222E3B');
+        setCustomCSS(lessonData.lesson.custom_css || '');
+        setCustomJS(lessonData.lesson.custom_js || '');
         setEditMode(true); // Switch to edit mode
         setError(''); // Clear any previous errors
     };
@@ -606,7 +616,11 @@ const LessonDetail = () => {
                 content: updatedContent,
                 video_url: editLesson.video_url,
                 tags: tagsArray,
-                subject: editLesson.subject_id // Send subject ID
+                subject: editLesson.subject_id,       // Subject ID
+                accent_color: accentColor,            // new: accent colour
+                custom_css: customCSS,                // new: custom CSS
+                // remove any <script> wrappers before sending custom JS
+                custom_js: customJS.replace(/<\/?script[^>]*>/gi, '')
             };
 
             // Make the PUT request to update the lesson
@@ -870,6 +884,44 @@ const LessonDetail = () => {
                         placeholder="e.g., react, javascript, webdev"
                         value={editLesson.tags || ''}
                         onChange={(e) => setEditLesson({ ...editLesson, tags: e.target.value })}
+                        />
+                    </div>
+
+                    {/* Accent Colour Picker */}
+                    <div className={styles.formGroup}>
+                        <label htmlFor="editLessonAccentColor">Accent Color:</label>
+                        <input
+                            id="editLessonAccentColor"
+                            type="color"
+                            className={styles.inputField}
+                            value={accentColor}
+                            onChange={(e) => setAccentColor(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Custom CSS Editor */}
+                    <div className={styles.formGroup}>
+                        <label htmlFor="editLessonCustomCSS">Custom CSS:</label>
+                        <textarea
+                            id="editLessonCustomCSS"
+                            rows={6}
+                            className={styles.inputField}
+                            value={customCSS}
+                            onChange={(e) => setCustomCSS(e.target.value)}
+                            placeholder="e.g., .lesson-title { font-size: 2em; color: blue; }"
+                        />
+                    </div>
+
+                    {/* Custom JS Editor */}
+                    <div className={styles.formGroup}>
+                        <label htmlFor="editLessonCustomJS">Custom JS:</label>
+                        <textarea
+                            id="editLessonCustomJS"
+                            rows={6}
+                            className={styles.inputField}
+                            value={customJS}
+                            onChange={(e) => setCustomJS(e.target.value)}
+                            placeholder="Inline JavaScript only (do not wrap with <script> tags)"
                         />
                     </div>
 

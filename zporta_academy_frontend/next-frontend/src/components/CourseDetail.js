@@ -1,923 +1,957 @@
-import React, { useEffect, useState, useContext, useRef, useLayoutEffect, useMemo } from "react";
+/**
+ * @file CourseDetail.js
+ * @description A comprehensive component to display and manage a course.
+ * This component handles both the public-facing student view and a private,
+ * feature-rich administrative/edit view for the course creator. It manages
+ * data fetching, state, user interactions, and API calls for updating,
+ * publishing, and deleting a course. The edit mode is a multi-step wizard
+ * for a clear and user-friendly workflow.
+ */
+
+import React, { useEffect, useState, useContext, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
-import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle, FaCrown } from "react-icons/fa";
+import { 
+    FaPlus, FaBook, FaQuestion, FaSpinner, FaTimes, FaEdit, FaTrash, 
+    FaCheckCircle, FaExclamationTriangle, FaArrowLeft, FaEye, FaSave, 
+    FaWindowClose, FaStar, FaRegStar, FaLock, FaUnlock, FaCrown 
+} from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
 import CreateSubjectSelect from "./admin/CreateSubjectSelect";
-import styles from "@/styles/CourseDetail.module.css"; // This should point to the new responsive CSS
+import styles from "@/styles/CourseDetail.module.css";
+import Modal from "@/components/Modal/Modal";
+import CreateLesson from "@/components/admin/CreateLesson";
+import CreateQuiz from "@/components/admin/CreateQuiz";
 import { loadStripe } from "@stripe/stripe-js";
 import { AuthContext } from "@/context/AuthContext";
 import apiClient from "@/api";
-import "@/styles/Editor/ViewerAccordion.module.css"; // Keep this if your CustomEditor relies on it
+import "@/styles/Editor/ViewerAccordion.module.css"; // Ensure accordion styles are available.
 
+/**
+ * @constant {Promise<Stripe>} stripePromise
+ * @description Initializes Stripe.js with the public key for payment processing.
+ * Falls back to a test key if the environment variable is not set.
+ */
 const stripePromise = loadStripe(
-  "pk_test_51KuSZdAyDb4VsWsQVWaz6RYSufh5e8ns6maCvV4b0g1waYUL4TvvgrB14G73tirboPQ67w3l8n8Tt631kACShVaT003wDftkeU"
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51KuSZdAyDb4VsWsQVWaz6RYSufh5e8ns6maCvV4b0g1waYUL4TvvgrB14G73tirboPQ67w3l8n8Tt631kACShVaT003wDftkeU"
 );
 
-// --- Helper Functions (From your original file, UNCHANGED) ---
-function initializeAccordions(containerElement) {
-  if (!containerElement) return;
-  const accordions = containerElement.querySelectorAll(".accordion-item");
+// #region Helper Functions & Components
 
-  accordions.forEach((accordion) => {
-    const header   = accordion.querySelector(".accordion-header");
-    const contents = accordion.querySelectorAll(".accordion-content");
-    const defaultState = accordion.getAttribute("data-default-state") || "closed";
-
-    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") {
-      return;
-    }
-    accordion.dataset.accordionInitialized = "true";
-
-    if (defaultState === "open") {
-      accordion.classList.add("is-open");
-    } else {
-      accordion.classList.remove("is-open");
-    }
-
-    const clickHandler = () => {
-      accordion.classList.toggle("is-open");
-    };
-
-    if (header.__accordionClickHandler__) {
-      header.removeEventListener("click", header.__accordionClickHandler__);
-    }
-    header.addEventListener("click", clickHandler);
-    header.__accordionClickHandler__ = clickHandler;
-
-    contents.forEach((content) => {
-      requestAnimationFrame(() => {
-        initializeAccordions(content);
-      });
-    });
-  });
-}
-
-const sanitizeContentViewerHTML = (htmlString) => {
-  if (!htmlString) return "";
-  try {
+/**
+ * @function sanitizeAndInitializeContentViewer
+ * @description Sanitizes HTML content from the editor to be safely displayed in a viewer.
+ * It removes `contenteditable` attributes and initializes any custom interactive elements
+ * like accordions within the content.
+ * @param {HTMLElement} containerElement - The DOM element to render the HTML into.
+ * @param {string} htmlString - The raw HTML string from the course description.
+ */
+const sanitizeAndInitializeContentViewer = (containerElement, htmlString) => {
+    if (!containerElement || typeof htmlString !== 'string') return;
+    
+    // Sanitize by removing contentEditable attributes to prevent user editing in view mode.
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
-    const editableElements = doc.querySelectorAll('[contenteditable="true"]');
-    editableElements.forEach((el) => {
-      el.removeAttribute("contenteditable");
+    doc.querySelectorAll('[contenteditable="true"]').forEach(el => el.removeAttribute("contenteditable"));
+    containerElement.innerHTML = doc.body.innerHTML;
+
+    // Initialize custom accordion elements within the sanitized content.
+    const accordions = containerElement.querySelectorAll(".accordion-item");
+    accordions.forEach(accordion => {
+        const header = accordion.querySelector(".accordion-header");
+        // Ensure event listener is attached only once.
+        if (header && !header.hasAttribute('data-accordion-listener')) {
+            header.setAttribute('data-accordion-listener', 'true');
+            header.addEventListener("click", () => {
+                accordion.classList.toggle("is-open");
+            });
+        }
     });
-    return doc.body.innerHTML;
-  } catch (error) {
-    console.error("Error sanitizing HTML for viewer:", error);
-    return htmlString;
-  }
 };
 
-// --- Main Course Detail Component ---
-const CourseDetail = ({ initialCourse=null, initialLessons=[], initialSeo=null }) => {
- const router = useRouter();
- const { username, date, subject, slug: courseTitle } = router.query || {};
- const permalink = (username && date && subject && courseTitle)
-   ? `${username}/${date}/${subject}/${courseTitle}` : "";
- const isEditRoute = router.asPath?.startsWith("/admin/courses/edit/");
+/**
+ * @component MessageDisplay
+ * @description A small, reusable component for displaying feedback messages (errors, success, info).
+ * @param {{ message: { text: string, type: string } }} props
+ */
+const MessageDisplay = ({ message }) => {
+    if (!message || !message.text) return null;
+    return <p className={`${styles.message} ${styles[message.type]}`}>{message.text}</p>;
+};
 
-  // --- State Variables (From your original file, UNCHANGED) ---
-  const [course, setCourse] = useState(initialCourse);
-  const [lessons, setLessons] = useState(initialLessons);
-  const [userLessonsForDropdown, setUserLessonsForDropdown] = useState([])
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [selectedLesson, setSelectedLesson] = useState("");
-  const [enrolled, setEnrolled] = useState(false);
-  const [enrollMessage, setEnrollMessage] = useState("");
-  const [addLessonError, setAddLessonError] = useState("");
-  const [enrollmentId, setEnrollmentId] = useState(null);
-  const [quizzes, setQuizzes] = useState([]);
-  const [availableQuizzesForDropdown, setAvailableQuizzesForDropdown] = useState([]);
-  const [selectedQuiz, setSelectedQuiz] = useState("");
-  const [addQuizError, setAddQuizError] = useState("");
-  const [isLocked, setIsLocked] = useState(false);
-  const [editMode, setEditMode] = useState(isEditRoute);
-  const [editCourse, setEditCourse] = useState({});
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [statusUpdateMessage, setStatusUpdateMessage] = useState("");
-
-  
- const sanitizedDesc = useMemo(() => {
-   if (!course?.description) return "";
-   if (typeof window === "undefined") return course.description; // SSR fallback
-   return sanitizeContentViewerHTML(course.description);
- }, [course?.description]);
-
-  // --- Refs (From your original file, UNCHANGED) ---
-  const editorRef = useRef(null);
-  const courseDescriptionDisplayRef = useRef(null);
-
-  // --- Context (From your original file, UNCHANGED) ---
-  const { user, token, logout } = useContext(AuthContext);
-
-  // --- All original useEffects and handlers remain UNCHANGED ---
-  useEffect(() => {
-    if (!permalink) {
-      setError("Course identifier (permalink) is missing.");
-      setLoading(false);
-      return;
-    }
-    // Public fetch allowed. Token optional.
-    setLoading(!initialCourse); // if SSR provided data, skip spinner
-    setError("");
-    setStatusUpdateMessage("");
-
-    const fetchInitialData = async () => {
-      if (initialCourse) { setLoading(false); return; }
-      let courseId = null;
-      try {
-        const [courseRes, userLessonsRes, subjectsRes, userQuizzesRes] = await Promise.allSettled([
-          // public endpoint
-          apiClient.get(`/courses/${permalink}/`),
-          apiClient.get("/lessons/my/"),
-          apiClient.get("/subjects/"),
-          apiClient.get("/quizzes/my/")
-        ]);
-
-        if (courseRes.status === 'fulfilled' && courseRes.value.data?.course) {
-          const fetchedCourse = courseRes.value.data.course;
-          const attachedLessons = courseRes.value.data.lessons || [];
-          const attachedQuizzes = courseRes.value.data.quizzes || [];
-
-          setCourse(fetchedCourse);
-          setLessons(attachedLessons);
-          setQuizzes(attachedQuizzes);
-          setIsLocked(fetchedCourse.is_locked || false);
-          courseId = fetchedCourse.id;
-        } else {
-          throw new Error(courseRes.reason?.response?.data?.detail || courseRes.reason?.message || 'Course not found or failed to load.');
-        }
-
-        if (courseId && userLessonsRes.status === 'fulfilled' && Array.isArray(userLessonsRes.value.data)) {
-        const lessonsForDropdown = userLessonsRes.value.data.filter(
-          (lesson) => lesson.course !== courseId
-          );
-          setUserLessonsForDropdown(lessonsForDropdown);
-        } else if (userLessonsRes.status !== 'fulfilled') {
-          console.error("Error fetching user lessons:", userLessonsRes.reason?.response?.data || userLessonsRes.reason?.message);
-          setUserLessonsForDropdown([]);
-        } else {
-          setUserLessonsForDropdown([]);
-        }
-
-         if (userQuizzesRes.status === 'fulfilled' && Array.isArray(userQuizzesRes.value.data)) {
-            const quizzesForDropdown = userQuizzesRes.value.data.filter(
-                (quiz) => quiz.course !== courseId
-              );
-              setAvailableQuizzesForDropdown(quizzesForDropdown);
-          } else {
-            console.error("Invalid format or error fetching user quizzes:", userQuizzesRes.reason?.response?.data || userQuizzesRes.reason?.message || userQuizzesRes.value?.data);
-            setAvailableQuizzesForDropdown([]);
-          }
+// #endregion --- End of Helpers ---
 
 
-        if (subjectsRes.status === 'fulfilled' && Array.isArray(subjectsRes.value.data)) {
-          setSubjects(subjectsRes.value.data);
-        } else {
-          console.error("Invalid format or error fetching subjects:", subjectsRes.reason?.response?.data || subjectsRes.reason?.message || subjectsRes.value?.data);
-          setSubjects([]);
-        }
+/**
+ * @component CourseDetail
+ * @description The main component for the course detail page.
+ * @param {{ initialCourse: object, initialLessons: Array, initialQuizzes: Array }} props
+ * - initialCourse: Course data pre-fetched via SSR/SSG.
+ * - initialLessons: Lessons data pre-fetched.
+ * - initialQuizzes: Quizzes data pre-fetched.
+ */
+const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizzes = [] }) => {
+    // --- Hooks Initialization ---
+    const router = useRouter();
+    const { user, token, logout } = useContext(AuthContext);
 
-      } catch (err) {
-        console.error("Error fetching initial course data:", err);
-        const status = err.response?.status;
-        if (status === 404) {
-           setError("Course not found (404).");
-        } else if (status === 401 || status === 403) {
-           setError("Unauthorized. Please log in again.");
-           logout();
-           router.push("/login");
-        } else {
-           setError(`Failed to load course data: ${err.message || "Please try again."}`);
-        }
-        setCourse(null);
-        setLessons([]);
-        setUserLessonsForDropdown([]);
-        setSubjects([]);
-        setQuizzes([]);
-        setAvailableQuizzesForDropdown([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    /**
+     * @constant {string|null} permalink
+     * @description A memoized value for the course permalink, constructed from URL query parameters.
+     * This is the unique identifier for the course in API calls.
+     */
+    const permalink = useMemo(() => {
+        const { username, date, subject, slug: courseTitle } = router.query || {};
+        return (username && date && subject && courseTitle) 
+            ? `${username}/${date}/${subject}/${courseTitle}` 
+            : null;
+    }, [router.query]);
+    
+    /**
+     * @constant {boolean} isEditRoute
+     * @description True if the current URL path is for editing a course.
+     */
+    const isEditRoute = (router.asPath || "").startsWith("/admin/courses/edit/");
+    
+    /**
+     * @constant {boolean} viewAsPublic
+     * @description True if the `as_public` query parameter is set, forcing a student's view.
+     */
+    const viewAsPublic = ["1","true"].includes(String(router.query.as_public).toLowerCase());
 
-    fetchInitialData();
-  }, [permalink, token, logout, router]);
+    // #region State Management
 
-  const isCreator = user && course && user.username.toLowerCase() === course.created_by.toLowerCase();
+    // --- Core Data State (for both views) ---
+    /** @state {object|null} course - The main course object containing all details. */
+    const [course, setCourse] = useState(initialCourse);
+    /** @state {Array} lessons - The list of lesson objects attached to the course. */
+    const [lessons, setLessons] = useState(initialLessons);
+    /** @state {Array} quizzes - The list of quiz objects attached to the course. */
+    const [quizzes, setQuizzes] = useState(initialQuizzes);
+    /** @state {boolean} enrolled - The enrollment status of the current user. */
+    const [enrolled, setEnrolled] = useState(false);
 
-   useEffect(() => {
-     if (
-       course &&
-       isCreator &&
-       !editMode &&
-       (isEditRoute || course.is_draft)
-     ) {
-       const subjectObj = subjects.find(s => s.id === course.subject) || { id: course.subject, name: "Unknown Subject" };
+    // --- Page Status State ---
+    /** @state {boolean} loading - True while initial data is being fetched on the client. */
+    const [loading, setLoading] = useState(!initialCourse);
+    /** @state {string} error - Holds any critical error message that prevents the page from rendering. */
+    const [error, setError] = useState("");
+    /** @state {{text: string, type: string}} message - Holds non-critical feedback for the user (e.g., success/error on save). */
+    const [message, setMessage] = useState({ text: "", type: "error" });
 
-       setEditCourse({
-         title: course.title || '',
-         description: course.description || '',
-         subject: subjectObj.id ? { value: subjectObj.id, label: subjectObj.name } : null,
-         tags: Array.isArray(course.tags) ? course.tags.join(", ") : "",
-       });
-       setEditMode(true);
-     }
-   }, [course, subjects, isCreator, isEditRoute, editMode]);
-
-
-  useEffect(() => {
-    if (!editMode && course?.description && courseDescriptionDisplayRef.current) {
-      const container = courseDescriptionDisplayRef.current;
-      let animationFrameId = null;
-
-      const initializedAccordions = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-      initializedAccordions.forEach((accordion) => {
-        const header = accordion.querySelector(".accordion-header");
-        if (header && header.__accordionClickHandler__) {
-          header.removeEventListener("click", header.__accordionClickHandler__);
-          delete header.__accordionClickHandler__;
-        }
-        if (accordion.dataset.accordionInitialized) {
-            delete accordion.dataset.accordionInitialized;
-        }
-      });
-
-      animationFrameId = requestAnimationFrame(() => {
-        if (courseDescriptionDisplayRef.current) {
-          initializeAccordions(courseDescriptionDisplayRef.current);
-        }
-      });
-
-      return () => {
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-        }
-        if (container) {
-            const accordionsToClean = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-             accordionsToClean.forEach((accordion) => {
-                 const header = accordion.querySelector(".accordion-header");
-                 if (header && header.__accordionClickHandler__) {
-                     header.removeEventListener("click", header.__accordionClickHandler__);
-                     delete header.__accordionClickHandler__;
-                 }
-                 if (accordion.dataset.accordionInitialized) {
-                     delete accordion.dataset.accordionInitialized;
-                 }
-             });
-        }
-      };
-    }
-  }, [editMode, course?.description]);
-
-
-
-  useEffect(() => {
-    if (course?.id && token) {
-      const fetchEnrollmentStatus = async () => {
+    // --- Edit Mode State ---
+    /** @state {boolean} editMode - Toggles the entire component between read-only and edit views. */
+    const [editMode, setEditMode] = useState(false);
+    /** @state {number} currentEditStep - Tracks the current step in the edit mode wizard. */
+    const [currentEditStep, setCurrentEditStep] = useState(1);
+    /** @state {object} editData - A comprehensive object holding all modified form data during an edit session. */
+    const [editData, setEditData] = useState({});
+    /** @state {Array} subjects - List of all available subjects for the subject dropdown in edit mode. */
+    const [subjects, setSubjects] = useState([]);
+    const [availableLessons, setAvailableLessons] = useState([]);
+    const [availableQuizzes, setAvailableQuizzes] = useState([]);
+    const refreshContentLists = useCallback(async () => {
         try {
-          const response = await apiClient.get("/enrollments/user/");
-          if (response.data && Array.isArray(response.data)) {
-           const match = response.data.find(
-             e => e.enrollment_type === "course" && e.object_id === course.id
-           );
-           if (match) {
-             setEnrollmentId(match.id);
-             setEnrolled(true);
-           } else {
-             setEnrollmentId(null);
-             setEnrolled(false);
-           }
-          } else {
-            console.warn("Enrollment data received but not in expected format:", response.data);
-            setEnrollmentId(null);
-            setEnrolled(false);
-          }
+            const [lessRes, quizRes] = await Promise.all([
+                apiClient.get("/lessons/my/"),
+                apiClient.get("/quizzes/my/")
+            ]);
+            const courseId = course?.id ?? null;
+            const attachedLessonIds = new Set((lessons || []).map(l => l.id));
+            const attachedQuizIds   = new Set((quizzes || []).map(q => q.id));
+
+            const availLessons = Array.isArray(lessRes.data)
+              ? lessRes.data.filter(l => !attachedLessonIds.has(l.id) && l.course !== courseId)
+              : [];
+            const availQuizzes = Array.isArray(quizRes.data)
+              ? quizRes.data.filter(q => !attachedQuizIds.has(q.id) && q.course !== courseId && !q.lesson)
+              : [];
+            setAvailableLessons(availLessons);
+            setAvailableQuizzes(availQuizzes);
+        } catch (e) {
+            console.error("Failed to refresh content lists:", e.response?.data || e.message);
+        }
+    }, [course?.id, lessons, quizzes]);
+    /** @state {string|null} coverImagePreview - Holds the data URL for the newly uploaded cover image preview. */
+    const [coverImagePreview, setCoverImagePreview] = useState(null);
+
+    // --- Modal State ---
+    /** @state {boolean} isLessonModalOpen - Controls the visibility of the "Create New Lesson" modal. */
+    const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+    /** @state {boolean} isQuizModalOpen - Controls the visibility of the "Create New Quiz" modal. */
+    const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+
+    
+  // Ensure popups do not persist outside management
+  useEffect(() => {
+    if (!editMode) {
+      setIsLessonModalOpen(false);
+      setIsQuizModalOpen(false);
+    }
+  }, [editMode]);
+
+    // --- Refs ---
+    /** @ref {object} editorRef - A ref to access the CustomEditor component instance to get its content. */
+    const editorRef = useRef(null);
+    /** @ref {HTMLElement} descriptionViewerRef - A ref to the div that renders the course description in read-only mode. */
+    const descriptionViewerRef = useRef(null);
+
+    /**
+     * @constant {boolean} isCreator
+     * @description A memoized boolean indicating if the currently logged-in user is the creator of the course.
+     */
+    const isCreator = useMemo(() => 
+        user && course && user.username.toLowerCase() === course.created_by.toLowerCase(), 
+    [user, course]);
+    
+    // #region Data Fetching and Initialization
+
+    /**
+     * @callback fetchCourseData
+     * @description Fetches the primary course data from the API based on the permalink.
+     * This is used for client-side navigation.
+     */
+    const fetchCourseData = useCallback(async () => {
+        if (!permalink) return;
+        setLoading(true);
+        setError("");
+        try {
+            const res = await apiClient.get(`/courses/${permalink}/`);
+            const { course: fetchedCourse, lessons: fetchedLessons, quizzes: fetchedQuizzes } = res.data;
+            
+            setCourse(fetchedCourse);
+            setLessons(fetchedLessons || []);
+            setQuizzes(fetchedQuizzes || []);
+
+            if (token) fetchEnrollmentStatus(fetchedCourse.id);
+
         } catch (err) {
-          console.error("Error fetching enrollment status:", err);
-          setEnrollmentId(null);
-          setEnrolled(false);
+            handleApiError(err, "Course not found or failed to load.");
+        } finally {
+            setLoading(false);
         }
-      };
-      fetchEnrollmentStatus();
-    } else {
-      setEnrollmentId(null);
-      setEnrolled(false);
-    }
-  }, [course, token]);
+    }, [permalink, token]);
 
-
-  useEffect(() => {
-    if (enrolled && enrollmentId) {
-      router.replace(`/courses/enrolled/${enrollmentId}`);
-    }
-  }, [enrolled, enrollmentId, router]);
-
-  const handleEnroll = async () => {
-    if (!course?.id) {
-      console.error("Enrollment attempted without course ID.");
-      setEnrollMessage("Cannot enroll: Course ID missing.");
-      return;
-    }
-    localStorage.setItem("courseId", course.id);
-    setEnrollMessage("Processing enrollment...");
-
-    if (course.course_type === "premium") {
-      try {
-        const response = await apiClient.post("/payments/create-checkout-session/", {
-          course_id: course.id,
-        });
-        const data = response.data;
-        if (data && data.sessionId) {
-          const stripe = await stripePromise;
-          const { error: stripeError } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
-          if (stripeError) {
-            console.error("Stripe redirect error:", stripeError.message);
-            setEnrollMessage(`Payment initiation failed: ${stripeError.message}`);
-          }
-        } else {
-          console.error("API Error: Checkout session ID not received.", data);
-          setEnrollMessage(`Payment setup failed: ${data?.error || "Missing session ID."}`);
+    /**
+     * @callback fetchEnrollmentStatus
+     * @description Fetches the current user's enrollment status for this specific course.
+     * @param {number} courseId - The ID of the course to check.
+     */
+    const fetchEnrollmentStatus = useCallback(async (courseId) => {
+        if (viewAsPublic) { 
+            setEnrolled(false); 
+            return; 
         }
-      } catch (err) {
-        console.error("Create checkout session error:", err.response ? err.response.data : err.message);
-        setEnrollMessage(`Payment setup error: ${err.response?.data?.error || err.message || "Please try again."}`);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          logout();
+        try {
+            const res = await apiClient.get("/enrollments/user/");
+            const isEnrolled = res.data?.some(e => e.enrollment_type === "course" && e.object_id === courseId);
+            setEnrolled(isEnrolled);
+        } catch (err) {
+            console.error("Could not fetch enrollment status:", err);
+            setEnrolled(false);
         }
-      }
-    }
-    else {
-      try {
-        const enrollmentData = {
-          object_id: course.id,
-          enrollment_type: "course",
-        };
-     const response = await apiClient.post("/enrollments/", enrollmentData);
-     const newEnrollment = response.data;
-     setEnrollmentId(newEnrollment.id);
-     setEnrolled(true);
-     router.replace(`/courses/enrolled/${newEnrollment.id}`);
-      } catch (err) {
-        console.error("Free enrollment error:", err.response ? err.response.data : err.message);
-        const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-        setEnrollMessage(`Enrollment failed: ${apiErrorMessage || "Please try again."}`);
-        setEnrolled(false);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          logout();
+    }, [viewAsPublic]);
+
+    /**
+     * `useEffect` for initial data load on the client.
+     */
+    useEffect(() => {
+        if (permalink && !initialCourse) {
+            fetchCourseData();
+        } else if (course && token && !initialCourse) {
+            // This handles the case where the course was from SSR but we still need to check enrollment on client.
+            fetchEnrollmentStatus(course.id);
         }
-      }
-    }
-  };
+        // keep dropdowns fresh
+        // ignore errors silently when course not ready yet
+        refreshContentLists();
+    }, [permalink, initialCourse, token, fetchCourseData, refreshContentLists]);
 
-  const handleAddLesson = async (e) => {
-    e.preventDefault();
-    if (!selectedLesson || !permalink) return;
-    setAddLessonError("");
+    /**
+     * @callback initializeEditMode
+     * @description Prepares the component for edit mode by fetching necessary resources (subjects, user's lessons/quizzes)
+     * and populating the `editData` state with the current course's data.
+     */
+    const initializeEditMode = useCallback(async () => {
+        if (!isCreator || !course) return;
 
-    try {
-      const response = await apiClient.post(`/courses/${permalink}/add-lesson/`, {
-        lesson_id: selectedLesson,
-      });
+        showMessage("Loading editing tools...", "info", 10000);
+        try {
+            const [subjectsRes, userLessonsRes, userQuizzesRes] = await Promise.all([
+                apiClient.get("/subjects/"),
+                apiClient.get("/lessons/my/"),
+                apiClient.get("/quizzes/my/"),
+            ]);
+            
+            setSubjects(subjectsRes.data || []);
+            // Filter out already-attached or bound elsewhere
+            const courseId = course.id;
+            const attachedLessonIds = new Set((lessons || []).map(l => l.id));
+            const attachedQuizIds   = new Set((quizzes || []).map(q => q.id));
+            setAvailableLessons(
+              (userLessonsRes.data || []).filter(l => !attachedLessonIds.has(l.id) && l.course !== courseId)
+            );
+            setAvailableQuizzes(
+              (userQuizzesRes.data || []).filter(q => !attachedQuizIds.has(q.id) && q.course !== courseId && !q.lesson)
+            );
 
-      const addedLesson = response.data?.lesson || response.data;
+            // Populate the edit state object.
+            setEditData({
+                title: course.title || "",
+                subject: course.subject || "",
+                description: course.description || "",
+                coverImageFile: null, // For new file uploads
+                selectedLessons: lessons.map(l => l.id),
+                selectedQuizzes: quizzes.map(q => q.id),
+                isDraft: course.is_draft,
+                testers: (course.allowed_testers || []).join(", "),
+            });
+            setCoverImagePreview(course.cover_image || null);
+            setCurrentEditStep(1);
+            setEditMode(true);
+            setMessage({}); // Clear loading message
+        } catch (err) {
+            handleApiError(err, "Failed to load resources required for editing.");
+        }
+    }, [isCreator, course, lessons, quizzes]);
+    
+    /**
+     * `useEffect` to automatically trigger edit mode if the user is the creator and on the correct admin route.
+     */
+    useEffect(() => {
+        if (isEditRoute && !editMode && course && isCreator && !viewAsPublic) {
+            initializeEditMode();
+            refreshContentLists();
+        }
+     }, [isEditRoute, editMode, course, isCreator, viewAsPublic, initializeEditMode, refreshContentLists]);
 
-      if (addedLesson && addedLesson.id) {
-        setLessons(prevLessons => [...prevLessons, addedLesson]);
-        setUserLessonsForDropdown((prevUserLessons) =>
-          prevUserLessons.filter((lesson) => lesson.id !== parseInt(selectedLesson))
-        );
-        setSelectedLesson("");
-      } else {
-        console.error("Add lesson API response missing expected data:", response.data);
-        setAddLessonError("Failed to update lesson list after adding. Response format unexpected.");
-      }
-    } catch (err) {
-      console.error("Error attaching lesson:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-      setAddLessonError(`Failed to attach lesson: ${apiErrorMessage || "Please try again."}`);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      }
-    }
-  };
 
-  const handleDetachLesson = async (lessonId) => {
-    if (!permalink || !lessonId) return;
-    const confirmDetach = window.confirm("Are you sure you want to detach this lesson from the course?");
-    if (!confirmDetach) return;
+    /**
+     * `useEffect` to manage the sanitation and accordion initialization of the course description viewer.
+     * It runs only when not in edit mode and when the course description changes.
+     */
+    useEffect(() => {
+        if (!editMode && descriptionViewerRef.current && course?.description) {
+            sanitizeAndInitializeContentViewer(descriptionViewerRef.current, course.description);
+        }
+    }, [editMode, course?.description]);
+    
+    // #endregion
 
-    try {
-       await apiClient.post(`/courses/${permalink}/detach-lesson/`, {
-        lesson_id: lessonId,
-      });
+    // #region Utility & Feedback Handlers
 
-      const detachedLessonDetails = lessons.find((lesson) => lesson.id === lessonId);
+    /**
+     * @function handleApiError
+     * @description A centralized function to handle errors from API calls. It logs the error,
+     * sets a user-facing error message, and logs the user out on authentication failures.
+     * @param {Error} err - The error object from the API call.
+     * @param {string} defaultMessage - A fallback message to show the user.
+     */
+    const handleApiError = (err, defaultMessage) => {
+        console.error("API Error:", err.response?.data || err.message);
+        const status = err.response?.status;
+        const apiMessage = err.response?.data?.detail || JSON.stringify(err.response?.data);
+        setMessage({ text: apiMessage || defaultMessage, type: "error" });
+        if (status === 401 || status === 403) {
+            logout();
+            router.push("/login");
+        }
+    };
 
-      setLessons((prevLessons) => prevLessons.filter((lesson) => lesson.id !== lessonId));
+    /**
+     * @function showMessage
+     * @description A utility to display a temporary feedback message to the user.
+     * @param {string} text - The message content.
+     * @param {'success'|'error'|'info'|'warning'} [type='success'] - The type of message.
+     * @param {number} [duration=4000] - How long the message should be visible in milliseconds.
+     */
+    const showMessage = (text, type = 'success', duration = 4000) => {
+        setMessage({ text, type });
+        if (duration > 0) {
+           setTimeout(() => setMessage({ text: "", type: "error" }), duration);
+        }
+    };
 
-      if (detachedLessonDetails) {
-        setUserLessonsForDropdown((prevUserLessons) => {
-          if (!prevUserLessons.some((lesson) => lesson.id === detachedLessonDetails.id)) {
-            return [...prevUserLessons, detachedLessonDetails];
-          }
-          return prevUserLessons;
-        });
-      } else {
-        console.warn("Could not find details of the detached lesson to add back to dropdown.");
-      }
+    // #endregion
 
-      alert("Lesson detached successfully.");
+    // #region Event Handlers (Read Mode)
 
-    } catch (err) {
-      console.error("Error detaching lesson:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-      alert(`Failed to detach lesson: ${apiErrorMessage || "Please try again."}`);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      }
-    }
-  };
+    /**
+     * @function handleEnroll
+     * @description Handles the course enrollment process for both free and premium courses.
+     * For premium courses, it initiates a Stripe checkout session.
+     */
+    const handleEnroll = async () => {
+        if (!course?.id || !token) {
+           return showMessage("You must be logged in to enroll.", "error");
+        }
+        
+        showMessage("Processing your enrollment...", "info", 10000);
 
-   const handleAddQuiz = async (e) => {
-     e.preventDefault();
-     if (!selectedQuiz || !permalink) return;
-     setAddQuizError("");
+        if (course.course_type === "premium") {
+            try {
+                const response = await apiClient.post("/payments/create-checkout-session/", { course_id: course.id });
+                const { sessionId } = response.data;
+                if (sessionId) {
+                    const stripe = await stripePromise;
+                    await stripe.redirectToCheckout({ sessionId });
+                } else {
+                    throw new Error("Missing session ID.");
+                }
+            } catch (err) {
+                handleApiError(err, "Could not initiate payment.");
+            }
+        } else { // Free course
+            try {
+                await apiClient.post("/enrollments/", { object_id: course.id, enrollment_type: "course" });
+                setEnrolled(true);
+                showMessage("Successfully enrolled!", "success");
+            } catch (err) {
+                handleApiError(err, "Could not enroll in the course.");
+            }
+        }
+    };
+    
+    // #endregion
 
-     try {
-       const response = await apiClient.post(`/courses/${permalink}/add-quiz/`, {
-         quiz_id: selectedQuiz,
-       });
-       const addedQuiz = response.data?.quiz || response.data;
+    // #region Event Handlers (Edit Mode)
 
-       if (addedQuiz && addedQuiz.id) {
-         setQuizzes(prevQuizzes => [...prevQuizzes, addedQuiz]);
-         setAvailableQuizzesForDropdown((prevAvailable) =>
-           prevAvailable.filter((quiz) => quiz.id !== parseInt(selectedQuiz))
-         );
-         setSelectedQuiz("");
-       } else {
-         console.error("Add quiz API response missing expected data:", response.data);
-         setAddQuizError("Failed to update quiz list after adding. Response format unexpected.");
-       }
-     } catch (err) {
-       console.error("Error attaching quiz:", err.response ? err.response.data : err.message);
-       const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-       setAddQuizError(`Failed to attach quiz: ${apiErrorMessage || "Please try again."}`);
-       if (err.response?.status === 401 || err.response?.status === 403) {
-         logout();
-       }
-     }
-   };
+    /**
+     * @function handleEditInputChange
+     * @description Generic handler for simple input changes in the edit form.
+     * @param {string} field - The key in the `editData` state to update.
+     * @returns {function(Event): void} - The event handler function.
+     */
+    const handleEditInputChange = (field) => (e) => {
+        setEditData(prev => ({ ...prev, [field]: e.target.value }));
+    };
+    
+    /**
+     * @function handleEditCoverImageChange
+     * @description Handles the selection of a new cover image file. Validates the file
+     * and creates a local preview.
+     * @param {Event} e - The file input change event.
+     */
+    const handleEditCoverImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+             return showMessage('Cover image cannot exceed 5MB.', 'error');
+        }
+        setEditData(prev => ({ ...prev, coverImageFile: file }));
+        const reader = new FileReader();
+        reader.onloadend = () => setCoverImagePreview(reader.result);
+        reader.readAsDataURL(file);
+    };
 
-   const handleDetachQuiz = async (quizId) => {
+    /**
+     * @function handleContentToggle
+     * @description Handles toggling the selection of lessons or quizzes in the edit form.
+     * @param {number} id - The ID of the lesson or quiz.
+     * @param {'selectedLessons'|'selectedQuizzes'} field - The state field to update.
+     */
+    const handleContentToggle = (id, field) => {
+        setEditData(prev => ({
+            ...prev,
+            [field]: prev[field].includes(id)
+                ? prev[field].filter(itemId => itemId !== id)
+                : [...prev[field], id]
+        }));
+    };
+
+    
+    // Immediate detach actions for items already attached to this course
+    const handleDetachLessonImmediate = async (lessonId) => {
+        if (!permalink || !lessonId) return;
+        if (!window.confirm("Detach this lesson from the course?")) return;
+        try {
+            await apiClient.post(`/courses/${permalink}/detach-lesson/`, { lesson_id: lessonId });
+            // remove from attached and make it selectable again
+            setLessons(prev => prev.filter(l => l.id !== lessonId));
+            setEditData(prev => ({ ...prev, selectedLessons: prev.selectedLessons.filter(id => id !== lessonId) }));
+            await refreshContentLists();
+            showMessage("Lesson detached.", "success");
+        } catch (err) {
+            handleApiError(err, "Failed to detach lesson.");
+        }
+    };
+
+    const handleDetachQuizImmediate = async (quizId) => {
         if (!permalink || !quizId) return;
-     const confirmDetach = window.confirm("Are you sure you want to detach this quiz from the course?");
-     if (!confirmDetach) return;
-
-     try {
-       await apiClient.post(`/courses/${permalink}/detach-quiz/`, {
-         quiz_id: quizId,
-       });
-
-       const detachedQuizDetails = quizzes.find((quiz) => quiz.id === quizId);
-
-       setQuizzes((prevQuizzes) => prevQuizzes.filter((quiz) => quiz.id !== quizId));
-
-       if (detachedQuizDetails) {
-         setAvailableQuizzesForDropdown((prevAvailable) => {
-           if (!prevAvailable.some((quiz) => quiz.id === detachedQuizDetails.id)) {
-             return [...prevAvailable, detachedQuizDetails];
-           }
-           return prevAvailable;
-         });
-       } else {
-         console.warn("Could not find details of the detached quiz to add back to dropdown.");
-       }
-
-       alert("Quiz detached successfully.");
-
-     } catch (err) {
-       console.error("Error detaching quiz:", err.response ? err.response.data : err.message);
-       const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
-       alert(`Failed to detach quiz: ${apiErrorMessage || "Please try again."}`);
-       if (err.response?.status === 401 || err.response?.status === 403) {
-         logout();
-       }
-     }
-   };
-
-  const handleEditClick = () => {
-    if (!course) return;
-    const subjectObj = subjects.find((subj) => subj.id === course.subject) || { id: course.subject, name: "Unknown Subject" };
-    setEditCourse({
-      title: course.title || '',
-      description: course.description || '',
-      subject: subjectObj.id ? { value: subjectObj.id, label: subjectObj.name } : null,
-      tags: course.tags && Array.isArray(course.tags) ? course.tags.join(", ") : "",
-    });
-    setEditMode(true);
-    setStatusUpdateMessage("");
-    setError("");
-  };
-
-  const handleCancelEdit = () => {
-    setEditMode(false);
-    setEditCourse({});
-    setError("");
-  };
-
-  const handleSaveEdit = async (e) => {
-    e.preventDefault();
-    if (!editCourse || !course || !editorRef.current) {
-        setError("Cannot save: Form data, course data, or editor is missing.");
-        return;
+        if (!window.confirm("Detach this quiz from the course?")) return;
+        try {
+            await apiClient.post(`/courses/${permalink}/detach-quiz/`, { quiz_id: quizId });
+            setQuizzes(prev => prev.filter(q => q.id !== quizId));
+            setEditData(prev => ({ ...prev, selectedQuizzes: prev.selectedQuizzes.filter(id => id !== quizId) }));
+            await refreshContentLists();
+            showMessage("Quiz detached.", "success");
+        } catch (err) {
+            handleApiError(err, "Failed to detach quiz.");
+        }
+    };
+    /**
+     * @function validateEditStep
+     * @description Validates the inputs for a given step in the edit wizard.
+     * @param {number} step - The step number to validate.
+     * @returns {string|null} - An error message string if validation fails, otherwise null.
+     */
+    const validateEditStep = (step) => {
+        switch (step) {
+            case 1:
+                if (!editData.title.trim()) return "Course Title is required.";
+                if (!editData.subject) return "Please select a Subject.";
+                return null;
+            case 2:
+                const desc = editorRef.current?.getContent() || editData.description;
+                if (!desc || !desc.trim() || desc === "<p><br></p>") return "Course Description cannot be empty.";
+                // Sync state on successful validation, important for preview and final save.
+                if (desc !== editData.description) {
+                    setEditData(prev => ({...prev, description: desc}));
+                }
+                return null;
+            default:
+                return null;
+        }
+    };
+    
+    /**
+     * @function handleEditStepChange
+     * @description Handler for the "Next" button in the edit wizard. Validates the current
+     * step before allowing progression to the next.
+     * @param {number} nextStep - The step to navigate to.
+     */
+    const handleEditStepChange = (nextStep) => {
+        const errorMsg = validateEditStep(currentEditStep);
+        if (errorMsg) {
+            return showMessage(errorMsg, 'error');
+        }
+        setCurrentEditStep(nextStep);
     };
 
-    const updatedDescription = editorRef.current.getContent();
+    /**
+     * @function handleSaveChanges
+     * @description The final save handler. It collects all data from the `editData` state,
+     * constructs a FormData object, and sends a PATCH request to the backend to update the course.
+     */
+    const handleSaveChanges = async () => {
+        // Final validation before submitting
+        for (let i = 1; i <= 4; i++) {
+            const validationError = validateEditStep(i);
+            if (validationError) {
+                setCurrentEditStep(i);
+                return showMessage(validationError, 'error');
+            }
+        }
 
-    if (!editCourse.title?.trim() || !editCourse.subject?.value) {
-        setError("Title and Subject are required.");
-        return;
-    }
+        showMessage("Saving changes...", "info", 0); // Indefinite message
 
-    const payload = {
-      title: editCourse.title,
-      subject: editCourse.subject.value,
-      tags: editCourse.tags ? editCourse.tags.split(",").map((tag) => tag.trim()).filter(tag => tag) : [],
-      description: updatedDescription,
+        // 3.1 Sync content attachments first (diff -> attach/detach)
+        try {
+            const currentLessonIds = (lessons || []).map(l => l.id);
+            const currentQuizIds   = (quizzes || []).map(q => q.id);
+            const nextLessonIds    = editData.selectedLessons || [];
+            const nextQuizIds      = editData.selectedQuizzes || [];
+
+            const addLessonIds    = nextLessonIds.filter(id => !currentLessonIds.includes(id));
+            const removeLessonIds = currentLessonIds.filter(id => !nextLessonIds.includes(id));
+            const addQuizIds      = nextQuizIds.filter(id => !currentQuizIds.includes(id));
+            const removeQuizIds   = currentQuizIds.filter(id => !nextQuizIds.includes(id));
+
+            // Attach lessons
+            for (const id of addLessonIds) {
+                await apiClient.post(`/courses/${permalink}/add-lesson/`, { lesson_id: id });
+            }
+            // Detach lessons
+            for (const id of removeLessonIds) {
+                await apiClient.post(`/courses/${permalink}/detach-lesson/`, { lesson_id: id });
+            }
+            // Attach quizzes
+            for (const id of addQuizIds) {
+                await apiClient.post(`/courses/${permalink}/add-quiz/`, { quiz_id: id });
+            }
+            // Detach quizzes
+            for (const id of removeQuizIds) {
+                await apiClient.post(`/courses/${permalink}/detach-quiz/`, { quiz_id: id });
+            }
+        } catch (err) {
+            return handleApiError(err, "Failed to update attached lessons/quizzes.");
+        }
+        
+        const formData = new FormData();
+        formData.append('title', editData.title);
+        formData.append('subject', editData.subject);
+        formData.append('description', editData.description);
+        if (editData.coverImageFile) {
+            formData.append('cover_image', editData.coverImageFile);
+        }
+        
+        formData.append('is_draft', editData.isDraft);
+        if(!editData.isDraft) {
+            (editData.testers || "").split(',').map(t => t.trim()).filter(Boolean).forEach(tester => {
+                formData.append('allowed_testers', tester);
+            });
+        }
+        
+        // Backend expects a JSON string for list updates via FormData
+
+        try {
+            const res = await apiClient.patch(`/courses/${permalink}/update/`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            // Refresh after save to reflect server truth
+            await fetchCourseData();
+            setEditMode(false); // Exit edit mode
+            showMessage("Course updated successfully!", "success");
+            // Clean up URL, removing admin-specific path
+            router.replace(`/courses/${permalink}`, undefined, { shallow: true });
+        } catch (err) {
+            handleApiError(err, "Failed to save changes. Please check the form and try again.");
+        }
+    };
+    
+    /**
+     * @function handleDeleteCourse
+     * @description Handles the permanent deletion of the course after user confirmation.
+     */
+    const handleDeleteCourse = async () => {
+        if (!window.confirm("Are you absolutely sure you want to delete this course? This action is permanent and cannot be undone.")) return;
+        
+        showMessage("Deleting course...", "info", 10000);
+        try {
+            await apiClient.delete(`/courses/${permalink}/delete/`);
+            showMessage("Course has been successfully deleted.", "success");
+            router.push("/admin/dashboard"); // Redirect away from the now-deleted course
+        } catch (err) {
+            handleApiError(err, "Failed to delete the course.");
+        }
     };
 
-    setError("");
+    // #endregion
 
-    try {
-      const response = await apiClient.put(`/courses/${permalink}/update/`, payload);
-      const updatedCourseData = response.data;
+    // #region Render Logic
 
-      setCourse(updatedCourseData);
-      setLessons(updatedCourseData.lessons || []);
-      setQuizzes(updatedCourseData.quizzes || []);
-
-      setEditMode(false);
-      alert("Course content updated successfully.");
-
-    } catch (err) {
-      console.error("Error updating course content:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || JSON.stringify(err.response?.data) || err.message || "Unknown error";
-      setError(`Error updating course: ${apiErrorMessage}`);
+    // --- Loading & Error States ---
+    if (loading) {
+        return <div className={styles.utilityContainer}><FaSpinner className={styles.spinner} /><span>Loading Course...</span></div>;
     }
-  };
-
-  const handleDeleteCourse = async () => {
-    if (!course?.id || isLocked) {
-        alert("Course cannot be deleted (missing ID or locked).");
-        return;
-    };
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this course? This action cannot be undone and will detach all lessons and quizzes."
-    );
-    if (!confirmDelete) return;
-
-    try {
-      await apiClient.delete(`/courses/${permalink}/delete/`);
-      alert("Course deleted successfully.");
-      router.push("/courses");
-    } catch (err) {
-      console.error("Error deleting course:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.message || "Please try again.";
-      alert(`Error deleting course: ${apiErrorMessage}`);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      }
+    if (error && !course) {
+        return <div className={styles.utilityContainer}>{error}</div>;
     }
-  };
-
-  const handlePublishCourse = async () => {
-    if (!course || isLocked) return;
-
-    const confirmPublish = window.confirm("Are you sure you want to publish this course? Students will be able to enroll.");
-    if (!confirmPublish) return;
-
-    setIsUpdatingStatus(true);
-    setStatusUpdateMessage("Publishing...");
-
-    try {
-      await apiClient.post(`/courses/${permalink}/publish/`);
-       setCourse(prevCourse => ({ ...prevCourse, is_draft: false }));
-       setStatusUpdateMessage("Course published successfully!");
-
-    } catch (err) {
-      console.error("Error publishing course:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.message || "Please try again.";
-      setStatusUpdateMessage(`Error publishing: ${apiErrorMessage}`);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      }
-    } finally {
-      setIsUpdatingStatus(false);
+    if (!course) {
+        return <div className={styles.utilityContainer}>Course could not be found.</div>;
     }
-  };
 
-  const handleUnpublishCourse = async () => {
-    if (!course || isLocked) return;
+    /**
+     * @constant {Array<object>} EDIT_STEPS
+     * @description Configuration for the steps in the edit mode wizard.
+     */
+    const EDIT_STEPS = [
+        { id: 1, title: 'Course Details' },
+        { id: 2, title: 'Description' },
+        { id: 3, title: 'Manage Content' },
+        { id: 4, title: 'Settings & Publish' }
+    ];
 
-    const confirmUnpublish = window.confirm("Are you sure you want to unpublish this course and set it back to a draft?");
-    if (!confirmUnpublish) return;
+    // --- RENDER: EDIT MODE ---
+    if (editMode && isCreator) {
+        return (
+            <div className={styles.editPageContainer}>
+                <div className={styles.editHeader}>
+                    <h1>Editing: <span className={styles.headerCourseTitle}>{course.title}</span></h1>
+                    <button onClick={() => setEditMode(false)} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}><FaWindowClose/> Cancel</button>
+                </div>
 
-    setIsUpdatingStatus(true);
-    setStatusUpdateMessage("Setting to draft...");
+                <div className={styles.stepper}>
+                    {EDIT_STEPS.map((step, index) => (
+                        <React.Fragment key={step.id}>
+                            <div 
+                                className={`${styles.stepItem} ${currentEditStep === step.id ? styles.active : ''}`} 
+                                onClick={() => {
+                                    // Allow navigation to previous steps only after validation
+                                    if(step.id < currentEditStep) {
+                                        const errorMsg = validateEditStep(currentEditStep);
+                                        if (errorMsg) return showMessage(errorMsg, 'error');
+                                        setCurrentEditStep(step.id);
+                                    }
+                                }}
+                            >
+                                <div className={styles.stepCounter}>{step.id}</div>
+                                <div className={styles.stepTitle}>{step.title}</div>
+                            </div>
+                            {index < EDIT_STEPS.length - 1 && <div className={styles.stepConnector}></div>}
+                        </React.Fragment>
+                    ))}
+                </div>
+                
+                <MessageDisplay message={message} />
 
-    try {
-      const payload = { is_draft: true };
-      const response = await apiClient.put(`/courses/${permalink}/update/`, payload);
+                <div className={styles.editStepContent}>
+                    {currentEditStep === 1 && (
+                        <div className={styles.formSection}>
+                            <div className={styles.formGrid}>
+                               <div className={styles.formGroup}>
+                                    <label htmlFor="editTitle">Course Title</label>
+                                    <input id="editTitle" type="text" value={editData.title || ''} onChange={handleEditInputChange('title')} className={styles.inputField} />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="editSubject">Subject</label>
+                                    <select id="editSubject" value={editData.subject || ''} onChange={handleEditInputChange('subject')} className={styles.selectField}>
+                                        <option value="">Select Subject</option>
+                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label htmlFor="editCoverImage">Cover Image</label>
+                                {coverImagePreview && <img src={coverImagePreview} alt="Cover preview" className={styles.coverPreview} />}
+                                <input id="editCoverImage" type="file" accept="image/*" onChange={handleEditCoverImageChange} />
+                            </div>
+                        </div>
+                    )}
+                    {currentEditStep === 2 && (
+                        <div className={styles.formSection}>
+                            <label>Course Description</label>
+                             <div className={styles.editorContainer}>
+                                <CustomEditor ref={editorRef} initialContent={editData.description || ''} mediaCategory="course" />
+                            </div>
+                        </div>
+                    )}
+                    {currentEditStep === 3 && (
+                        <div className={styles.formSection}>
+                             <div className={styles.contentSelectionGrid}>
+                                <div>
+                                    <div className={styles.contentHeaderRow}>
+                                      <h3 className={styles.contentHeader}>Attached Lessons ({lessons.length})</h3>
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsLessonModalOpen(true)}
+                                        className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                                        title="Create a new lesson"
+                                      >
+                                        <FaPlus/> Create Lesson
+                                      </button>
+                                    </div>
+                                    <div className={styles.scrollableBox}>
+                                      {lessons.length ? (
+                                        lessons.map(l => (
+                                          <div key={l.id} className={styles.attachedRow}>
+                                            <span className={styles.attachedTitle}>{l.title}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDetachLessonImmediate(l.id)}
+                                              className={styles.detachBtn}
+                                              title="Detach"
+                                            >
+                                              <FaTimes/>
+                                            </button>
+                                          </div>
+                                        ))
+                                      ) : <p>No lessons attached.</p>}
+                                    </div>
+                                    <h4 className={styles.contentSubheader}>Available Lessons</h4>
+                                    <div className={styles.scrollableBox}>
+                                        {availableLessons.length > 0 ? availableLessons.map(l => (
+                                            <div key={l.id} className={styles.contentItem}>
+                                                <input type="checkbox" id={`lesson-${l.id}`} checked={editData.selectedLessons.includes(l.id)} onChange={() => handleContentToggle(l.id, 'selectedLessons')} disabled={l.course && l.course !== course.id} />
+                                                <label htmlFor={`lesson-${l.id}`}>{l.title} {l.course && l.course !== course.id && <span className={styles.usedElsewhere}>(Used in another course)</span>}</label>
+                                            </div>
+                                        )) : <p>No lessons available.</p>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className={styles.contentHeaderRow}>
+                                      <h3 className={styles.contentHeader}>Attached Quizzes ({quizzes.length})</h3>
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsQuizModalOpen(true)}
+                                        className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                                        title="Create a new quiz"
+                                      >
+                                        <FaPlus/> Create Quiz
+                                      </button>
+                                    </div>
+                                    <div className={styles.scrollableBox}>
+                                      {quizzes.length ? (
+                                        quizzes.map(q => (
+                                          <div key={q.id} className={styles.attachedRow}>
+                                            <span className={styles.attachedTitle}>{q.title}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDetachQuizImmediate(q.id)}
+                                              className={styles.detachBtn}
+                                              title="Detach"
+                                            >
+                                              <FaTimes/>
+                                            </button>
+                                          </div>
+                                        ))
+                                      ) : <p>No quizzes attached.</p>}
+                                    </div>
+                                    <h4 className={styles.contentSubheader}>Available Quizzes</h4>
+                                     <div className={styles.scrollableBox}>
+                                        {availableQuizzes.length > 0 ? availableQuizzes.map(q => (
+                                            <div key={q.id} className={styles.contentItem}>
+                                                <input type="checkbox" id={`quiz-${q.id}`} checked={editData.selectedQuizzes.includes(q.id)} onChange={() => handleContentToggle(q.id, 'selectedQuizzes')} disabled={(q.course && q.course !== course.id) || q.lesson} />
+                                                <label htmlFor={`quiz-${q.id}`}>{q.title} {((q.course && q.course !== course.id) || q.lesson) && <span className={styles.usedElsewhere}>(Used elsewhere)</span>}</label>
+                                            </div>
+                                        )) : <p>No quizzes available.</p>}
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+                    {currentEditStep === 4 && (
+                        <div>
+                            <div className={styles.formSection}>
+                                <h3>Settings</h3>
+                                <div className={styles.formGroup}>
+                                    <label>Course Status</label>
+                                    <div className={styles.radioGroup}>
+                                        <label><input type="radio" name="isDraft" checked={!editData.isDraft} onChange={() => setEditData(p => ({...p, isDraft: false}))} /> Published</label>
+                                        <label><input type="radio" name="isDraft" checked={editData.isDraft} onChange={() => setEditData(p => ({...p, isDraft: true}))} /> Draft</label>
+                                    </div>
+                                    <small className={styles.fieldNote}>Published courses are visible and enrollable by students. Drafts are only visible to you.</small>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="editTesters">Testers (Usernames, comma-separated)</label>
+                                    <input id="editTesters" type="text" value={editData.testers || ''} onChange={handleEditInputChange('testers')} className={styles.inputField} disabled={editData.isDraft} />
+                                    {editData.isDraft && <small className={styles.fieldNote}>Testers can only be assigned to published courses. They get free access.</small>}
+                                </div>
+                            </div>
+                            <div className={`${styles.formSection} ${styles.dangerZone}`}>
+                                <h3>Danger Zone</h3>
+                                <p>This action is permanent and cannot be undone. All associated user enrollments will be lost.</p>
+                                <button onClick={handleDeleteCourse} className={`${styles.zportaBtn} ${styles.btnDanger}`}><FaTrash /> Delete This Course</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-      setCourse(response.data);
-      setStatusUpdateMessage("Course set to draft successfully!");
-
-    } catch (err) {
-      console.error("Error unpublishing course:", err.response ? err.response.data : err.message);
-      const apiErrorMessage = err.response?.data?.detail || err.message || "Please try again.";
-      setStatusUpdateMessage(`Error setting to draft: ${apiErrorMessage}`);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        logout();
-      }
-    } finally {
-      setIsUpdatingStatus(false);
+                <div className={styles.editNavigation}>
+                    <button onClick={() => setCurrentEditStep(p => p > 1 ? p - 1 : p)} disabled={currentEditStep === 1} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}><FaArrowLeft/> Back</button>
+                    {currentEditStep < EDIT_STEPS.length ? (
+                        <button onClick={() => handleEditStepChange(currentEditStep + 1)} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}>Next Step</button>
+                    ) : (
+                        <button onClick={handleSaveChanges} className={`${styles.zportaBtn} ${styles.btnSuccess}`}><FaSave /> Save All Changes</button>
+                    )}
+                </div>
+                
+                {/* Edit-only creation modals */}
+                <Modal isOpen={isLessonModalOpen} onClose={() => setIsLessonModalOpen(false)} title="Create New Lesson">
+                  <CreateLesson
+                    onSuccess={(newLesson) => {
+                      setIsLessonModalOpen(false);
+                      refreshContentLists();
+                      if (newLesson?.id) {
+                        setEditData(prev => ({ ...prev, selectedLessons: Array.from(new Set([...(prev.selectedLessons||[]), newLesson.id])) }));
+                      }
+                    }}
+                    onClose={() => setIsLessonModalOpen(false)}
+                    isModalMode
+                  />
+                </Modal>
+                <Modal isOpen={isQuizModalOpen} onClose={() => setIsQuizModalOpen(false)} title="Create New Quiz">
+                  <CreateQuiz
+                    onSuccess={(newQuiz) => {
+                      setIsQuizModalOpen(false);
+                      refreshContentLists();
+                      if (newQuiz?.id) {
+                        setEditData(prev => ({ ...prev, selectedQuizzes: Array.from(new Set([...(prev.selectedQuizzes||[]), newQuiz.id])) }));
+                      }
+                    }}
+                    onClose={() => setIsQuizModalOpen(false)}
+                    isModalMode
+                  />
+                </Modal>
+            </div>
+        );
     }
-  };
 
-  useEffect(() => {
-    if (editMode && course) {
-      const subjectObj = subjects.find((s) => s.id === course.subject) || { id: course.subject, name: "" };
-      setEditCourse(prevEdit => ({
-        ...prevEdit,
-        title: course.title,
-        description: course.description,
-        subject: subjectObj.id ? { value: subjectObj.id, label: subjectObj.name } : null,
-        tags: Array.isArray(course.tags) ? course.tags.join(", ") : "",
-      }));
-    }
-  }, [editMode, course, subjects]);
-
-
-  // --- Render Logic ---
-  if (loading) return (
-      <div className={styles.loadingContainer}>
-        <FaSpinner className={styles.spinner} />
-        <p>Loading Course Details...</p>
-      </div>
-    );
-
-  if (error && !course) return <div className={styles.errorContainer}><p>{error}</p></div>;
-  if (!course) return <div className={styles.loadingContainer}><p>Course data not available.</p></div>
-
-  // --- RENDER Creator Edit View ---
-  if (isCreator && editMode) {
+    // --- RENDER: READ-ONLY / PUBLIC VIEW ---
     return (
         <div className={styles.courseDetailContainer}>
-            <form onSubmit={handleSaveEdit} className={styles.editForm}>
-                <h1 className={styles.formHeader}>Manage Course</h1>
-                
-                {error && <p className={styles.formError}>{error}</p>}
-
-                <div className={styles.formGroup}>
-                    <label htmlFor="courseTitleEdit">Course Title</label>
-                    <input
-                        id="courseTitleEdit" type="text"
-                        value={editCourse.title || ""}
-                        onChange={e => setEditCourse({ ...editCourse, title: e.target.value })}
-                        required className={styles.inputField}
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    <label htmlFor="courseSubjectEdit">Subject</label>
-                    <CreateSubjectSelect
-                        id="courseSubjectEdit"
-                        value={editCourse.subject}
-                        onChange={sel => setEditCourse({ ...editCourse, subject: sel })}
-                        required
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    <label htmlFor="courseTagsEdit">Tags (comma-separated)</label>
-                    <input
-                        id="courseTagsEdit" type="text"
-                        value={editCourse.tags || ""}
-                        onChange={e => setEditCourse({ ...editCourse, tags: e.target.value })}
-                        className={styles.inputField}
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    <label>Course Content</label>
-                    <CustomEditor
-                        ref={editorRef}
-                        initialContent={editCourse.description || ""}
-                        mediaCategory="course"
-                        editable={true}
-                    />
-                </div>
-
-                <div className={styles.formActions}>
-                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Save Changes</button>
-                    <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleCancelEdit}>Cancel</button>
-                </div>
-            </form>
-
-            <div className={`${styles.adminSection} ${styles.accordionContainer}`}>
-                <h2 className={styles.sectionTitle}>Manage Content</h2>
-                <div className={styles.accordionItem}>
-                    <h3 className={styles.accordionHeader}>Attached Lessons ({lessons.length})</h3>
-                    <div className={styles.accordionContent}>
-                        {lessons.length > 0 ? (
-                            <ul className={styles.attachedList}>
-                                {lessons.map(l => (
-                                    <li key={l.id}>
-                                        <span className={styles.lessonRow}>
-                                          <span className={styles.lessonTitle}>{l.title}</span>
-                                          <span className={`${styles.pill} ${l.is_premium ? styles.pillPremium : styles.pillFree}`}>
-                                            {l.is_premium ? 'Premium' : 'Free'}
-                                          </span>
-                                        </span>
-                                        <button onClick={() => handleDetachLesson(l.id)} className={styles.detachBtn} title="Detach Lesson" disabled={isLocked}><FaTimes/></button>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : <p>No lessons attached.</p>}
-                        <form onSubmit={handleAddLesson} className={styles.addContentForm}>
-                            <select value={selectedLesson} onChange={e => { setSelectedLesson(e.target.value); setAddLessonError(''); }} className={styles.dropdown} disabled={isLocked}>
-                                <option value="">Select a lesson to add...</option>
-                                {userLessonsForDropdown.map(l => {
-                                    const isAttachedElsewhere = l.course && l.course !== course.id;
-                                    return <option key={l.id} value={l.id} disabled={isAttachedElsewhere}>{l.title}{isAttachedElsewhere ? ' (In another course)' : ''}</option>;
-                                })}
-                            </select>
-                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!selectedLesson || isLocked}><FaPlus/> Add</button>
-                        </form>
-                        {addLessonError && <p className={styles.formError}>{addLessonError}</p>}
+            {isCreator && (
+                !viewAsPublic ? (
+                    <div className={styles.adminToolbar}>
+                        <span><FaCrown /> You are the creator of this course.</span>
+                        <div className={styles.adminActions}>
+                             <button onClick={() => router.push(`/courses/${permalink}?as_public=true`)} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}><FaEye/> View as Public</button>
+                            <button onClick={initializeEditMode} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}><FaEdit /> Manage Course</button>
+                        </div>
                     </div>
-                </div>
-
-                <div className={styles.accordionItem}>
-                    <h3 className={styles.accordionHeader}>Attached Quizzes ({quizzes.length})</h3>
-                    <div className={styles.accordionContent}>
-                        {quizzes.length > 0 ? (
-                            <ul className={styles.attachedList}>
-                                {quizzes.map(q => (
-                                    <li key={q.id}>
-                                        <span>{q.title}</span>
-                                        <button onClick={() => handleDetachQuiz(q.id)} className={styles.detachBtn} title="Detach Quiz" disabled={isLocked}><FaTimes/></button>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : <p>No quizzes attached.</p>}
-                        <form onSubmit={handleAddQuiz} className={styles.addContentForm}>
-                            <select value={selectedQuiz} onChange={e => { setSelectedQuiz(e.target.value); setAddQuizError(''); }} className={styles.dropdown} disabled={isLocked}>
-                                <option value="">Select a quiz to attach...</option>
-                                {availableQuizzesForDropdown.map(q => {
-                                    const isAttachedElsewhere = q.course && q.course !== course.id;
-                                    return <option key={q.id} value={q.id} disabled={isAttachedElsewhere}>{q.title}{isAttachedElsewhere ? ' (In another course)' : ''}</option>;
-                                })}
-                            </select>
-                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!selectedQuiz || isLocked}><FaPlus/> Add</button>
-                        </form>
-                        {addQuizError && <p className={styles.formError}>{addQuizError}</p>}
+                ) : (
+                    <div className={`${styles.adminToolbar} ${styles.previewMode}`}>
+                        <span>You are viewing in Public Preview Mode.</span>
+                        <button
+                          type="button"
+                          onClick={initializeEditMode}
+                          className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                        >
+                          <FaArrowLeft/> Back to Management
+                        </button>
                     </div>
-                </div>
-            </div>
+                )
+            )}
 
-            <div className={styles.adminSection}>
-                 <h2 className={styles.sectionTitle}>Status & Actions</h2>
-                 <div className={styles.statusBox}>
-                    <p>Status: {course.is_draft ? <span className={`${styles.statusPill} ${styles.statusDraft}`}>Draft</span> : <span className={`${styles.statusPill} ${styles.statusPublished}`}>Published</span>} {isLocked && "🔒"}</p>
-                    {!isLocked && (course.is_draft ? 
-                        <button onClick={handlePublishCourse} disabled={isUpdatingStatus} className={`${styles.btn} ${styles.btnSuccess}`}><FaCheckCircle/> {isUpdatingStatus ? 'Publishing...' : 'Publish'}</button> :
-                        <button onClick={handleUnpublishCourse} disabled={isUpdatingStatus} className={`${styles.btn} ${styles.btnWarning}`}><FaExclamationTriangle/> {isUpdatingStatus ? 'Working...' : 'Set to Draft'}</button>
-                    )}
-                    {statusUpdateMessage && <p className={styles.statusMessage}>{statusUpdateMessage}</p>}
+            <header className={styles.header}>
+                 <img src={course.cover_image || 'https://placehold.co/1200x400/34495e/ffffff?text=Zporta+Academy'} alt={course.title} className={styles.coverImage} />
+                 <div className={styles.headerOverlay}>
+                     <div className={styles.headerContent}>
+                         <span className={styles.subjectPill}>{course.subject_name}</span>
+                         <h1 className={styles.courseTitle}>{course.title}</h1>
+                     </div>
                  </div>
-            </div>
+             </header>
 
-            <div className={`${styles.adminSection} ${styles.dangerZone}`}>
-                <h2 className={styles.sectionTitle}>Danger Zone</h2>
-                <div className={styles.dangerContent}>
-                    <p>This action is permanent and cannot be undone.</p>
-                    <button onClick={handleDeleteCourse} className={`${styles.btn} ${styles.btnDanger}`} disabled={isLocked}><FaTrash /> Delete Course</button>
+            <div className={styles.mainContentLayout}>
+                <div className={styles.leftColumn}>
+                    <section className={styles.contentSection}>
+                        <h2>About this Course</h2>
+                        <div ref={descriptionViewerRef} className={styles.descriptionViewer}>
+                            {/* Content is rendered here by useEffect */}
+                        </div>
+                    </section>
+                    
+                    {lessons.length > 0 && (
+                        <section className={styles.contentSection}>
+                            <h2><FaBook /> Lessons in this Course ({lessons.length})</h2>
+                            <ul className={styles.contentList}>
+                                {lessons.map(l => <li key={l.id}><a href={`/lessons/${l.permalink}`}>{l.title}</a></li>)}
+                            </ul>
+                        </section>
+                    )}
+
+                     {quizzes.length > 0 && (
+                        <section className={styles.contentSection}>
+                            <h2><FaQuestion /> Quizzes in this Course ({quizzes.length})</h2>
+                            <ul className={styles.contentList}>
+                                {quizzes.map(q => <li key={q.id}>{q.title}</li>)}
+                            </ul>
+                        </section>
+                    )}
                 </div>
+                <aside className={styles.rightColumn}>
+                    <div className={styles.sidebarCard}>
+                        <h3>{course.course_type === 'premium' ? `$${course.price}` : 'Free'}</h3>
+                        {enrolled ? (
+                             <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
+                        ) : (
+                             <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
+                                {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
+                            </button>
+                        )}
+                        <div className={styles.courseMeta}>
+                            <span>Created by: <strong>{course.created_by}</strong></span>
+                            <span>Subject: <strong>{course.subject_name}</strong></span>
+                            <span>Last updated: <strong>{new Date(course.updated_at).toLocaleDateString()}</strong></span>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     );
-  }
-
-  // --- RENDER Read-Only Student View ---
-  return (
-    <div className={styles.courseDetailContainer}>
-        <header className={styles.header}>
-            {course.cover_image ? (
-                <img src={course.cover_image} alt={course.title} className={styles.coverImage} onError={(e) => e.target.style.display='none'}/>
-            ) : (
-                <div className={`${styles.coverImage} ${styles.coverImagePlaceholder}`}>
-                    <FaBook size={50} />
-                </div>
-            )}
-             <div className={styles.headerOverlay}>
-                <div className={styles.headerContent}>
-                    <span className={styles.subjectPill}>{course.subject_name}</span>
-                    <h1 className={styles.courseTitle}>{course.title}</h1>
-                    <div className={styles.tagContainer}>
-                        {course.tags?.map(tag => <span key={tag} className={styles.tag}>#{tag}</span>)}
-                    </div>
-                </div>
-             </div>
-        </header>
-
-        <div className={styles.mainContent}>
-            <div className={styles.leftColumn}>
-                <section className={styles.contentSection}>
-                    <h2 className={styles.sectionTitle}>About this course</h2>
-                    <div
-                      className={styles.description}
-                      ref={courseDescriptionDisplayRef}
-                      dangerouslySetInnerHTML={{ __html: sanitizedDesc }}
-                    />
-                </section>
-
-                {lessons.length > 0 && (
-                    <section className={styles.contentSection}>
-                        <h2 className={styles.sectionTitle}><FaBook /> Lessons</h2>
-                        <ul className={styles.contentList}>
-                            {lessons.map(lesson => (
-                                <li key={lesson.id}>
-                                    <span className={styles.lessonRow}>
-                                      <a href={`/lessons/${lesson.permalink}`} className={styles.lessonLink}>{lesson.title}</a>
-                                      <span className={`${styles.pill} ${lesson.is_premium ? styles.pillPremium : styles.pillFree}`}>
-                                        {lesson.is_premium ? ' - Premium' : ' - Free'}
-                                      </span>
-                                    </span>
-                                    <button
-                                      onClick={() => router.push(`/lessons/${lesson.permalink}`)}
-                                      className={`${styles.btn} ${styles.btnIcon} ${styles.btnMetal} ${lesson.is_premium ? styles.btnGold : styles.btnSilver} ${lesson.is_premium ? styles.withBadge : ''}`}
-                                      aria-label={lesson.is_premium ? 'View lesson (Premium – enroll to access)' : 'View lesson (Free)'}
-                                      title={lesson.is_premium ? 'Premium lesson – enroll to access' : 'Free lesson'}
-                                    >
-                                      <FaBookOpen /> Study
-                                      {lesson.is_premium && <FaCrown className={styles.iconBadge} aria-hidden="true" />}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
-
-                 {quizzes.length > 0 && (
-                    <section className={styles.contentSection}>
-                        <h2 className={styles.sectionTitle}><FaQuestion /> Quizzes</h2>
-                        <ul className={styles.contentList}>
-                            {quizzes.map(quiz => (
-                                <li key={quiz.id}>
-                                    <span>{quiz.title}</span>
-                                    {(enrolled || isCreator) && (
-                                        <button onClick={() => router.push(`/quizzes/take/${quiz.id}`)} className={`${styles.btn} ${styles.btnIcon}`}>
-                                            <FaQuestion /> Take Quiz
-                                        </button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
-            </div>
-
-            <aside className={styles.rightColumn}>
-                <div className={styles.sidebarCard}>
-                    {isCreator ? (
-                         <button onClick={handleEditClick} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`}>
-                            <FaEdit /> Manage Course
-                        </button>
-                    ) : (
-                        <>
-                            {enrolled ? (
-                                <button className={`${styles.btn} ${styles.btnSuccess} ${styles.btnBlock}`} disabled>
-                                    <FaCheckCircle /> Enrolled
-                                </button>
-                            ) : (
-                                <button onClick={handleEnroll} disabled={course.is_draft} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`}>
-                                    {course.course_type === 'premium' ? `Enroll for $${course.price}` : 'Enroll for Free'}
-                                </button>
-                            )}
-                            {enrollMessage && <p className={styles.enrollMessage}>{enrollMessage}</p>}
-                            {course.is_draft && <p className={styles.enrollMessage}>Enrollment is currently closed.</p>}
-                        </>
-                    )}
-                </div>
-            </aside>
-        </div>
-    </div>
-  );
+    // #endregion
 };
 
 export default CourseDetail;
+
