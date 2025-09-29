@@ -157,12 +157,12 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         if (!selectedCourse) return;
         const courseObj = courses.find(c => String(c.id) === String(selectedCourse));
         if (!courseObj) return;
-        // UI mirror of backend rules:
+        // UI rule:
         // - premium lesson -> must attach to premium course
-        // - free lesson    -> cannot attach to premium course
+        // - free lesson    -> can attach to ANY course
         const allowed = isPremium
             ? courseObj.course_type === 'premium'
-            : courseObj.course_type !== 'premium';
+            : true;
         if (!allowed) setSelectedCourse('');
     }, [isPremium, selectedCourse, courses]);
 
@@ -170,7 +170,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         if (!Array.isArray(courses)) return [];
         return isPremium
             ? courses.filter(c => c.course_type === 'premium')
-            : courses.filter(c => c.course_type !== 'premium'); // hide premium courses for free lessons
+            : courses; // free lessons: show all courses
     }, [courses, isPremium]);
 
     const handleQuizToggle = (quizId) => {

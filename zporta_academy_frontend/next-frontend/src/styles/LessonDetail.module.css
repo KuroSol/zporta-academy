@@ -79,6 +79,37 @@
   border-bottom-style: solid;
   text-decoration: none; /* Keep underline off on hover */
 }
+
+/* Free preview CTA for free lessons attached to a course */
+.freePreviewBanner{
+  margin-top:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 14px;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  border:1px dashed var(--zporta-info-border, #bde0fe);
+  padding:10px 12px;
+  border-radius:8px;
+}
+.previewFlag{
+  background:#22c55e;          /* green flag */
+  color:#fff;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  box-shadow:0 1px 0 rgba(0,0,0,.08) inset;
+}
+.previewText{
+  color:#0a58ca;
+  font-size:14px;
+}
+.previewCta{
+  padding:8px 14px;
+  font-size:13px;
+}
 .freeLessonInfo {
   background: var(--zporta-secondary-bg, #e9f7ef); /* Light green background */
   border-color: var(--zporta-secondary-border, #a7d7b9);

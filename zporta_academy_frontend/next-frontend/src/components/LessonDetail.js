@@ -793,6 +793,10 @@ const LessonDetail = () => {
                 name="description"
                 content={seo?.description || stripHTML(lesson.content || '').substring(0, 160)}
             />
+            {/* Hide premium lessons from search engines (even if user can see). Also hide gated pages. */}
+            {(seo?.robots || lesson.is_premium || gateInfo) && (
+                <meta name="robots" content={seo?.robots || "noindex,nofollow"} />
+            )}
             {/* accent + per-lesson CSS */}
             <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
             {(() => {
@@ -1011,6 +1015,20 @@ const LessonDetail = () => {
                                     {lesson.course_data.title}
                                 </Link>
                             </p>
+                            {!lesson.is_premium && (
+                              <div className={styles.freePreviewBanner}>
+                                <span className={styles.previewFlag}>Free preview</span>
+                                <span className={styles.previewText}>
+                                  Enjoy this free lesson. Enroll to unlock all premium lessons and track progress.
+                                </span>
+                                <Link
+                                  href={`/courses/${lesson.course_data.permalink}`}
+                                  className={`${styles.btn} ${styles.btnPrimary} ${styles.previewCta}`}
+                                >
+                                  Enroll to continue
+                                </Link>
+                              </div>
+                            )}
                         </div>
                     ) : (
                         <div className={styles.freeLessonInfo}>
@@ -1142,8 +1160,9 @@ const LessonDetail = () => {
                     </div>
 
 
-                    {/* Completion Button / Indicator */}
-                    {/* Show button only if enrolled and not yet completed */}
+                    {/* Completion Button / Indicator
+                        - Free lessons: visible to everyone, but completion requires enrollment (already enforced by isEnrolled).
+                    */}
                     {isEnrolled && !isCompleted && (
                         <button className={`${styles.btn} ${styles.btnPrimary} ${styles.completeBtn}`} onClick={handleCompleteLesson}>
                             Mark Lesson as Complete

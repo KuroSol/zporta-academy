@@ -185,11 +185,15 @@ class DynamicLessonView(APIView):
             "og_description": lesson.og_description,
             "og_image": lesson.og_image or "/static/default_lesson_image.jpg",
         }
-        if lesson.course and lesson.course.course_type == "premium":
+         # Premium visibility is decided by the LESSON, not the course.
+        if lesson.is_premium:
             attached_course = {
-                "title": lesson.course.title,
-                "permalink": lesson.course.permalink,
+                "title": lesson.course.title if lesson.course else None,
+                "permalink": lesson.course.permalink if lesson.course else None,
+
             }
+            # Premium lessons should not be indexed (regardless of enrollment)
+            seo["robots"] = "noindex,nofollow"
             # Allow creator and staff to always view/manage
             if request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff):
                 serializer = LessonSerializer(lesson, context={"request": request})
@@ -204,13 +208,26 @@ class DynamicLessonView(APIView):
                     "lesson": None,
                     "seo": seo,
                     "access": "gated",
-                    "message": f"This lesson belongs to a premium course: {lesson.course.title}. Log in and enroll to access.",
+                    "message": f"Premium lesson\nThis lesson belongs to a premium course: {lesson.course.title if lesson.course else ''}. Log in and enroll to access.",
                     "course": attached_course,
                 }, status=status.HTTP_200_OK)
                 patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
                 resp["Vary"] = "Accept, Cookie, Authorization, Origin"
                 return resp
-            course_ct = ContentType.objects.get_for_model(lesson.course)
+
+            # If logged in: require enrollment (only when lesson is attached to a course)
+            if not lesson.course:
+                # No course to enroll into; keep premium lessons private
+                resp = Response({
+                    "lesson": None, "seo": seo, "access": "gated",
+                    "message": "This premium lesson is not publicly accessible.",
+                    "course": attached_course,
+                }, status=status.HTTP_200_OK)
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
+
+            course_ct = ContentType.objects.get_for_model(Course)
             enrollment_exists = Enrollment.objects.filter(
                 user=request.user,
                 object_id=lesson.course.id,
@@ -222,12 +239,13 @@ class DynamicLessonView(APIView):
                     "lesson": None,
                     "seo": seo,
                     "access": "gated",
-                    "message": f"This lesson belongs to a premium course: {lesson.course.title}. Enroll to access.",
+                    "message": f"Premium lesson\nThis lesson belongs to a premium course: {lesson.course.title}. Enroll to access.",
                     "course": attached_course,
                 }, status=status.HTTP_200_OK)
                 patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
                 resp["Vary"] = "Accept, Cookie, Authorization, Origin"
                 return resp
+
         serializer = LessonSerializer(lesson, context={"request": request})
         return Response({
             "lesson": serializer.data,
@@ -402,13 +420,7 @@ class AttachCourseToLessonView(APIView):
                 {"error": "Premium lessons can only be attached to a premium course."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        # Optionally, prevent attaching free lessons to premium courses
-        if not lesson.is_premium and getattr(course, "course_type", None) == "premium":
-            return Response(
-                {"error": "Free lessons cannot be attached to a premium course."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
+        # Free lessons can attach to any course (free or premium).
         lesson.course = course
         # If attaching to a draft course and lesson is published, revert to draft
         if getattr(course, "is_draft", False) and lesson.status == Lesson.PUBLISHED:

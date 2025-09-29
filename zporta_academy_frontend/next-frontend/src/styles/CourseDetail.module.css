@@ -269,10 +269,8 @@
     background-color: var(--warning-hover);
 }
 .btnIcon {
-    background-color: var(--primary-color);
-    color: var(--white-color);
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
 }
 .btnBlock {
     width: 100%;
@@ -446,7 +444,74 @@
     gap: 1rem;
 }
 
+.withBadge{ position:relative; }
+.iconBadge{
+  position:absolute;
+  top:-12px;                       /* pull outward */
+  right:-12px;
+  font-size:24px;                  /* bigger */
+  color:#ffd54a;                   /* brighter gold */
+  filter:
+    drop-shadow(0 0 2px rgba(0,0,0,.6))
+    drop-shadow(0 2px 2px rgba(0,0,0,.35));  /* outline + lift */
+  pointer-events:none;
+  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.35), rgba(255,215,0,.12) 60%, transparent 61%);
+  border-radius:50%;               /* subtle halo */
+  z-index:2;  
+}
 
+/* --- Metallic buttons (no images) --- */
+.btnMetal{
+  position:relative;
+  overflow:hidden;           /* clip sheen */
+  color:#111;
+  border:1px solid rgba(0,0,0,.2);
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 6px rgba(0,0,0,.1);
+  text-shadow: 0 1px 0 rgba(255,255,255,.25);
+}
+.btnMetal.withBadge{ overflow:visible; }  /* allow crown to protrude */
+.btnMetal::before{          /* animated sheen on hover */
+  content:"";
+  position:absolute;
+  top:0; left:-150%;
+  width:150%; height:100%;
+  background: linear-gradient(120deg, rgba(255,255,255,.0) 0%, rgba(255,255,255,.35) 50%, rgba(255,255,255,.0) 100%);
+  transform: skewX(-20deg);
+  transition: left .45s ease;
+  pointer-events:none;
+}
+.btnMetal:hover::before{ left:110%; }
+
+/* Silver for free */
+.btnSilver{
+  background:
+    linear-gradient(#ffffff, #e9ecef) padding-box,
+    linear-gradient(180deg, rgba(0,0,0,.15), rgba(255,255,255,.15)) border-box;
+  border-color:#c8cfd8;
+  color:#222;
+}
+.btnSilver:hover{ filter: brightness(1.03) contrast(1.02); }
+.btnSilver:active{ filter: brightness(.98); }
+
+/* Gold for premium */
+.btnGold{
+  background:
+    linear-gradient(#ffe08a, #f4c542) padding-box,
+    linear-gradient(180deg, rgba(0,0,0,.18), rgba(255,255,255,.12)) border-box;
+  border-color:#d4a72c;
+  color:#1a1200;
+}
+.btnGold:hover{ filter: brightness(1.04) saturate(1.02); }
+.btnGold:active{ filter: brightness(.97); }
+
+/* Optional bronze palette if you prefer */
+.btnBronze{
+  background:
+    linear-gradient(#e6c3a1, #b8895a) padding-box,
+    linear-gradient(180deg, rgba(0,0,0,.18), rgba(255,255,255,.12)) border-box;
+  border-color:#a97442;
+  color:#20150a;
+}
 /* --- Responsive Design --- */
 
 @media (min-width: 768px) {

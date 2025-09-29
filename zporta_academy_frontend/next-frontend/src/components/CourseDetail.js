@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useLayoutEffect, useMemo } from "react";
 import { useRouter } from "next/router";
-import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle, FaCrown } from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
 import CreateSubjectSelect from "./admin/CreateSubjectSelect";
 import styles from "@/styles/CourseDetail.module.css"; // This should point to the new responsive CSS
@@ -737,7 +737,12 @@ const CourseDetail = ({ initialCourse=null, initialLessons=[], initialSeo=null }
                             <ul className={styles.attachedList}>
                                 {lessons.map(l => (
                                     <li key={l.id}>
-                                        <span>{l.title}</span>
+                                        <span className={styles.lessonRow}>
+                                          <span className={styles.lessonTitle}>{l.title}</span>
+                                          <span className={`${styles.pill} ${l.is_premium ? styles.pillPremium : styles.pillFree}`}>
+                                            {l.is_premium ? 'Premium' : 'Free'}
+                                          </span>
+                                        </span>
                                         <button onClick={() => handleDetachLesson(l.id)} className={styles.detachBtn} title="Detach Lesson" disabled={isLocked}><FaTimes/></button>
                                     </li>
                                 ))}
@@ -847,12 +852,21 @@ const CourseDetail = ({ initialCourse=null, initialLessons=[], initialSeo=null }
                         <ul className={styles.contentList}>
                             {lessons.map(lesson => (
                                 <li key={lesson.id}>
-                                    <span>{lesson.title}</span>
-                                    {(enrolled || isCreator) && (
-                                        <button onClick={() => router.push(`/lessons/${lesson.permalink}`)} className={`${styles.btn} ${styles.btnIcon}`}>
-                                            <FaBookOpen /> Study
-                                        </button>
-                                    )}
+                                    <span className={styles.lessonRow}>
+                                      <a href={`/lessons/${lesson.permalink}`} className={styles.lessonLink}>{lesson.title}</a>
+                                      <span className={`${styles.pill} ${lesson.is_premium ? styles.pillPremium : styles.pillFree}`}>
+                                        {lesson.is_premium ? ' - Premium' : ' - Free'}
+                                      </span>
+                                    </span>
+                                    <button
+                                      onClick={() => router.push(`/lessons/${lesson.permalink}`)}
+                                      className={`${styles.btn} ${styles.btnIcon} ${styles.btnMetal} ${lesson.is_premium ? styles.btnGold : styles.btnSilver} ${lesson.is_premium ? styles.withBadge : ''}`}
+                                      aria-label={lesson.is_premium ? 'View lesson (Premium – enroll to access)' : 'View lesson (Free)'}
+                                      title={lesson.is_premium ? 'Premium lesson – enroll to access' : 'Free lesson'}
+                                    >
+                                      <FaBookOpen /> Study
+                                      {lesson.is_premium && <FaCrown className={styles.iconBadge} aria-hidden="true" />}
+                                    </button>
                                 </li>
                             ))}
                         </ul>

@@ -66,7 +66,7 @@ export default function SidebarMenu({ isExpanded, setIsExpanded }) {
     <>
       <div
         id="zporta-sidebar"
-        className={`${styles.sidebarMenu} ${isExpanded ? styles.expanded : styles.collapsed}`}
+        className={`sidebarMenu ${styles.sidebarMenu} ${isExpanded ? `expanded ${styles.expanded}` : `collapsed ${styles.collapsed}`}`}
       >
         <div className={styles.sidebarHeader}>
           {isExpanded
