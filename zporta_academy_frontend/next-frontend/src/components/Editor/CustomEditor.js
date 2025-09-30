@@ -95,6 +95,8 @@ const CustomEditor = forwardRef(({
         if (isMounted && !viewSource && editorRef.current) {
             if (editorRef.current.innerHTML !== content) {
                 editorRef.current.innerHTML = content;
+                // Add empty paragraphs at the start/end if content starts/ends with a media block
+                ensureCursorSpace(editorRef.current);
                 // Re-attach listeners to dynamically added content
                 addClickListenersToMedia(editorRef.current);
                 enableResizingForExistingImages(editorRef.current);
@@ -153,15 +155,19 @@ const CustomEditor = forwardRef(({
              element.addEventListener('click', handleElementClick);
         }
 
-        // Create a new range to place the cursor *after* the inserted element
-        const newRange = document.createRange();
-        newRange.setStartAfter(element);
-        newRange.collapse(true);
+        // Create a new paragraph after the inserted element to ensure the user can keep typing.
+        const newParagraph = document.createElement('p');
+        newParagraph.innerHTML = '<br>'; // Use a <br> to ensure it has height and is a valid new line.
+        
+        // Insert the new paragraph immediately after the media element.
+        // Using parentNode ensures this works even if the element was inserted into another node.
+        if (element.parentNode) {
+            element.parentNode.insertBefore(newParagraph, element.nextSibling);
+        }
 
-        // Insert a non-breaking space to ensure a new paragraph line can be started
-        const space = document.createTextNode('\u00A0');
-        newRange.insertNode(space);
-        newRange.setStartAfter(space);
+        // Move the cursor into the new paragraph
+        const newRange = document.createRange();
+        newRange.setStart(newParagraph, 0);
         newRange.collapse(true);
 
         if (selection) {
@@ -243,6 +249,40 @@ const CustomEditor = forwardRef(({
             }
         }
     }, [updateActiveFormats, handleLinkPopover]);
+    // ADDED: Handles key presses for special cases, like creating a new line after a non-editable block.
+    const handleKeyDown = useCallback((e) => {
+        if (e.key === 'Enter') {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            // Check if the cursor is at the very beginning of the editor or collapsed
+            if (!range.collapsed || range.startOffset === 0) return;
+
+            const precedingNode = range.startContainer.childNodes[range.startOffset - 1];
+
+            // Check if the element right before the cursor is a non-editable media block
+            if (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE && precedingNode.matches('[data-editable-block]')) {
+                e.preventDefault(); // Stop the default Enter behavior
+
+                // Create a new empty paragraph to serve as the new line
+                const newParagraph = document.createElement('p');
+                newParagraph.innerHTML = '<br>'; // A line break is needed to make the paragraph visible
+
+                // Insert the new paragraph immediately after the media block
+                precedingNode.parentNode.insertBefore(newParagraph, precedingNode.nextSibling);
+
+                // Move the cursor into the new paragraph
+                const newRange = document.createRange();
+                newRange.setStart(newParagraph, 0);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+
+                updateStateFromEditor();
+            }
+        }
+    }, [updateStateFromEditor]); // Dependency ensures the callback has the latest update function
 
     // --- ELEMENT MANIPULATION --- //
     const clearSelection = () => {
@@ -327,7 +367,7 @@ const CustomEditor = forwardRef(({
         caption.setAttribute('data-placeholder', 'Add a caption...');
 
         wrapper.append(img, resizeHandle, caption);
-        enableImageResizing(wrapper, img, resizeHandle);
+        enableMediaResizing(wrapper, img, resizeHandle);
         return wrapper;
     };
 
@@ -446,11 +486,14 @@ const CustomEditor = forwardRef(({
                 setUploadError(response.data.error || `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} upload failed.`);
             }
         } catch (err) {
-            setUploadError(err.response?.data?.error || `A server error occurred during ${mediaType} upload.`);
+            // ADDED: Detailed logging to help debug the actual error from your API
+            console.error("--- ZPORTA EDITOR UPLOAD ERROR ---", err);
+            // The error message now tries to be more specific if possible
+            setUploadError(err.response?.data?.error || err.message || `A server error occurred during ${mediaType} upload.`);
         }
     };
 
-    const handleWordUpload = async (e) => {
+const handleWordUpload = async (e) => {
         const file = e.target.files[0];
         if (!file || !window.mammoth) {
             setUploadError(!file ? "No file selected." : "Word import library not loaded.");
@@ -510,6 +553,31 @@ const CustomEditor = forwardRef(({
         });
     };
     
+    // Ensures there's always a line before/after a media block if it's at the edge of the content.
+    const ensureCursorSpace = (container) => {
+        if (!container) return;
+    
+        // Check if the FIRST element is a media block
+        const firstChild = container.firstChild;
+        if (firstChild && firstChild.nodeType === Node.ELEMENT_NODE && firstChild.matches('[data-editable-block]')) {
+            const newParagraph = document.createElement('p');
+            newParagraph.innerHTML = '<br>';
+            container.insertBefore(newParagraph, firstChild);
+        }
+    
+        // Check if the LAST element is a media block
+        const lastChild = container.lastChild;
+        if (lastChild && lastChild.nodeType === Node.ELEMENT_NODE && lastChild.matches('[data-editable-block]')) {
+            // Also check if the element before it is not already an empty paragraph
+            if (!lastChild.previousSibling || lastChild.previousSibling.textContent.trim() !== '') {
+                const newParagraph = document.createElement('p');
+                newParagraph.innerHTML = '<br>';
+                container.appendChild(newParagraph);
+            }
+        }
+    };
+
+
     // Logic for resizing images via a drag handle
     const enableMediaResizing = (wrapper, mediaElement, resizeHandle) => {
         let isResizing, startX, startWidth;
@@ -723,7 +791,8 @@ const CustomEditor = forwardRef(({
                 {viewSource ? (
                     <textarea value={content} onChange={(e) => {setContent(e.target.value); updateWordCount(e.target.value)}} className="sourceView" placeholder={placeholder} disabled={!editable} />
                 ) : (
-                    <div ref={editorRef} contentEditable={editable} className="editor" data-placeholder={placeholder} onClick={handleElementClick} onInput={updateStateFromEditor} />
+                    <div ref={editorRef} contentEditable={editable} className="editor" data-placeholder={placeholder} onClick={handleElementClick} onInput={updateStateFromEditor} onKeyDown={handleKeyDown} />
+                
                 )}
             </div>
             
