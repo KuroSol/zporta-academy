@@ -8,23 +8,8 @@ import React, {
     useMemo
 } from 'react';
 
-// --- MOCK API CLIENT & SCRIPT INJECTION LOGIC --- //
-// This mock simulates your API client for file uploads.
-// Replace this with your actual apiClient import (e.g., `import apiClient from '@/api';`)
-const apiClient = {
-    post: async (url, formData) => {
-        console.log(`[MOCK API] Uploading ${formData.get('file')?.name} to ${url}...`);
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-        const file = formData.get('file');
-        if (!file) {
-            return Promise.reject({ response: { data: { error: 'No file was provided in the upload.' } } });
-        }
-        // Create a temporary local URL for the uploaded file for demonstration
-        const objectURL = URL.createObjectURL(file);
-        console.log(`[MOCK API] Generated temporary URL: ${objectURL}`);
-        return { data: { url: objectURL } };
-    }
-};
+// Use your real API client
+import apiClient from '@/api';
 
 /**
  * A professional-grade, feature-rich, and self-contained WYSIWYG editor for React.
@@ -471,7 +456,7 @@ const CustomEditor = forwardRef(({
         try {
             const response = await apiClient.post('/user_media/upload/', formData);
             if (response.data.url) {
-                const url = response.data.url;
+                const url = (response.data.url || '').replace('http://', 'https://');
                 if (currentTargetElement) {
                     // Replacing existing media
                     const mediaTag = currentTargetElement.querySelector(mediaType === 'image' ? 'img' : 'audio');
@@ -493,21 +478,34 @@ const CustomEditor = forwardRef(({
         }
     };
 
-const handleWordUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file || !window.mammoth) {
-            setUploadError(!file ? "No file selected." : "Word import library not loaded.");
-            return;
-        }
-        if (e?.target) e.target.value = null;
-        setUploadError('');
+    // Insert from URL helpers (parity with old editor)
+    const insertImageFromUrl = (url, alt = 'User content') => {
+        if (!url) return;
+        const safe = url.replace('http://', 'https://');
+        insertElementAndFocus(createResizableImage(safe, alt));
+    };
+    const insertAudioFromUrl = (url) => {
+        if (!url) return;
+        const safe = url.replace('http://', 'https://');
+        insertElementAndFocus(createEditableAudio(safe));
+    };
 
-        if (!file.type.includes('wordprocessingml')) {
-            setUploadError('Please upload a valid .docx file.');
-            return;
-        }
 
-        const reader = new FileReader();
+    const handleWordUpload = async (e) => {
+            const file = e.target.files[0];
+            if (!file || !window.mammoth) {
+                setUploadError(!file ? "No file selected." : "Word import library not loaded.");
+                return;
+            }
+            if (e?.target) e.target.value = null;
+            setUploadError('');
+
+            if (!file.type.includes('wordprocessingml')) {
+                setUploadError('Please upload a valid .docx file.');
+                return;
+            }
+
+    const reader = new FileReader();
         reader.onload = async (event) => {
             try {
                 const { value } = await window.mammoth.convertToHtml({ arrayBuffer: event.target.result });
@@ -620,7 +618,10 @@ const handleWordUpload = async (e) => {
                 handleCommand('createLink', data.url);
                 break;
             case 'image':
-                insertElementAndFocus(createResizableImage(data.url, data.alt));
+                insertImageFromUrl(data.url, data.alt);
+                break;
+            case 'audio':
+                insertAudioFromUrl(data.url);
                 break;
             case 'image-edit':
                 if (modal.data?.element) {
@@ -740,8 +741,22 @@ const handleWordUpload = async (e) => {
 
                 {/* --- Insertion Group --- */}
                 <div className="toolbarGroup">
-                    <button onClick={() => imageUploadInputRef.current?.click()} title="Upload Image"><Icon path={ICONS.image}/></button>
-                    <button onClick={() => audioUploadInputRef.current?.click()} title="Upload Audio"><Icon path={ICONS.audio} /></button>
+                        {/* Image: upload or URL */}
+                        <div className="dropdown">
+                            <button title="Image"><Icon path={ICONS.image}/></button>
+                            <div className="dropdownContent">
+                                <a onClick={() => imageUploadInputRef.current?.click()}>Upload from device</a>
+                                <a onClick={() => setModal({ isOpen: true, type: 'image' })}>Insert from URL</a>
+                            </div>
+                        </div>
+                        {/* Audio: upload or URL */}
+                        <div className="dropdown">
+                            <button title="Audio"><Icon path={ICONS.audio} /></button>
+                            <div className="dropdownContent">
+                                <a onClick={() => audioUploadInputRef.current?.click()}>Upload from device</a>
+                                <a onClick={() => setModal({ isOpen: true, type: 'audio' })}>Insert from URL</a>
+                            </div>
+                        </div>
                     <button onClick={() => setModal({isOpen: true, type: 'table'})} title="Insert Table"><Icon path={ICONS.table} /></button>
                     <button onClick={() => setModal({isOpen: true, type: 'layout'})} title="Insert Columns"><Icon path={ICONS.columns} /></button>
                     <button onClick={() => setModal({isOpen: true, type: 'accordion'})} title="Insert Accordion"><Icon path={ICONS.accordion} /></button>
@@ -869,6 +884,7 @@ const Modal = ({ onSubmit, onClose, type, data }) => {
         switch (type) {
             case 'link': return <ModalLinkForm onSubmit={onSubmit} />;
             case 'image': return <ModalImageForm onSubmit={onSubmit} />;
+            case 'audio': return <ModalAudioForm onSubmit={onSubmit} />;
             case 'image-edit': return <ModalImageEditForm onSubmit={onSubmit} initialData={data} />;
             case 'table': return <ModalTableForm onSubmit={onSubmit} />;
             case 'layout': return <ModalLayoutForm onSubmit={onSubmit} />;
@@ -887,7 +903,21 @@ const Modal = ({ onSubmit, onClose, type, data }) => {
 };
 // Individual form components for each modal type
 const ModalLinkForm = ({ onSubmit }) => (<form onSubmit={e => { e.preventDefault(); onSubmit({ url: e.target.url.value }); }}><h3 className="modalTitle">Insert Hyperlink</h3><input name="url" type="url" placeholder="https://example.com" required autoFocus className="modalInput" /><button type="submit" className="modalButton">Insert</button></form>);
-const ModalImageForm = ({ onSubmit }) => (<form onSubmit={e => { e.preventDefault(); onSubmit({ url: e.target.url.value, alt: e.target.alt.value }); }}><h3 className="modalTitle">Insert Image from URL</h3><input name="url" type="url" placeholder="https://example.com/image.jpg" required autoFocus className="modalInput" /><input name="alt" type="text" placeholder="Alt text (for accessibility)" className="modalInput" /><button type="submit" className="modalButton">Insert Image</button></form>);
+const ModalImageForm = ({ onSubmit }) => (
+  <form onSubmit={e => { e.preventDefault(); onSubmit({ url: e.target.url.value, alt: e.target.alt.value }); }}>
+    <h3 className="modalTitle">Insert Image from URL</h3>
+    <input name="url" type="url" placeholder="https://example.com/image.jpg" required autoFocus className="modalInput" />
+    <input name="alt" type="text" placeholder="Alt text (for accessibility)" className="modalInput" />
+    <button type="submit" className="modalButton">Insert Image</button>
+  </form>
+);
+const ModalAudioForm = ({ onSubmit }) => (
+  <form onSubmit={e => { e.preventDefault(); onSubmit({ url: e.target.url.value }); }}>
+    <h3 className="modalTitle">Insert Audio from URL</h3>
+    <input name="url" type="url" placeholder="https://example.com/audio.mp3" required autoFocus className="modalInput" />
+    <button type="submit" className="modalButton">Insert Audio</button>
+  </form>
+);
 const ModalImageEditForm = ({ onSubmit, initialData }) => (<form onSubmit={e => { e.preventDefault(); onSubmit({ url: e.target.url.value, alt: e.target.alt.value, caption: e.target.caption.value }); }}><h3 className="modalTitle">Edit Image Details</h3><label>Image URL</label><input name="url" type="url" defaultValue={initialData?.url} required autoFocus className="modalInput" /><label>Alt Text</label><input name="alt" type="text" defaultValue={initialData?.alt} placeholder="Alt text (for accessibility)" className="modalInput" /><label>Caption</label><input name="caption" type="text" defaultValue={initialData?.caption} placeholder="Optional caption text" className="modalInput" /><button type="submit" className="modalButton">Save Changes</button></form>);
 const ModalTableForm = ({ onSubmit }) => (<form onSubmit={e => { e.preventDefault(); onSubmit({ rows: e.target.rows.value, cols: e.target.cols.value }); }}><h3 className="modalTitle">Create Table</h3><div className="tableInputs"><input name="rows" type="number" defaultValue="3" min="1" max="20" required className="modalInput" /><span>&times;</span><input name="cols" type="number" defaultValue="3" min="1" max="10" required className="modalInput" /></div><button type="submit" className="modalButton">Create Table</button></form>);
 const ModalLayoutForm = ({ onSubmit }) => (<form onSubmit={e => { e.preventDefault(); onSubmit({ cols: e.target.cols.value }); }}><h3 className="modalTitle">Insert Columns</h3><label>Number of Columns</label><select name="cols" defaultValue="2" className="modalInput"><option value="2">Two</option><option value="3">Three</option></select><button type="submit" className="modalButton">Insert Layout</button></form>);
