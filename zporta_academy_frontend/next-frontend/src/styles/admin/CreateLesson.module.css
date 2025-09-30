@@ -485,6 +485,33 @@ input[type="color"].inputField {
     background-color: #ccc;
     cursor: not-allowed;
 }
+/* --- NEW: Live Preview Section --- */
+.previewHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.previewIframeContainer {
+    width: 100%;
+    height: 450px; /* Default height */
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-border-radius);
+    overflow: hidden;
+    background-color: var(--zporta-background-light);
+    resize: vertical; /* Allow user to resize the preview pane vertically */
+    min-height: 250px;
+}
+
+.previewIframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
 /* --- Responsive Design (Mirrors structure from your CreateCourse.module.css) --- */
 /* Tablet */
 @media (max-width: 900px) {

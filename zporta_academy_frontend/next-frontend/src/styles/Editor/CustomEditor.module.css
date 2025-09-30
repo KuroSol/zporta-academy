@@ -1,316 +1,588 @@
-/* --- Base and Tailwind (Optional) --- */
-/* @tailwind base; */
-/* @tailwind components; */
-/* @tailwind utilities; */
+/*
+ * Custom Editor Stylesheet - Zporta Academy Integrated & Merged
+ * ----------------------------------------------------------------
+ * This stylesheet is comprehensive, responsive, and works with CSS variables
+ * for a consistent, professional look and feel. It includes a full dark theme,
+ * advanced image alignment, and styles for merged features like accordions and layouts.
+ */
 
 
-/* --- Base Container --- */
+/* --- DARK THEME OVERRIDES --- */
+/* Apply this class to a parent container (e.g., <body>) to enable dark mode */
+:global(.dark) {
+	--zporta-border-color: #374151;
+	--zporta-border-light: #4b5563;
+	--zporta-background-light: #1f2937;
+	--zporta-background-medium: #111827;
+	--zporta-background-dark: #374151;
+	--zporta-text-color: #d1d5db;
+	--zporta-text-light: #9ca3af;
+	--zporta-primary-light: #312e81; /* A darker blue highlight for dark mode */
+	--zporta-error-bg: #451b1b;
+	--overlay-panel-bg: #1f2937;
+}
+
+
+/* --- MAIN CONTAINER & LAYOUT --- */
 .editorContainer {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--editor-border-color);
-  border-radius: 6px; /* Slightly more rounded */
-  overflow: hidden;
-  background-color: #fff;
-  height: 70vh; /* Default height */
-  min-height: 400px; /* Ensure minimum space */
-  max-height: 90vh;
-  width: 100%;
-  position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-md);
+    overflow: hidden;
+    background-color: var(--zporta-background-light);
+    color: var(--zporta-text-color);
+    height: 75vh;
+    min-height: 400px;
+    max-height: 90vh;
+    width: 100%;
+    position: relative;
+    font-family: inherit;
 }
 
-/* --- Toolbar --- */
-.toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px; /* Consistent gap */
-  padding: 6px 8px; /* Slightly tighter padding */
-  border-bottom: 1px solid var(--editor-border-color);
-  background: var(--editor-bg-light);
-  position: sticky;
-  top: 0;
-  z-index: 100; /* High z-index */
-  min-height: 45px; /* Ensure toolbar has some height */
+.loadingPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background-color: var(--zporta-background-medium);
+    color: var(--zporta-text-light);
+    border-radius: var(--zporta-radius-md);
 }
 
-/* --- General Toolbar Item Styling --- */
-.toolbar button,
-.toolbarSelect, /* Use specific class for selects */
-.toolbarColorInput, /* Use specific class for color */
-.toolbarButtonLabel {
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  cursor: pointer;
-  vertical-align: middle;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 14px;
-  white-space: nowrap;
-  color: var(--editor-text-color);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-.toolbarColorInput {
-   padding: 2px;
-   width: 32px;
-   min-width: 32px;
-   height: 32px; /* Match height */
-   border: 1px solid #ccc; /* Add explicit border */
-}
-.toolbarSelect {
-    /* Add appearance none if you want to custom style arrow later */
-    /* -webkit-appearance: none; appearance: none; */
-    padding-right: 20px; /* Space for default arrow */
+.editorArea {
+    flex-grow: 1;
+    position: relative;
+    display: flex;
+    overflow-y: auto;
+    padding: 16px 20px;
 }
 
-.toolbar button:hover,
-.toolbarSelect:hover,
-.toolbarColorInput:hover,
-.toolbarButtonLabel:hover {
-   border-color: #9ca3af; /* Darker grey border on hover */
-   background-color: #f3f4f6; /* Slight hover background */
-}
-.toolbar button:active,
-.toolbarSelect:active,
-.toolbarButtonLabel:active {
-    background-color: #e5e7eb; /* Slightly darker on active */
-}
-
-.toolbarButtonLabel {
-    /* Style label acting as button */
-}
-
-/* --- Editor Content Area (WYSIWYG and Source) --- */
 .editor {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 12px 15px; /* More padding */
-  outline: none;
-  line-height: 1.6;
-  color: var(--editor-text-color);
-  box-sizing: border-box;
-  width: 100%; /* Ensure takes full width */
+    flex-grow: 1;
+    outline: none;
+    line-height: 1.7;
+    box-sizing: border-box;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
-.wysiwygView {
-  /* Styles specific to the contentEditable div */
-  white-space: pre-wrap; /* Respect whitespace */
-  word-wrap: break-word; /* Break long words */
+/* --- TOOLBAR --- */
+.toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px;
+    border-bottom: 1px solid var(--zporta-border-color);
+    background: var(--zporta-background-medium);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    user-select: none;
 }
 
-/* CSS Placeholder */
-.wysiwygView[contenteditable][data-placeholder]:empty:before {
-  content: attr(data-placeholder);
-  color: var(--editor-placeholder-color);
-  pointer-events: none;
-  display: block;
-  position: absolute; /* Position relative to padding */
-  top: 12px; /* Match editor padding */
-  left: 15px;
-}
-.wysiwygView[contenteditable]:empty {
-    position: relative; /* Needed for absolute positioning of ::before */
+.toolbarGroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
 }
 
+.toolbarGroup:not(:last-child) {
+    border-right: 1px solid var(--zporta-border-color);
+}
+
+.rightAlignedGroup {
+    margin-left: auto;
+    border-right: none;
+}
+
+.toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    width: 34px;
+    border: none;
+    border-radius: var(--zporta-radius-sm);
+    background-color: transparent;
+    color: var(--zporta-text-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toolbar button:hover {
+    background-color: var(--zporta-background-dark);
+    color: var(--zporta-dark-blue);
+}
+:global(.dark) .toolbar button:hover {
+    color: var(--zporta-text-color);
+}
+
+
+.toolbar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toolbar button.active {
+    background-color: var(--zporta-primary-light);
+    color: var(--zporta-dark-blue);
+}
+:global(.dark) .toolbar button.active {
+    color: #fff;
+}
+
+
+.colorInputLabel {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--zporta-radius-sm);
+    cursor: pointer;
+    color: var(--zporta-text-light);
+}
+
+.colorInputLabel:hover {
+    background-color: var(--zporta-background-dark);
+}
+
+.colorInputLabel input[type="color"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* --- DROPDOWNS & POPOVERS --- */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdownContent {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: var(--zporta-background-light);
+    min-width: 200px;
+    box-shadow: var(--zporta-box-shadow);
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-md);
+    z-index: 101;
+    overflow: hidden;
+    padding: 4px;
+    transition: all 0.1s ease;
+}
+
+.dropdown:hover .dropdownContent {
+    visibility: visible;
+    opacity: 1;
+}
+
+.dropdownContent a {
+    color: var(--zporta-text-color);
+    padding: 8px 12px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dropdownContent a:hover {
+    background-color: var(--zporta-background-medium);
+}
+
+.dropdownContent h2,
+.dropdownContent h3,
+.dropdownContent h4 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: normal;
+}
+
+.linkPopover {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--zporta-dark-blue);
+    color: #fff;
+    border-radius: var(--zporta-radius-md);
+    z-index: 110;
+}
+:global(.dark) .linkPopover {
+    background: var(--zporta-background-medium);
+}
+
+.linkPopover a {
+    color: #fff;
+    text-decoration: underline;
+    font-size: 0.9em;
+}
+
+.linkPopover button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 2px;
+}
+
+/* --- EDITOR STATES & VIEWS --- */
+.editor:empty:before {
+    content: attr(data-placeholder);
+    color: var(--zporta-text-light);
+    pointer-events: none;
+    position: absolute;
+}
 
 .sourceView {
-  font-family: 'Courier New', Courier, monospace; /* Monospace font */
-  font-size: 14px;
-  background-color: var(--editor-bg-light);
-  color: #374151; /* Slightly different text color for source */
-  border: none;
-  resize: none;
+    font-family: 'SF Mono', 'Courier New', Courier, monospace;
+    font-size: 14px;
+    border: none;
+    resize: none;
+    background-color: var(--zporta-background-medium);
+    color: var(--zporta-text-color);
+    width: 100%;
+    padding: 0;
 }
 
-/* Readonly Styling */
-.isReadonly {
-  background-color: var(--editor-readonly-bg) !important;
-  cursor: default !important;
-  user-select: none; /* Prevent selecting text in readonly */
+.isReadonly .editor {
+    background-color: var(--zporta-background-medium);
 }
-.isReadonly [contenteditable="true"] { /* Target nested editables */
-    cursor: default !important;
-    user-select: none;
-    opacity: 0.7;
-    background-color: transparent; /* Prevent nested bg color */
-    border: none; /* Remove borders on nested editables in readonly */
-}
+
 .isReadonly .toolbar {
-    /* Optionally style toolbar differently */
-    /* opacity: 0.6; */
-    /* pointer-events: none; */ /* If completely disabled */
+    opacity: 0.6;
+    pointer-events: none;
 }
 
-
-/* --- Editor Actions Bar (Contextual Toolbar) --- */
-/* This appears within the main toolbar now */
-.editorElementActions {
-   display: inline-flex;
-   align-items: center;
-   gap: 5px; /* Space between action buttons */
-   /* Styles for border are applied inline in JSX */
-}
-.editorElementActions button {
-  background: #e5e7eb; /* Slightly different bg for context actions */
-  border: 1px solid #9ca3af;
-  color: #4b5563;
-  padding: 4px 8px;
-  height: 32px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  font-size: 13px; /* Slightly smaller text */
-}
-.editorElementActions button:hover {
-  background-color: var(--editor-theme-color);
-  color: white;
-  border-color: var(--editor-theme-color-darker);
-}
-
-/* --- Fullscreen Mode --- */
 .fullscreen {
-    position: fixed; top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    max-height: 100vh; min-height: 100vh;
-    z-index: 1000; border: none; border-radius: 0; margin: 0;
-}
-/* Toolbar and actions are part of flex flow in fullscreen */
-.fullscreen .toolbar { position: relative; }
-.fullscreen .editorActions { position: relative; }
-.fullscreen .editor { height: auto; flex-grow: 1; } /* Let editor fill remaining space */
-
-/* --- Inserted Content Styles --- */
-
-/* General Media */
-.editor .wysiwygView img,
-.editor .wysiwygView audio,
-.editor .wysiwygView video {
-  max-width: 100%; height: auto; display: block; margin: 0.8em 0;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    z-index: 2000;
+    border-radius: 0;
+    border: none;
 }
 
-/* Image Wrapper & Resizing */
-.image-wrapper { position: relative; display: inline-block; max-width: 100%; margin: 0.5em 0; }
-.image-wrapper img { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
-.resizeHandle { position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px; background-color: var(--editor-theme-color); cursor: nwse-resize; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 5; }
-.isResizing { opacity: 0.7; }
+/* --- CONTENT STYLES --- */
+.editor > :first-child { margin-top: 0; }
+.editor > :last-child { margin-bottom: 0; }
+.editor blockquote { border-left: 3px solid var(--zporta-border-color); margin-left: 0; padding-left: 1em; color: var(--zporta-text-light); }
+.editor hr { border: none; border-top: 1px solid var(--zporta-border-color); margin: 2em 0; }
+.editor code { background: var(--zporta-background-dark); padding: 0.2em 0.4em; font-size: 85%; border-radius: 4px; font-family: 'SF Mono', monospace; }
+.editor a { color: var(--zporta-gold); text-decoration: underline; }
 
-/* Audio Wrapper & Select Handle */
-.audioWrapper { position: relative; display: block; max-width: 100%; margin: 0.8em 0; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; }
-.audioWrapper audio { display: block; width: 100%; max-width: 450px; margin: 0 auto; }
-
-/* --- Select Handle Styling (Used by Audio & Accordion) --- */
-/* *** Ensure this class name 'selectHandle' matches JS *** */
-.selectHandle {
-  position: absolute;
-  top: -10px; /* Position slightly above */
-  right: -10px;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  padding: 3px 6px; /* Adjust padding */
-  background-color: rgba(200, 200, 200, 0.85);
-  border: 1px solid #adb5bd;
-  border-radius: 50%; /* Round handle */
-  z-index: 50; /* Ensure above content */
-  user-select: none;
-  color: #495057;
-  display: none; /* Hidden by default */
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-.selectHandle:hover { background-color: rgba(150, 150, 150, 1); color: #fff; }
-
-/* Show handle on hover or when parent is selected */
-.audioWrapper:hover .selectHandle,
-.accordion-item:hover .selectHandle,
-.audioWrapper.editor-element-selected .selectHandle,
-.accordion-item.editor-element-selected .selectHandle {
-    display: inline-block; /* Show the handle */
+.editorElementSelected {
+    outline: 2px solid var(--zporta-gold) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--zporta-gold) 25%, transparent);
 }
 
-/* Specific style when parent IS selected */
-.editor-element-selected .selectHandle {
-  background-color: var(--editor-theme-color);
-  color: white;
-  border-color: var(--editor-theme-color-darker);
+/* --- IMAGE STYLES & ALIGNMENT --- */
+.imageWrapper {
+    position: relative;
+    display: table;
+    line-height: 1;
+    margin: 1em auto;
+    max-width: 100%;
+    clear: both;
 }
 
-
-/* Layout Columns */
-.editableLayoutContainer { display: flex; flex-wrap: wrap; gap: 15px; border: 1px dashed #adb5bd; padding: 10px; margin: 1em 0; background-color: #f8f9fa; }
-.layoutColumn { flex: 1; min-width: 150px; border: 1px dotted #ced4da; padding: 10px; background-color: #fff; outline: none; }
-.editableLayoutContainer[contenteditable="false"] { user-select: none; }
-.editableLayoutContainer[contenteditable="false"] [contenteditable="true"] { user-select: text; }
-
-/* --- ACCORDION Styles (Editor View) --- */
-.accordion-item {
-  position: relative; /* For handle positioning */
-  border: 1px solid #dee2e6; border-radius: 4px; margin: 1em 0; background: #fff; overflow: hidden;
+.imageWrapper img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    user-select: none;
+    border-radius: 4px;
 }
 
+.resizeHandle {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    background-color: #fff;
+    border: 2px solid var(--zporta-gold);
+    border-radius: 50%;
+    cursor: nwse-resize;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.imageWrapper:hover .resizeHandle,
+.editorElementSelected.imageWrapper .resizeHandle {
+    opacity: 1;
+}
+
+.imageWrapper figcaption {
+    outline: none;
+    padding: 8px 4px;
+    font-size: 0.9em;
+    color: var(--zporta-text-light);
+    text-align: center;
+    min-height: 1.5em;
+}
+
+.imageWrapper figcaption:empty:before {
+    content: attr(data-placeholder);
+    color: var(--zporta-text-light);
+}
+
+.isResizing {
+    opacity: 0.7;
+}
+
+.alignCenter { margin-left: auto; margin-right: auto; }
+.alignLeft { float: left; margin-right: 1.5em; max-width: 50%; }
+.alignRight { float: right; margin-left: 1.5em; max-width: 50%; }
+.alignFull { display: block; float: none; max-width: 100%; margin-left: auto; margin-right: auto; }
+.alignFull img { width: 100%; }
+.editor p:has(+ .alignLeft), .editor p:has(+ .alignRight) { clear: both; }
+
+
+/* --- AUDIO & TABLE STYLES --- */
+.audioWrapper {
+    margin: 1em 0;
+    padding: 12px;
+    background-color: var(--zporta-background-medium);
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-md);
+}
+
+.audioWrapper audio {
+    display: block;
+    width: 100%;
+}
+
+.tableWrapper {
+    margin: 1em 0;
+    overflow-x: auto;
+}
+
+.tableWrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--zporta-border-light);
+}
+
+.tableWrapper td,
+.tableWrapper th {
+    border: 1px solid var(--zporta-border-light);
+    padding: 8px;
+    min-width: 50px;
+    position: relative;
+}
+
+.tableWrapper p {
+    margin: 0;
+}
+
+/* --- MERGED: LAYOUT / COLUMNS --- */
+.layoutContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    border: 1px dashed var(--zporta-border-light);
+    padding: 16px;
+    margin: 1em 0;
+    background-color: color-mix(in srgb, var(--zporta-background-medium) 50%, transparent);
+    border-radius: var(--zporta-radius-sm);
+}
+.layoutColumn {
+    flex: 1;
+    min-width: 150px;
+    border: 1px dotted var(--zporta-border-light);
+    padding: 10px;
+    background-color: var(--zporta-background-light);
+    outline: none;
+    border-radius: var(--zporta-radius-sm);
+}
+.layoutColumn > :first-child { margin-top: 0; }
+.layoutColumn > :last-child { margin-bottom: 0; }
+
+/* --- MERGED: ACCORDION --- */
+.accordionItem {
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-sm);
+    margin: 1em 0;
+    background-color: var(--zporta-background-light);
+}
 .accordionHeader {
-  padding: 10px 15px; font-weight: 600; cursor: pointer; user-select: none;
-  display: flex; justify-content: space-between; align-items: center;
-  background: #f1f3f5; border-bottom: 1px solid #dee2e6; min-height: 40px;
-  outline: none; position: relative; /* For ::after */
+    padding: 10px 15px;
+    font-weight: 600;
+    background-color: var(--zporta-background-medium);
+    border-bottom: 1px solid var(--zporta-border-color);
+    outline: none;
 }
-.accordionHeader:hover { background: #e9ecef; }
-
-/* Accordion +/- Indicator */
-.accordionHeader::after {
-  content: '+'; font-size: 1.4em; font-weight: bold; color: #6c757d;
-  transition: transform 0.2s ease-in-out; padding-left: 10px;
+.accordionItem:last-child .accordionHeader {
+    border-bottom: none;
 }
-.accordion-item.editorAccordionOpen .accordionHeader::after {
-  content: '−'; transform: rotate(180deg);
-}
-
-/* Accordion Content Styling (Handles multiple content blocks) */
 .accordionContent {
-  max-height: 0; overflow: hidden; padding: 0 15px; background-color: #fff; outline: none;
-  transition: max-height 0.35s ease-out, padding-top 0.35s ease-out, padding-bottom 0.35s ease-out, border-top-width 0.35s ease-out;
-  border-top: 0px solid #dee2e6; /* Start with 0 border */
+    padding: 15px;
+    outline: none;
+    border-top: 1px solid var(--zporta-border-color);
 }
-/* Remove margins on direct children paragraphs */
-.accordionContent > p:first-child { margin-top: 0; }
-.accordionContent > p:last-child { margin-bottom: 0; }
-
-/* Accordion Open State (Editor View) */
-.accordion-item.editorAccordionOpen .accordionContent {
-  max-height: 1000px; /* Allow space for content */
-  padding-top: 15px; padding-bottom: 15px;
-  border-top-width: 1px; /* Add border only when open */
+.accordionContent:first-of-type {
+    border-top: none; /* First content block doesn't need a top border */
 }
-/* Add spacing between multiple content sections when open */
-.accordion-item.editorAccordionOpen .accordionContent + .accordionContent {
-    margin-top: 10px; /* Space between adjacent content blocks */
-    border-top-width: 1px; /* Ensure separator between added sections too */
-    padding-top: 15px; /* Ensure padding for added sections */
-}
+.accordionContent > :first-child { margin-top: 0; }
+.accordionContent > :last-child { margin-bottom: 0; }
 
-
-/* --- Selection Outline --- */
-.editor-element-selected {
-  outline: 3px solid var(--editor-theme-color) !important;
-  outline-offset: 2px; /* Adjust offset */
-  box-shadow: 0 0 0 4px rgba(255, 182, 6, 0.3); /* Slightly larger glow */
+/* --- MODAL --- */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-backdrop);
+    -webkit-backdrop-filter: blur(var(--overlay-blur));
+    backdrop-filter: blur(var(--overlay-blur));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2100;
 }
 
+.modalContent {
+    background: var(--overlay-panel-bg);
+    padding: 24px;
+    border-radius: var(--overlay-panel-radius);
+    box-shadow: var(--zporta-box-shadow);
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    color: var(--zporta-text-color);
+}
+:global(.dark) .modalContent {
+    color: inherit;
+}
 
-/* --- Misc --- */
+.modalClose {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--zporta-text-light);
+    padding: 4px;
+    line-height: 1;
+}
+
+.modalTitle {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 1.2em;
+    color: var(--zporta-text-color);
+}
+:global(.dark) .modalTitle {
+    color: #fff;
+}
+
+
+.modalContent label {
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.modalInput {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--zporta-border-color);
+    border-radius: var(--zporta-radius-sm);
+    font-size: 1em;
+    margin-bottom: 16px;
+    background-color: var(--zporta-background-light);
+    color: var(--zporta-text-color);
+}
+:global(.dark) .modalInput {
+    background-color: var(--zporta-background-dark);
+    border-color: var(--zporta-border-light);
+}
+
+.modalButton {
+    width: 100%;
+    padding: 12px;
+    background: var(--zporta-gold);
+    color: var(--zporta-dark-blue);
+    border: none;
+    border-radius: var(--zporta-radius-sm);
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tableInputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- STATUS BAR & MISC --- */
+.statusBar {
+    padding: 6px 12px;
+    font-size: 0.8em;
+    color: var(--zporta-text-light);
+    border-top: 1px solid var(--zporta-border-color);
+    background: var(--zporta-background-medium);
+    user-select: none;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 24px;
+}
+
 .editorUploadError {
-    color: var(--editor-error-text); font-size: 0.9em; padding: 8px 12px; margin: 8px 12px;
-    border: 1px solid var(--editor-error-border); background-color: var(--editor-error-bg);
-    border-radius: 4px; text-align: center;
+    color: var(--zporta-error-color);
+    font-size: 0.9em;
+    padding: 10px 16px;
+    margin: 0;
+    border-bottom: 1px solid var(--zporta-error-bg);
+    background-color: var(--zporta-error-bg);
+    text-align: center;
+    cursor: pointer;
 }
 
-/* show the little “finger” icon on hover or when its wrapper is selected */
-.audio-wrapper:hover .select-handle,
-.accordion-item:hover .select-handle,
-.audio-wrapper.editor-element-selected .select-handle,
-.accordion-item.editor-element-selected .select-handle,
-.accordion-item.is-open .select-handle {
-  display: inline-block;
+.privacyToggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 1em; /* inherit from status bar font-size */
+}
+
+.privacyToggle label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+    .toolbar { padding: 4px; gap: 2px; }
+    .toolbarGroup { padding: 0 4px; }
+    .toolbar button { height: 32px; width: 32px; }
+    .editorArea { padding: 12px; }
+    .alignLeft, .alignRight { float: none; max-width: 100%; margin-left: auto; margin-right: auto; }
+}
+
+@media (max-width: 480px) {
+    .toolbarGroup:not(.rightAlignedGroup) { border-right: none; }
+    .rightAlignedGroup { margin-left: 0; width: 100%; justify-content: flex-end; }
 }

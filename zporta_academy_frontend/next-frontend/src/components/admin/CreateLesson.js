@@ -36,9 +36,12 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [customCSS, setCustomCSS] = useState(''); // Lesson-specific custom CSS
     const [customJS,  setCustomJS]  = useState(''); // Lesson-specific custom JS (scoped to this lesson)
 
+    // === Live Preview State ===
+    const [previewContent, setPreviewContent] = useState('');
 
     const router = useRouter();
     const editorRef = useRef(null);
+    const previewIframeRef = useRef(null);
     const { logout } = useContext(AuthContext);
 
     // Fetch initial data: subjects, quizzes, and lesson templates
@@ -136,6 +139,51 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         }
     }, [selectedTemplateRef, lessonTemplates]);
 
+
+    // === Live Preview Logic ===
+    const updatePreview = () => {
+        if (!editorRef.current) return;
+        const editorContent = editorRef.current.getContent();
+
+        const html = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Lesson Preview</title>
+                <style>
+                    body { font-family: sans-serif; line-height: 1.6; padding: 20px; color: #333; }
+                    :root { --accent-color: ${accentColor}; }
+                    ${customCSS}
+                </style>
+            </head>
+            <body>
+                <div data-lesson-root="true">
+                    <h1>${title || 'Lesson Title'}</h1>
+                    ${editorContent}
+                </div>
+                <script>
+                    (function() {
+                        try {
+                            const root = document.querySelector('[data-lesson-root="true"]');
+                            ${customJS}
+                        } catch (e) {
+                            console.error("Error in custom JS preview:", e);
+                        }
+                    })();
+                <\/script>
+            </body>
+            </html>
+        `;
+        setPreviewContent(html);
+    };
+
+    useEffect(() => {
+        if (previewIframeRef.current && previewContent) {
+            previewIframeRef.current.srcdoc = previewContent;
+        }
+    }, [previewContent]);
 
     const refreshQuizzes = useCallback(async () => {
         try {
@@ -633,6 +681,33 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         ) : (
                             <div className={styles.editorPlaceholder}>Editor is currently disabled...</div>
                         )}
+                    </div>
+                </fieldset>
+
+                {/* Section 5: Live Preview */}
+                <fieldset className={styles.formSection}>
+                    <legend>Live Preview</legend>
+                    <div className={styles.previewHeader}>
+                        <p className={styles.fieldHelpText}>
+                            See how your content, custom CSS, and JS will look to a student.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={updatePreview}
+                            className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                            disabled={submitting || loading}
+                        >
+                            Refresh Preview
+                        </button>
+                    </div>
+                    <div className={styles.previewIframeContainer}>
+                        <iframe
+                            ref={previewIframeRef}
+                            className={styles.previewIframe}
+                            title="Lesson Content Preview"
+                            sandbox="allow-scripts" // Allows JS to run but in a secure context
+                            srcDoc={previewContent || "<p style='text-align:center;color:#888;'>Click 'Refresh Preview' to see your lesson.</p>"}
+                        ></iframe>
                     </div>
                 </fieldset>
 

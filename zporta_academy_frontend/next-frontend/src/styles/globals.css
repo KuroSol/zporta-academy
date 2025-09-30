@@ -332,6 +332,26 @@
   --shadow-glow: 0 0 0 4px color-mix(in srgb, var(--accent-color-interactive) 25%, transparent);
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* Editor funtion */
+	--zporta-border-color: #e5e7eb;
+	--zporta-border-light: #dee2e6;
+	--zporta-background-light: #ffffff;
+	--zporta-background-medium: #f8f9fa;
+	--zporta-background-dark: #e9ecef;
+	--zporta-text-color: #343a40;
+	--zporta-text-light: #6c757d;
+	--zporta-primary-light: #e0f2fe;
+	--zporta-gold: #FFB606;
+	--zporta-dark-blue: #0A2342;
+	--zporta-radius-sm: 6px;
+	--zporta-radius-md: 8px;
+	--zporta-box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+	--zporta-error-color: #e74c3c;
+	--zporta-error-bg: #fdecea;
+	--overlay-backdrop: rgba(10, 35, 66, 0.78);
+	--overlay-blur: 6px;
+	--overlay-panel-bg: #fff;
+	--overlay-panel-radius: 16px;
 }
 
 /* === Global Reset === */
