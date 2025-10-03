@@ -668,6 +668,8 @@ const LessonDetail = () => {
             const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || "Failed to update lesson.";
             setError(errorMsg);
             if (err.response?.status === 401) logout(); // only 401
+            } finally {
+           setIsSubmitting(false); // Reset submitting state
         }
     };
 
@@ -1025,9 +1027,7 @@ const LessonDetail = () => {
                                 ref={editorRef} // Assign the ref
                                 initialContent={editorHtml} // Pass initial content
                                 mediaCategory="lesson" // Specify media category for uploads
-                                onChange={(html) => setEditorHtml(html)} // capture content
-                                onUpdate={(html) => setEditorHtml(html)} // safe no-op if unsupported
-                                onSave={(html) => setEditorHtml(html)}   // safe no-op if unsupported
+
                                 // isDisabled={submittingEdit} // Pass disabled state if editor supports it
                             />
                             {/* Hidden input for label association if needed by accessibility tools */}

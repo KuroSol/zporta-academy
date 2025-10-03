@@ -700,27 +700,28 @@ const CustomEditor = forwardRef(({
             <div className="toolbar">
                 {/* --- Main Formatting Group --- */}
                 <div className="toolbarGroup">
-                    <button className={activeFormats.bold ? 'active' : ''} onClick={() => handleCommand('bold')} title="Bold"><Icon path={ICONS.bold} /></button>
-                    <button className={activeFormats.italic ? 'active' : ''} onClick={() => handleCommand('italic')} title="Italic"><Icon path={ICONS.italic} /></button>
-                    <button className={activeFormats.underline ? 'active' : ''} onClick={() => handleCommand('underline')} title="Underline"><Icon path={ICONS.underline} /></button>
-                    <button className={activeFormats.strikeThrough ? 'active' : ''} onClick={() => handleCommand('strikeThrough')} title="Strikethrough"><Icon path={ICONS.strikethrough} /></button>
-                    <button onClick={() => setModal({ isOpen: true, type: 'link'})} title="Insert Link"><Icon path={ICONS.link} /></button>
+                    <button type="button" className={activeFormats.bold ? 'active' : ''} onClick={() => handleCommand('bold')} title="Bold"><Icon path={ICONS.bold} /></button>
+                    <button type="button" className={activeFormats.italic ? 'active' : ''} onClick={() => handleCommand('italic')} title="Italic"><Icon path={ICONS.italic} /></button>
+                    <button type="button" className={activeFormats.underline ? 'active' : ''} onClick={() => handleCommand('underline')} title="Underline"><Icon path={ICONS.underline} /></button>
+                    <button type="button" className={activeFormats.strikeThrough ? 'active' : ''} onClick={() => handleCommand('strikeThrough')} title="Strikethrough"><Icon path={ICONS.strikethrough} /></button>
+                    <button type="button" onClick={() => setModal({ isOpen: true, type: 'link'})} title="Insert Link"><Icon path={ICONS.link} /></button>
                     <div className="dropdown">
-                        <button title="Headings"><Icon path={ICONS.heading}/></button>
+                        <button type="button" title="Headings"><Icon path={ICONS.heading}/></button>
                          <div className="dropdownContent">
-                            <a onClick={() => handleCommand('formatBlock', 'p')}>Paragraph</a>
-                            <a onClick={() => handleCommand('formatBlock', 'h2')}><h2>Heading 2</h2></a>
-                            <a onClick={() => handleCommand('formatBlock', 'h3')}><h3>Heading 3</h3></a>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('formatBlock', 'p')}>Paragraph</button>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('formatBlock', 'h2')}><h2>Heading 2</h2></button>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('formatBlock', 'h3')}><h3>Heading 3</h3></button>
                          </div>
                     </div>
                     {/* MERGED: Font Size */}
                     <div className="dropdown">
-                        <button title="Font Size"><Icon path={ICONS.fontSize}/></button>
+                        <button type="button" title="Font Size"><Icon path={ICONS.fontSize}/></button>
                          <div className="dropdownContent">
-                            <a onClick={() => handleCommand('fontSize', '1')}><span style={{fontSize: '0.75rem'}}>Small</span></a>
-                            <a onClick={() => handleCommand('fontSize', '3')}><span style={{fontSize: '1rem'}}>Normal</span></a>
-                            <a onClick={() => handleCommand('fontSize', '5')}><span style={{fontSize: '1.5rem'}}>Large</span></a>
-                            <a onClick={() => handleCommand('fontSize', '7')}><span style={{fontSize: '2rem'}}>Huge</span></a>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('fontSize', '1')}><span style={{fontSize: '0.75rem'}}>Small</span></button>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('fontSize', '3')}><span style={{fontSize: '1rem'}}>Normal</span></button>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('fontSize', '5')}><span style={{fontSize: '1.5rem'}}>Large</span></button>
+                            <button type="button" className="dropdownItem" onClick={() => handleCommand('fontSize', '7')}><span style={{fontSize: '2rem'}}>Huge</span></button>
+
                          </div>
                     </div>
                     <label className="colorInputLabel" title="Text Color">
@@ -731,64 +732,64 @@ const CustomEditor = forwardRef(({
 
                 {/* --- Alignment & List Group --- */}
                 <div className="toolbarGroup">
-                    <button onClick={() => handleCommand('justifyLeft')} title="Align Left"><Icon path={ICONS.alignLeft} /></button>
-                    <button onClick={() => handleCommand('justifyCenter')} title="Align Center"><Icon path={ICONS.alignCenter} /></button>
-                    <button onClick={() => handleCommand('justifyRight')} title="Align Right"><Icon path={ICONS.alignRight} /></button>
-                    <button className={activeFormats.insertUnorderedList ? 'active' : ''} onClick={() => handleCommand('insertUnorderedList')} title="Bulleted List"><Icon path={ICONS.listUnordered} /></button>
-                    <button className={activeFormats.insertOrderedList ? 'active' : ''} onClick={() => handleCommand('insertOrderedList')} title="Numbered List"><Icon path={ICONS.listOrdered} /></button>
-                    <button onClick={() => handleCommand('formatBlock', 'blockquote')} title="Blockquote"><Icon path={ICONS.blockquote} /></button>
+                    <button type="button" onClick={() => handleCommand('justifyLeft')} title="Align Left"><Icon path={ICONS.alignLeft} /></button>
+                    <button type="button" onClick={() => handleCommand('justifyCenter')} title="Align Center"><Icon path={ICONS.alignCenter} /></button>
+                    <button type="button" onClick={() => handleCommand('justifyRight')} title="Align Right"><Icon path={ICONS.alignRight} /></button>
+                    <button type="button" className={activeFormats.insertUnorderedList ? 'active' : ''} onClick={() => handleCommand('insertUnorderedList')} title="Bulleted List"><Icon path={ICONS.listUnordered} /></button>
+                    <button type="button" className={activeFormats.insertOrderedList ? 'active' : ''} onClick={() => handleCommand('insertOrderedList')} title="Numbered List"><Icon path={ICONS.listOrdered} /></button>
+                    <button type="button" onClick={() => handleCommand('formatBlock', 'blockquote')} title="Blockquote"><Icon path={ICONS.blockquote} /></button>
                 </div>
 
                 {/* --- Insertion Group --- */}
                 <div className="toolbarGroup">
                         {/* Image: upload or URL */}
                         <div className="dropdown">
-                            <button title="Image"><Icon path={ICONS.image}/></button>
+                            <button type="button" title="Image"><Icon path={ICONS.image}/></button>
                             <div className="dropdownContent">
-                                <a onClick={() => imageUploadInputRef.current?.click()}>Upload from device</a>
-                                <a onClick={() => setModal({ isOpen: true, type: 'image' })}>Insert from URL</a>
+                                <button type="button" className="dropdownItem" onClick={() => imageUploadInputRef.current?.click()}>Upload from device</button>
+                                <button type="button" className="dropdownItem" onClick={() => setModal({ isOpen: true, type: 'image' })}>Insert from URL</button>
                             </div>
                         </div>
                         {/* Audio: upload or URL */}
                         <div className="dropdown">
-                            <button title="Audio"><Icon path={ICONS.audio} /></button>
+                             <button type="button" title="Audio"><Icon path={ICONS.audio} /></button>
                             <div className="dropdownContent">
-                                <a onClick={() => audioUploadInputRef.current?.click()}>Upload from device</a>
-                                <a onClick={() => setModal({ isOpen: true, type: 'audio' })}>Insert from URL</a>
+                                <button type="button" className="dropdownItem" onClick={() => audioUploadInputRef.current?.click()}>Upload from device</button>
+                                <button type="button" className="dropdownItem" onClick={() => setModal({ isOpen: true, type: 'audio' })}>Insert from URL</button>
                             </div>
                         </div>
-                    <button onClick={() => setModal({isOpen: true, type: 'table'})} title="Insert Table"><Icon path={ICONS.table} /></button>
-                    <button onClick={() => setModal({isOpen: true, type: 'layout'})} title="Insert Columns"><Icon path={ICONS.columns} /></button>
-                    <button onClick={() => setModal({isOpen: true, type: 'accordion'})} title="Insert Accordion"><Icon path={ICONS.accordion} /></button>
-                    <button onClick={() => handleCommand('insertHorizontalRule')} title="Horizontal Rule"><Icon path={ICONS.hr} /></button>
-                    <button onClick={() => wordUploadInputRef.current?.click()} title="Import from Word" disabled={!isMammothLoaded}><Icon path={ICONS.word} /></button>
+                    <button type="button" onClick={() => setModal({isOpen: true, type: 'table'})} title="Insert Table"><Icon path={ICONS.table} /></button>
+                    <button type="button" onClick={() => setModal({isOpen: true, type: 'layout'})} title="Insert Columns"><Icon path={ICONS.columns} /></button>
+                    <button type="button" onClick={() => setModal({isOpen: true, type: 'accordion'})} title="Insert Accordion"><Icon path={ICONS.accordion} /></button>
+                    <button type="button" onClick={() => handleCommand('insertHorizontalRule')} title="Horizontal Rule"><Icon path={ICONS.hr} /></button>
+                    <button type="button" onClick={() => wordUploadInputRef.current?.click()} title="Import from Word" disabled={!isMammothLoaded}><Icon path={ICONS.word} /></button> 
                 </div>
 
                 {/* --- CONTEXTUAL: General Element Actions --- */}
                 {selectedElement && (
                     <div className="toolbarGroup">
-                         {selectedBlockType === 'image' && <button onClick={handleEditImage} title="Edit Image Details"><Icon path={ICONS.edit} /></button>}
-                         {(selectedBlockType === 'image' || selectedBlockType === 'audio') && <button onClick={handleReplaceSelectedMedia} title="Replace Media"><Icon path={ICONS.replace} /></button>}
-                         {selectedBlockType === 'accordion' && <button onClick={handleAddAccordionContent} title="Add Content Section"><Icon path={ICONS.addSection} /></button>}
-                         <button onClick={handleDeleteSelectedElement} title="Delete Element"><Icon path={ICONS.trash} /></button>
+                         {selectedBlockType === 'image' && <button type="button" onClick={handleEditImage} title="Edit Image Details"><Icon path={ICONS.edit} /></button>}
+                         {(selectedBlockType === 'image' || selectedBlockType === 'audio') && <button type="button" onClick={handleReplaceSelectedMedia} title="Replace Media"><Icon path={ICONS.replace} /></button>}
+                         {selectedBlockType === 'accordion' && <button type="button" onClick={handleAddAccordionContent} title="Add Content Section"><Icon path={ICONS.addSection} /></button>}
+                         <button type="button" onClick={handleDeleteSelectedElement} title="Delete Element"><Icon path={ICONS.trash} /></button>
                     </div>
                 )}
                 
                 {/* --- CONTEXTUAL: Image Alignment --- */}
                 {(selectedBlockType === 'image' || selectedBlockType === 'audio') && (
                     <div className="toolbarGroup">
-                        <button onClick={() => handleMediaAlignment('alignLeft')} title="Align Left"><Icon path={ICONS.imageAlignLeft} /></button>
-                        <button onClick={() => handleMediaAlignment('alignCenter')} title="Align Center"><Icon path={ICONS.imageAlignCenter} /></button>
-                        <button onClick={() => handleMediaAlignment('alignRight')} title="Align Right"><Icon path={ICONS.imageAlignRight} /></button>
-                        <button onClick={() => handleMediaAlignment('alignFull')} title="Full Width"><Icon path={ICONS.arrowsH} /></button>
+                        <button type="button" onClick={() => handleMediaAlignment('alignLeft')} title="Align Left"><Icon path={ICONS.imageAlignLeft} /></button>
+                        <button type="button" onClick={() => handleMediaAlignment('alignCenter')} title="Align Center"><Icon path={ICONS.imageAlignCenter} /></button>
+                        <button type="button" onClick={() => handleMediaAlignment('alignRight')} title="Align Right"><Icon path={ICONS.imageAlignRight} /></button>
+                        <button type="button" onClick={() => handleMediaAlignment('alignFull')} title="Full Width"><Icon path={ICONS.arrowsH} /></button>
                     </div>
                 )}
 
                 {/* --- Utility Group --- */}
                 <div className="toolbarGroup rightAlignedGroup">
-                    <button onClick={() => handleCommand('removeFormat')} title="Clear Formatting"><Icon path={ICONS.clear} /></button>
-                    <button onClick={() => setViewSource(p => !p)} className={viewSource ? 'active' : ''} title="Source Code"><Icon path={ICONS.code} /></button>
-                    <button onClick={() => setIsFullscreen(p => !p)} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+                    <button type="button" onClick={() => handleCommand('removeFormat')} title="Clear Formatting"><Icon path={ICONS.clear} /></button>
+                    <button type="button" onClick={() => setViewSource(p => !p)} className={viewSource ? 'active' : ''} title="Source Code"><Icon path={ICONS.code} /></button>
+                    <button type="button" onClick={() => setIsFullscreen(p => !p)} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                         {isFullscreen ? <Icon path={ICONS.compress} /> : <Icon path={ICONS.expand} />}
                     </button>
                 </div>
@@ -800,7 +801,7 @@ const CustomEditor = forwardRef(({
                 {linkPopover.visible && (
                     <div ref={linkPopoverRef} className="linkPopover">
                         <a href={linkPopover.href} target="_blank" rel="noopener noreferrer">{linkPopover.href}</a>
-                        <button onClick={() => handleCommand('unlink')}><Icon path={ICONS.unlink} /></button>
+                        <button type="button" onClick={() => handleCommand('unlink')}><Icon path={ICONS.unlink} /></button>
                     </div>
                 )}
                 {viewSource ? (
@@ -895,7 +896,7 @@ const Modal = ({ onSubmit, onClose, type, data }) => {
     return (
         <div className="modalOverlay" onMouseDown={onClose}>
             <div className="modalContent" onMouseDown={e => e.stopPropagation()}>
-                <button className="modalClose" onClick={onClose}><Icon path={ICONS.close} /></button>
+                <button type="button" className="modalClose" onClick={onClose}><Icon path={ICONS.close} /></button>
                 {renderContent()}
             </div>
         </div>
@@ -980,8 +981,10 @@ const getEditorStyles = (id) => `
     #${id} .dropdown { position: relative; display: inline-block; }
     #${id} .dropdownContent { visibility: hidden; opacity: 0; position: absolute; top: 100%; left: 0; background-color: var(--zporta-background-light); min-width: 200px; box-shadow: var(--zporta-box-shadow); border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-md); z-index: 101; overflow: hidden; padding: 4px; transition: all 0.1s ease; }
     #${id} .dropdown:hover .dropdownContent { visibility: visible; opacity: 1; }
-    #${id} .dropdownContent a { color: var(--zporta-text-color); padding: 8px 12px; text-decoration: none; display: block; font-size: 14px; border-radius: 4px; cursor: pointer; }
-    #${id} .dropdownContent a:hover { background-color: var(--zporta-background-medium); }
+    #${id} .dropdownContent a,
+    #${id} .dropdownContent button.dropdownItem { color: var(--zporta-text-color); padding: 8px 12px; background: transparent; border: 0; text-align: left; width: 100%; display: block; font-size: 14px; border-radius: 4px; cursor: pointer; }
+    #${id} .dropdownContent a:hover,
+    #${id} .dropdownContent button.dropdownItem:hover { background-color: var(--zporta-background-medium); }
     #${id} .dropdownContent h2, #${id} .dropdownContent h3, #${id} .dropdownContent h4 { margin: 0; font-size: inherit; font-weight: normal; }
     #${id} .linkPopover { position: absolute; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--zporta-dark-blue); color: #fff; border-radius: var(--zporta-radius-md); z-index: 110; }
     .dark #${id} .linkPopover { background: var(--zporta-background-medium); }
