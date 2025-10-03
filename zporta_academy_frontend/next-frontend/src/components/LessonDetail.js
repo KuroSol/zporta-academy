@@ -199,6 +199,10 @@ const LessonDetail = () => {
     const [isCompleted, setIsCompleted] = useState(false); // User's completion status for this lesson
     const [loading, setLoading] = useState(true); // Loading indicator state
     const [error, setError] = useState(""); // Error message state
+    const [successMessage, setSuccessMessage] = useState(""); // NEW: For success feedback
+    const [isSubmitting, setIsSubmitting] = useState(false); // NEW: To prevent double-clicks
+    const [confirmingDelete, setConfirmingDelete] = useState(false); // NEW: For delete confirmation
+   
     const [gateInfo, setGateInfo] = useState(null); // { message, course:{ title, permalink } }
     const [editMode, setEditMode] = useState(false); // Controls whether the edit form is shown
     const [editLesson, setEditLesson] = useState({}); // Holds the lesson data being edited
@@ -345,7 +349,7 @@ const LessonDetail = () => {
                     } else {
                         setError("An error occurred while loading lesson data.");
                     }
-                }
+                    }
             } finally {
                 // Always turn off loading indicator when done
                 if (isMounted) setLoading(false);
@@ -461,11 +465,18 @@ const LessonDetail = () => {
         })();
     `;
 
-    const s = document.createElement('script');
-    s.type = 'module';
-    s.appendChild(document.createTextNode(wrapped));
-    document.body.appendChild(s);
-    lessonJsTagRef.current = s;
+   // Get the shadow root, which is the sandboxed environment
+   const root = host.shadowRoot || host;
+
+   // Create the script tag
+   const s = document.createElement('script');
+   s.type = 'text/javascript'; // Using text/javascript is safest here
+   s.textContent = wrapped; // Use textContent to inject the wrapped code
+
+   // *** THIS IS THE FIX ***
+   // Append the script directly inside the sandboxed shadow root
+   root.appendChild(s);
+   lessonJsTagRef.current = s;
 
     return () => {
         if (lessonJsTagRef.current?.parentNode) {
@@ -497,16 +508,15 @@ const LessonDetail = () => {
     // Marks the current lesson as complete for the user
     const handleCompleteLesson = async () => {
         if (!lessonData?.lesson?.id || !permalink || isCompleted) return; // Guard clauses
-        setError(''); // Clear previous errors
+        setError(''); setSuccessMessage(''); // Clear previous messages
         try {
             const response = await apiClient.post(`/lessons/${permalink}/complete/`, {});
-            alert(response.data.message || "Lesson marked complete!");
+            setSuccessMessage(response.data.message || "Lesson marked complete!");
             setIsCompleted(true); // Update local state
         } catch (err) {
             console.error("Error completing lesson:", err.response ? err.response.data : err.message);
             const errorMsg = err.response?.data?.detail || "Failed to mark lesson complete.";
             setError(errorMsg);
-            alert("Error: " + errorMsg);
             if (err.response?.status === 401) logout(); // only 401
         }
     };
@@ -514,20 +524,28 @@ const LessonDetail = () => {
     // Deletes the current lesson (owner only)
     const handleDeleteLesson = async () => {
         if (!permalink || lessonData?.lesson?.is_locked) {
-             alert("Lesson is locked or cannot be identified.");
+             setError("Lesson is locked or cannot be identified.");
              return;
         }
-        if (!window.confirm("Are you sure you want to delete this lesson? This action cannot be undone.")) return; // Confirmation dialog
-        setError(''); // Clear previous errors
+
+       // This replaces window.confirm. First click sets state, second click deletes.
+       if (!confirmingDelete) {
+           setConfirmingDelete(true);
+           setSuccessMessage("Are you sure? Click delete again to confirm.");
+           // Reset confirmation after a few seconds
+           setTimeout(() => setConfirmingDelete(false), 4000);
+           return;
+       }
+
+       setError(''); setSuccessMessage('');
         try {
             await apiClient.delete(`/lessons/${permalink}/delete/`);
-            alert("Lesson deleted successfully.");
+            setSuccessMessage("Lesson deleted successfully. Redirecting...");
             router.push("/admin/lessons"); // Navigate away after deletion
         } catch (err) {
             console.error("Error deleting lesson:", err.response ? err.response.data : err.message);
             const errorMsg = err.response?.data?.detail || "Failed to delete lesson.";
             setError(errorMsg);
-            alert("Error deleting lesson: " + errorMsg);
             if (err.response?.status === 401) logout(); // only 401
         }
     };
@@ -535,7 +553,7 @@ const LessonDetail = () => {
     // Enters edit mode and populates the edit form state
     const handleEditClick = () => {
         if (!lessonData?.lesson || lessonData.lesson.is_locked) {
-            alert("Lesson is locked or data is unavailable for editing.");
+            setError("Lesson is locked or data is unavailable for editing.");
             return;
         }
         // Populate the editLesson state with current lesson data
@@ -554,13 +572,13 @@ const LessonDetail = () => {
         setCustomCSS(lessonData.lesson.custom_css || '');
         setCustomJS(lessonData.lesson.custom_js || '');
         setEditMode(true); // Switch to edit mode
-        setError(''); // Clear any previous errors
+        setError(''); setSuccessMessage(''); // Clear any previous messages
     };
 
     // Exits edit mode without saving
     const handleCancelEdit = () => {
         setEditMode(false);
-        setError(null); // Clear errors
+        setError(''); setSuccessMessage(''); // Clear messages
         setEditLesson({}); // Clear edit form state
     };
 
@@ -582,6 +600,7 @@ const LessonDetail = () => {
     // Saves the edited lesson data
     const handleSaveEdit = async (e) => {
       e.preventDefault();
+      if (isSubmitting) return; // Prevent double submission
       // 1) Capture fresh content NOW
       const updatedContent = (getLiveEditorHTML() || editorHtml || "").trim();
 
@@ -600,10 +619,10 @@ const LessonDetail = () => {
         // Basic validation
         if (!editLesson.title?.trim() || !updatedContent?.trim() || !editLesson.subject_id) {
             setError("Title, Content, and Subject are required fields.");
-            alert("Title, Content, and Subject are required fields.");
             return;
         }
-        setError(null); // Clear previous errors
+        setError(''); setSuccessMessage('');
+        setIsSubmitting(true); // Set submitting state
 
         try {
             // Prepare the payload for the API request
@@ -641,14 +660,13 @@ const LessonDetail = () => {
             // This ensures the displayed data reflects the saved changes
             setLessonData(prevData => ({ ...prevData, lesson: response.data }));
             setEditMode(false); // Exit edit mode
-            alert("Lesson updated successfully.");
+            setSuccessMessage("Lesson updated successfully.");
 
         } catch (err) {
             console.error("Error updating lesson:", err.response ? err.response.data : err.message);
             // Try to display a specific error message from the API response
             const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || "Failed to update lesson.";
             setError(errorMsg);
-            alert("Error updating lesson: " + errorMsg);
             if (err.response?.status === 401) logout(); // only 401
         }
     };
@@ -827,7 +845,8 @@ const LessonDetail = () => {
                     <h2 className={styles.modalFormTitle}>Edit Lesson</h2>
 
                     {/* Display form-specific errors */}
-                    {error && <p className={`${styles.message} ${styles.error} ${styles.formError}`}>{error}</p>}
+                   {error && <p className={`${styles.message} ${styles.error} ${styles.formError}`}>{error}</p>}
+                   {successMessage && <p className={`${styles.message} ${styles.success} ${styles.formError}`}>{successMessage}</p>}
 
                     {/* Title Input */}
                     <div className={styles.formGroup}>
@@ -1021,10 +1040,10 @@ const LessonDetail = () => {
                         <button
                             type="submit"
                             className={`${styles.btn} ${styles.btnPrimary}`}
-                            // disabled={submittingEdit}
+                            disabled={isSubmitting}
                         >
                             {/* {submittingEdit ? 'Saving...' : 'Save Changes'} */}
-                            Save Changes
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
                         {/* Show Publish if owner & currently draft */}
                         {isOwner && lesson?.status === 'draft' && (
@@ -1122,8 +1141,10 @@ const LessonDetail = () => {
                     )}
                     */}
 
-                    {/* Display General Errors (e.g., completion error) */}
-                    {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
+                   {/* Display General Feedback Messages */}
+                   {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
+                   {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
+
 
                     {/* Video Embed */}
                     {lesson.video_url && (() => {
@@ -1242,7 +1263,8 @@ const LessonDetail = () => {
                                 disabled={isLocked}
                                 title="Delete Lesson"
                             >
-                                <Trash2 size={18} /> <span>Delete</span>
+                              <Trash2 size={18} /> <span>{confirmingDelete ? 'Confirm Delete!' : 'Delete'}</span>
+ 
                             </button>
                         </div>
                     )}
