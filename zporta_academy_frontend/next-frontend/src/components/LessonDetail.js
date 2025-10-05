@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useState, useContext, useRef, useMemo } from "react";
 import root from "react-shadow";
 import Link from 'next/link';
 import Head from 'next/head';
@@ -442,51 +442,38 @@ const LessonDetail = () => {
 
     // --- Per-lesson Custom JS Injection (scoped + cleanup) ---
     useEffect(() => {
-    if (editMode) return;
-    const code = (lessonData?.lesson?.custom_js || "").replace(/<\/?script[^>]*>/gi, ""); // strip any <script> wrappers
-    if (!code) return;
-
-    // find the shadow host
-    const host = document.querySelector('[data-lesson-root]');
-    if (!host) return;
-
-    // build a wrapper that runs user's code with `document` pointing to the shadow
-    const wrapped = `
-        (() => {
-        const host = document.querySelector('[data-lesson-root]');
-        if (!host) return;
-        const doc = host.shadowRoot || host;
-        try {
-            // Run user's code NOW, with doc shadow-Scoped as "document"
-            (function(document, root){
-            ${code}
-            })(doc, host);
-        } catch(e){ console.error('Lesson custom_js error:', e); }
-        })();
-    `;
-
-   // Get the shadow root, which is the sandboxed environment
-   const root = host.shadowRoot || host;
-
-   // Create the script tag
-   const s = document.createElement('script');
-   s.type = 'text/javascript'; // Using text/javascript is safest here
-   s.textContent = wrapped; // Use textContent to inject the wrapped code
-
-   // *** THIS IS THE FIX ***
-   // Append the script directly inside the sandboxed shadow root
-   root.appendChild(s);
-   lessonJsTagRef.current = s;
-
-    return () => {
-        if (lessonJsTagRef.current?.parentNode) {
-        lessonJsTagRef.current.parentNode.removeChild(lessonJsTagRef.current);
-        }
-        lessonJsTagRef.current = null;
-    };
-    }, [editMode, lessonData?.lesson?.custom_js, lessonData?.lesson?.permalink]);
-
+      // This hook injects and runs custom JavaScript for the lesson.
+      // It runs only when the component is not in edit mode and has finished loading its initial data.
+      if (editMode || loading) return;
     
+      const code = (lessonData?.lesson?.custom_js || "").trim();
+    
+      // If there's no custom JS, do nothing.
+      if (!code) return;
+    
+      // A timeout is used to ensure this script runs after React has finished hydrating and painting
+      // the DOM, especially the content from `dangerouslySetInnerHTML`. This prevents a race condition.
+      const timeoutId = setTimeout(() => {
+        const hostEl = document.querySelector("[data-lesson-root]");
+        if (!hostEl) {
+          console.warn("Custom JS execution failed: Lesson root element not found.");
+          return;
+        }
+        const doc = hostEl.shadowRoot || hostEl;
+        try {
+          // Safely execute the user's code by creating a new function.
+          // We pass the shadow root as 'document' and the host as 'root' to the script's scope.
+          new Function("document", "root", code)(doc, hostEl);
+        } catch (err) {
+          console.error("Error executing custom lesson JS:", err);
+        }
+      }, 250); // A generous delay to ensure the DOM is stable.
+    
+      // Cleanup function to clear the timeout if the component re-renders or unmounts.
+      return () => clearTimeout(timeoutId);
+    
+    }, [editMode, loading, lessonData]); // Re-run this effect when loading state or lesson data changes.
+     
     // --- Optional: load Google Fonts inside the shadow root ---
     useEffect(() => {
         const css = lessonData?.lesson?.custom_css || "";
@@ -1106,41 +1093,7 @@ const LessonDetail = () => {
                             <p>This is a standalone lesson.</p>
                         </div>
                     )}
-
-                    {/* Optional: Course Lessons Accordion (if needed and styled separately) */}
-                    {/* This was present in the original code but uses a different ref and potentially different JS. */}
-                    {/* If you want this accordion to use the *same* logic, it needs to be inside the lessonContentDisplayRef */}
-                    {/* or initialized separately using the same initializeAccordions function. */}
-                    {/* Example structure (currently uses different ref/logic): */}
-                    {/*
-                    {isAttachedToCourse && courseLessons && courseLessons.length > 1 && (
-                        <div ref={lessonsAccordionRef}
-                             className={`${styles.courseLessonsAccordion} accordion-item`} // Needs global AND module classes
-                             data-default-state="closed">
-                            <div className={`${styles.accordionHeader} accordion-header`}>
-                                Course Content ({courseLessons.length} lessons)
-                                <span className={styles.accordionIcon}></span>
-                            </div>
-                            <div className={`${styles.accordionContentWrapper} accordion-content-wrapper`}>
-                                <div className={`${styles.accordionContent} accordion-content`}>
-                                    <ul className={styles.courseLessonsList}>
-                                        {courseLessons.map(l => (
-                                            <li key={l.permalink}>
-                                                <Link
-                                                    <Link href={`/lessons/${l.permalink}`}
-                                                    className={l.permalink === lesson.permalink ? styles.activeLessonLink : ""}
-                                                >
-                                                    {l.title}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    */}
-
+                    
                    {/* Display General Feedback Messages */}
                    {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
                    {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
