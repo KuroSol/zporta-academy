@@ -71,6 +71,13 @@ const MoveUpIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" hei
 const MoveDownIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>);
 const PaletteIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>);
 
+// --- NEW ICONS for Text Toolbar ---
+const BoldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>);
+const ItalicIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>);
+const ListIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>);
+const ListOrderedIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4l-1-1v-2.5"></path><path d="M4 12h2"></path></svg>);
+
+
 // --- Column Layout Constants ---
 const BREAKPOINTS = ['base', 'sm', 'md', 'lg'];
 const getInitialRatios = () => ({ base: [100], sm: [50, 50], md: [50, 50], lg: [50, 50] });
@@ -148,7 +155,8 @@ const htmlToBlocks = (htmlString) => {
                     blocks.push({ id, type: 'columns', children: columns, layout, styles: {} });
                 } else if (node.tagName.startsWith('H')) {
                     blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: {} });
-                } else if (node.tagName === 'P') {
+                } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && (node.querySelector('ul') || node.querySelector('ol')))) {
+                    // Capture text blocks, including those that might now contain lists
                     blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
@@ -161,11 +169,11 @@ const htmlToBlocks = (htmlString) => {
                     blocks.push({ id, type: 'video', data: { src: video?.src || '' }, styles: {} });
                 } else if (node.tagName === 'A' && node.classList.contains('zporta-button')) {
                     const data = {
-                      text: node.textContent,
-                      href: node.href,
-                      variant: Array.from(node.classList).find(c => c.startsWith('zporta-btn--'))?.replace('zporta-btn--', '') || 'primary',
-                      size: Array.from(node.classList).find(c => c.startsWith('zporta-btnSize--'))?.replace('zporta-btnSize--', '') || 'md',
-                      full: node.classList.contains('zporta-btn--block')
+                        text: node.textContent,
+                        href: node.href,
+                        variant: Array.from(node.classList).find(c => c.startsWith('zporta-btn--'))?.replace('zporta-btn--', '') || 'primary',
+                        size: Array.from(node.classList).find(c => c.startsWith('zporta-btnSize--'))?.replace('zporta-btnSize--', '') || 'md',
+                        full: node.classList.contains('zporta-btn--block')
                     };
                     blocks.push({ id, type: 'button', data, styles: {} });
                 } else if (node.classList.contains('zporta-accordion')) {
@@ -242,13 +250,20 @@ const blocksToHtml = (blocks) => {
             case 'heading':
                 return `<h2 style="${styleString}">${block.data.text || ''}</h2>`;
             case 'text':
-                return `<p style="${styleString}">${block.data.text || '<br>'}</p>`;
+                // Check if the text is empty or just contains an empty tag (like <p><br></p>)
+                const isEmpty = !block.data.text || block.data.text.trim() === '' || block.data.text.trim() === '<br>';
+                // If it contains list or div tags, wrap in a div. Otherwise, a p tag.
+                const hasBlockElements = /<\/(ul|ol|div|p)>/.test(block.data.text);
+                if (hasBlockElements) {
+                    return `<div style="${styleString}">${isEmpty ? '<br>' : block.data.text}</div>`;
+                }
+                return `<p style="${styleString}">${isEmpty ? '<br>' : block.data.text}</p>`;
             case 'image':
                 return `<figure style="${styleString}"><img src="${block.data.src || ''}" alt="${block.data.caption || ''}" /><figcaption>${block.data.caption || ''}</figcaption></figure>`;
             case 'audio':
                 return `<figure style="${styleString}"><audio controls src="${block.data.src || ''}"></audio></figure>`;
             case 'video':
-                return `<figure style="${styleString}"><video controls src="${block.data.src || ''}"></video></figure>`;
+                return `<figure style="${styleString}"><video controls src="${block.aata.src || ''}"></video></figure>`;
             case 'button': {
                 const v = block.data?.variant || 'primary';
                 const s = block.data?.size || 'md';
@@ -290,9 +305,9 @@ const blocksToHtml = (blocks) => {
                    const inner = blocksToHtml(item.blocks || []);
                    const openAttr = openFirst && i === 0 ? ' open' : '';
                    return `<details class="zporta-acc-item"${openAttr}>
-                           <summary class="zporta-acc-title" data-align="${titleAlign}" data-size="${titleSize}" data-icon="${icon}">${item.title || 'Untitled'}</summary>
-                           <div class="zporta-acc-panel">${inner}</div>
-                         </details>`;
+                            <summary class="zporta-acc-title" data-align="${titleAlign}" data-size="${titleSize}" data-icon="${icon}">${item.title || 'Untitled'}</summary>
+                            <div class="zporta-acc-panel">${inner}</div>
+                           </details>`;
                  }).join('');
                  const allowAttr = allowMulti ? ' data-allow-multiple="1"' : '';
                  return `<div class="zporta-accordion zporta-acc--${theme}"${allowAttr} style="--acc-radius:${radius};${styleString}">${itemsHtml}</div>`;
@@ -333,6 +348,7 @@ const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) =>
     }, [data, onUpdate]);
 
     return isEditing ? <div
+        style={blockStyles} // <-- FIX 1: Apply styles in edit mode
         contentEditable
         suppressContentEditableWarning
         onBlur={handleBlur}
@@ -350,12 +366,18 @@ const TextBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) => {
     }, [data, onUpdate]);
 
     return isEditing ? <div
+        style={blockStyles} // <-- FIX 1: Apply styles in edit mode
         contentEditable
         suppressContentEditableWarning
         onBlur={handleBlur}
         className={`${styles.blockInput} ${styles.blockContentEditable} ${styles.blockTextarea}`}
         dangerouslySetInnerHTML={{ __html: data.text || '' }} />
-    : <p style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || 'Paragraph text will appear here.' }} />;
+    : (
+        // Render view: Use a div if it contains block elements, otherwise a p
+        /<\/(ul|ol|div|p)>/.test(data.text)
+        ? <div style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || '<br>' }} />
+        : <p style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || 'Paragraph text will appear here.' }} />
+    );
 };
 
 const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImagePicker }) => {
@@ -451,7 +473,7 @@ const ButtonBlock = ({ data, styles: blockStyles, isEditing, onUpdate }) => {
     return <a href={href} className={cls} style={style}>{text || 'Click Me'}</a>;
 };
 
-const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onShowSettings, onReorderColumn, selectedBlockId, setSelectedBlockId }) => {
+const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onShowSettings, onReorderColumn, selectedBlockId, setSelectedBlockId, onExecCommand }) => {
     const [draggedItem, setDraggedItem] = useState(null);
     const [dropTarget, setDropTarget] = useState(null);
     const [dragEnabled, setDragEnabled] = useState(false);
@@ -540,6 +562,7 @@ const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, on
                         openAudioPickerFor={openAudioPickerFor}
                         openVideoPickerFor={openVideoPickerFor}
                         onShowSettings={onShowSettings}
+                        onExecCommand={onExecCommand} // <-- Pass down
                         parentId={id}
                         parentIndex={colIndex}  
                         selectedBlockId={selectedBlockId}
@@ -551,7 +574,7 @@ const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, on
     );
 };
 
-const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, onShowSettings, selectedBlockId, setSelectedBlockId, openImagePickerFor, openAudioPickerFor, openVideoPickerFor }) => {
+const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, onShowSettings, selectedBlockId, setSelectedBlockId, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onExecCommand }) => {
 
     const addItem = () => {
         const newItem = { id: uid(), title: `Section ${items.length + 1}`, blocks: [] };
@@ -600,6 +623,7 @@ const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isE
                     onAddBlock={onAddBlock} // <-- FIX
                     onMoveBlock={onMoveBlock}
                     onShowSettings={onShowSettings}
+                    onExecCommand={onExecCommand} // <-- Pass down
                     selectedBlockId={selectedBlockId}
                     setSelectedBlockId={setSelectedBlockId}
                     openImagePickerFor={openImagePickerFor}
@@ -610,7 +634,7 @@ const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isE
                     parentIndex={null}
                 />
               </div>
-              </div>
+            </div>
             </div>
         ))}
         {isEditing && (
@@ -631,6 +655,40 @@ const blockMap = {
     accordion: AccordionBlock
 };
 
+// --- NEW Text Toolbar Component ---
+const TextToolbar = ({ onExecCommand }) => {
+    const commands = [
+        { cmd: 'bold', icon: <BoldIcon />, title: 'Bold' },
+        { cmd: 'italic', icon: <ItalicIcon />, title: 'Italic' },
+        { cmd: 'insertUnorderedList', icon: <ListIcon />, title: 'Bulleted List' },
+        { cmd: 'insertOrderedList', icon: <ListOrderedIcon />, title: 'Numbered List' },
+    ];
+
+    const handleMouseDown = (e, cmd) => {
+        e.preventDefault(); // Prevent the contentEditable from losing focus
+        e.stopPropagation();
+        onExecCommand(cmd);
+    };
+
+    return (
+        <div className={styles.textToolbar} onMouseDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
+            {commands.map(({ cmd, icon, title }) => (
+                <button
+                    key={cmd}
+                    type="button"
+                    className={styles.toolbarButton}
+                    title={title}
+                    onMouseDown={e => handleMouseDown(e, cmd)} // Use mousedown to prevent blur
+                    onClick={e => e.preventDefault()} // Fallback just in case
+                >
+                    {icon}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+
 // --- RENDERER & UI ---
 const BlockRenderer = ({
     blocks = [],
@@ -644,6 +702,7 @@ const BlockRenderer = ({
     openVideoPickerFor = () => {},
     onShowSettings,
     onReorderColumn,
+    onExecCommand, // <-- Receive rich text command handler
     parentId = null,
     parentIndex = null, // Receive index for nested blocks (columns, accordion items)
     selectedBlockId,
@@ -663,9 +722,12 @@ const BlockRenderer = ({
                 ))
             );
             const isSelected = isEditing && block.id === selectedBlockId;
+            // <-- Show toolbar if selected and it's a text or heading block -->
+            const showTextToolbar = isSelected && (block.type === 'text' || block.type === 'heading');
 
             return (
-                <div key={block.id} className={styles.blockContainer}>
+                // <-- Add data-block-id here for querySelector to find -->
+                <div key={block.id} className={styles.blockContainer} data-block-id={block.id}>
                     <div
                         className={`${styles.blockWrapper} ${!hasContent && isEditing ? styles.blockWrapperEmpty : ''} ${isSelected ? styles.blockWrapperSelected : ''}`}
                         onClick={(e) => {
@@ -675,6 +737,11 @@ const BlockRenderer = ({
                             }
                         }}
                     >
+                        {/* <-- NEW: Render Toolbar --> */}
+                        {showTextToolbar && (
+                            <TextToolbar onExecCommand={onExecCommand(block.id)} />
+                        )}
+
                         {isEditing && (
                             <div className={styles.blockControls}>
                                 <button type="button" onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, index, -1, parentId, parentIndex); }} className={styles.controlButton} title="Move Up" disabled={index === 0}><MoveUpIcon /></button>
@@ -700,6 +767,7 @@ const BlockRenderer = ({
                             onAddBlock={onAddBlock}
                             onMoveBlock={onMoveBlock} // Pass down move handler
                             onShowSettings={onShowSettings}
+                            onExecCommand={onExecCommand} // <-- Pass down exec command handler
                             onReorderColumn={onReorderColumn} // Only relevant for ColumnsBlock
                             selectedBlockId={selectedBlockId}
                             setSelectedBlockId={setSelectedBlockId}
@@ -707,7 +775,7 @@ const BlockRenderer = ({
                             openAudioPickerFor={openAudioPickerFor}
                             openVideoPickerFor={openVideoPickerFor}
                             parentId={parentId} // keep the same parent container id
-                            parentIndex={parentIndex}  // Pass index within the current list
+                            parentIndex={parentIndex}   // Pass index within the current list
                         />
                     </div>
                     {isEditing && !(
@@ -1154,11 +1222,11 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     }, [initialContent, isMounted]); // Rerun if initialContent changes *after* mount
 
 
-   useEffect(() => {
+    useEffect(() => {
         if (onEditorReady && typeof onEditorReady === 'function') {
             Promise.resolve().then(onEditorReady);
         }
-   }, [onEditorReady]);
+    }, [onEditorReady]);
 
     const applyCssToEditor = useCallback((rawCss = '') => {
         const target = document.getElementById(themeStyleId);
@@ -1239,11 +1307,11 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 // Check if any block input is focused even if not activeElement (e.g., iframe focus issue)
                 const focusedInput = root.querySelector('[contenteditable="true"]:focus');
                 if(focusedInput) {
-                    console.log("[LessonEditor] Found focused editable, needs blur:", focusedInput);
-                    needsBlur = true;
-                    elementToBlur = focusedInput;
+                     console.log("[LessonEditor] Found focused editable, needs blur:", focusedInput);
+                     needsBlur = true;
+                     elementToBlur = focusedInput;
                 } else {
-                   console.log("[LessonEditor] No contentEditable element has focus.");
+                    console.log("[LessonEditor] No contentEditable element has focus.");
                 }
             }
 
@@ -1323,7 +1391,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                     acc.push(block);
                 }
                 return acc;
-            }
+             }
 
             // No match, keep block
             acc.push(block);
@@ -1336,7 +1404,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     
      // Recursive helper to insert a block (fixed)
      const insertBlockRecursive = useCallback(
-       (targetBlocks, insertIndex, newBlock, parentId, colIndexOrItemIdx) => {
+        (targetBlocks, insertIndex, newBlock, parentId, colIndexOrItemIdx) => {
          // Insert at current level
          if (parentId === null) {
            const arr = [...targetBlocks];
@@ -1389,19 +1457,19 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
              }
              return block;
            }
-        // NEW: if parentId matches an ACCORDION *ITEM* id, insert there
-        if (block.type === 'accordion' && Array.isArray(block.items)) {
-          const items = [...block.items];
-          const foundIdx = items.findIndex(it => it && it.id === parentId);
-          if (foundIdx !== -1) {
-            const item = items[foundIdx];
-            const b = [...(item.blocks || [])];
-            b.splice(insertIndex, 0, newBlock);
-            items[foundIdx] = { ...item, blocks: b };
-            changed = true;
-            return { ...block, items };
-          }
-        }
+       // NEW: if parentId matches an ACCORDION *ITEM* id, insert there
+       if (block.type === 'accordion' && Array.isArray(block.items)) {
+         const items = [...block.items];
+         const foundIdx = items.findIndex(it => it && it.id === parentId);
+         if (foundIdx !== -1) {
+           const item = items[foundIdx];
+           const b = [...(item.blocks || [])];
+           b.splice(insertIndex, 0, newBlock);
+           items[foundIdx] = { ...item, blocks: b };
+           changed = true;
+           return { ...block, items };
+         }
+       }
 
            // Recurse: columns
            if (block.type === 'columns' && Array.isArray(block.children)) {
@@ -1435,14 +1503,14 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
          });
 
          return changed ? next : targetBlocks;
-       },
-       []
-     );
+        },
+        []
+      );
 
     const handleUpdateBlock = useCallback((blockId, newBlockData) => {
          if (isProcessingBlur.current) {
-             console.log("[LessonEditor] Skipping update during blur processing for block:", blockId);
-             return; // Avoid state update while blur is explicitly handled by flush
+              console.log("[LessonEditor] Skipping update during blur processing for block:", blockId);
+              return; // Avoid state update while blur is explicitly handled by flush
          }
         console.log(`[LessonEditor] handleUpdateBlock called for ID: ${blockId}`);
         setBlocks(currentBlocks => {
@@ -1606,17 +1674,17 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                         }
                     }
                      if (block.type === 'accordion' && block.items) {
-                        const newItems = block.items.map(item => {
-                            const newBlocks = findAndRemove(item.blocks || []);
-                            if(newBlocks !== (item.blocks || [])) {
-                                return {...item, blocks: newBlocks};
-                            }
-                            return item;
-                        });
-                        if (newItems.some((item, i) => item !== block.items[i])) {
-                             return { ...block, items: newItems };
-                        }
-                    }
+                         const newItems = block.items.map(item => {
+                             const newBlocks = findAndRemove(item.blocks || []);
+                             if(newBlocks !== (item.blocks || [])) {
+                                 return {...item, blocks: newBlocks};
+                             }
+                             return item;
+                         });
+                         if (newItems.some((item, i) => item !== block.items[i])) {
+                              return { ...block, items: newItems };
+                         }
+                     }
                     return block;
                 });
             };
@@ -1633,6 +1701,55 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
 
         });
     }, [insertBlockRecursive]); // Dependencies will include helpers if they are not useCallback
+
+    // --- NEW: Rich Text Command Handler ---
+    const handleExecCommand = useCallback((blockId) => (command) => {
+        // 1. Execute the browser command
+        document.execCommand(command, false, null);
+        
+        // 2. Find the block's contentEditable element
+        const blockElement = editorRootRef.current?.querySelector(`[data-block-id="${blockId}"]`);
+        if (!blockElement) return;
+
+        const editorDiv = blockElement.querySelector(`.${styles.blockContentEditable}`);
+        if (editorDiv) {
+            // 3. Get the new HTML content
+            const updatedText = editorDiv.innerHTML;
+            
+            // 4. Find the current text in state to prevent unnecessary updates
+            let currentText = '';
+            
+            // Need to find the block in the state tree
+            // This is a simplified finder; a real implementation might need to be more robust
+            const findBlockRecursive = (blockArray) => {
+                 if (!Array.isArray(blockArray)) return;
+                 for (const block of blockArray) {
+                     if (!block) continue;
+                     if (block.id === blockId) {
+                        currentText = block.data.text;
+                        return true;
+                     }
+                     if (block.children && Array.isArray(block.children)) {
+                         for (const childCol of block.children) {
+                             if (findBlockRecursive(childCol)) return true;
+                         }
+                     }
+                     if (block.items && Array.isArray(block.items)) {
+                         for (const item of block.items) {
+                             if (findBlockRecursive(item.blocks)) return true;
+                         }
+                     }
+                 }
+                 return false;
+            };
+            findBlockRecursive(blocks);
+
+            // 5. If content changed, call the main update handler
+            if (updatedText !== currentText) {
+                handleUpdateBlock(blockId, { data: { text: updatedText } });
+            }
+        }
+    }, [blocks, handleUpdateBlock]); // Depend on blocks and the update handler
 
 
     const openImagePickerFor = useCallback((blockId) => {
@@ -1797,6 +1914,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                 onDeleteBlock={handleDeleteBlock}
                                 onAddBlock={handleAddBlock}
                                 onMoveBlock={handleMoveBlock} // Pass move handler
+                                onExecCommand={handleExecCommand} // <-- Pass rich text handler
                                 openImagePickerFor={openImagePickerFor}
                                 openAudioPickerFor={openAudioPickerFor}
                                 openVideoPickerFor={openVideoPickerFor}
