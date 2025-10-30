@@ -865,11 +865,13 @@ const SettingsPanel = ({ block, onUpdateStyle, onUpdateLayout, onUpdateBlock, on
     const [localStyles, setLocalStyles] = useState(block.styles || {});
     // State to manage the text input for color, synced with the color picker
     const [bgColorText, setBgColorText] = useState(localStyles.backgroundColor || '#ffffff');
+    const [colorText, setColorText] = useState(localStyles.color || '#1e293b');
 
     useEffect(() => {
         const initialStyles = block.styles || {};
         setLocalStyles(initialStyles);
         setBgColorText(initialStyles.backgroundColor || '#ffffff');
+        setColorText(initialStyles.color || '#1e293b');
     }, [block.styles]);
 
     useEffect(() => {
@@ -894,6 +896,26 @@ const SettingsPanel = ({ block, onUpdateStyle, onUpdateLayout, onUpdateBlock, on
         // Basic validation for hex color
         if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue)) {
             const newStyles = { ...localStyles, backgroundColor: newValue };
+            setLocalStyles(newStyles);
+            onUpdateStyle(block.id, newStyles);
+        }
+    };
+    // Handles changes from the *text color* input (type="color")
+    const handleTextColorInputChange = (e) => {
+        const { name, value } = e.target; // name will be "color"
+        const newStyles = { ...localStyles, [name]: value };
+        setLocalStyles(newStyles);
+        setColorText(value); // Sync text input
+        onUpdateStyle(block.id, newStyles);
+    };
+
+    // Handles changes from the *text color* text input
+    const handleTextColorTextChange = (e) => {
+        const newValue = e.target.value;
+        setColorText(newValue);
+        // Basic validation for hex color (or empty string to reset)
+        if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue) || newValue === '') {
+            const newStyles = { ...localStyles, color: newValue };
             setLocalStyles(newStyles);
             onUpdateStyle(block.id, newStyles);
         }
@@ -1008,6 +1030,27 @@ const SettingsPanel = ({ block, onUpdateStyle, onUpdateLayout, onUpdateBlock, on
                 ) : block.type!=='button' && block.type!=='accordion' ? (
                     <>
                         <h4>Block Styles</h4>
+                        {/* ADD THIS: Text Align Control */}
+                       <div className={styles.csGroup}>
+                           <label>Text Align</label>
+                           <div className={styles.csBtnGroup}>
+                               {['left', 'center', 'right'].map(a => {
+                                   const newStyles = { ...localStyles, textAlign: a };
+                                   return (
+                                       <button
+                                           key={a}
+                                           className={localStyles.textAlign === a ? styles.active : ''}
+                                           onClick={() => {
+                                               setLocalStyles(newStyles);
+                                               onUpdateStyle(block.id, newStyles);
+                                           }}
+                                       >
+                                           {a.charAt(0).toUpperCase() + a.slice(1)}
+                                       </button>
+                                   )
+                               })}
+                           </div>
+                       </div>
                         <div className={`${styles.styleControl} ${styles.colorControl}`}>
                             <label htmlFor={`bgColor-${block.id}`}>Background</label>
                             <div className={styles.colorInputWrapper}>
@@ -1030,11 +1073,48 @@ const SettingsPanel = ({ block, onUpdateStyle, onUpdateLayout, onUpdateBlock, on
                                     placeholder="#ffffff"
                                 />
                             </div>
+                            {/* ADD THIS: Text Color Control */}
+                            <div className={`${styles.styleControl} ${styles.colorControl}`}>
+                                <label htmlFor={`color-${block.id}`}>Text Color</label>
+                                <div className={styles.colorInputWrapper}>
+                                    <div className={styles.colorPreview} style={{ backgroundColor: localStyles.color || '#1e293b' }}>
+                                        <PaletteIcon />
+                                        <input
+                                            id={`color-${block.id}`}
+                                            type="color"
+                                            name="color"
+                                            value={localStyles.color || '#1e293b'}
+                                            onChange={handleTextColorInputChange}
+                                            className={styles.colorPickerInput}
+                                        />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={colorText}
+                                        onChange={handleTextColorTextChange}
+                                        className={styles.colorTextInput}
+                                        placeholder="#1e293b"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className={styles.styleControl}>
                             <label>Padding</label>
                             <input type="text" name="padding" value={localStyles.padding || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1rem or 10px 20px" />
                         </div>
+
+                        {/* ADD THIS: Margin Control */}
+                       <div className={styles.styleControl}>
+                           <label>Margin</label>
+                           <input type="text" name="margin" value={localStyles.margin || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1rem or 10px 0" />
+                       </div>
+
+                       {/* ADD THIS: Font Size Control */}
+                       <div className={styles.styleControl}>
+                           <label>Font Size</label>
+                           <input type="text" name="fontSize" value={localStyles.fontSize || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1.2rem or 18px" />
+                       </div>
+
                         <div className={styles.styleControl}>
                             <label>Border</label>
                             <input type="text" name="border" value={localStyles.border || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1px solid #ccc" />
