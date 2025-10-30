@@ -1,7 +1,8 @@
 /**
  * Revised Production-Ready Stylesheet for Zporta Lesson Editor
- * Integrates responsive column controls and drag-and-drop features.
+ * Integrates responsive column controls, drag-and-drop, and rich text features.
  */
+
 /* --- Main Editor Layout --- */
 .editorContainer {
     --zporta-background-light: #ffffff;
@@ -45,7 +46,8 @@
   .btn,
   .deviceToggles button,
   .settingsCloseButton,
-  .csPresets button
+  .csPresets button,
+  .toolbarButton
 ):focus-visible {
   outline: 3px solid color-mix(in oklab, var(--zporta-gold) 80%, white);
   outline-offset: 2px;
@@ -176,46 +178,25 @@
     cursor: pointer;
     pointer-events: auto; /* clickable children inside columns */
     /*
-     * NEW STRATEGY: A normal block sits at z-index 2
+     * NEW STRATEGY: A normal block sits at z-index 1
     */
-    z-index: 2;
+    z-index: 1; /* <-- WAS 2 */
 }
 .blockWrapperSelected {
     border-color: var(--zporta-gold) !important;
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--zporta-gold) 30%, transparent);
     /*
-     * NEW STRATEGY: A selected block sits at z-index 3
+     * NEW STRATEGY: A selected block sits at z-index 1 (same as base)
+     * This prevents its box-shadow from covering adjacent blocks.
     */
-    z-index: 4;
+    z-index: 1; /* <-- WAS 4 */
 }
 
 .blockWrapperEmpty{
   border: 2px dashed color-mix(in oklab, var(--zporta-border-color) 60%, black);
 }
 
-.csBtnGroup button{ border-color: color-mix(in oklab, var(--zporta-border-color) 80%, black); }
-
-.column{
-  padding: .75rem;
-  /*
-   * FIX: Removed 'position: relative'.
-   * This was creating a stacking context on the column itself,
-   * which trapped the accordion content.
-  */
-}
-
 .mediaGearBtn{ width: 36px; height: 36px; }
-
-.accItem{
-  overflow: visible;
-  position: relative;          /* anchor controls/menus to the item */
-}
-.accPanel{
-  padding:12px; background:#fff;
-  overflow: visible;
-  position: relative;          /* anchor textareas and addBlock menus */
-  /* transition: padding .2s ease; */ /* no-op kept commented */
-}
 
 .column[draggable="true"]{ cursor: grab; }
 .column[draggable="true"]:active{ cursor: grabbing; }
@@ -223,9 +204,6 @@
 .editorContainer[data-contrast="high"]{
   --zporta-border-color:#000; --zporta-gold:#d97706; --shadow-md:none;
 }
-
-/* This class was empty and can be removed */
-/* .active {} */
 
 .blockControls {
     position: absolute;
@@ -245,7 +223,7 @@
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-sm);
     margin-right: 0.5rem;
-    z-index: 10;
+    z-index: 12; /* <-- WAS 10. Needs to be > addBlockButtonContainer */
 }
 
 .blockWrapperSelected .blockControls {
@@ -266,9 +244,56 @@
     pointer-events: auto;
     transition: color 0.2s ease, background-color 0.2s ease;
 }
+/* Use :last-child which is safer for the delete button */
 .controlButton:hover:last-child { color: var(--zporta-error-color); background: var(--zporta-error-bg); }
-/* Use :not(:last-child) to be more robust if more buttons are added */
 .controlButton:hover:not(:last-child) { color: var(--zporta-dark-blue); background: var(--zporta-background-dark); }
+
+
+/* --- NEW: Rich Text Toolbar --- */
+.textToolbar {
+  position: absolute;
+  bottom: 100%; /* Position above the block */
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  background: var(--zporta-dark-blue);
+  color: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  z-index: 12; /* <-- WAS 10. Needs to be > addBlockButtonContainer */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  /* Start slightly scaled down */
+  transform: translateX(-50%) scale(0.95);
+}
+.blockWrapperSelected .textToolbar {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1); /* Animate to full size */
+}
+.toolbarButton {
+  background: none;
+  border: none;
+  color: white;
+  opacity: 0.8;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-sm);
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  line-height: 0; /* For icon-only buttons */
+}
+.toolbarButton:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+/* Note: .toolbarButton:focus-visible is handled by the :where() rule at the top */
+
 
 /* --- Add Block Button --- */
 .addBlockWrapper {
@@ -276,9 +301,9 @@
   height: 2rem;
   margin: -0.5rem 0;
   /*
-   * NEW STRATEGY: The "add" line is at the bottom, z-index 1
+   * NEW STRATEGY: The "add" line is at z-index 10 (on top of blocks)
   */
-  z-index: 3;
+  z-index: 10; /* <-- WAS 3 */
 }
 
 .addBlockLine {
@@ -296,7 +321,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 5;
+    z-index: 11; /* <-- WAS 5. Needs to be > addBlockWrapper line */
 }
 .addBlockButton {
     background: var(--zporta-gold);
@@ -324,6 +349,8 @@
   box-shadow: var(--shadow-md); /* Add more shadow on hover */
 }
 .addBlockWrapperFirst { height: auto; margin: 1rem 0; }
+.emptyEditorState { text-align: center; padding: 4rem 2rem; }
+
 
 .addBlockMenu {
   position: absolute;
@@ -334,7 +361,7 @@
   background: white;
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-md);
-  z-index: 999;                 /* within the panel context; no global max */
+  z-index: 20;                 /* <-- WAS 999. On top of toolbars. */
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
@@ -370,15 +397,6 @@
   color: var(--zporta-dark-blue); /* Make icon darker on hover */
 }
 
-.accPanelInner{
-  position: relative;          /* extra containment for nested accordions */
-  overflow: visible;           /* <-- ADDED FIX: Ensure inner panel does not clip */
-  /*
-   * NEW STRATEGY: Panel inner content sits at z-index 4,
-   * on top of its own selected block wrapper (3)
-  */
-  z-index: 5;
-}
 /* --- Placeholders & Inputs --- */
 .placeholder {
     border: 2px dashed var(--zporta-border-color);
@@ -425,6 +443,9 @@
     font-family: inherit;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     background-color: var(--zporta-background-light);
+    /* Ensure styles like border are applied *inside* the padding */
+    box-sizing: border-box; 
+    line-height: 1.6;
 }
 .blockInput:focus, .blockContentEditable:focus,
 .blockInput:focus-visible, .blockContentEditable:focus-visible {
@@ -434,6 +455,24 @@
     background-color: var(--zporta-background-light); /* Ensure bg stays white on focus */
 }
 .blockTextarea { min-height: 120px; resize: vertical; }
+
+/* Styles for lists inside contentEditable */
+.blockContentEditable ul,
+.blockContentEditable ol {
+  padding-left: 2rem; /* Indent lists */
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  /* Use default list styling */
+  list-style: revert;
+}
+.blockContentEditable li {
+  margin-bottom: 0.25rem;
+}
+.headingEditable {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 700;
+  line-height: 1.2;
+}
 
 /* --- Specific Block Styles --- */
 .imageFigure { margin: 0; }
@@ -450,14 +489,7 @@
 .videoElement { width: 100%; }
 .buttonEditor { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: var(--zporta-background-medium); border-radius: var(--border-radius-md); }
 
-/* This .styledButton class seems unused in the JS component and duplicates the .btn system. */
-/* We'll use the .btn system for consistency. */
-/*
-.styledButton { display: inline-block; background-color: var(--zporta-dark-blue); color: white; padding: 0.75rem 1.5rem; border-radius: var(--border-radius-md); text-decoration: none; font-weight: 600; transition: background-color 0.2s; }
-.styledButton:hover { background-color: #06182c; }
-*/
-
-/* --- Column Block & Settings Panel --- */
+/* --- Column Block --- */
 .columnsContainer {
     display: grid;
     gap: 1.5rem;
@@ -480,12 +512,7 @@
     cursor: default;
     pointer-events: auto; /* ensure children receive clicks */
     min-width: 0; /* Prevents grid blowout */
-    /*
-     * This 'display: flow-root' is fine. It prevents margin collapse
-     * and contains floats, which is good practice. It does NOT
-     * solve the stacking issue, but it doesn't hurt.
-    */
-    display: flow-root;
+    display: flow-root; /* Prevents margin collapse */
 }
 
 .column:focus, .column:focus-visible {
@@ -499,20 +526,14 @@
   background-color: color-mix(in oklab, var(--zporta-gold) 10%, var(--zporta-background-medium));
 }
 
-/* --- ADD THIS SECTION for responsive content --- */
-/*
-  Ensures that content placed inside a column (images, videos, text)
-  behaves responsively and does not overflow its container.
-*/
+/* Responsive content inside columns */
 .column > * {
-    /* Prevents long unbreakable words/strings from overflowing */
     word-break: break-word;
     max-width: 100%;
 }
 .column img,
 .column video,
 .column iframe {
-    /* Specific rules for media elements */
     max-width: 100%;
     height: auto; /* Maintain aspect ratio */
     display: block; /* Removes bottom space under the image */
@@ -541,6 +562,7 @@
     .columnsContainer { grid-template-columns: var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)))) !important; }
 }
 
+/* --- Settings Panel --- */
 .settingsPanelWrapper {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -572,7 +594,6 @@
     color: var(--zporta-dark-blue);
 }
 
-/* Refine the settings close button to look like a modern UI icon button */
 .settingsCloseButton {
     position: absolute;
     top: 0.75rem;
@@ -599,13 +620,81 @@
 }
 .styleControl { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .styleControl label { font-weight: 500; color: var(--zporta-text-color); }
-.styleControl input[type="text"] { border: 1px solid var(--zporta-border-color); padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm); width: 120px; }
+.styleControl input[type="text"] { border: 1px solid var(--zporta-border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-md); width: 160px; }
 .styleControl input[type="text"]:focus-visible {
   outline: 2px solid var(--zporta-gold);
   border-color: var(--zporta-gold);
 }
 
-.csGroup { margin-bottom: 1rem; }
+/* NEW Color Control Styles */
+.colorControl { flex-wrap: wrap; }
+.colorInputWrapper { 
+  display: flex; 
+  align-items: center; 
+  gap: 0; 
+  border: 1px solid var(--zporta-border-color); 
+  border-radius: var(--border-radius-md); 
+  overflow: hidden; 
+  background-color: var(--zporta-background-light);
+}
+.colorInputWrapper:focus-within {
+  border-color: var(--zporta-gold);
+  box-shadow: 0 0 0 3px rgba(255, 182, 6, 0.2);
+}
+.colorPreview { 
+  position: relative; 
+  width: 38px; /* Slightly wider */
+  height: 38px; /* Matches input height */
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  color: var(--zporta-text-color); 
+  cursor: pointer; 
+  border-right: 1px solid var(--zporta-border-color); 
+  background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+}
+/* This is the color fill on top of the checkerboard */
+.colorPreview::before {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; bottom: 4px;
+  background-color: currentColor; /* Uses the style prop */
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--border-radius-sm);
+}
+.colorPreview svg { 
+  pointer-events: none; /* Let clicks pass through to input */
+  z-index: 1;
+  color: var(--zporta-text-color);
+  opacity: 0.6;
+}
+.colorPickerInput { 
+  position: absolute; 
+  top: 0; left: 0; 
+  width: 100%; 
+  height: 100%; 
+  opacity: 0; 
+  cursor: pointer; 
+  border: none; 
+  padding: 0; 
+}
+.colorTextInput { 
+  border: none; 
+  padding: 0.5rem 0.75rem; 
+  font-size: 1rem; 
+  width: 120px; 
+  height: 38px;
+  background: transparent;
+}
+.colorTextInput:focus, .colorTextInput:focus-visible { 
+  outline: none; 
+  box-shadow: none; 
+}
+
+/* Settings Panel Controls (for Columns, Buttons, Accordions) */
+.csGroup { margin-bottom: 1.25rem; }
 .csGroup label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--zporta-text-color); }
 .csGroup label.csCheckboxLabel {
   display: flex;
@@ -633,6 +722,7 @@
 .csPresets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
 .csPresets button { font-family: monospace; padding: 0.5rem; border: 1px solid var(--zporta-border-color); background: var(--zporta-background-light); border-radius: var(--border-radius-sm); cursor: pointer; }
 .csPresets button:hover { background: var(--zporta-background-medium); }
+.csPresets button.active { background: var(--zporta-dark-blue); color: white; border-color: var(--zporta-dark-blue); }
 .csCustomInput {
     width: 100%;
     padding: 0.75rem;
@@ -640,6 +730,10 @@
     border-radius: var(--border-radius-md);
     font-size: 1rem;
     font-family: inherit;
+}
+.csCustomInput.inputError {
+  border-color: var(--zporta-error-color);
+  background-color: var(--zporta-error-bg);
 }
 .csCustomInput:focus-visible {
   outline: 2px solid var(--zporta-gold);
@@ -653,15 +747,56 @@
     margin: 1.5rem 0;
 }
 
-/* --- Utility & Debug --- */
-.emptyEditorState { text-align: center; padding: 4rem 2rem; }
-.uploadError { padding: 1rem 2rem; background-color: var(--zporta-error-bg); color: var(--zporta-error-color); border-bottom: 1px solid var(--zporta-border-color); cursor: pointer; text-align: center; font-weight: 500; }
-.debugView { background-color: var(--zporta-background-dark); border-top: 1px solid var(--zporta-border-color); padding: 1rem 2rem; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); }
-.debugView h4 { color: var(--zporta-text-light); font-weight: 600; margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
-.debugView pre { background-color: #fff; padding: 1rem; border-radius: var(--border-radius-md); font-size: 0.75rem; max-height: 200px; overflow-y: auto; border: 1px solid var(--zporta-border-color); }
+/* --- Accordion Block Styles --- */
+/* These styles are for the *editor* view of the accordion */
+.accordion { width: 100%; position: relative; }
+.accItem { 
+  border: 1px solid var(--zporta-border-color); 
+  border-radius: var(--r-md); 
+  background-clip: padding-box; 
+  margin: 0 0 12px 0; 
+  overflow: visible; 
+  position: relative; /* Anchor controls */
+  background: var(--zporta-background-light);
+}
+.accHeader { 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  background: var(--zporta-background-medium);
+  padding: 8px 12px; 
+  border-bottom: 1px solid var(--zporta-border-color);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+.accTitle { font-weight:600; }
+.accTitleInput { 
+  width:100%; 
+  max-width: 420px; 
+  padding: 6px 8px; 
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--r-sm);
+}
+.accTitleInput:focus, .accTitleInput:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  border-color: var(--zporta-gold);
+  background-color: var(--zporta-background-light);
+}
+.accHeaderBtns { display: flex; gap: 0.25rem; }
+.accHeaderBtns button { margin-left:6px; }
+.accPanel { 
+  padding:12px; 
+  background:var(--zporta-background-light);
+  overflow: visible;
+  position: relative; /* anchor textareas and addBlock menus */
+  border-radius: 0 0 var(--r-md) var(--r-md);
+}
+.accPanelInner{
+  position: relative;          /* extra containment for nested accordions */
+  overflow: visible;           /* <-- ADDED FIX: Ensure inner panel does not clip */
+  z-index: 5;
+}
 
 /* --- Code View Styling --- */
-/* These styles are cleaned up and replace the redundant .btnPrimary/.btnSecondary */
 .codeView {
   background: var(--zporta-background-light);
   border-radius: var(--border-radius-md);
@@ -680,7 +815,7 @@
   display: flex;
   align-items: center;
   gap: .5rem;
-  color: var(--zporta-text-light);
+  color: var(--zporta-text-color);
   font-weight: 500;
   /* Make the label clickable */
   cursor: pointer;
@@ -690,15 +825,6 @@
   display: flex;
   gap: .5rem;
 }
-
-/*
-  REMOVED .btnPrimary and .btnSecondary rules.
-  The provided JS file (LessonEditor.js) correctly uses the
-  .btn, .btn_primary, .btn_secondary, and .btnSize_sm classes,
-  making .btnPrimary and .btnSecondary 100% redundant.
-  This cleanup removes the duplicate code.
-*/
-
 .codeTextarea {
   width: 100%;
   min-height: 360px;
@@ -719,8 +845,7 @@
   color: #cbd5e1;
   cursor: not-allowed;
 }
-/* Add a proper focus style for the textarea */
-.codeTextarea:focus-visible {
+.codeTextarea:focus, .codeTextarea:focus-visible {
   outline: 3px solid color-mix(in oklab, var(--zporta-gold) 80%, white);
   outline-offset: 2px;
   border-color: var(--zporta-gold);
@@ -731,7 +856,7 @@
   color: var(--zporta-text-light);
 }
 
-/* --- Minimal CSS --- */
+/* --- Media Block Editor Styles --- */
 .mediaEditable { position: relative; cursor: pointer; }
 .mediaGearBtn {
   position: absolute; top: 8px; right: 8px;
@@ -739,6 +864,7 @@
   width: 32px; height: 32px; border: none; border-radius: 50%;
   background: rgba(0,0,0,0.6); color: #fff; cursor: pointer;
   transition: opacity 0.2s ease, background-color 0.2s ease;
+  z-index: 2; /* Above image/video */
 }
 .mediaEditable:hover .mediaGearBtn { opacity: 1; }
 .mediaGearBtn { opacity: 0.9; }
@@ -746,27 +872,13 @@
   background: rgba(0,0,0,0.8);
 }
 
-/* --- Accordion style --- */
-.accordion { width: 100%; position: relative; }
-.accItem { border: 1px solid #e5e7eb; border-radius: 8px; background-clip: padding-box; margin: 0 0 12px 0; overflow: visible; }
-.accHeader { display:flex; align-items:center; justify-content:space-between; background:#f9fafb; padding:8px 12px; }
-.accTitle { font-weight:600; }
-.accTitleInput { width:100%; max-width: 420px; padding:6px 8px; }
-.accTitleInput:focus-visible {
-  outline: 2px solid var(--zporta-gold);
-  border-color: var(--zporta-gold);
-}
-.accHeaderBtns button { margin-left:6px; }
-/* .accPanel { padding:12px; background:#fff; } <-- DELETED THIS DUPLICATE RULE */
-.accAddBelow { padding: 8px 12px 12px; }
-
-/* Button system */
-/* This is the main, reusable button system used by the JS */
-.btn { display:inline-flex; align-items:center; justify-content:center;
+/* --- Reusable Button System (used in JS) --- */
+.btn { 
+  display:inline-flex; align-items:center; justify-content:center;
   font-weight:600; text-decoration:none; border:1px solid transparent;
-  padding:.6rem 1.1rem; border-radius:.5rem;
+  padding:.6rem 1.1rem; border-radius:var(--r-md);
   /* Make transition more comprehensive */
-  transition: filter .15s, background-color .15s, color .15s, border-color .15s;
+  transition: filter .15s, background-color .15s, color .15s, border-color .15s, box-shadow .15s;
 }
 .btn:hover {
   filter:brightness(0.95);
@@ -776,7 +888,7 @@
   cursor: not-allowed;
   filter: none;
 }
-.btnBlock { display:flex; width:100%; }
+.btnBlock { display:flex; width:100%; text-align:center; }
 .btnSize_sm { padding:.4rem .85rem; font-size:.9rem; }
 .btnSize_md { padding:.6rem 1.1rem; font-size:1rem; }
 .btnSize_lg { padding:.8rem 1.3rem; font-size:1.1rem; }
@@ -796,25 +908,48 @@
   border-color: #a7b5c9;
   filter: none;
 }
-.btn_link { background:transparent; color: var(--zporta-dark-blue); border-color: transparent; padding:0; }
+.btn_link { background:transparent; color: var(--zporta-dark-blue); border-color: transparent; padding:0; text-decoration: underline; }
 .btn_link:hover:not(:disabled) {
-  text-decoration: underline;
   filter: brightness(0.9);
 }
 
-/* publish classes */
+/* --- Utility & Errors --- */
+.uploadError { 
+  padding: 1rem 2rem; 
+  background-color: var(--zporta-error-bg); 
+  color: var(--zporta-error-color); 
+  border-bottom: 1px solid var(--zporta-border-color); 
+  cursor: pointer; 
+  text-align: center; 
+  font-weight: 500; 
+}
+.debugView { 
+  background-color: var(--zporta-background-dark); 
+  border-top: 1px solid var(--zporta-border-color); 
+  padding: 1rem 2rem; 
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); 
+}
+.debugView h4 { 
+  color: var(--zporta-text-light); 
+  font-weight: 600; 
+  margin: 0 0 0.5rem 0; 
+  font-size: 0.9rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px; 
+}
+.debugView pre { 
+  background-color: #fff; 
+  padding: 1rem; 
+  border-radius: var(--border-radius-md); 
+  font-size: 0.75rem; 
+  max-height: 200px; 
+  overflow-y: auto; 
+  border: 1px solid var(--zporta-border-color); 
+}
 
-.zporta-btn--primary { background: var(--zporta-dark-blue); color:#fff; border:1px solid var(--zporta-dark-blue); }
-.zporta-btn--secondary { background:#fff; color: var(--zporta-dark-blue); border:1px solid var(--zporta-dark-blue); }
-.zporta-btn--ghost { background:transparent; color: var(--zporta-dark-blue); border:1px solid #cbd5e1; }
-.zporta-btn--link { background:transparent; color: var(--zporta-dark-blue); border:0; padding:0; }
-.zporta-btn--sm { padding:.4rem .85rem; font-size:.9rem; }
-.zporta-btn--md { padding:.6rem 1.1rem; font-size:1rem; }
-.zporta-btn--lg { padding:.8rem 1.3rem; font-size:1.1rem; }
-.zporta-btn--block { display:block; width:100%; text-align:center; }
-
+/* --- Dark Mode & Animations --- */
 @media (prefers-color-scheme: dark){
-      /* Add-block menu */
+  /* Add-block menu */
   .addBlockMenu{
     background:#0f172a; /* panel */
     border:1px solid #27324a;
@@ -835,7 +970,7 @@
   }
   .placeholder:hover{
     background:#0f172a;
-    border-color:#ffd166;
+    border-color: var(--zporta-gold); /* Use gold for hover */
   }
 
   /* Floating + button */
@@ -846,6 +981,17 @@
     background:#0f172a;
     border:1px solid #27324a;
   }
+  
+  /* Rich Text Toolbar */
+  .textToolbar {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  .toolbarButton:hover {
+    background-color: #334155;
+  }
+
+  /* Main container variables */
   .editorContainer{
     --zporta-background-light:#0f172a;
     --zporta-background-medium:#0b1220;
@@ -853,11 +999,42 @@
     --zporta-border-color:#1f2a44;
     --zporta-text-color:#e2e8f0;
     --zporta-text-light:#94a3b8;
-    --zporta-dark-blue:#8ab4ff;
-    --zporta-gold:#ffd166;
+    --zporta-dark-blue:#8ab4ff; /* Lighter blue for contrast */
+    --zporta-gold:#ffd166; /* Slightly adjusted gold */
+    --zporta-error-bg: #400c14;
+    --zporta-error-color: #ffaab3;
   }
+  
+  /* Specific component overrides */
   .previewView{ background: var(--zporta-background-light); }
-  .codeTextarea{ background:#0a0f1e; color:#cbd5e1; }
+  .codeTextarea{ background:#0a0f1e; color:#cbd5e1; border-color: #1f2a44; }
+  .debugView pre { background-color: #0b1220; border-color: #1f2a44; }
+  .settingsPanel { background: #0f172a; }
+  .settingsCloseButton { background: #1e293b; color: #94a3b8; }
+  .settingsCloseButton:hover { background: #334155; color: #e2e8f0; }
+  .styleControl input[type="text"] { border-color: #1f2a44; background: #0b1220; color: #e2e8f0; }
+  .csBtnGroup button { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+  .csBtnGroup button:hover { background: #334155; }
+  .csBtnGroup button.active { background: var(--zporta-dark-blue); color: #0b1220; border-color: var(--zporta-dark-blue); }
+  .csPresets button { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+  .csPresets button:hover { background: #334155; }
+  .csCustomInput { border-color: #1f2a44; background: #0b1220; color: #e2e8f0; }
+  .csCustomInput.inputError { border-color: var(--zporta-error-color); background-color: var(--zporta-error-bg); }
+
+  .colorInputWrapper { border-color: #1f2a44; background: #0b1220; }
+  .colorPreview { border-right-color: #1f2a44; }
+  .colorTextInput { background: transparent; color: #e2e8f0; }
+  
+  .accHeader { background: #1e293b; border-color: #1f2a44; }
+  .accTitleInput { border-color: #1f2a44; background: #0b1220; color: #e2e8f0; }
+  .accPanel { background: #0f172a; border-color: #1f2a44; }
+  
+  .btn_secondary { background:#fff; color: #0b1220; border-color: #fff; }
+  .btn_secondary:hover:not(:disabled) { background: #e2e8f0; }
+  .btn_ghost { color: var(--zporta-text-color); border-color: #334155; }
+  .btn_ghost:hover:not(:disabled) { background: #1e293b; border-color: #475569; }
+  .btn_link { color: var(--zporta-dark-blue); }
+  .btn_link:hover:not(:disabled) { filter: brightness(1.2); }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -878,8 +1055,23 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Show add button on touch devices where :hover is unreliable */
 @media (hover: none){
   .addBlockButton{ opacity: 1; transform: scale(1); }
   .addBlockLine{ opacity: 1; }
+  
+  /* Also show block controls persistently on mobile */
+  .blockWrapperSelected .blockControls {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+  }
+  .blockWrapperSelected .textToolbar {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) scale(1);
+  }
 }
 
