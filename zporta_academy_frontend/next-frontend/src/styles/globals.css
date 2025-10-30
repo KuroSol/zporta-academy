@@ -133,6 +133,45 @@
   --app-header-height-desktop: 55px;
   --app-header-height-mobile: 50px;
 
+ /* Lesson multi-column layout styles */
+ .layoutContainer {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 16px;
+   border: 1px dashed var(--zporta-border-light);
+   padding: 16px;
+   margin: 1em 0;
+   background-color: color-mix(in srgb, var(--zporta-background-medium) 50%, transparent);
+   border-radius: var(--border-radius-sm);
+ }
+ .layoutColumn {
+   flex: 1 1 150px;
+   min-width: 150px;
+   border: 1px dotted var(--zporta-border-light);
+   padding: 10px;
+   background-color: var(--zporta-background-light);
+   border-radius: var(--border-radius-sm);
+ }
+ .layoutColumn:focus { outline: none; }
+ .layoutColumn > :first-child { margin-top: 0; }
+ .layoutColumn > :last-child { margin-bottom: 0; }
+ 
+ 
+ 
+ 
+ /* Optional: stack columns on small screens if enabled */
+ @media (prefers-reduced-motion: reduce){
+  html { scroll-behavior: auto !important; }
+}
+
+
+ @media (max-width: 767px) {
+   .layoutContainer.stackMobile .layoutColumn {
+     flex: 0 0 100%;
+     max-width: 100%;
+   }
+ }
+
   /* === Sidebar === */
   --zindex-sidebar: 1030;
   --zindex-sidebar-handle: 1031;

@@ -146,6 +146,11 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         lesson = get_object_or_404(Lesson, permalink=self.kwargs.get("permalink"))
 
+        # Only creator (or staff) may view this detail via the update endpoint
+        if self.request.method in ['GET', 'HEAD', 'OPTIONS']:
+            if lesson.created_by != self.request.user and not self.request.user.is_staff:
+                raise PermissionDenied("You are not allowed to view this edit resource.")
+
         # Check if request method is modifying data
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
             

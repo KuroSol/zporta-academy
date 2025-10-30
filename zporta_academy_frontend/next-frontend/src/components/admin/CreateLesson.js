@@ -1,12 +1,23 @@
 // CreateLesson.js
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import CustomEditor from '@/components/Editor/CustomEditor';
+import LessonEditor from '@/components/Editor/LessonEditor';
 import apiClient from '@/api';
 import { AuthContext } from '@/context/AuthContext';
 import Modal from '@/components/Modal/Modal';
 import CreateQuiz from '@/components/admin/CreateQuiz';
 import styles from '@/styles/admin/CreateLesson.module.css';
+
+// ---- helpers ----
+// strip <style>, then tags; check remaining text/media tokens
+// (Copied from EditLesson, ensure consistency)
+const hasMeaningfulContent = (html) => {
+  const noStyle = String(html || '').replace(/<style[\s\S]*?<\/style>/gi, '');
+  const text = noStyle.replace(/<[^>]+>/g, '').trim();
+  if (text) return true;
+  return /<(img|video|audio|iframe|svg|canvas)\b/i.test(noStyle);
+};
+
 
 const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectId = null }) => {
     const [title, setTitle] = useState('');
@@ -21,7 +32,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
     const [selectedCourse, setSelectedCourse] = useState('');
     // Premium flag
     const [isPremium, setIsPremium] = useState(false);
-    
+
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [messageType, setMessageType] = useState('error');
@@ -99,7 +110,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             setMessage('Failed to load necessary data. Please try again.');
             setMessageType('error');
             if (error.response?.status === 401 || error.response?.status === 403) {
-                logout(); 
+                logout();
                 if (!isModalMode) router.push('/login');
             }
         } finally {
@@ -141,8 +152,9 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
 
     // === Live Preview Logic ===
-    const updatePreview = () => {
+    const updatePreview = async () => { // Made async
         if (!editorRef.current) return;
+        await editorRef.current?.flush?.(); // Ensure content is up-to-date
         const editorContent = editorRef.current.getContent();
 
         const html = `
@@ -179,6 +191,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         setPreviewContent(html);
     };
 
+
     useEffect(() => {
         if (previewIframeRef.current && previewContent) {
             previewIframeRef.current.srcdoc = previewContent;
@@ -196,7 +209,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         }
     }, []);
 
-    const handleEditorChange = (editorContent) => { /* For future use if editor supports live updates */ };
+    // handleEditorChange might be useful if LessonEditor emitted changes, but it doesn't seem to
+    // const handleEditorChange = (editorContent) => { /* Currently unused */ };
 
     const handleSubjectChange = (e) => setSubject(e.target.value);
 
@@ -228,7 +242,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 : [...new Set([...prev, quizId])]
         );
     };
-    
+
     const handleQuizCreated = (newQuiz) => {
         setIsQuizModalOpen(false);
         refreshQuizzes();
@@ -239,53 +253,75 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
         setMessageType('success');
         setTimeout(() => setMessage(''), 3000);
     };
-    
-   const handleSaveLesson = async (publishAfter = false) => {
-        setMessage(''); 
+
+    const handleSaveLesson = async (publishAfter = false) => {
+        setMessage('');
         setMessageType('error');
 
         if (!editorRef.current) {
             setMessage('Editor is not available.'); return;
         }
-        const editorContent = editorRef.current.getContent();
 
-        if (!localStorage.getItem('token')) { 
-            setMessage('Authentication error. Please log in again.'); 
-            if (!isModalMode) router.push('/login'); 
-            return; 
+        // --- CRITICAL FIX: Flush before getting content ---
+        console.log("[CreateLesson] Calling editorRef.flush()...");
+        await editorRef.current?.flush?.();
+        console.log("[CreateLesson] flush() completed.");
+        const editorContent = editorRef.current.getContent();
+        console.log("[CreateLesson] Content from editor:", editorContent);
+        // --- END FIX ---
+
+        if (!localStorage.getItem('token')) {
+            setMessage('Authentication error. Please log in again.');
+            if (!isModalMode) router.push('/login');
+            return;
         }
         if (!title.trim()) { setMessage('Lesson Title is required.'); return; }
         if (!subject) { setMessage('Subject is required.'); return; }
-        if (!editorContent || !editorContent.trim()) { setMessage('Lesson Content cannot be empty.'); return; }
+
+        // Use hasMeaningfulContent helper for validation
+        if (!hasMeaningfulContent(editorContent)) {
+             console.error("[CreateLesson] Validation failed: Content is empty or lacks meaningful tags.");
+             setMessage('Lesson Content cannot be empty.');
+             return;
+        }
+         console.log("[CreateLesson] Content validation passed.");
 
         setSubmitting(true);
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
 
         const payload = {
-        title: title.trim(),
-        content: editorContent,
-        subject,                 // always required
-        tags: tagsArray,
-        template: template,
-        accent_color: accentColor,
-        custom_css: customCSS,
-        template_ref: selectedTemplateRef || null,
+            title: title.trim(),
+            content: editorContent,
+            subject,                 // always required
+            tags: tagsArray,
+            template: template,
+            accent_color: accentColor,
+            custom_css: customCSS,
+            template_ref: selectedTemplateRef || null,
         };
 
         // premium flag
         payload.is_premium = !!isPremium;
 
+       // If no customCSS typed, capture CSS applied in editor toolbar
+        if (!payload.custom_css) {
+            const cssFromEditor = editorRef.current?.getAppliedCSS?.();
+            if (cssFromEditor) payload.custom_css = cssFromEditor;
+        }
         // strip accidental <script> wrappers before sending
         if (customJS.trim()) {
-        payload.custom_js = customJS.replace(/<\/?script[^>]*>/gi, '');
+            payload.custom_js = customJS.replace(/<\/?script[^>]*>/gi, '');
         }
 
         if (videoUrl.trim()) {
             payload.video_url = videoUrl.trim();
         }
 
+        console.log("[CreateLesson] Sending payload to API:", payload);
+
         try {
             const response = await apiClient.post('/lessons/', payload);
+            console.log("[CreateLesson] API Create successful:", response);
             const newLessonData = response.data;
             const lessonPermalink = newLessonData.permalink;
 
@@ -294,44 +330,53 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
             // Optional: attach to a course first, if selected
             if (selectedCourse && lessonPermalink) {
+                 console.log("[CreateLesson] Attaching lesson to course:", selectedCourse);
                 try {
                     setMessage('Lesson saved. Attaching to selected course...');
                     await apiClient.post(`/lessons/${lessonPermalink}/attach-course/`, {
                         course_id: selectedCourse
                     });
+                     console.log("[CreateLesson] Course attachment successful.");
                     overallMessage = `Lesson saved and attached to course successfully!`;
                 } catch (attachErr) {
-                    console.error('Attach course error:', attachErr.response?.data || attachErr.message);
+                    console.error('[CreateLesson] Attach course error:', attachErr.response?.data || attachErr.message);
                     // Surface backend premium rule messages clearly
                     const attachMsg = attachErr.response?.data?.error || attachErr.response?.data?.detail || attachErr.message || 'Unknown error';
                     overallMessage = `Lesson saved, but failed to attach to course: ${attachMsg}`;
-
                     overallMessageType = 'warning';
                 }
             }
 
             if (selectedQuizzes.length > 0 && lessonPermalink) {
-                setMessage('Lesson saved. Attaching quizzes...'); 
+                 console.log("[CreateLesson] Attaching quizzes:", selectedQuizzes);
+                setMessage('Lesson saved. Attaching quizzes...');
                 const quizAttachmentPromises = selectedQuizzes.map(quizId =>
                     apiClient.post(`/lessons/${lessonPermalink}/add-quiz/`, { quiz_id: quizId })
-                        .catch(err => ({ 
-                            type: 'QuizAttachment', id: quizId, 
+                        .catch(err => ({
+                            type: 'QuizAttachment', id: quizId,
                             error: err.response?.data?.detail || err.message || 'Unknown error'
                         }))
                 );
                 const results = await Promise.allSettled(quizAttachmentPromises);
+                 console.log("[CreateLesson] Quiz attachment results:", results);
                 const failedAttachments = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.error));
                 if (failedAttachments.length > 0) {
-                    const failedTitles = failedAttachments.map(f => quizzes.find(q => q.id === (f.reason?.id || f.value?.id))?.title || 'Unknown Quiz').join(', ');
-                    overallMessage = `Lesson saved, but failed to attach: ${failedTitles}.`;
+                     const failedDetails = failedAttachments.map(f => {
+                         const quiz = quizzes.find(q => String(q.id) === String(f.reason?.id || f.value?.id));
+                         return `${quiz?.title || 'Unknown Quiz'} (${f.reason?.error || f.value?.error || 'Unknown reason'})`;
+                     }).join(', ');
+                     console.error("[CreateLesson] Failed quiz attachments:", failedDetails);
+                    overallMessage = `Lesson saved, but failed to attach some quizzes: ${failedDetails}.`;
                     overallMessageType = 'warning';
                 } else {
+                     console.log("[CreateLesson] All selected quizzes attached successfully.");
                     overallMessage = `Lesson and all selected quizzes attached successfully!`;
                 }
             }
-            
+
             // If user chose Publish, do it after attachments
             if (publishAfter && lessonPermalink) {
+                console.log("[CreateLesson] Attempting to publish lesson:", lessonPermalink);
                 // Friendly client-side guard for premium rule (backend also enforces)
                 if (isPremium && !selectedCourse) {
                     setMessage('Draft saved. Premium lessons must be attached to a premium course before publishing.');
@@ -349,10 +394,11 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 }
                 try {
                     await apiClient.post(`/lessons/${lessonPermalink}/publish/`);
+                     console.log("[CreateLesson] Publish successful.");
                     overallMessage = `Lesson published!`;
                     overallMessageType = 'success';
                 } catch (pubErr) {
-                    console.error('Publish error:', pubErr.response?.data || pubErr.message);
+                    console.error('[CreateLesson] Publish error:', pubErr.response?.data || pubErr.message);
                     const pubMsg = pubErr.response?.data?.detail || pubErr.response?.data?.error || pubErr.message || 'Unknown error';
                     overallMessage = `Draft saved, but publish failed: ${pubMsg}`;
                     overallMessageType = 'warning';
@@ -361,14 +407,14 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
             setMessage(overallMessage);
             setMessageType(overallMessageType);
-            
+
             if (isModalMode && onSuccess) {
-                onSuccess(newLessonData); 
-            } else {
+                onSuccess(newLessonData);
+            } else if (!isModalMode) { // Only redirect if not in modal mode
                 setTimeout(() => router.push('/admin/lessons'), overallMessageType === 'success' ? 1500 : 3000);
             }
         } catch (error) {
-            console.error('Error creating lesson:', error.response ? error.response.data : error.message);
+            console.error('[CreateLesson] Error creating lesson:', error.response ? error.response.data : error.message);
             let errorMsg = 'Failed to create lesson. ';
             if (error.response?.data) {
                 if (typeof error.response.data === 'object' && error.response.data !== null) {
@@ -386,25 +432,28 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             setMessage(errorMsg);
             setMessageType('error');
             if (error.response?.status === 401 || error.response?.status === 403) {
-            logout();
-            if (!isModalMode) router.push('/login');
+                logout();
+                if (!isModalMode) router.push('/login');
             }
         } finally {
+             console.log("[CreateLesson] handleSaveLesson finished.");
             setSubmitting(false);
         }
     };
 
+
     const containerClass = isModalMode ? styles.createLessonModalContainer : styles.pageContainer;
 
-    if (loading && !isModalMode) { 
+    if (loading && !isModalMode) {
         return <div className={styles.loading}>Loading lesson creation tools...</div>;
     }
-    
+
     return (
         <div className={containerClass}>
             <h2 className={styles.pageTitle}>{isModalMode ? 'Create New Lesson' : 'Create Lesson Page'}</h2>
-            
+
             {message && (
+                // CORRECTED className TEMPLATE LITERAL
                 <p className={`${styles.message} ${styles[messageType] || styles.error}`}>
                     {message}
                 </p>
@@ -422,15 +471,15 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
 
                         <div className={styles.formGroup}>
                             <label htmlFor="lessonSubject">Subject <span className={styles.required}>*</span></label>
-                            <select 
-                                id="lessonSubject" 
-                                className={styles.selectField} 
+                            <select
+                                id="lessonSubject"
+                                className={styles.selectField}
                                 value={subject}
-                                onChange={handleSubjectChange} 
-                                required 
+                                onChange={handleSubjectChange}
+                                required
                                 disabled={submitting || loading || subjects.length === 0}
                             >
-                                <option value=""> 
+                                <option value="">
                                     {loading && subjects.length === 0 ? "Loading subjects..." : (subjects.length === 0 ? "No subjects available" : "Select a Subject")}
                                 </option>
                                 {subjects.map((subj) => (
@@ -438,7 +487,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 ))}
                             </select>
                         </div>
-                    
+
                         <div className={styles.formGroup}>
                             <label htmlFor="lessonVideoUrl">Video URL (Optional)</label>
                             <input id="lessonVideoUrl" className={styles.inputField} type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="e.g., https://youtube.com/watch?v=..." disabled={submitting || loading} />
@@ -448,7 +497,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                             <label htmlFor="lessonTags">Tags (Optional, comma-separated)</label>
                             <input id="lessonTags" className={styles.inputField} type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., algebra, math, basics" disabled={submitting || loading} />
                         </div>
-                        
+
                         {/* Access Type */}
                         <div className={styles.formGroup}>
                             <label htmlFor="lessonAccessType">Access</label>
@@ -516,10 +565,11 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 value={accentColor}
                                 onChange={(e) => setAccentColor(e.target.value)}
                                 disabled={submitting || loading}
-                                className={styles.inputField} 
+                                className={styles.inputField}
                             />
                         </div>
-                        
+
+                        {/* CORRECTED className TEMPLATE LITERAL */}
                         <div className={`${styles.formGroup} ${styles.formGroupSpan2}`}> {/* Spans 2 columns for better layout */}
                             <label htmlFor="adminTemplateRef">Use Admin Template (Optional)</label>
                             <select
@@ -542,9 +592,11 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 </p>
                             )}
                         </div>
-                        
+
+                        {/* CORRECTED className TEMPLATE LITERAL */}
                         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                             <label htmlFor="customCSS">Custom CSS (Overrides template CSS if provided)</label>
+                             {/* CORRECTED self-closing tag */}
                             <textarea
                                 id="customCSS"
                                 rows="6"
@@ -553,16 +605,18 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 placeholder="e.g., .lesson-title { font-size: 2em; color: blue; }"
                                 disabled={submitting || loading}
                                 className={styles.inputField}
-                            />
+                            ></textarea>
                             <p className={styles.fieldHelpText}>
-                                CSS entered here will be applied specifically to this lesson. 
+                                CSS entered here will be applied specifically to this lesson.
                                 If an admin template is selected, its CSS will appear here; you can modify it.
                             </p>
                         </div>
-                        
+
                         {/* Custom JS (scoped to this lesson only) */}
+                         {/* CORRECTED className TEMPLATE LITERAL */}
                         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                             <label htmlFor="customJS">Custom JS (runs only on this lesson)</label>
+                             {/* CORRECTED self-closing tag */}
                             <textarea
                                 id="customJS"
                                 rows="6"
@@ -575,7 +629,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 // })(document.querySelector('[data-lesson-root]'));`}
                                 disabled={submitting || loading}
                                 className={styles.inputField}
-                            />
+                            ></textarea>
                             <p className={styles.fieldHelpText}>
                                 Inline JS only. External <code>&lt;script src&gt;</code> is blocked by the API validator.
                                 Your code receives no globals—prefer selecting elements under this lesson root.
@@ -586,7 +640,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 {/* Section 2.5: Attach to Course (Optional) */}
                 <fieldset className={styles.formSection}>
                     <legend>Attach to Course {isPremium ? '(Required for Premium before publish)' : '(Optional)'}</legend>
- 
+
                     <div className={styles.formGrid}>
                         <div className={styles.formGroup}>
                             <label htmlFor="attachCourseSelect">Attach to an existing course</label>
@@ -625,7 +679,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 {/* Section 3: Attach Quizzes */}
                 <fieldset className={styles.formSection}>
                     <legend>Attach Quizzes (Optional)</legend>
-                    <div className={styles.addContentSection}> 
+                    <div className={styles.addContentSection}>
                         <div className={styles.contentSectionHeader}>
                             <h3>Available Quizzes</h3>
                             <button
@@ -649,7 +703,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                                 id={`lesson-quiz-${q.id}`}
                                                 checked={selectedQuizzes.includes(q.id)}
                                                 onChange={() => handleQuizToggle(q.id)}
-                                                disabled={submitting || loading || !!q.lesson || !!q.course} 
+                                                disabled={submitting || loading || !!q.lesson || !!q.course}
                                             />
                                             <label htmlFor={`lesson-quiz-${q.id}`}>
                                                 {q.title}
@@ -660,7 +714,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                                 </div>
                             ) : (
                                 <p className={styles.noContentMessage}>
-                                    No quizzes available for the selected subject or to create. 
+                                    No quizzes available for the selected subject or to create.
                                     Select a subject to enable quiz creation.
                                 </p>
                             )}
@@ -673,11 +727,12 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                     <legend>Lesson Content <span className={styles.required}>*</span></legend>
                     <div className={styles.editorContainer}>
                         {!(submitting || loading) ? (
-                            <CustomEditor 
-                                ref={editorRef} 
-                                onSave={handleEditorChange}
-                                mediaCategory="lesson"
-                            />
+                        <LessonEditor
+                            ref={editorRef}
+                           // Removed onSave prop as LessonEditor doesn't use it
+                            mediaCategory="lesson"
+                            externalCss={customCSS}
+                        />
                         ) : (
                             <div className={styles.editorPlaceholder}>Editor is currently disabled...</div>
                         )}
@@ -691,6 +746,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         <p className={styles.fieldHelpText}>
                             See how your content, custom CSS, and JS will look to a student.
                         </p>
+                        {/* CORRECTED className TEMPLATE LITERAL */}
                         <button
                             type="button"
                             onClick={updatePreview}
@@ -701,6 +757,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         </button>
                     </div>
                     <div className={styles.previewIframeContainer}>
+                         {/* CORRECTED self-closing tag */}
                         <iframe
                             ref={previewIframeRef}
                             className={styles.previewIframe}
@@ -714,6 +771,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                 {/* Action Buttons */}
                 <div className={styles.formActions}>
                     {/* Save as Draft (private) */}
+                     {/* CORRECTED className TEMPLATE LITERAL */}
                     <button
                         type="button"
                         onClick={() => handleSaveLesson(false)}
@@ -724,6 +782,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         {submitting ? 'Saving…' : 'Save Draft'}
                     </button>
                     {/* Publish (requires subject) */}
+                     {/* CORRECTED className TEMPLATE LITERAL */}
                     <button
                         type="button"
                         onClick={() => handleSaveLesson(true)}
@@ -737,8 +796,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             </form>
 
             {/* Modal for Creating a New Quiz */}
-            <Modal 
-                isOpen={isQuizModalOpen} 
+            <Modal
+                isOpen={isQuizModalOpen}
                 onClose={() => setIsQuizModalOpen(false)}
                 title="Create New Quiz"
             >
@@ -746,7 +805,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                     onSuccess={handleQuizCreated}
                     onClose={() => setIsQuizModalOpen(false)}
                     isModalMode={true}
-                    initialSubjectId={subject || (subjects.length > 0 ? String(subjects[0].id) : null)} 
+                    initialSubjectId={subject || (subjects.length > 0 ? String(subjects[0].id) : null)}
                 />
             </Modal>
         </div>

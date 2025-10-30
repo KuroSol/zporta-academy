@@ -572,6 +572,10 @@
     gap: 6px;
     cursor: pointer;
 }
+/* Legacy accordion class aliases */
+.accordionItem { border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-sm); margin: 1em 0; background-color: var(--zporta-background-light); }
+.accordionHeader { padding: 10px 15px; font-weight: 600; background-color: var(--zporta-background-medium); border-bottom: 1px solid var(--zporta-border-color); outline: none; }
+.accordionContent { padding: 15px; outline: none; border-top: 1px solid var(--zporta-border-color); }
 
 /* --- RESPONSIVE DESIGN --- */
 @media (max-width: 768px) {

@@ -1,1240 +1,543 @@
-import React, { useEffect, useLayoutEffect, useState, useContext, useRef, useMemo } from "react";
+// src/components/LessonDetail.js
+import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
 import root from "react-shadow";
-import Link from 'next/link';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-import dynamic from 'next/dynamic';
-import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from 'react-icons/fa'; // Removed FaEdit, FaTrash as Pencil/Trash2 are used
-import { Pencil, Trash2 } from 'lucide-react';
-const CustomEditor = dynamic(() => import('@/components/Editor/CustomEditor'), { ssr: false });
+import Link from "next/link";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from "react-icons/fa";
+import { Pencil, Trash2 } from "lucide-react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
-import QuizCard from '@/components/QuizCard';
+import QuizCard from "@/components/QuizCard";
 import styles from "@/styles/LessonDetail.module.css";
+import "@/styles/Editor/ViewerAccordion.module.css";
 
-import "@/styles/Editor/ViewerAccordion.module.css"; // Keep this for global accordion styles used by dangerouslySetInnerHTML
-
-console.log('LessonDetail Styles:', styles);
-
-// Accordion Initialization Function (Copied from CourseDetail.js)
-// This function handles finding, initializing, and managing click events for accordions.
+/* ---- helpers kept (used by accordion + content render) ---- */
 function initializeAccordions(containerElement) {
-  if (!containerElement) return; // Exit if no container element is provided
-
-  // Find all elements with the class 'accordion-item' within the container
+  if (!containerElement) return;
   const accordions = containerElement.querySelectorAll(".accordion-item");
-
   accordions.forEach((accordion) => {
-    // Find the header and content elements within each accordion item
-    const header   = accordion.querySelector(".accordion-header");
-    // NOTE: This logic expects '.accordion-content' directly inside '.accordion-item'
-    // Ensure your CustomEditor output matches this structure for accordions.
+    const header = accordion.querySelector(".accordion-header");
     const contents = accordion.querySelectorAll(".accordion-content");
-    // Read the desired default state ('open' or 'closed') from the data attribute
     const defaultState = accordion.getAttribute("data-default-state") || "closed";
-
-    // --- Pre-initialization Checks ---
-    // 1. Check if header exists
-    // 2. Check if at least one content element exists
-    // 3. Check if this specific accordion has already been initialized (using a data attribute)
-    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") {
-      // If any check fails, skip initialization for this accordion item
-      return;
-    }
-    // Mark this accordion as initialized to prevent re-binding listeners
+    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") return;
     accordion.dataset.accordionInitialized = "true";
-
-    // --- Set Initial Visual State ---
-    // Add or remove the 'is-open' class based on the 'data-default-state' attribute
-    // The actual visual change (showing/hiding content, rotating icon) is handled by CSS rules
-    // targeting the '.is-open' class (defined in ViewerAccordion.css).
-    if (defaultState === "open") {
-      accordion.classList.add("is-open");
-    } else {
-      accordion.classList.remove("is-open");
-    }
-
-    // --- Click Handler Definition ---
-    // Define the function that will run when the accordion header is clicked
-    const clickHandler = () => {
-      // Toggle the 'is-open' class on the main accordion item element
-      accordion.classList.toggle("is-open");
-      // CSS transitions in ViewerAccordion.css handle the smooth opening/closing animation.
-    };
-
-    // --- Event Listener Management ---
-    // IMPORTANT: Clean up any previously attached listener *before* adding a new one.
-    // This prevents duplicate listeners if the initialization logic runs multiple times
-    // (e.g., due to React re-renders or effect dependencies changing).
-    // We store a reference to the handler on the header element itself.
-    if (header.__accordionClickHandler__) {
-      header.removeEventListener("click", header.__accordionClickHandler__);
-    }
-    // Add the new click listener to the header
+    if (defaultState === "open") accordion.classList.add("is-open");
+    else accordion.classList.remove("is-open");
+    const clickHandler = () => accordion.classList.toggle("is-open");
+    if (header.__accordionClickHandler__) header.removeEventListener("click", header.__accordionClickHandler__);
     header.addEventListener("click", clickHandler);
-    // Store a reference to the *current* clickHandler on the header element.
-    // This allows us to specifically remove *this* listener during cleanup.
     header.__accordionClickHandler__ = clickHandler;
-
-    // --- Nested Accordion Initialization ---
-    // Recursively initialize any accordions found *inside* the content of the current accordion.
-    // This ensures that nested accordions also become interactive.
-    contents.forEach((content) => {
-      // Use requestAnimationFrame to defer the nested initialization slightly.
-      // This can help ensure the browser has processed any DOM updates within the content
-      // before attempting to initialize nested items, especially if content is loaded dynamically.
-      requestAnimationFrame(() => {
-        initializeAccordions(content);
-      });
-    });
+    contents.forEach((content) => requestAnimationFrame(() => initializeAccordions(content)));
   });
 }
+const sanitizeContentViewerHTML = (htmlString) => {
+  if (!htmlString) return "";
+  if (typeof window === "undefined") return htmlString;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, "text/html");
+    doc.querySelectorAll('[contenteditable="true"]').forEach((el) => el.removeAttribute("contenteditable"));
+    return doc.body.innerHTML;
+  } catch {
+    return htmlString;
+  }
+};
+const sanitizeLessonCss = (css) => {
+  if (!css) return "";
+  let out = css;
+  out = out.replace(/:root\b/g, ":host");
+  out = out.replace(/\b(html|body)\b(?![^]*?<\/style>)/g, ".lesson-content");
+  return out;
+};
+const getLessonHTML = (l) => l?.content ?? "";
 
+/* ---- component ---- */
+const LessonDetail = () => {
+  const router = useRouter();
+  const { username: paramUsername, subject, date, lessonSlug } = router.query || {};
+  const permalink = useMemo(() => {
+    if (!paramUsername || !subject || !date || !lessonSlug) return null;
+    return `${paramUsername}/${subject}/${date}/${lessonSlug}`;
+  }, [paramUsername, subject, date, lessonSlug]);
+  const { user, token, logout } = useContext(AuthContext);
 
-// --- Floating Action Buttons Component ---
-// Provides quick actions like scrolling to top, marking complete, and going back.
-const FloatingActionButtons = ({ onTopClick, onCompleteClick, onBackClick }) => {
-    const [isOpen, setIsOpen] = useState(false); // State to control the radial menu visibility
+  const [lessonData, setLessonData] = useState(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [gateInfo, setGateInfo] = useState(null);
+  const [accentColor, setAccentColor] = useState("#222E3B");
+  const [customCSS, setCustomCSS] = useState("");
+  const [customJS, setCustomJS] = useState("");
+  const [quizzes, setQuizzes] = useState([]);
 
-    // Toggles the open/closed state of the radial menu
-    const toggleMenu = () => setIsOpen(!isOpen);
+  const lessonContentDisplayRef = useRef(null);
+
+  const lessonHTML = useMemo(() => getLessonHTML(lessonData?.lesson), [lessonData?.lesson]);
+
+  const stripHTML = (html) => {
+    if (!html) return "";
+    const noStyle = String(html).replace(/<style[\s\S]*?<\/style>/gi, "");
+    const noTags = noStyle.replace(/<[^>]+>/g, " ");
+    return noTags.replace(/\s+/g, " ").trim();
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const initialize = async () => {
+      if (!permalink) {
+        if (isMounted) {
+          setLoading(false);
+          setError("Invalid URL.");
+        }
+        return;
+      }
+      setLoading(true);
+      setError("");
+      try {
+        const lessonRes = await apiClient.get(`/lessons/${permalink}/`);
+        if (!isMounted) return;
+        if (lessonRes?.data?.access === "gated" && !lessonRes.data.lesson) {
+          setGateInfo({ message: lessonRes.data.message, course: lessonRes.data.course });
+          setLessonData({ lesson: null, seo: lessonRes.data.seo || null });
+        } else if (lessonRes.data.lesson) {
+          setLessonData(lessonRes.data);
+          setAccentColor(lessonRes.data.lesson.accent_color || "#222E3B");
+          setCustomCSS(lessonRes.data.lesson.custom_css || "");
+          setCustomJS(lessonRes.data.lesson.custom_js || "");
+          setQuizzes(lessonRes.data.lesson.quizzes || []);
+        } else {
+          throw new Error("Lesson data not found in response.");
+        }
+
+        if (token && lessonRes.data.lesson) {
+          const statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
+          if (!isMounted) return;
+          setIsEnrolled(statusRes.data.is_enrolled);
+          setIsCompleted(statusRes.data.is_completed);
+        } else {
+          setIsEnrolled(false);
+          setIsCompleted(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          if (err.response?.status === 404) setError("Lesson not found.");
+          else if (err.response?.status === 401) {
+            setError("Unauthorized.");
+            logout();
+            router.push("/login");
+          } else if (err.response?.status === 403) setError(err.response?.data?.detail || "Access forbidden.");
+          else setError("An error occurred loading lesson data.");
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    initialize();
+    return () => {
+      isMounted = false;
+    };
+  }, [permalink, token, logout, router]);
+
+  /* Accordions on read-only view */
+  useEffect(() => {
+    let timeoutId = null;
+    let raf = null;
+    const init = () => {
+      if (lessonHTML && lessonContentDisplayRef.current) initializeAccordions(lessonContentDisplayRef.current);
+    };
+    if (lessonHTML) {
+      raf = requestAnimationFrame(() => {
+        timeoutId = setTimeout(init, 50);
+      });
+    }
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (lessonContentDisplayRef.current) {
+        const headers = lessonContentDisplayRef.current.querySelectorAll(".accordion-header");
+        headers.forEach((header) => {
+          if (header.__accordionClickHandler__) {
+            header.removeEventListener("click", header.__accordionClickHandler__);
+            delete header.__accordionClickHandler__;
+          }
+        });
+        lessonContentDisplayRef.current
+          .querySelectorAll(".accordion-item")
+          .forEach((item) => delete item.dataset.accordionInitialized);
+      }
+    };
+  }, [lessonHTML]);
+
+  /* Per-lesson Custom JS in shadow DOM */
+  useEffect(() => {
+    if (loading || typeof window === "undefined") return;
+    const code = (lessonData?.lesson?.custom_js || "").trim();
+    if (!code) return;
+    const timeoutId = setTimeout(() => {
+      const hostEl = document.querySelector(`.${styles.lessonShadowRoot}`);
+      const shadowRoot = hostEl?.shadowRoot;
+      if (!shadowRoot) return;
+      try {
+        new Function("document", "root", code)(shadowRoot, hostEl);
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [loading, lessonData, styles.lessonShadowRoot]);
+
+  /* Google Fonts into shadow DOM if present in CSS */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const css = lessonData?.lesson?.custom_css || "";
+    const fontMatch = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
+    const fontHref = fontMatch?.[1];
+    if (!fontHref) return;
+    const hostEl = document.querySelector(`.${styles.lessonShadowRoot}`);
+    const shadowRoot = hostEl?.shadowRoot;
+    if (!shadowRoot) return;
+    if (shadowRoot.querySelector(`link[href="${fontHref}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = fontHref;
+    shadowRoot.appendChild(link);
+    return () => {
+      try {
+        const existing = shadowRoot.querySelector(`link[href="${fontHref}"]`);
+        if (existing) shadowRoot.removeChild(existing);
+      } catch {}
+    };
+  }, [lessonData?.lesson?.custom_css, styles.lessonShadowRoot]);
+
+  /* actions */
+  const handleCompleteLesson = async () => {
+    if (!lessonData?.lesson?.id || !permalink || isCompleted || isSubmitting) return;
+    setError("");
+    setSuccessMessage("");
+    setIsSubmitting(true);
+    try {
+      const response = await apiClient.post(`/lessons/${permalink}/complete/`, {});
+      setSuccessMessage(response.data.message || "Lesson marked complete!");
+      setIsCompleted(true);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to mark lesson complete.");
+      if (err.response?.status === 401) logout();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteLesson = async () => {
+    if (!permalink || lessonData?.lesson?.is_locked || isSubmitting) {
+      setError("Cannot delete: Lesson is locked, submitting, or invalid.");
+      return;
+    }
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      setSuccessMessage("Click delete again to confirm.");
+      setTimeout(() => {
+        setConfirmingDelete(false);
+        setSuccessMessage("");
+      }, 4000);
+      return;
+    }
+    setError("");
+    setSuccessMessage("");
+    setIsSubmitting(true);
+    try {
+      await apiClient.delete(`/lessons/${permalink}/delete/`);
+      setSuccessMessage("Lesson deleted. Redirecting...");
+      setTimeout(() => router.push("/admin/lessons"), 1500);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to delete lesson.");
+      setConfirmingDelete(false);
+      if (err.response?.status === 401) logout();
+      setIsSubmitting(false);
+    }
+  };
+
+  const getYoutubeEmbedUrl = (url) => {
+    if (!url) return null;
+    let videoId = null;
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.searchParams.has("v")) videoId = parsedUrl.searchParams.get("v");
+      else if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.pathname.startsWith("/embed/")) videoId = parsedUrl.pathname.substring("/embed/".length);
+      else if (parsedUrl.hostname === "youtu.be") videoId = parsedUrl.pathname.slice(1);
+      else if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.pathname.startsWith("/shorts/")) videoId = parsedUrl.pathname.split("/shorts/")[1];
+      if (videoId) {
+        videoId = videoId.split("&")[0].split("?")[0];
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    } catch {}
+    return null;
+  };
+
+  /* render guards */
+  if (loading) return <div style={{ padding: "20px", textAlign: "center" }}>Loading lesson details...</div>;
+  if (error && !lessonData && !gateInfo) return <p className={`${styles.message} ${styles.error}`} style={{ padding: "20px", textAlign: "center" }}>{error}</p>;
+
+  if (gateInfo && !lessonData?.lesson) {
+    return (
+      <div className={styles.lessonDetailContainer}>
+        <Head>
+          <title>Premium Lesson</title>
+          <meta name="robots" content="noindex,nofollow" />
+        </Head>
+        <h1 className={styles.lessonTitle}>Premium Lesson</h1>
+        {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
+        <p className={`${styles.message} ${styles.warning}`}>{gateInfo.message || "Enrollment required."}</p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 12 }}>
+          {gateInfo.course?.permalink && (
+            <Link href={`/courses/${gateInfo.course.permalink}`} className={`${styles.btn} ${styles.btnPrimary}`}>
+              Go to Course: {gateInfo.course.title}
+            </Link>
+          )}
+          {!token && (
+            <Link href={`/login?redirect=/lessons/${permalink}`} className={`${styles.btn} ${styles.btnSecondary}`}>
+              Log in to Enroll
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!lessonData?.lesson) {
+    if (error) return <p className={`${styles.message} ${styles.error}`} style={{ padding: "20px", textAlign: "center" }}>{error}</p>;
+    return <p style={{ padding: "20px", textAlign: "center" }}>Lesson not found.</p>;
+  }
+
+  const { lesson, seo } = lessonData;
+  const accent = lesson.accent_color || "#222E3B";
+  const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
+  const isLocked = lesson.is_locked;
+  const isAttachedToCourse = !!lesson.course_data?.permalink;
 
   return (
-    // Container for the entire FAB menu
-    <div className={styles.radialMenuContainer}>
-      {/* The menu itself, applies 'open' class when active */}
-      <div className={`${styles.radialMenu} ${isOpen ? styles.open : ''}`}>
-        {/* Main button to toggle the menu */}
-        <button className={`${styles.localFab} ${styles.radialMenuButton} ${styles.mainButton}`} onClick={toggleMenu}>
-          {/* Shows close (X) icon when open, plus (+) icon when closed */}
-          {isOpen ? <FaTimes size={24} /> : <FaPlus size={24} />}
-        </button>
-        {/* Button to scroll to top */}
-        <button
-          className={`${styles.radialMenuButton} ${styles.item} ${styles.item1}`}
-          onClick={() => { onTopClick(); setIsOpen(false); }} // Executes action and closes menu
-          title="Scroll to Top" // Tooltip for accessibility
-        >
-          <FaArrowUp size={20} />
-        </button>
-        {/* Button to mark lesson complete */}
-        <button
-          className={`${styles.radialMenuButton} ${styles.item} ${styles.item2}`}
-          onClick={() => { onCompleteClick(); setIsOpen(false); }} // Executes action and closes menu
-          title="Mark Complete" // Tooltip for accessibility
-        >
-          <FaCheck size={20} />
-        </button>
-        {/* Button to go back */}
-        <button
-          className={`${styles.radialMenuButton} ${styles.item} ${styles.item3}`}
-          onClick={() => { onBackClick(); setIsOpen(false); }} // Executes action and closes menu
-          title="Go Back" // Tooltip for accessibility
-        >
-          <FaArrowLeft size={20} />
-        </button>
+    <div className={styles.lessonDetailContainer}>
+      <Head>
+        <title>{seo?.title || lesson.title || "Lesson Details"}</title>
+        <meta name="description" content={seo?.description || stripHTML(lesson.content).substring(0, 160)} />
+        <meta
+          name="robots"
+          content={lesson.status === "draft" || lesson.is_premium || gateInfo ? "noindex,nofollow" : seo?.robots || "index,follow"}
+        />
+        <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
+        {(() => {
+          const base = typeof window !== "undefined" ? window.location.origin : "";
+          let canonical = lesson.canonical_url || "";
+          if (!canonical && base && permalink) canonical = `${base}/lessons/${permalink}`;
+          return canonical ? <link rel="canonical" href={canonical} /> : null;
+        })()}
+        <meta property="og:title" content={lesson.og_title || seo?.title || lesson.title} />
+        <meta property="og:description" content={lesson.og_description || seo?.description || stripHTML(lesson.content).substring(0, 160)} />
+        {lesson.og_image && <meta property="og:image" content={lesson.og_image} />}
+      </Head>
+
+      <h1 className={styles.lessonTitle}>
+        {lesson.title} {isLocked && isOwner && <span className={styles.lockedIndicator} title="Locked">🔒</span>}
+      </h1>
+
+      {/* Course info */}
+      {isAttachedToCourse ? (
+        <div className={styles.courseInfo}>
+          <p>
+            Part of course:{" "}
+            <Link href={`/courses/${lesson.course_data.permalink}`} className={styles.courseLink}>
+              {lesson.course_data.title}
+            </Link>
+          </p>
+        </div>
+      ) : (
+        <div className={styles.lessonStatusInfo}>
+          <p>
+            Standalone Lesson{" "}
+            {lesson.is_premium ? <span className={styles.badgePremium}>Premium</span> : <span className={styles.badgeFree}>Free</span>}
+          </p>
+          {lesson.is_premium && !isEnrolled && (
+            <p className={styles.enrollPrompt}>{token ? "Enrollment required." : <Link href={`/login?redirect=/lessons/${permalink}`}>Log in</Link>}</p>
+          )}
+        </div>
+      )}
+
+      {/* messages */}
+      {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
+      {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
+
+      {/* video */}
+      {lesson.video_url &&
+        (() => {
+          const url = getYoutubeEmbedUrl(lesson.video_url);
+          return url ? (
+            <div className={styles.lessonVideoEmbed}>
+              <iframe
+                src={url}
+                title={`${lesson.title} Video`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div className={styles.lessonVideoLink}>
+              <p>
+                Video:{" "}
+                <a href={lesson.video_url} target="_blank" rel="noopener noreferrer">
+                  {lesson.video_url}
+                </a>
+              </p>
+            </div>
+          );
+        })()}
+
+      {/* content in shadow DOM */}
+<root.div className={styles.lessonShadowRoot} data-lesson-root="true" style={{ "--accent-color": accent }}>
+  <style>{`:host { --accent-color: ${accent}; }
+${sanitizeLessonCss(customCSS || "")}
+
+/* grid/columns */
+.lesson-content .zporta-columns{display:grid;gap:1.5rem;grid-template-columns:var(--cols-base, 1fr);align-items:start;margin-block:1rem;}
+.lesson-content .zporta-column{min-width:0;}
+.lesson-content .zporta-column > *{word-break:break-word;max-width:100%;margin-bottom:1rem;}
+.lesson-content .zporta-column > *:last-child{margin-bottom:0;}
+.lesson-content .zporta-column img,.lesson-content .zporta-column video,.lesson-content .zporta-column iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem;}
+@media (min-width:640px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-sm, var(--cols-base, 1fr));}}
+@media (min-width:768px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)));}}
+@media (min-width:1024px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr))));}}
+
+/* buttons */
+.lesson-content .zporta-button{display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-decoration:none;border:1px solid transparent;padding:.6rem 1.1rem;border-radius:var(--r-md);transition:filter .15s}
+.lesson-content .zporta-button:hover{filter:brightness(.95)}
+.lesson-content .zporta-btn--block{display:flex;width:100%;text-align:center}
+.lesson-content .zporta-btnSize--sm{padding:.4rem .85rem;font-size:.9rem}
+.lesson-content .zporta-btnSize--md{padding:.6rem 1.1rem;font-size:1rem}
+.lesson-content .zporta-btnSize--lg{padding:.8rem 1.3rem;font-size:1.1rem}
+.lesson-content .zporta-btn--primary{background:var(--zporta-dark-blue,#0A2342);color:#fff;border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--secondary{background:#fff;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--ghost{background:transparent;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-border-color,#e2e8f0)}
+.lesson-content .zporta-btn--link{background:transparent;color:var(--zporta-dark-blue,#0A2342);border:0;padding:0;text-decoration:underline}
+
+/* accordion */
+.lesson-content .zporta-accordion{width:100%}
+.lesson-content .zporta-acc-item{border:1px solid var(--zporta-border-color,#e2e8f0);border-radius:var(--acc-radius,8px);margin:0 0 12px 0;overflow:hidden;background:var(--zporta-background-light,#fff)}
+.lesson-content .zporta-acc-title{cursor:pointer;display:block;padding:.75rem 1rem;background:var(--zporta-background-medium,#f8fafc);font-weight:600;position:relative;padding-right:3rem;list-style:none}
+.lesson-content .zporta-acc-title::-webkit-details-marker{display:none}
+.lesson-content .zporta-acc-title[data-align="center"]{text-align:center}
+.lesson-content .zporta-acc-title[data-align="right"]{text-align:right}
+.lesson-content .zporta-acc-title[data-size="sm"]{font-size:.9rem}
+.lesson-content .zporta-acc-title[data-size="md"]{font-size:1rem}
+.lesson-content .zporta-acc-title[data-size="lg"]{font-size:1.1rem}
+.lesson-content .zporta-acc-title::after{content:'';position:absolute;right:1rem;top:50%;width:.6em;height:.6em;transform:translateY(-50%) rotate(45deg);border-right:2px solid currentColor;border-bottom:2px solid currentColor;transition:transform .2s ease}
+.lesson-content details[open]>.zporta-acc-title::after{transform:translateY(-50%) rotate(225deg)}
+.lesson-content .zporta-acc-title[data-icon="plus"]::after{content:'+';border:0;font-weight:700;font-size:1.5em;transform:translateY(-50%);transition:transform .2s ease}
+.lesson-content details[open]>.zporta-acc-title[data-icon="plus"]::after{transform:translateY(-50%) rotate(45deg)}
+.lesson-content .zporta-acc-title[data-icon="none"]::after{display:none}
+.lesson-content .zporta-acc--outline .zporta-acc-item{border-style:dashed}
+.lesson-content .zporta-acc--dark .zporta-acc-item{background:#0f172a;border-color:#1f2a44}
+.lesson-content .zporta-acc--dark .zporta-acc-title{background:#0b1220;color:#e2e8f0}
+.lesson-content .zporta-acc--dark .zporta-acc-panel{background:#0f172a;color:#cbd5e1}
+.lesson-content .zporta-acc-panel{padding:1rem;border-top:1px solid var(--zporta-border-color,#e2e8f0)}
+`}</style>
+
+  <div
+    key={`html-${lesson.id}-${lesson.content?.length}`}
+    ref={lessonContentDisplayRef}
+    className="lesson-content"
+    dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
+  />
+</root.div>
+
+
+      {/* quizzes display */}
+      {quizzes?.length > 0 && (
+        <section className={styles.lessonQuizzes}>
+          <h2>Associated Quizzes</h2>
+          {quizzes.map((q) => (
+            <QuizCard key={q.id} quiz={q} />
+          ))}
+        </section>
+      )}
+
+      {/* meta */}
+      <div className={styles.metaContainer}>
+        <p className={styles.postMeta}>
+          <span className={styles.metaItem}>
+            <FaUser className={styles.metaIcon} /> {lesson.created_by || "Unknown"}
+          </span>
+          <span className={styles.metaSeparator}>|</span>
+          <span className={styles.metaItem}>
+            <FaRegClock className={styles.metaIcon} /> {lesson.created_at ? new Date(lesson.created_at).toLocaleDateString() : "Unknown"}
+          </span>
+        </p>
+        {lesson.tags_output?.length > 0 && (
+          <div className={styles.lessonTags}>
+            <strong>Tags:</strong>
+            {lesson.tags_output.map((tag) => (
+              <span key={tag} className={styles.tagItem}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* completion */}
+      {isEnrolled && !isCompleted && (
+        <div className={styles.completionAction}>
+          <button className={`${styles.btn} ${styles.btnPrimary} ${styles.completeBtn}`} onClick={handleCompleteLesson} disabled={isSubmitting}>
+            Mark Lesson Complete
+          </button>
+        </div>
+      )}
+      {isCompleted && <div className={styles.completedIndicator}>✅ Lesson Completed!</div>}
+
+      {/* owner actions: Edit -> route to admin editor; Delete stays */}
+      {isOwner && (
+        <div className={styles.lessonActions}>
+          <Link
+            href={`/admin/lessons/${encodeURIComponent(lesson.permalink)}/edit`}
+            className={styles.editBtn}
+            title={isLocked ? "Locked" : "Edit"}
+            aria-disabled={isLocked ? "true" : "false"}
+            onClick={(e) => {
+              if (isLocked) e.preventDefault();
+            }}
+          >
+            <Pencil size={18} /> <span>Edit</span>
+          </Link>
+          <button className={styles.deleteBtn} onClick={handleDeleteLesson} disabled={isLocked || isSubmitting} title={isLocked ? "Locked" : "Delete"}>
+            <Trash2 size={18} /> <span>{confirmingDelete ? "Confirm!" : "Delete"}</span>
+          </button>
+        </div>
+      )}
+
+      {/* simple FAB */}
+      <div className={styles.radialMenuContainer}>
+        <div className={styles.radialMenu}>
+          <button
+            className={`${styles.localFab} ${styles.radialMenuButton} ${styles.mainButton}`}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            title="Scroll to Top"
+          >
+            <FaPlus size={24} />
+          </button>
+          {isEnrolled && !isCompleted && (
+            <button className={`${styles.radialMenuButton} ${styles.item} ${styles.item2}`} onClick={handleCompleteLesson} title="Mark Complete">
+              <FaCheck size={20} />
+            </button>
+          )}
+          <button className={`${styles.radialMenuButton} ${styles.item} ${styles.item3}`} onClick={() => router.back()} title="Go Back">
+            <FaArrowLeft size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-// --- HTML Sanitization Function ---
-// Removes potentially harmful attributes (like contenteditable) before rendering HTML.
-const sanitizeContentViewerHTML = (htmlString) => {
-    if (!htmlString) return ""; // Return empty string if input is null or empty
-    if (typeof window === 'undefined') return htmlString; // SSR guard
-    try {
-        // Use the browser's DOMParser to parse the HTML string
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlString, 'text/html');
-
-        // Find all elements with contenteditable="true"
-        const editableElements = doc.querySelectorAll('[contenteditable="true"]');
-        // Remove the contenteditable attribute from each found element
-        editableElements.forEach(el => {
-            el.removeAttribute('contenteditable');
-        });
-
-        // Return the innerHTML of the body, which now contains the sanitized content
-        return doc.body.innerHTML;
-    } catch (error) {
-        // Log an error if parsing or sanitization fails
-        console.error("Error sanitizing HTML for viewer:", error);
-        // Return the original string as a fallback to prevent breaking the page
-        return htmlString;
-    }
-};
-// --- CSS Sanitization/Scoping Helper ---
-const sanitizeLessonCss = (css) => {
-  if (!css) return "";
-
-  // optional: extract a Google Fonts @import to add as <link> (see below)
-  // const fontMatch = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
-  // const fontHref = fontMatch?.[1];
-
-  // strip imports from the css string we inline
-  let out = css.replace(/@import[^;]+;/gi, "");
-
-  // scope variables to host; scope base element rules to the shadow container
-  out = out.replace(/:root\b/g, ":host");
-  out = out.replace(/\b(html|body)\b/g, ".lesson-content");
-
-  return out;
-};
-
-// --- Main Lesson Detail Component ---
-const LessonDetail = () => {
-    // Extract parameters from the URL
-    const router = useRouter();
-    const { username: paramUsername, subject, date, lessonSlug } = router.query || {};
-    const permalink = useMemo(() => {
-    if (!paramUsername || !subject || !date || !lessonSlug) return null;
-    return `${paramUsername}/${subject}/${date}/${lessonSlug}`;
-    }, [paramUsername, subject, date, lessonSlug]);
-        const { user, token, logout } = useContext(AuthContext); // Get user auth info
-
-    // --- State Variables ---
-    const [lessonData, setLessonData] = useState(null); // Holds lesson details, SEO info, etc.
-    const [isEnrolled, setIsEnrolled] = useState(false); // User's enrollment status for the course/lesson
-    const [isCompleted, setIsCompleted] = useState(false); // User's completion status for this lesson
-    const [loading, setLoading] = useState(true); // Loading indicator state
-    const [error, setError] = useState(""); // Error message state
-    const [successMessage, setSuccessMessage] = useState(""); // NEW: For success feedback
-    const [isSubmitting, setIsSubmitting] = useState(false); // NEW: To prevent double-clicks
-    const [confirmingDelete, setConfirmingDelete] = useState(false); // NEW: For delete confirmation
-   
-    const [gateInfo, setGateInfo] = useState(null); // { message, course:{ title, permalink } }
-    const [editMode, setEditMode] = useState(false); // Controls whether the edit form is shown
-    const [editLesson, setEditLesson] = useState({}); // Holds the lesson data being edited
-    const [subjects, setSubjects] = useState([]); // List of available subjects for the edit form dropdown
-    const [courseLessons, setCourseLessons] = useState([]); // List of all lessons in the same course (if applicable)
-    const [editorHtml, setEditorHtml] = useState("");       // hold editor HTML
-    const [prevLesson, setPrevLesson] = useState(null); // Link to the previous lesson in the course sequence
-    const [nextLesson, setNextLesson] = useState(null); // Link to the next lesson in the course sequence
-
-    // Styling state for editing – holds accent colour, CSS and JS for this lesson
-    const [accentColor, setAccentColor] = useState('#222E3B'); // default accent colour
-    const [customCSS, setCustomCSS] = useState('');            // lesson-specific custom CSS
-    const [customJS, setCustomJS] = useState('');              // lesson-specific custom JS (plain JS, no <script> tags)
-
-    // Quiz state
-    const [quizzes, setQuizzes] = useState([]);                           // attached to this lesson
-    const [availableQuizzes, setAvailableQuizzes] = useState([]);         // user’s quizzes not yet attached
-    const [selectedQuiz, setSelectedQuiz] = useState("");                 // for dropdown
-    const [quizActionError, setQuizActionError] = useState("");           // error messaging
-
-
-
-    // --- Refs ---
-    const editorRef = useRef(null); // Ref to access the CustomEditor component instance (for getting content)
-    const editorWrapRef = useRef(null); // NEW: wrapper to read DOM as fallback
-    const lessonContentDisplayRef = useRef(null); // Ref for the div rendering dangerouslySetInnerHTML (for accordion init)
-    const lessonJsTagRef = useRef(null);          // Track injected <script> for cleanup
-
-    // Utility function to strip HTML tags for creating meta descriptions
-    const stripHTML = (html) => {
-        if (!html) return '';
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = html;
-        return tempDiv.textContent || tempDiv.innerText || "";
-    };
-
-    // --- Effect for Fetching Initial Data ---
-    // Fetches lesson details, enrollment status, subjects, and related course lessons.
-    useEffect(() => {
-        let isMounted = true; // Flag to prevent state updates on unmounted component
-
-        const initialize = async () => {
-            // 1) Only guard on permalink. Token is NOT required to view a gated screen.
-            if (!permalink) {
-                if (isMounted) {
-                    setLoading(false);
-                    setError("Invalid URL.");
-                }
-                return;
-            }
-
-            // 2. Set Loading State
-            if (isMounted) {
-                setLoading(true);
-                setError("");
-            }
-
-            try {
-                // 3) Fetch lesson first
-                const lessonRes = await apiClient.get(`/lessons/${permalink}/`);
-                if (!isMounted) return;
-
-                // If backend gates premium, it returns 200 with { access:'gated', lesson:null, course, message }
-                if (lessonRes?.data?.access === 'gated' && !lessonRes.data.lesson) {
-                    setGateInfo({
-                        message: lessonRes.data.message,
-                        course: lessonRes.data.course
-                    });
-                    setLessonData({ lesson: null, seo: lessonRes.data.seo || null });
-                } else {
-                    setLessonData(lessonRes.data);
-                }
-
-                // 4) Fetch subjects (public)
-                const subjectsRes = await apiClient.get("/subjects/");
-                if (!isMounted) return;
-                setSubjects(subjectsRes.data || []);
-
-                // 5) Enrollment/completion only if logged-in AND not gated
-                let statusRes = null;
-                if (token && !lessonRes?.data?.access) {
-                    statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
-                    if (!isMounted) return;
-                    setIsEnrolled(statusRes.data.is_enrolled);
-                    setIsCompleted(statusRes.data.is_completed);
-                } else {
-                    setIsEnrolled(false);
-                    setIsCompleted(false);
-                }
-
-                if (!isMounted) return; // Exit if component unmounted during fetch
-
-                // 6) Quizzes attached to the lesson (when not gated)
-                setQuizzes(lessonRes.data.lesson?.quizzes || []);
-
-                // 4b. Fetch user’s quizzes for dropdown
-                const userQuizzesRes = token ? await apiClient.get('/quizzes/my/') : { data: [] };
-                if (!isMounted) return;
-                const notAttached = Array.isArray(userQuizzesRes.data)
-                ? userQuizzesRes.data.filter(q => !q.lesson)      // only quizzes not bound to any lesson
-                : [];
-                setAvailableQuizzes(notAttached);
-
-                // 4. Fetch Related Course Lessons (if applicable)
-                const coursePermalink = lessonRes.data.lesson.course_data?.permalink;
-                if (coursePermalink) {
-                    // Fetch details of the course this lesson belongs to
-                    const courseRes = await apiClient.get(`/courses/${coursePermalink}/`);
-                    if (!isMounted) return;
-
-                    const allLessons = courseRes.data.lessons || [];
-                    setCourseLessons(allLessons); // Store the list of lessons in the course
-
-                    // 6. Determine Previous/Next Lesson Links
-                    const currentIndex = allLessons.findIndex(
-                        (l) => l.permalink === lessonRes.data.lesson.permalink
-                    );
-                    setPrevLesson(currentIndex > 0 ? allLessons[currentIndex - 1] : null);
-                    setNextLesson(
-                        currentIndex >= 0 && currentIndex < allLessons.length - 1
-                            ? allLessons[currentIndex + 1]
-                            : null
-                    );
-                } else {
-                    // If the lesson is not part of a course, clear related state
-                    setCourseLessons([]);
-                    setPrevLesson(null);
-                    setNextLesson(null);
-                }
-
-            } catch (err) {
-                console.error("Error fetching initial data:", err.response ? err.response.data : err.message);
-                if (isMounted) {
-                    if (err.response?.status === 404) {
-                        setError("Lesson or related data not found.");
-                    } else if (err.response?.status === 401) {
-                        // only 401 forces logout
-                        setError("Unauthorized. Please log in again.");
-                        logout();
-                        router.push('/login');
-                    } else if (err.response?.status === 403) {
-                        // 403 == forbidden/gated (older backend). Do NOT logout; show friendly msg.
-                        setError(err.response?.data?.detail || "You don't have access to this lesson.");
-                    } else {
-                        setError("An error occurred while loading lesson data.");
-                    }
-                    }
-            } finally {
-                // Always turn off loading indicator when done
-                if (isMounted) setLoading(false);
-            }
-        };
-
-        if (permalink) {
-            initialize(); // Run the initialization function if permalink is valid
-        } else {
-            // Handle invalid URL case directly
-            setError("Invalid Lesson URL.");
-            setLoading(false);
-        }
-
-        // Cleanup function: Set isMounted to false when the component unmounts
-        return () => {
-            isMounted = false;
-        };
-    }, [permalink, token, logout, router]); // Dependencies for the effect
-
-
-    // --- Accordion Initialization Effect (Course-Aware Timing Fix) ---
-    // This effect initializes/cleans up accordions in dynamically rendered content.
-    // It now also depends on courseLessons to re-run after course context is loaded.
-    useEffect(() => {
-        // Conditions to run: Not in edit mode, lesson content exists, container ref available.
-        let timeoutId = null;
-        let animationFrameId = null;
-
-        if (!editMode && lessonData?.lesson?.content && lessonContentDisplayRef.current) {
-            const container = lessonContentDisplayRef.current;
-
-            // --- Cleanup Phase ---
-            // Clean up any previously initialized accordions within this container.
-            const initializedAccordions = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-            initializedAccordions.forEach((accordion) => {
-                const header = accordion.querySelector(".accordion-header");
-                if (header && header.__accordionClickHandler__) {
-                    header.removeEventListener("click", header.__accordionClickHandler__);
-                    delete header.__accordionClickHandler__;
-                }
-                if (accordion.dataset.accordionInitialized) {
-                delete accordion.dataset.accordionInitialized;
-                }
-            });
-
-            // --- Initialization Phase ---
-            // Use rAF + setTimeout for robust timing, allowing React to settle.
-            animationFrameId = requestAnimationFrame(() => {
-                timeoutId = setTimeout(() => {
-                    if (lessonContentDisplayRef.current) {
-                        console.log("Initializing accordions (Course-Aware Fix)"); // Debug log
-                        initializeAccordions(lessonContentDisplayRef.current);
-                    }
-                }, 50); // Small delay
-            });
-
-        } // End of if condition
-
-        // --- Effect Cleanup Function ---
-        return () => {
-            // Cancel pending timers/frames
-            if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            }
-            if (timeoutId) {
-            clearTimeout(timeoutId);
-            }
-
-            // Perform cleanup only if the effect actually ran its setup logic.
-            if (!editMode && lessonData?.lesson?.content && lessonContentDisplayRef.current) {
-            const container = lessonContentDisplayRef.current;
-            if (container) { // Check container exists during cleanup
-                const accordionsToClean = container.querySelectorAll(".accordion-item[data-accordion-initialized='true']");
-                accordionsToClean.forEach((accordion) => {
-                    const header = accordion.querySelector(".accordion-header");
-                    if (header && header.__accordionClickHandler__) {
-                        header.removeEventListener("click", header.__accordionClickHandler__);
-                        delete header.__accordionClickHandler__;
-                    }
-                    if (accordion.dataset.accordionInitialized) {
-                        delete accordion.dataset.accordionInitialized;
-                    }
-                });
-            }
-            }
-        };
-    // Dependencies: Re-run if edit mode changes, lesson content changes, OR courseLessons changes.
-    }, [editMode, lessonData?.lesson?.content, courseLessons]); // <--- Added courseLessons here!
-
-    // --- Per-lesson Custom JS Injection (scoped + cleanup) ---
-    useEffect(() => {
-      // This hook injects and runs custom JavaScript for the lesson.
-      // It runs only when the component is not in edit mode and has finished loading its initial data.
-      if (editMode || loading) return;
-    
-      const code = (lessonData?.lesson?.custom_js || "").trim();
-    
-      // If there's no custom JS, do nothing.
-      if (!code) return;
-    
-      // A timeout is used to ensure this script runs after React has finished hydrating and painting
-      // the DOM, especially the content from `dangerouslySetInnerHTML`. This prevents a race condition.
-      const timeoutId = setTimeout(() => {
-        const hostEl = document.querySelector("[data-lesson-root]");
-        if (!hostEl) {
-          console.warn("Custom JS execution failed: Lesson root element not found.");
-          return;
-        }
-        const doc = hostEl.shadowRoot || hostEl;
-        try {
-          // Safely execute the user's code by creating a new function.
-          // We pass the shadow root as 'document' and the host as 'root' to the script's scope.
-          new Function("document", "root", code)(doc, hostEl);
-        } catch (err) {
-          console.error("Error executing custom lesson JS:", err);
-        }
-      }, 250); // A generous delay to ensure the DOM is stable.
-    
-      // Cleanup function to clear the timeout if the component re-renders or unmounts.
-      return () => clearTimeout(timeoutId);
-    
-    }, [editMode, loading, lessonData]); // Re-run this effect when loading state or lesson data changes.
-     
-    // --- Optional: load Google Fonts inside the shadow root ---
-    useEffect(() => {
-        const css = lessonData?.lesson?.custom_css || "";
-        const m = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
-        const fontHref = m?.[1];
-        if (!fontHref) return;
-
-        const host = document.querySelector('[data-lesson-root]');
-        if (!host) return;
-        const root = host.shadowRoot || host;
-
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = fontHref;
-        root.appendChild(link);
-
-        return () => { link.remove?.(); };
-    }, [lessonData?.lesson?.custom_css]);
-    // Marks the current lesson as complete for the user
-    const handleCompleteLesson = async () => {
-        if (!lessonData?.lesson?.id || !permalink || isCompleted) return; // Guard clauses
-        setError(''); setSuccessMessage(''); // Clear previous messages
-        try {
-            const response = await apiClient.post(`/lessons/${permalink}/complete/`, {});
-            setSuccessMessage(response.data.message || "Lesson marked complete!");
-            setIsCompleted(true); // Update local state
-        } catch (err) {
-            console.error("Error completing lesson:", err.response ? err.response.data : err.message);
-            const errorMsg = err.response?.data?.detail || "Failed to mark lesson complete.";
-            setError(errorMsg);
-            if (err.response?.status === 401) logout(); // only 401
-        }
-    };
-
-    // Deletes the current lesson (owner only)
-    const handleDeleteLesson = async () => {
-        if (!permalink || lessonData?.lesson?.is_locked) {
-             setError("Lesson is locked or cannot be identified.");
-             return;
-        }
-
-       // This replaces window.confirm. First click sets state, second click deletes.
-       if (!confirmingDelete) {
-           setConfirmingDelete(true);
-           setSuccessMessage("Are you sure? Click delete again to confirm.");
-           // Reset confirmation after a few seconds
-           setTimeout(() => setConfirmingDelete(false), 4000);
-           return;
-       }
-
-       setError(''); setSuccessMessage('');
-        try {
-            await apiClient.delete(`/lessons/${permalink}/delete/`);
-            setSuccessMessage("Lesson deleted successfully. Redirecting...");
-            router.push("/admin/lessons"); // Navigate away after deletion
-        } catch (err) {
-            console.error("Error deleting lesson:", err.response ? err.response.data : err.message);
-            const errorMsg = err.response?.data?.detail || "Failed to delete lesson.";
-            setError(errorMsg);
-            if (err.response?.status === 401) logout(); // only 401
-        }
-    };
-
-    // Enters edit mode and populates the edit form state
-    const handleEditClick = () => {
-        if (!lessonData?.lesson || lessonData.lesson.is_locked) {
-            setError("Lesson is locked or data is unavailable for editing.");
-            return;
-        }
-        // Populate the editLesson state with current lesson data
-        setEditLesson({
-            title: lessonData.lesson.title || '',
-            content: lessonData.lesson.content || '',
-            video_url: lessonData.lesson.video_url || '',
-            // Join tags array into a comma-separated string for the input field
-            tags: Array.isArray(lessonData.lesson.tags_output) ? lessonData.lesson.tags_output.join(', ') : '',
-            subject_id: lessonData.lesson.subject || null // Use subject ID
-        });
-        setEditorHtml(lessonData.lesson.content || "");
-        
-        // Populate styling fields from the existing lesson
-        setAccentColor(lessonData.lesson.accent_color || '#222E3B');
-        setCustomCSS(lessonData.lesson.custom_css || '');
-        setCustomJS(lessonData.lesson.custom_js || '');
-        setEditMode(true); // Switch to edit mode
-        setError(''); setSuccessMessage(''); // Clear any previous messages
-    };
-
-    // Exits edit mode without saving
-    const handleCancelEdit = () => {
-        setEditMode(false);
-        setError(''); setSuccessMessage(''); // Clear messages
-        setEditLesson({}); // Clear edit form state
-    };
-
-    // Helper to always fetch the live HTML from editor (API or DOM)
-    const getLiveEditorHTML = () => {
-      // Prefer editor API if available
-      if (editorRef.current) {
-        if (typeof editorRef.current.getHTML === "function") return editorRef.current.getHTML();
-        if (typeof editorRef.current.getContent === "function") return editorRef.current.getContent();
-        if (editorRef.current.editor?.getHTML) return editorRef.current.editor.getHTML();        // TipTap-style
-        if (editorRef.current.quill?.root?.innerHTML) return editorRef.current.quill.root.innerHTML; // Quill-style
-      }
-      // Fallback: read the DOM
-      const root = editorWrapRef.current;
-      const el = root?.querySelector('[contenteditable="true"], .ProseMirror, .ql-editor');
-      return el?.innerHTML || "";
-    };
-
-    // Saves the edited lesson data
-    const handleSaveEdit = async (e) => {
-      e.preventDefault();
-      if (isSubmitting) return; // Prevent double submission
-      // 1) Capture fresh content NOW
-      const updatedContent = (getLiveEditorHTML() || editorHtml || "").trim();
-
-    // 2) SHOW what you will send
-    const debugClient = {
-      from: "client->server",
-      title: (editLesson.title || "").slice(0,80),
-      content_len: updatedContent.length,
-      content_start: updatedContent.slice(0,80),
-      content_end: updatedContent.slice(-80),
-      video_url: editLesson.video_url || "",
-      subject: editLesson.subject_id,
-    };
-    //alert("PAYLOAD PREVIEW:\n" + JSON.stringify(debugClient, null, 2));
-
-        // Basic validation
-        if (!editLesson.title?.trim() || !updatedContent?.trim() || !editLesson.subject_id) {
-            setError("Title, Content, and Subject are required fields.");
-            return;
-        }
-        setError(''); setSuccessMessage('');
-        setIsSubmitting(true); // Set submitting state
-
-        try {
-            // Prepare the payload for the API request
-            // Convert comma-separated tags string back into an array
-            const tagsArray = editLesson.tags
-                ? editLesson.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
-                : [];
-            const payload = {
-                title: editLesson.title,
-                content: updatedContent,
-                video_url: editLesson.video_url,
-                tags: tagsArray,
-                subject: editLesson.subject_id,       // Subject ID
-                accent_color: accentColor,            // new: accent colour
-                custom_css: customCSS,                // new: custom CSS
-                // remove any <script> wrappers before sending custom JS
-                custom_js: customJS.replace(/<\/?script[^>]*>/gi, '')
-            };
-
-            // Make the PUT request to update the lesson
-            const response = await apiClient.put(`/lessons/${permalink}/update/`, payload);
-
-            // 3) SHOW what the server returned
-            const srv = response?.data || {};
-            const serverDebug = {
-            from: "server->client",
-            saved_title: (srv.title || "").slice(0,80),
-            saved_len: (srv.content || "").length,
-            saved_start: (srv.content || "").slice(0,80),
-            saved_end: (srv.content || "").slice(-80),
-            };
-            //alert("SERVER RESPONSE PREVIEW:\n" + JSON.stringify(serverDebug, null, 2));
-
-            // Update the local lessonData state with the response from the server
-            // This ensures the displayed data reflects the saved changes
-            setLessonData(prevData => ({ ...prevData, lesson: response.data }));
-            setEditMode(false); // Exit edit mode
-            setSuccessMessage("Lesson updated successfully.");
-
-        } catch (err) {
-            console.error("Error updating lesson:", err.response ? err.response.data : err.message);
-            // Try to display a specific error message from the API response
-            const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || "Failed to update lesson.";
-            setError(errorMsg);
-            if (err.response?.status === 401) logout(); // only 401
-            } finally {
-           setIsSubmitting(false); // Reset submitting state
-        }
-    };
-
-    // Publish (owner, draft -> published) with confirm
-    const handlePublish = async () => {
-        if (!permalink) return;
-        if (!window.confirm("Publish this lesson now? It will become visible to everyone.")) return;
-        try {
-            const res = await apiClient.post(`/lessons/${permalink}/publish/`);
-            setLessonData(prev => ({ ...prev, lesson: res.data }));
-            alert("Lesson published.");
-            setEditMode(false);
-        } catch (err) {
-            console.error("Publish error:", err.response?.data || err.message);
-            alert(err.response?.data?.detail || "Failed to publish.");
-        }
-    };
-
-    // Utility function to convert YouTube URLs (various formats) to a standard embed URL
-    const getYoutubeEmbedUrl = (url) => {
-        if (!url) return null;
-
-        let videoId = null;
-        try {
-            const parsedUrl = new URL(url); // Use standard URL parser
-
-            // Handle standard youtube.com URLs (watch?v=...)
-            if ((parsedUrl.hostname === 'www.youtube.com' || parsedUrl.hostname === 'youtube.com') &&
-                parsedUrl.pathname === '/watch' && parsedUrl.searchParams.has('v')) {
-                videoId = parsedUrl.searchParams.get('v');
-            }
-            // Handle embed URLs (youtube.com/embed/...)
-            else if ((parsedUrl.hostname === 'www.youtube.com' || parsedUrl.hostname === 'youtube.com') &&
-                     parsedUrl.pathname.startsWith('/embed/')) {
-                videoId = parsedUrl.pathname.substring('/embed/'.length);
-            }
-            // Handle shortened youtu.be URLs (youtu.be/...)
-            else if (parsedUrl.hostname === 'youtu.be') {
-                videoId = parsedUrl.pathname.slice(1); // Remove leading '/'
-            }
-
-            // Remove any extra query parameters (like list=..., t=...) from the video ID
-            if (videoId && videoId.includes('&')) {
-                videoId = videoId.split('&')[0];
-            }
-            if (videoId && videoId.includes('?')) {
-                 videoId = videoId.split('?')[0];
-            }
-
-        } catch (e) {
-            console.error("Error parsing video URL:", e);
-            return null; // Return null if URL parsing fails
-        }
-
-        // Return the standard embed URL if a valid video ID was extracted
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    };
-
-
-    // Attach a quiz
-    const handleAddQuiz = async e => {
-        e.preventDefault();
-        if (!selectedQuiz || !permalink) return;
-        setQuizActionError("");
-        try {
-        const res = await apiClient.post(
-            `/lessons/${permalink}/add-quiz/`,
-            { quiz_id: selectedQuiz }
-        );
-        const added = res.data.quiz || res.data;
-        setQuizzes(prev => [...prev, added]);
-        setAvailableQuizzes(prev => prev.filter(q => q.id !== added.id));
-        setSelectedQuiz("");
-        } catch (err) {
-        console.error("Add quiz error:", err);
-        setQuizActionError(
-            err.response?.data?.detail || "Failed to attach quiz."
-        );
-        }
-    };
-    
-    // Detach a quiz
-    const handleDetachQuiz = async quizId => {
-        if (!quizId) return;
-        if (!window.confirm("Detach this quiz from the lesson?")) return;
-        try {
-        await apiClient.post(
-            `/lessons/${permalink}/detach-quiz/`,
-            { quiz_id: quizId }
-        );
-        setQuizzes(prev => prev.filter(q => q.id !== quizId));
-        // Put it back into available list
-        const detached = quizzes.find(q => q.id === quizId);
-        if (detached) setAvailableQuizzes(prev => [...prev, detached]);
-        } catch (err) {
-        console.error("Detach quiz error:", err);
-        alert(err.response?.data?.detail || "Failed to detach quiz.");
-        }
-    };
-  
-
-    // --- Render Logic ---
-
-    // 1. Loading State
-    if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading lesson details...</div>;
-
-    // 2. Error State (if lessonData hasn't loaded at all)
-    if (error && !lessonData) return <p className={styles.error} style={{ color: 'red', padding: '20px', textAlign: 'center' }}>{error}</p>;
-
-    // 3. Gated (premium) State (backend returns 200 with access:'gated')
-    if (gateInfo && !lessonData?.lesson) {
-        return (
-            <div className={styles.lessonDetailContainer}>
-                <h1 className={styles.lessonTitle}>Premium lesson</h1>
-                <p className={`${styles.message} ${styles.warning}`}>
-                    {gateInfo.message || 'This lesson belongs to a premium course.'}
-                </p>
-                <div style={{ display:'flex', gap:12, justifyContent:'center', marginTop:12 }}>
-                    {gateInfo.course?.permalink && (
-                        <Link href={`/courses/${gateInfo.course.permalink}`} className={`${styles.btn} ${styles.btnPrimary}`}>
-                            Go to course: {gateInfo.course.title}
-                        </Link>
-                    )}
-                    {!token && (
-                        <Link href={`/login`} className={`${styles.btn} ${styles.btnSecondary}`}>
-                            Log in
-                        </Link>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // 4. Not Found State
-    if (!lessonData?.lesson) return <p style={{ padding: '20px', textAlign: 'center' }}>Lesson not found.</p>;
-
-    // --- Prepare Data for Rendering ---
-    const { lesson, seo } = lessonData; // Destructure lesson and SEO data
-    // pull out our styling hooks:
-    const accent = lesson.accent_color || '#222E3B';
-    const extraCss = lesson.custom_css || '';
-    // Determine if the logged-in user is the owner of the lesson
-    const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
-    const isLocked = lesson.is_locked; // Check if the lesson is locked (prevents editing/deleting)
-    const isAttachedToCourse = !!lesson.course_data?.permalink; // Check if the lesson is part of a course
-
-    // --- JSX ---
-    return (
-        <div className={styles.lessonDetailContainer}>
-
-            {/* SEO Head Tags */}
-            <Head>
-            <title>{seo?.title || lesson.title || 'Lesson Details'}</title>
-            <meta
-                name="description"
-                content={seo?.description || stripHTML(lesson.content || '').substring(0, 160)}
-            />
-            {/* Hide premium lessons from search engines (even if user can see). Also hide gated pages. */}
-            {(seo?.robots || lesson.is_premium || gateInfo) && (
-                <meta name="robots" content={seo?.robots || "noindex,nofollow"} />
-            )}
-            {/* accent + per-lesson CSS */}
-            <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
-            {(() => {
-                const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-                const canonical = seo?.canonical_url || (base && permalink ? `${base}/lessons/${permalink}` : null);
-                return canonical ? <link rel="canonical" href={canonical} /> : null;
-            })()}
-            </Head>
-
-            {/* Conditional Rendering: Edit Form or Read-Only View */}
-            {editMode ? (
-                /* --- Edit Mode Form --- */
-                <form className={styles.editLessonForm} onSubmit={handleSaveEdit}>
-                    <h2 className={styles.modalFormTitle}>Edit Lesson</h2>
-
-                    {/* Display form-specific errors */}
-                   {error && <p className={`${styles.message} ${styles.error} ${styles.formError}`}>{error}</p>}
-                   {successMessage && <p className={`${styles.message} ${styles.success} ${styles.formError}`}>{successMessage}</p>}
-
-                    {/* Title Input */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonTitle">Title: <span className={styles.required}>*</span></label>
-                        <input
-                            id="editLessonTitle"
-                            className={styles.inputField}
-                            type="text"
-                            value={editLesson.title || ""}
-                            onChange={(e) => setEditLesson({ ...editLesson, title: e.target.value })}
-                            required
-                            // disabled={submittingEdit} // Add submitting state if needed
-                        />
-                    </div>
-
-                    {/* Subject Select */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonSubject">Subject: <span className={styles.required}>*</span></label>
-                        <select
-                            id="editLessonSubject"
-                            className={styles.selectField}
-                            value={editLesson.subject_id || ''} // Bind to subject_id
-                            onChange={(e) => setEditLesson({ ...editLesson, subject_id: e.target.value })}
-                            required
-                            // disabled={submittingEdit}
-                        >
-                            <option value="">Select Subject</option>
-                            {/* Populate options from the fetched subjects list */}
-                            {subjects.map(subj => ( <option key={subj.id} value={subj.id}>{subj.name}</option> ))}
-                        </select>
-                    </div>
-
-                    {/* Video URL Input */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonVideoUrl">Video URL (YouTube):</label>
-                        <input
-                            id="editLessonVideoUrl"
-                            className={styles.inputField}
-                            type="url" // Use type="url" for better semantics/validation
-                            placeholder="e.g., https://www.youtube.com/watch?v=..."
-                            value={editLesson.video_url || ''}
-                            onChange={(e) => setEditLesson({ ...editLesson, video_url: e.target.value })}
-                            // disabled={submittingEdit}
-                        />
-                    </div>
-
-                       {/* Tags Input */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonTags">Tags (comma separated):</label>
-                        <input
-                        id="editLessonTags"
-                        className={styles.inputField}
-                        type="text"
-                        placeholder="e.g., react, javascript, webdev"
-                        value={editLesson.tags || ''}
-                        onChange={(e) => setEditLesson({ ...editLesson, tags: e.target.value })}
-                        />
-                    </div>
-
-                    {/* Accent Colour Picker */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonAccentColor">Accent Color:</label>
-                        <input
-                            id="editLessonAccentColor"
-                            type="color"
-                            className={styles.inputField}
-                            value={accentColor}
-                            onChange={(e) => setAccentColor(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Custom CSS Editor */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonCustomCSS">Custom CSS:</label>
-                        <textarea
-                            id="editLessonCustomCSS"
-                            rows={6}
-                            className={styles.inputField}
-                            value={customCSS}
-                            onChange={(e) => setCustomCSS(e.target.value)}
-                            placeholder="e.g., .lesson-title { font-size: 2em; color: blue; }"
-                        />
-                    </div>
-
-                    {/* Custom JS Editor */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonCustomJS">Custom JS:</label>
-                        <textarea
-                            id="editLessonCustomJS"
-                            rows={6}
-                            className={styles.inputField}
-                            value={customJS}
-                            onChange={(e) => setCustomJS(e.target.value)}
-                            placeholder="Inline JavaScript only (do not wrap with <script> tags)"
-                        />
-                    </div>
-
-                       {/* ─── Manage Attached Quizzes ─── */}
-                       <fieldset className={styles.formSection}>
-                    <legend>Manage Attached Quizzes</legend>
-
-                    {/* 4a. Currently attached */}
-                    <div className={styles.attachedContentList}>
-                        <h3>Attached Quizzes ({quizzes.length})</h3>
-                        {quizzes.length > 0 ? (
-                        <ul>
-                            {quizzes.map(q => (
-                            <li key={q.id}>
-                                {q.title}
-                                <button
-                                type="button"
-                                className={styles.detachBtn}
-                                onClick={() => handleDetachQuiz(q.id)}
-                                >
-                                <FaTimes /> Remove
-                                </button>
-                            </li>
-                            ))}
-                        </ul>
-                        ) : (
-                        <p>No quizzes attached.</p>
-                        )}
-                    </div>
-
-                    {/* 4b. Attach new quiz */}
-                    <div className={styles.contentSectionHeader}>
-                        <select
-                        value={selectedQuiz}
-                        onChange={e => {
-                            setSelectedQuiz(e.target.value);
-                            setQuizActionError("");
-                        }}
-                        >
-                        <option value="">Select a quiz to attach…</option>
-                        {availableQuizzes.map(q => (
-                            <option key={q.id} value={q.id}>
-                            {q.title}
-                            </option>
-                        ))}
-                        </select>
-                        <button
-                        type="button"
-                        onClick={handleAddQuiz}
-                        disabled={!selectedQuiz}
-                        className={styles.addBtn}
-                        >
-                        <FaPlus /> Attach Quiz
-                        </button>
-                    </div>
-
-                    {quizActionError && (
-                        <p className={styles.formError}>{quizActionError}</p>
-                    )}
-                    </fieldset>
-                       {/* ────────────────────────────────── */}
-
-                    {/* Tags Input */}
-                    <div className={styles.formGroup}>
-                        <label htmlFor="editLessonTags">Tags (comma separated):</label>
-                        <input
-                            id="editLessonTags"
-                            className={styles.inputField}
-                            type="text"
-                            placeholder="e.g., react, javascript, webdev"
-                            value={editLesson.tags || ''}
-                            onChange={(e) => setEditLesson({ ...editLesson, tags: e.target.value })}
-                            // disabled={submittingEdit}
-                        />
-                    </div>
-
-                    {/* Content Editor */}
-                    <div className={styles.formGroup}>
-                        <label className={styles.editorLabel} htmlFor="editLessonContent">Content: <span className={styles.required}>*</span></label>
-                        <div className={styles.editorContainer} ref={editorWrapRef}>
-                            <CustomEditor
-                                ref={editorRef} // Assign the ref
-                                initialContent={editorHtml} // Pass initial content
-                                mediaCategory="lesson" // Specify media category for uploads
-
-                                // isDisabled={submittingEdit} // Pass disabled state if editor supports it
-                            />
-                            {/* Hidden input for label association if needed by accessibility tools */}
-                            <input type="hidden" id="editLessonContent" />
-                        </div>
-                    </div>
-
-                    {/* Form Actions (Save/Cancel) */}
-                    <div className={styles.formActions}>
-                        <button
-                            type="submit"
-                            className={`${styles.btn} ${styles.btnPrimary}`}
-                            disabled={isSubmitting}
-                        >
-                            {/* {submittingEdit ? 'Saving...' : 'Save Changes'} */}
-                            {isSubmitting ? 'Saving...' : 'Save Changes'}
-                        </button>
-                        {/* Show Publish if owner & currently draft */}
-                        {isOwner && lesson?.status === 'draft' && (
-                          <button
-                            type="button"
-                            className={`${styles.btn} ${styles.btnWarning}`}
-                            onClick={handlePublish}
-                          >
-                            Publish
-                          </button>
-                        )}
-                        
-                        <button
-                            type="button" // Important: type="button" to prevent form submission
-                            className={`${styles.btn} ${styles.btnSecondary}`}
-                            onClick={handleCancelEdit}
-                            // disabled={submittingEdit}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-
-            ) : (
-                /* --- Read-Only View --- */
-                <>
-                    {/* Lesson Title */}
-                    <h1 className={styles.lessonTitle}>
-                        {lesson.title}
-                        {/* Show locked indicator only to owner */}
-                        {isLocked && isOwner && <span className={styles.lockedIndicator}> 🔒 Locked</span>}
-                    </h1>
-
-                    {/* Course Information Banner (if part of a course) */}
-                    { isAttachedToCourse ? (
-                        <div className={styles.courseInfo}>
-                            <p>
-                                This lesson is part of the course:{" "}
-                                <Link href={`/courses/${lesson.course_data.permalink}`}>
-                                    {lesson.course_data.title}
-                                </Link>
-                            </p>
-                            {!lesson.is_premium && (
-                              <div className={styles.freePreviewBanner}>
-                                <span className={styles.previewFlag}>Free preview</span>
-                                <span className={styles.previewText}>
-                                  Enjoy this free lesson. Enroll to unlock all premium lessons and track progress.
-                                </span>
-                                <Link
-                                  href={`/courses/${lesson.course_data.permalink}`}
-                                  className={`${styles.btn} ${styles.btnPrimary} ${styles.previewCta}`}
-                                >
-                                  Enroll to continue
-                                </Link>
-                              </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className={styles.freeLessonInfo}>
-                            <p>This is a standalone lesson.</p>
-                        </div>
-                    )}
-                    
-                   {/* Display General Feedback Messages */}
-                   {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
-                   {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
-
-
-                    {/* Video Embed */}
-                    {lesson.video_url && (() => {
-                        const embedUrl = getYoutubeEmbedUrl(lesson.video_url);
-                        if (embedUrl) {
-                            // Render iframe if a valid embed URL is generated
-                            return (
-                                <div className={styles.lessonVideoEmbed}>
-                                    <iframe
-                                        src={embedUrl}
-                                        title={lesson.title + " Video"}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen>
-                                    </iframe>
-                                </div>
-                            );
-                        } else if (lesson.video_url.trim()) {
-                            // Render a simple link if URL exists but couldn't be parsed into an embed URL
-                            return (
-                                <div className={styles.lessonVideoLink}>
-                                    <p>Video Link: <a href={lesson.video_url} target="_blank" rel="noopener noreferrer">{lesson.video_url}</a> (Could not embed)</p>
-                                </div>
-                            );
-                        }
-                        return null; // Return null if no video URL
-                    })()}
-
-                    {/* Lesson Content (Scoped in Shadow DOM) */}
-                    <root.div className={styles.lessonShadowRoot} data-lesson-root>
-                    <style>
-                        {`
-                        :host{--accent-color:${accent};}
-                        ${sanitizeLessonCss(lesson.custom_css || "")}
-                        `}
-                    </style>
-                    <div
-                        ref={lessonContentDisplayRef}
-                        className="lesson-content"
-                        dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
-                    />
-                    </root.div>
-
-                    {/* Quizzes Section */}
-                    {lesson.quizzes?.length > 0 && (
-                        <section className={styles.lessonQuizzes}>
-                            <h2>Associated Quizzes</h2>
-                            {lesson.quizzes.map(q => (
-                                <QuizCard key={q.id} quiz={q} /> // Render each quiz using QuizCard component
-                            ))}
-                        </section>
-                    )}
-
-                    {/* Post Metadata (Author, Date) */}
-                    <p className={styles.postMeta}>
-                        <FaUser /> {lesson.created_by || 'Unknown Author'}
-                        &nbsp; | &nbsp; {/* Add spacing */}
-                        <FaRegClock /> {lesson.created_at ? new Date(lesson.created_at).toLocaleDateString() : 'Unknown Date'}
-                    </p>
-
-                     {/* Tags Display */}
-                     {lesson.tags_output && lesson.tags_output.length > 0 && (
-                        <div className={styles.lessonTags}> {/* Use module style */}
-                            <strong>Tags:</strong> {lesson.tags_output.join(', ')}
-                        </div>
-                    )}
-
-                    {/* Previous / Next Lesson Navigation */}
-                    <div className={styles.lessonNavButtons}>
-                        {prevLesson ? (
-                            <Link
-                                href={`/lessons/${prevLesson.permalink}`}
-                                className={`${styles.navButton} ${styles.prevButton}`}
-                            >
-                                ← {prevLesson.title}
-                            </Link>
-                        ) : <span className={styles.navPlaceholder}></span> /* Placeholder for alignment */}
-                        {nextLesson ? (
-                            <Link
-                                href={`/lessons/${nextLesson.permalink}`}
-                                className={`${styles.navButton} ${styles.nextButton}`}
-                            >
-                                {nextLesson.title} →
-                            </Link>
-                        ) : <span className={styles.navPlaceholder}></span> /* Placeholder for alignment */}
-                    </div>
-
-
-                    {/* Completion Button / Indicator
-                        - Free lessons: visible to everyone, but completion requires enrollment (already enforced by isEnrolled).
-                    */}
-                    {isEnrolled && !isCompleted && (
-                        <button className={`${styles.btn} ${styles.btnPrimary} ${styles.completeBtn}`} onClick={handleCompleteLesson}>
-                            Mark Lesson as Complete
-                        </button>
-                    )}
-                    {/* Show indicator if completed */}
-                    {isCompleted && <div className={styles.completedIndicator}>✅ Lesson Completed!</div>}
-
-                    {/* Owner Actions (Edit/Delete) */}
-                    {isOwner && (
-                        <div className={styles.lessonActions}>
-                            <button
-                                className={styles.editBtn}
-                                onClick={handleEditClick}
-                                style={{ color: accent }}       // example: text in accent color
-                                disabled={isLocked}
-                                title="Edit Lesson"
-                            >
-                                <Pencil size={18} /> <span>Edit</span>
-                            </button>
-                            <button
-                                className={styles.deleteBtn}
-                                onClick={handleDeleteLesson}
-                                style={{ backgroundColor: accent }} // example: bg in accent color
-                                disabled={isLocked}
-                                title="Delete Lesson"
-                            >
-                              <Trash2 size={18} /> <span>{confirmingDelete ? 'Confirm Delete!' : 'Delete'}</span>
- 
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Floating Action Buttons */}
-                    <FloatingActionButtons
-                        onTopClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // Scroll to top smoothly
-                        onCompleteClick={handleCompleteLesson} // Reuse complete handler
-                        onBackClick={() => {
-                        if (isAttachedToCourse) router.push(`/courses/${lesson.course_data.permalink}`);
-                        else router.push('/courses');
-                        }}
-                    />
-                </>
-            )}
-        </div>
-    );
 };
 
 export default LessonDetail;

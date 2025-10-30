@@ -1074,4 +1074,3 @@ const getEditorStyles = (id) => `
 `;
 
 export default CustomEditor;
-
