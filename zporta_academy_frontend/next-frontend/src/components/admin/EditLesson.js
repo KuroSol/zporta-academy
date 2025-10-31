@@ -263,7 +263,21 @@ export default function EditLesson() {
     setSubmitting(true);
     const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     const appliedEditorCSS = typeof editorRef.current?.getAppliedCSS === 'function' ? editorRef.current.getAppliedCSS() : '';
-    const payload = { title: title.trim(), subject, editor_content: editorHTML, content: editorHTML, video_url: videoUrl.trim() || null, tags: tagsArray, template: template, accent_color: accentColor, custom_css: customCSS || appliedEditorCSS || '', custom_js: (customJS || '').replace(/<\/?script[^>]*>/gi, ''), template_ref: selectedTemplateRef || null, is_premium: !!isPremium };
+    const payload = {
+      title: title.trim(),
+      subject,
+      editor_content: editorHTML,
+      content: editorHTML,
+      tags: tagsArray,
+      template: template,
+      accent_color: accentColor,
+      custom_css: customCSS || appliedEditorCSS || '',
+      custom_js: (customJS || '').replace(/<\/?script[^>]*>/gi, ''),
+      template_ref: selectedTemplateRef || null,
+      is_premium: !!isPremium
+    };
+    const trimmedVideo = (videoUrl || '').trim();
+    if (trimmedVideo) payload.video_url = trimmedVideo;
 
     console.log("[EditLesson] Sending PATCH payload:", { title: payload.title, subject: payload.subject, tags: payload.tags }); // Log less
     try {
