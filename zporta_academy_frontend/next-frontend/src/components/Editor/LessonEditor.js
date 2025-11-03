@@ -8,11 +8,13 @@ import React, {
     useCallback,
     useMemo
 } from 'react';
+// We will rename the CSS file to match the new component-based structure
 import styles from '@/styles/Editor/LessonEditor.module.css';
+
 const ELEMENT_NODE = 1;
 
 // --- MOCK API CLIENT ---
-// NOTE: Replace with your actual API client import
+// (No changes here, this is your existing client)
 const apiClient = {
     get: async (url) => {
         if (url === '/lessons/templates/') {
@@ -47,38 +49,10 @@ const apiClient = {
 };
 // --- END MOCK API CLIENT ---
 
-// --- UTILITIES ---
+// --- CORE UTILITIES ---
 const uid = () => crypto.randomUUID();
 
-// --- ICONS ---
-// Refined and slightly more modern SVGs
-const PlusIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
-const TrashIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>);
-const AudioIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>);
-const VideoIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>);
-const ImageIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>);
-const TextIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>);
-const HeadingIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 12h12M6 4v16M18 4v16"></path><path d="M10 4v7h4V4"></path></svg>);
-const ButtonIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect><path d="M12 12h.01"></path><path d="M16 12h.01"></path><path d="M8 12h.01"></path></svg>);
-const ColumnsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>);
-const AccordionIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="4" rx="1" ry="1"/><rect x="3" y="10" width="18" height="4" rx="1" ry="1"/><rect x="3" y="17" width="18" height="4" rx="1" ry="1"/></svg>);
-const SettingsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>);
-const DesktopIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>);
-const TabletIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>);
-const MobileIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>);
-const DuplicateIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>);
-const MoveUpIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>);
-const MoveDownIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>);
-const PaletteIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>);
-
-// --- NEW ICONS for Text Toolbar ---
-const BoldIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>);
-const ItalicIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>);
-const ListIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>);
-const ListOrderedIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4l-1-1v-2.5"></path><path d="M4 12h2"></path></svg>);
-
-
-// --- Column Layout Constants ---
+// --- COLUMN LAYOUT CONSTANTS ---
 const BREAKPOINTS = ['base', 'sm', 'md', 'lg'];
 const getInitialRatios = () => ({ base: [100], sm: [50, 50], md: [50, 50], lg: [50, 50] });
 const COLUMN_PRESETS = {
@@ -88,6 +62,8 @@ const COLUMN_PRESETS = {
     4: [[25, 25, 25, 25], [20, 30, 30, 20]]
 };
 const WRAPPER_CLASS = "lesson-content";
+
+// Normalizes layout ratios
 function normalizeRatios(arr, cols) {
     const nums = (arr || []).map(n => Number(n));
     if (cols > 1 && nums.length === 1 && isFinite(nums[0]) && nums[0] > 0) {
@@ -100,7 +76,106 @@ function normalizeRatios(arr, cols) {
     return validNums;
 }
 
+// Helper to convert hex to rgba
+const hexToRgba = (hex, alpha = 1) => {
+    if (!hex || typeof hex !== 'string' || hex.length < 4) return `rgba(255, 255, 255, ${alpha})`;
+    let hexValue = hex.slice(1);
+    if (hexValue.length === 3) {
+        hexValue = hexValue[0] + hexValue[0] + hexValue[1] + hexValue[1] + hexValue[2] + hexValue[2];
+    }
+    const bigint = parseInt(hexValue, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// --- NEW & EXPANDED ICON LIBRARY ---
+// Using 1.25rem (20px) as a standard size, but viewbox allows scaling
+const I = ({ w = 20, h = 20, children, ...props }) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width={w} 
+        height={h} 
+        viewBox="0 0 20 20" 
+        fill="currentColor" 
+        aria-hidden="true" 
+        {...props}
+    >
+        {children}
+    </svg>
+);
+
+// UI & Navigation
+const Icons = {
+    Plus: (p) => <I {...p}><path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" /></I>,
+    Trash: (p) => <I {...p}><path fillRule="evenodd" d="M9 2a1 1 0 00-1 1v1H4a1 1 0 000 2h1v9a2 2 0 002 2h6a2 2 0 002-2V6h1a1 1 0 100-2h-4V3a1 1 0 00-1-1H9zm2 6a1 1 0 10-2 0v6a1 1 0 102 0V8z" clipRule="evenodd" /></I>,
+    Settings: (p) => <I {...p}><path fillRule="evenodd" d="M11.49 3.17a.5.5 0 01.499.03l.006.003 2.008.916a.5.5 0 01.242.424V5.8a.5.5 0 01-.17.385l-1.5 1.5a.5.5 0 01-.707 0l-1.5-1.5a.5.5 0 01-.17-.385V4.542a.5.5 0 01.242-.424l2.008-.916.006-.003a.5.5 0 01.05-.03zm-2.98.03a.5.5 0 00-.499-.03L8 3.084l-2.008.916a.5.5 0 00-.242.424V5.8a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V4.542a.5.5 0 00-.242-.424L8.51 3.2zM4.662 4.084L2.654 5a.5.5 0 00-.242.424V6.8a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V5.424a.5.5 0 00-.242-.424L4.662 4.084zM11.49 9.17a.5.5 0 01.499.03l.006.003 2.008.916a.5.5 0 01.242.424v1.258a.5.5 0 01-.17.385l-1.5 1.5a.5.5 0 01-.707 0l-1.5-1.5a.5.5 0 01-.17-.385V10.542a.5.5 0 01.242-.424l2.008-.916.006-.003a.5.5 0 01.05-.03zm-2.98.03a.5.5 0 00-.499-.03L8 9.084l-2.008.916a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084zM17.346 5a.5.5 0 00.242-.424V3.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V4.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385zM17.346 11a.5.5 0 00.242-.424V9.318a.5.5 0 00-.33-.464l-2.008-.916a.5.5 0 00-.499.03l-.006.003-2.008.916a.5.5 0 00-.242.424V10.54a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V10.542a.5.5 0 00-.242-.424L8.51 9.2zM4.662 10.084L2.654 11a.5.5 0 00-.242.424v1.258a.5.5 0 00.17.385l1.5 1.5a.5.5 0 00.707 0l1.5-1.5a.5.5 0 00.17-.385V11.424a.5.5 0 00-.242-.424L4.662 10.084z" clipRule="evenodd" /></I>,
+    Desktop: (p) => <I {...p}><path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm2 0h10v8H5V5z" clipRule="evenodd" /><path d="M13 16.5a1 1 0 11-2 0 1 1 0 012 0z" /><path fillRule="evenodd" d="M3 14.5a.5.5 0 01.5-.5h13a.5.5 0 010 1H12v1.5a1 1 0 11-2 0V15H3.5a.5.5 0 01-.5-.5z" clipRule="evenodd" /></I>,
+    Tablet: (p) => <I {...p}><path fillRule="evenodd" d="M5 2a2 2 0 012-2h6a2 2 0 012 2v16a2 2 0 01-2 2H7a2 2 0 01-2-2V2zm2 0h6v16H7V2z" clipRule="evenodd" /><path d="M11 17a1 1 0 11-2 0 1 1 0 012 0z" /></I>,
+    Mobile: (p) => <I {...p}><path fillRule="evenodd" d="M6 2a2 2 0 012-2h4a2 2 0 012 2v16a2 2 0 01-2 2H8a2 2 0 01-2-2V2zm2 0h4v16H8V2z" clipRule="evenodd" /><path d="M11 17a1 1 0 11-2 0 1 1 0 012 0z" /></I>,
+    Duplicate: (p) => <I {...p}><path fillRule="evenodd" d="M4 2a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V2zm2 0h8v8H6V2z" clipRule="evenodd" /><path fillRule="evenodd" d="M3 5a1 1 0 011-1h.5a1 1 0 110 2H4a1 1 0 01-1-1zM3 9a1 1 0 011-1h.5a1 1 0 110 2H4a1 1 0 01-1-1zM7 13.5a1 1 0 10-2 0V16a1 1 0 01-1 1H3a1 1 0 100 2h1a3 3 0 003-3v-2.5zM13 16.5a1 1 0 10-2 0V17a1 1 0 11-2 0v-.5a3 3 0 00-3-3H4.5a1 1 0 100 2H5a1 1 0 011 1v.5a1 1 0 102 0v-.5a1 1 0 011-1h.5a1 1 0 100-2H9a3 3 0 00-3 3v.5a1 1 0 102 0V16a1 1 0 011-1h2a1 1 0 110 2h-1a1 1 0 01-1 1v.5a1 1 0 102 0V17a1 1 0 011-1h.5a1 1 0 100-2h-.5a1 1 0 01-1 1v.5z" clipRule="evenodd" /></I>,
+    MoveUp: (p) => <I {...p}><path fillRule="evenodd" d="M10 3a1 1 0 011 1v11.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 15.586V4a1 1 0 011-1z" clipRule="evenodd" transform="translate(0 20) scale(1 -1) translate(0 20)" /></I>,
+    MoveDown: (p) => <I {...p}><path fillRule="evenodd" d="M10 3a1 1 0 011 1v11.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 15.586V4a1 1 0 011-1z" clipRule="evenodd" /></I>,
+    Palette: (p) => <I {...p}><path d="M10 2.5a.5.5 0 00-1 0V5a.5.5 0 001 0V2.5zM10 0a1 1 0 00-1 1V5a1 1 0 102 0V1a1 1 0 00-1-1z" /><path fillRule="evenodd" d="M10 18a7.5 7.5 0 006.467-3.756.5.5 0 01.86.51A8.5 8.5 0 1110 1.5a.5.5 0 010-1A9.5 9.5 0 1010 19V1.5a.5.5 0 010-1V19c-.662 0-1.306-.067-1.928-.198a.5.5 0 01.356-.964A8.44 8.44 0 0010 18z" clipRule="evenodd" /><path d="M13.5 10a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5z" /><path d="M17.5 13.5a.5.5 0 00-1 0v3a.5.5 0 001 0v-3z" /></I>,
+    Code: (p) => <I {...p}><path fillRule="evenodd" d="M6.33 4.61l-4.72 4.72a.75.75 0 000 1.06l4.72 4.72a.75.75 0 001.06-1.06L3.165 10l4.225-4.225a.75.75 0 00-1.06-1.165zM13.67 4.61a.75.75 0 011.06 0l4.72 4.72a.75.75 0 010 1.06l-4.72 4.72a.75.75 0 01-1.06-1.06L16.835 10l-4.225-4.225a.75.75 0 011.06-1.165z" clipRule="evenodd" /></I>,
+    Eye: (p) => <I {...p}><path fillRule="evenodd" d="M10 3a7 7 0 00-7 7 7 7 0 007 7 7 7 0 007-7 7 7 0 00-7-7zm0 1.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zm0 2.5a3 3 0 100 6 3 3 0 000-6z" clipRule="evenodd" /></I>,
+    Edit: (p) => <I {...p}><path fillRule="evenodd" d="M13.293 3.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-9 9a1 1 0 01-.39.242l-3 1a1 1 0 01-1.22-1.22l1-3a1 1 0 01.242-.39l9-9zM14 6.414l-8.5 8.5L5 15.414l.5-1.5L13.586 6l.414.414zM15 4.414L15.586 5 14 6.414 13.586 6 15 4.414z" clipRule="evenodd" /></I>,
+    Sidebar: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3zm4 0v12h8V4H7z" clipRule="evenodd" /></I>,
+    SidebarOpen: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h4V4H3zm6 0v12h8V4H9z" clipRule="evenodd" /></I>,
+    PanelClose: (p) => <I {...p}><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></I>,
+    Close: (p) => <I {...p}><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></I>,
+    DragHandle: (p) => <I {...p} w={14} h={14}><path d="M5 3a1 1 0 11-2 0 1 1 0 012 0zM6 2a1 1 0 100 2 1 1 0 000-2zM5 7a1 1 0 11-2 0 1 1 0 012 0zM6 6a1 1 0 100 2 1 1 0 000-2zM5 11a1 1 0 11-2 0 1 1 0 012 0zM6 10a1 1 0 100 2 1 1 0 000-2zM9 3a1 1 0 11-2 0 1 1 0 012 0zM10 2a1 1 0 100 2 1 1 0 000-2zM9 7a1 1 0 11-2 0 1 1 0 012 0zM10 6a1 1 0 100 2 1 1 0 000-2zM9 11a1 1 0 11-2 0 1 1 0 012 0zM10 10a1 1 0 100 2 1 1 0 000-2z" /></I>,
+    ChevronDown: (p) => <I {...p}><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></I>,
+
+// Block Types
+    Text: (p) => <I {...p}><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+    Heading: (p) => <I {...p}><path fillRule="evenodd" d="M4 4a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM4 9a1 1 0 011-1h6a1 1 0 110 2H5a1 1 0 01-1-1z" clipRule="evenodd" /><path fillRule="evenodd" d="M3 15a1 1 0 011-1h4a1 1 0 110 2H4a1 1 0 01-1-1zM9.5 3.5a1 1 0 100 2v10a1 1 0 102 0v-10a1 1 0 10-2 0z" clipRule="evenodd" /></I>,
+    Image: (p) => <I {...p}><path fillRule="evenodd" d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H4z" clipRule="evenodd" /><path d="M4 14.59l4-4 3 3 4-4 3 3V17H4v-2.41zM6 8a2 2 0 100-4 2 2 0 000 4z" /></I>,
+    Audio: (p) => <I {...p}><path d="M6 9a1 1 0 011-1h1.06a1 1 0 01.94.65l.5 1.5a1 1 0 00.94.65h1.12a1 1 0 00.94-.65l.5-1.5a1 1 0 01.94-.65H15a1 1 0 010 2h-.06a1 1 0 01-.94.65l-.5 1.5a1 1 0 00-.94.65h-1.12a1 1 0 00-.94-.65l-.5-1.5a1 1 0 01-.94-.65H7a1 1 0 01-1-1z" /><path fillRule="evenodd" d="M3 3a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V3zm2-1a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1H5z" clipRule="evenodd" /></I>,
+    Video: (p) => <I {...p}><path d="M14.5 11.08l-3.6-2.08a1 1 0 00-1.4.86v4.28a1 1 0 001.4.86l3.6-2.08a1 1 0 000-1.72z" /><path fillRule="evenodd" d="M3 3a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V3zm2-1a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1H5z" clipRule="evenodd" /></I>,
+    Button: (p) => <I {...p}><path fillRule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5a1 1 0 00-1-1H6z" clipRule="evenodd" /><path d="M6 8.5a.5.5 0 01.5-.5h7a.5.5 0 010 1h-7a.5.5 0 01-.5-.5z" /></I>,
+    Columns: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm9 1V16H3V4h8zm2 0V16h4V4h-4z" clipRule="evenodd" /></I>,
+    Accordion: (p) => <I {...p}><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+    Layout: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3zm4 0v12h8V4H7z" clipRule="evenodd" /></I>,
+    Column: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3z" clipRule="evenodd" /></I>,
+    Panel: (p) => <I {...p}><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+// Text Toolbar
+    Bold: (p) => <I {...p}><path fillRule="evenodd" d="M8 4a1 1 0 011-1h.5a3.5 3.5 0 013.5 3.5V8a1 1 0 11-2 0V6.5a1.5 1.5 0 00-1.5-1.5H9a1 1 0 01-1-1zM8 12a1 1 0 011-1h1.5a3.5 3.5 0 013.5 3.5v.5a2 2 0 11-4 0v-.5a1.5 1.5 0 00-1.5-1.5H9a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+    Italic: (p) => <I {...p}><path fillRule="evenodd" d="M7.5 3a1 1 0 011 1v.5h1.16l-2.66 9H6a1 1 0 110-2h.5l2-6H7.5a1 1 0 01-1-1V4a1 1 0 011-1zM12 3a1 1 0 011 1v.5h1.16l-2.66 9H10.5a1 1 0 110-2h.5l2-6H12.5a1 1 0 01-1-1V4a1 1 0 011-1z" clipRule="evenodd" /></I>,
+    List: (p) => <I {...p}><path fillRule="evenodd" d="M5 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zM2.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" clipRule="evenodd" /></I>,
+    ListOrdered: (p) => <I {...p}><path fillRule="evenodd" d="M6 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1z" clipRule="evenodd" /><path d="M2.12 15.34a.5.5 0 01.37.16l.13.2a.5.5 0 00.75 0l.13-.2a.5.5 0 01.62-.16 1 1 0 11.5 1.73l-.37.61a.5.5 0 01-.75 0l-.63-1.04a.5.5 0 01.37-.8zm-.13-5.26a1 1 0 100-2 1 1 0 000 2zm.59.16a1.5 1.5 0 10-1.18-2.66.5.5 0 01.5-.86 2.5 2.5 0 111.96 4.39.5.5 0 01-.78-.87zM3.5 3.5a1 1 0 10-2 0V4a1 1 0 102 0V3.5z" /></I>,
+};
+
+// Map to associate block types with their new icons
+const BlockTypeIcons = {
+    text: <Icons.Text />,
+    heading: <Icons.Heading />,
+    image: <Icons.Image />,
+    audio: <Icons.Audio />,
+    video: <Icons.Video />,
+    button: <Icons.Button />,
+    columns: <Icons.Columns />,
+    accordion: <Icons.Accordion />,
+    // For containers
+    column: <I w={16} h={16}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3z" clipRule="evenodd" /></I>,
+    accItem: <I w={16} h={16}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v2h12V4H3zm0 4v2h12V8H3zm0 4v2h12v-2H3z" clipRule="evenodd" /></I>,
+    accPanel: <I w={16} h={16}><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+    editor: <Icons.Eye />,
+};
+
 // --- DATA SERIALIZATION / DESERIALIZATION ---
+// (This logic is complex and will go in Part 2)
+
+// ... (Part 1 code from canvas)
+
+// --- DATA SERIALIZATION / DESERIALIZATION ---
+
+/**
+ * Parses an HTML string into an array of block objects.
+ * @param {string} htmlString - The HTML string to parse.
+ * @returns {Array<Object>} An array of block objects.
+ */
 const htmlToBlocks = (htmlString) => {
     if (!htmlString || typeof window === 'undefined') {
         return [{ id: uid(), type: 'text', data: { text: '' }, styles: {} }];
@@ -122,7 +197,11 @@ const htmlToBlocks = (htmlString) => {
                 }
 
                 if (node.classList.contains('zporta-columns')) {
-                    const columns = Array.from(node.children).map(col => parseNodes(col.childNodes));
+                    // THIS IS THE FIX: Filter to *only* map over .zporta-column children
+                    const columnElements = Array.from(node.children).filter(child => 
+                        child.nodeType === ELEMENT_NODE && child.classList.contains('zporta-column')
+                    );
+                    const columns = columnElements.map(col => parseNodes(col.childNodes));
                     const ratios = {};
                     let columnCount = 0;
                     const style = node.style;
@@ -156,7 +235,6 @@ const htmlToBlocks = (htmlString) => {
                 } else if (node.tagName.startsWith('H')) {
                     blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: {} });
                 } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && (node.querySelector('ul') || node.querySelector('ol')))) {
-                    // Capture text blocks, including those that might now contain lists
                     blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
@@ -188,28 +266,22 @@ const htmlToBlocks = (htmlString) => {
                     const items = [];
                     Array.from(node.querySelectorAll(':scope > details.zporta-acc-item')).forEach(d => {
                         const title = d.querySelector(':scope > summary.zporta-acc-title')?.textContent || 'Untitled';
-                        
-                        // --- START FIX ---
-                        // Find the panel div specifically
                         const panelDiv = d.querySelector(':scope > div.zporta-acc-panel');
                         let blocksInPanel = [];
 
                         if (panelDiv) {
-                            // Parse the *children* of the panel div, not the div itself
                             blocksInPanel = parseNodes(panelDiv.childNodes);
                         } else {
-                            // Fallback: if no panel div, parse whatever other elements are there
                             const otherNodes = Array.from(d.childNodes).filter(n => n.nodeType === ELEMENT_NODE && n.tagName !== 'SUMMARY');
                             if (otherNodes.length > 0) {
                                 blocksInPanel = parseNodes(otherNodes);
                             }
                         }
-                        // --- END FIX ---
 
                         items.push({
                             id: uid(),
                             title,
-                            blocks: blocksInPanel, // Use the correctly parsed blocks
+                            blocks: blocksInPanel,
                         });
                     });
                     blocks.push({ id, type: 'accordion', items, styles: {}, options: {
@@ -217,18 +289,14 @@ const htmlToBlocks = (htmlString) => {
                         theme: themeMatch ? themeMatch.replace('zporta-acc--', '') : 'light',
                         titleAlign, titleSize, icon
                     }});
-                    } else if (node.tagName === 'DIV' && node.innerHTML.trim()){
-                    // --- START FIX ---
-                    // Don't parse the accordion panel wrapper as a block itself.
-                    // It is handled by the 'zporta-accordion' block logic.
-                    if (node.classList.contains('zporta-acc-panel')) {
-                        // Do nothing, ignore this node.
-                    } else {
-                    // --- END FIX ---
-                        console.warn("Parsing unexpected DIV as text block:", node);
-                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                    } else if (node.tagName === 'DIV' && (node.innerHTML.trim() || node.classList.contains('zporta-column'))){
+                        if (node.classList.contains('zporta-acc-panel') || node.classList.contains('zporta-column')) {
+                            // Do nothing, these are handled by their parent parsers
+                        } else {
+                            console.warn("Parsing unexpected DIV as text block:", node);
+                            blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                        }
                     }
-                }
             });
             return blocks;
         };
@@ -241,6 +309,11 @@ const htmlToBlocks = (htmlString) => {
     }
 };
 
+/**
+ * Serializes an array of block objects into a clean HTML string.
+ * @param {Array<Object>} blocks - The array of block objects to serialize.
+ * @returns {string} The resulting HTML string.
+ */
 const blocksToHtml = (blocks) => {
     return blocks.map(block => {
         if (!block) return '';
@@ -250,9 +323,7 @@ const blocksToHtml = (blocks) => {
             case 'heading':
                 return `<h2 style="${styleString}">${block.data.text || ''}</h2>`;
             case 'text':
-                // Check if the text is empty or just contains an empty tag (like <p><br></p>)
                 const isEmpty = !block.data.text || block.data.text.trim() === '' || block.data.text.trim() === '<br>';
-                // If it contains list or div tags, wrap in a div. Otherwise, a p tag.
                 const hasBlockElements = /<\/(ul|ol|div|p)>/.test(block.data.text);
                 if (hasBlockElements) {
                     return `<div style="${styleString}">${isEmpty ? '<br>' : block.data.text}</div>`;
@@ -263,7 +334,7 @@ const blocksToHtml = (blocks) => {
             case 'audio':
                 return `<figure style="${styleString}"><audio controls src="${block.data.src || ''}"></audio></figure>`;
             case 'video':
-                return `<figure style="${styleString}"><video controls src="${block.aata.src || ''}"></video></figure>`;
+                return `<figure style="${styleString}"><video controls src="${block.data.src || ''}"></video></figure>`;
             case 'button': {
                 const v = block.data?.variant || 'primary';
                 const s = block.data?.size || 'md';
@@ -320,6 +391,15 @@ const blocksToHtml = (blocks) => {
 };
 
 // --- Block Components ---
+// (Part 3 will start here)
+
+// ... (Part 2 code - htmlToBlocks - ends here)
+
+// --- Block Components ---
+
+/**
+ * A reusable placeholder for empty media blocks.
+ */
 const Placeholder = ({ icon, title, description, onClick }) => (
     <button
         type="button"
@@ -339,7 +419,11 @@ const Placeholder = ({ icon, title, description, onClick }) => (
     </button>
 );
 
-const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) => {
+/**
+ * Block: Heading
+ * Renders an editable H2 tag.
+ */
+const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate, onSelectLayer, onShowSettings }) => {
     const handleBlur = useCallback((e) => {
         const updatedText = e.currentTarget.innerHTML;
         if (updatedText !== data.text) {
@@ -348,7 +432,7 @@ const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) =>
     }, [data, onUpdate]);
 
     return isEditing ? <div
-        style={blockStyles} // <-- FIX 1: Apply styles in edit mode
+        style={blockStyles}
         contentEditable
         suppressContentEditableWarning
         onBlur={handleBlur}
@@ -357,7 +441,13 @@ const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) =>
     : <h2 style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || 'Heading' }}/>;
 };
 
-const TextBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) => {
+/**
+
+/**
+ * Block: Text
+ * Renders an editable div that supports rich text (bold, italic, lists).
+ */
+const TextBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate, onSelectLayer, onShowSettings }) => {
      const handleBlur = useCallback((e) => {
         const updatedText = e.currentTarget.innerHTML;
         if (updatedText !== data.text) {
@@ -366,25 +456,28 @@ const TextBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate }) => {
     }, [data, onUpdate]);
 
     return isEditing ? <div
-        style={blockStyles} // <-- FIX 1: Apply styles in edit mode
+        style={blockStyles}
         contentEditable
         suppressContentEditableWarning
         onBlur={handleBlur}
         className={`${styles.blockInput} ${styles.blockContentEditable} ${styles.blockTextarea}`}
         dangerouslySetInnerHTML={{ __html: data.text || '' }} />
     : (
-        // Render view: Use a div if it contains block elements, otherwise a p
         /<\/(ul|ol|div|p)>/.test(data.text)
         ? <div style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || '<br>' }} />
         : <p style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || 'Paragraph text will appear here.' }} />
     );
 };
 
-const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImagePicker }) => {
+/**
+ * Block: Image
+ * Renders an image with an optional caption.
+ */
+const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImagePicker, onShowSettings }) => {
     if (data.uploading) return <div className={styles.uploadingIndicator}>Uploading Image...</div>;
     if (!data.src) {
         return isEditing
-            ? <Placeholder icon={<ImageIcon />} title="Image" description="Click to upload an image" onClick={openImagePicker} />
+            ? <Placeholder icon={<Icons.Image />} title="Image" description="Click to upload an image" onClick={openImagePicker} />
             : null;
     }
     return (
@@ -395,8 +488,8 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
             title={isEditing ? 'Click to replace image' : undefined}
         >
             {isEditing && (
-                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); openImagePicker(); }} aria-label="Replace image" title="Replace image">
-                    <SettingsIcon />
+                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); onShowSettings(); }} aria-label="Image settings" title="Image settings">
+                    <Icons.Settings w={16} h={16} />
                 </button>
             )}
             <img src={data.src} alt={data.caption || ''} className={styles.imageContent}/>
@@ -415,18 +508,22 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
     );
 };
 
-const AudioBlock = ({ data, styles: blockStyles, isEditing, openAudioPicker }) => {
+/**
+ * Block: Audio
+ * Renders an HTML5 audio player.
+ */
+const AudioBlock = ({ data, styles: blockStyles, isEditing, openAudioPicker, onShowSettings }) => {
     if (data.uploading) return <div className={styles.uploadingIndicator}>Uploading Audio...</div>;
     if (!data.src) {
         return isEditing
-            ? <Placeholder icon={<AudioIcon />} title="Audio" description="Click to upload an MP3 file" onClick={openAudioPicker} />
+            ? <Placeholder icon={<Icons.Audio />} title="Audio" description="Click to upload an MP3 file" onClick={openAudioPicker} />
             : null;
     }
     return (
         <div style={blockStyles} className={`${styles.audioWrapper} ${isEditing ? styles.mediaEditable : ''}`}>
             {isEditing && (
-                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); openAudioPicker(); }} aria-label="Replace audio" title="Replace audio">
-                    <SettingsIcon />
+                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); onShowSettings(); }} aria-label="Audio settings" title="Audio settings">
+                    <Icons.Settings w={16} h={16} />
                 </button>
             )}
             <audio controls src={data.src} className={styles.audioElement}></audio>
@@ -434,11 +531,15 @@ const AudioBlock = ({ data, styles: blockStyles, isEditing, openAudioPicker }) =
     );
 };
 
-const VideoBlock = ({ data, styles: blockStyles, isEditing, openVideoPicker }) => {
+/**
+ * Block: Video
+ * Renders an HTML5 video player.
+ */
+const VideoBlock = ({ data, styles: blockStyles, isEditing, openVideoPicker, onShowSettings }) => {
     if (data.uploading) return <div className={styles.uploadingIndicator}>Uploading Video...</div>;
     if (!data.src) {
         return isEditing
-            ? <Placeholder icon={<VideoIcon />} title="Video" description="Click to upload a video file" onClick={openVideoPicker} />
+            ? <Placeholder icon={<Icons.Video />} title="Video" description="Click to upload a video file" onClick={openVideoPicker} />
             : null;
     }
     return (
@@ -449,8 +550,8 @@ const VideoBlock = ({ data, styles: blockStyles, isEditing, openVideoPicker }) =
             title={isEditing ? 'Click to replace video' : undefined}
         >
             {isEditing && (
-                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); openVideoPicker(); }} aria-label="Replace video" title="Replace video">
-                    <SettingsIcon />
+                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); onShowSettings(); }} aria-label="Video settings" title="Video settings">
+                    <Icons.Settings w={16} h={16} />
                 </button>
             )}
             <video controls src={data.src} className={styles.videoElement}></video>
@@ -458,13 +559,17 @@ const VideoBlock = ({ data, styles: blockStyles, isEditing, openVideoPicker }) =
     );
 };
 
+/**
+ * Block: Button
+ * Renders a customizable link button.
+ */
 const ButtonBlock = ({ data, styles: blockStyles, isEditing, onUpdate }) => {
     const { text='', href='#', variant='primary', size='md', full=false, align='left', radius='var(--r-md)' } = data || {};
     if (isEditing) {
         return (
             <div className={styles.buttonEditor}>
-                <input type="text" value={text} onChange={(e)=>onUpdate({ ...data, text:e.target.value })} placeholder="Button Text"/>
-                <input type="url"  value={href} onChange={(e)=>onUpdate({ ...data, href:e.target.value })} placeholder="https://example.com"/>
+                <input type="text" name="buttonText" aria-label="Button text" value={text} onChange={(e)=>onUpdate({ ...data, text:e.target.value })} placeholder="Button Text"/>
+                <input type="url"  name="buttonHref" aria-label="Button link URL" value={href} onChange={(e)=>onUpdate({ ...data, href:e.target.value })} placeholder="https://example.com"/>
             </div>
         );
     }
@@ -473,7 +578,198 @@ const ButtonBlock = ({ data, styles: blockStyles, isEditing, onUpdate }) => {
     return <a href={href} className={cls} style={style}>{text || 'Click Me'}</a>;
 };
 
-const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onShowSettings, onReorderColumn, selectedBlockId, setSelectedBlockId, onExecCommand }) => {
+// Map of block types to their React components
+const blockMap = {
+    heading: HeadingBlock,
+    text: TextBlock,
+    image: ImageBlock,
+    audio: AudioBlock,
+    video: VideoBlock,
+    button: ButtonBlock,
+    // Complex blocks (Columns, Accordion) will be defined in Part 4
+    // and added to this map there.
+};
+
+// --- CORE UI COMPONENTS ---
+
+/**
+ * Floating toolbar for rich text editing (Bold, Italic, Lists).
+ */
+const TextToolbar = ({ onExecCommand }) => {
+    const commands = [
+        { cmd: 'bold', icon: <Icons.Bold w={16} h={16} />, title: 'Bold' },
+        { cmd: 'italic', icon: <Icons.Italic w={16} h={16} />, title: 'Italic' },
+        { cmd: 'insertUnorderedList', icon: <Icons.List w={16} h={16} />, title: 'Bulleted List' },
+        { cmd: 'insertOrderedList', icon: <Icons.ListOrdered w={16} h={16} />, title: 'Numbered List' },
+    ];
+
+    const handleMouseDown = (e, cmd) => {
+        e.preventDefault(); // Prevent the contentEditable from losing focus
+        e.stopPropagation();
+        onExecCommand(cmd);
+    };
+
+    return (
+        <div className={styles.textToolbar} onMouseDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
+            {commands.map(({ cmd, icon, title }) => (
+                <button
+                    key={cmd}
+                    type="button"
+                    className={styles.toolbarButton}
+                    title={title}
+                    onMouseDown={e => handleMouseDown(e, cmd)} // Use mousedown to prevent blur
+                    onClick={e => e.preventDefault()} // Fallback just in case
+                >
+                    {icon}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+/**
+ * Contextual controls for a block (Move, Duplicate, Settings, Delete).
+ */
+const BlockControls = ({ blockId, onMoveUp, onMoveDown, onDuplicate, onShowSettings, onDelete, isFirst, isLast }) => (
+    <div className={styles.blockControls}
+         data-block-id={blockId}
+         onMouseDown={(e) => { /* prevent editor canvas selection/blur */ e.preventDefault(); e.stopPropagation(); }}
+         onClick={(e) => { e.stopPropagation(); }}>
+        <button
+            type="button"
+            id={`block-${blockId}-move-up`}
+            data-block-id={blockId}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onMoveUp(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={styles.controlButton}
+            title="Move Up"
+            disabled={isFirst}
+        >
+            <Icons.MoveUp w={16} h={16} />
+        </button>
+        <button
+            type="button"
+            id={`block-${blockId}-move-down`}
+            data-block-id={blockId}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onMoveDown(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={styles.controlButton}
+            title="Move Down"
+            disabled={isLast}
+        >
+            <Icons.MoveDown w={16} h={16} />
+        </button>
+        <button
+            type="button"
+            id={`block-${blockId}-duplicate`}
+            data-block-id={blockId}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onDuplicate(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={styles.controlButton}
+            title="Duplicate Block"
+        >
+            <Icons.Duplicate w={16} h={16} />
+        </button>
+        <button
+            type="button"
+            id={`block-${blockId}-settings`}
+            data-block-id={blockId}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onShowSettings(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={styles.controlButton}
+            title="Settings & Layout"
+            aria-controls="editor-settings-panel"
+        >
+            <Icons.Settings w={16} h={16} />
+        </button>
+        <button
+            type="button"
+            id={`block-${blockId}-delete`}
+            data-block-id={blockId}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={`${styles.controlButton} ${styles.deleteButton}`}
+            title="Delete Block"
+        >
+            <Icons.Trash w={16} h={16} />
+        </button>
+    </div>
+);
+
+/**
+ * The "+" button and menu to add a new block.
+ */
+const AddBlockButton = ({ onAdd, isFirst = false }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target) && !e.target.closest(`.${styles.addBlockButton}`)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const blockTypes = [
+        { type: 'heading', label: 'Heading', icon: <Icons.Heading/> },
+        { type: 'text', label: 'Text', icon: <Icons.Text/> },
+        { type: 'image', label: 'Image', icon: <Icons.Image/> },
+        { type: 'audio', label: 'Audio', icon: <Icons.Audio/> },
+        { type: 'video', label: 'Video', icon: <Icons.Video/> },
+        { type: 'button', label: 'Button', icon: <Icons.Button/> },
+        { type: 'columns', label: 'Columns', icon: <Icons.Columns/> },
+        { type: 'accordion', label: 'Accordion', icon: <Icons.Accordion/> }
+    ];
+
+    const handleAdd = (type, e) => {
+        if (e) e.stopPropagation();
+        onAdd(type);
+        setIsOpen(false);
+    }
+
+    return (
+        <div className={`${styles.addBlockWrapper} ${isFirst ? styles.addBlockWrapperFirst : ''}`}>
+            <div className={styles.addBlockLine}></div>
+            <div className={styles.addBlockButtonContainer}>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} className={styles.addBlockButton} aria-label="Add new block" aria-haspopup="true" aria-expanded={isOpen}>
+                    <Icons.Plus />
+                </button>
+            </div>
+            {isOpen && (
+                <div className={styles.addBlockMenu} ref={menuRef} role="menu">
+                    {blockTypes.map(b => (
+                        <button
+                          type="button"
+                          key={b.type}
+                          onClick={(e) => handleAdd(b.type, e)}
+                          className={styles.addBlockMenuItem}
+                          role="menuitem"
+                        >
+                            {b.icon}<span>{b.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- RENDERER & COMPLEX BLOCKS ---
+// (Part 4 will start here)
+
+
+// ... (Part 3 code - AddBlockButton - ends here)
+
+// --- RENDERER & COMPLEX BLOCKS ---
+
+/**
+ * Block: Columns
+ * Renders nested BlockRenderers inside a responsive grid.
+ */
+const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onShowSettings, onReorderColumn, onSelectLayer, onExecCommand, onSetSelectedLayer, selectedLayer }) => {
     const [draggedItem, setDraggedItem] = useState(null);
     const [dropTarget, setDropTarget] = useState(null);
     const [dragEnabled, setDragEnabled] = useState(false);
@@ -529,15 +825,23 @@ const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, on
 
     return (
         <div
-       style={responsiveStyles}
-       className={styles.columnsContainer}
-       onMouseDown={(e)=>e.stopPropagation()}
-       onClick={(e)=>e.stopPropagation()}
-   >
+          style={responsiveStyles}
+          className={`${styles.columnsContainer} columnsContainer`}
+        >
             {(children || []).map((column, colIndex) => (
                 <div
                     key={colIndex}
-                    className={`${styles.column} ${dropTarget === colIndex ? styles.dropIndicator : ''}`}
+                    className={`${styles.column} column ${dropTarget === colIndex ? styles.dropIndicator : ''}`}
+                    data-layer-type="Column"
+                    data-layer-label={`Column ${colIndex + 1}`}
+                    data-layer-id={`${id}::col${colIndex}`} // Unique ID for the column layer
+                    onClick={(e) => {
+                        if (!isEditing) return;
+                        // Only select the column when clicking empty space of the column itself
+                        if (e.target !== e.currentTarget) return;
+                        e.stopPropagation();
+                        onSelectLayer(e.currentTarget);
+                    }}
                     draggable={isEditing && dragEnabled}
                     onDragStart={(e) => handleDragStart(e, colIndex)}
                     onDragOver={(e) => handleDragOver(e, colIndex)}
@@ -556,17 +860,19 @@ const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, on
                         isEditing={isEditing}
                         onUpdateBlock={onUpdateBlock}
                         onDeleteBlock={onDeleteBlock}
-                        onAddBlock={onAddBlock} // <-- FIX
-                        onMoveBlock={onMoveBlock} // Pass down
+                        onAddBlock={onAddBlock}
+                        onMoveBlock={onMoveBlock}
                         openImagePickerFor={openImagePickerFor}
                         openAudioPickerFor={openAudioPickerFor}
                         openVideoPickerFor={openVideoPickerFor}
                         onShowSettings={onShowSettings}
-                        onExecCommand={onExecCommand} // <-- Pass down
-                        parentId={id}
-                        parentIndex={colIndex}  
-                        selectedBlockId={selectedBlockId}
-                        setSelectedBlockId={setSelectedBlockId}
+                        onReorderColumn={onReorderColumn}
+                        onSelectLayer={onSelectLayer}
+                        onExecCommand={onExecCommand}
+                        onSetSelectedLayer={onSetSelectedLayer}
+                        selectedLayer={selectedLayer}
+                        parentId={id} // The ID of this ColumnsBlock
+                        parentIndex={colIndex} // The index of this column
                     />
                 </div>
             ))}
@@ -574,7 +880,11 @@ const ColumnsBlock = ({ id, children, layout, styles: blockStyles, isEditing, on
     );
 };
 
-const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, onShowSettings, selectedBlockId, setSelectedBlockId, openImagePickerFor, openAudioPickerFor, openVideoPickerFor, onExecCommand }) => {
+/**
+ * Block: Accordion
+ * Renders a list of collapsible items, each containing a nested BlockRenderer.
+ */
+const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isEditing, onUpdateBlock, onDeleteBlock, onAddBlock, onMoveBlock, onShowSettings, onSelectLayer, onExecCommand, onSetSelectedLayer, selectedLayer, openImagePickerFor, openAudioPickerFor, openVideoPickerFor }) => {
 
     const addItem = () => {
         const newItem = { id: uid(), title: `Section ${items.length + 1}`, blocks: [] };
@@ -590,15 +900,30 @@ const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isE
     return (
         <div className={styles.accordion} style={blockStyles}>
         {items.map((it, idx) => (
-            <div key={it.id} className={styles.accItem}>
+            <div
+              key={it.id}
+              className={`${styles.accItem} accItem`}
+              data-layer-type="Accordion Item"
+              data-layer-label={it.title || `Item ${idx + 1}`}
+              data-layer-id={it.id}
+              onClick={(e) => {
+                if (!isEditing) return;
+                // Only select the item when clicking its own container space
+                if (e.target !== e.currentTarget) return;
+                e.stopPropagation();
+                onSelectLayer(e.currentTarget);
+              }}
+            >
             <div className={styles.accHeader}>
                 {isEditing ? (
                 <input
+                    name="accordionTitle"
                     className={styles.accTitleInput}
                     value={it.title || ''}
                     onChange={(e)=>updateItemTitle(it.id, e.target.value)}
                     placeholder="Section title"
                     onClick={e=>e.stopPropagation()}
+                    aria-label="Accordion section title"
                 />
                 ) : (
                     <div className={styles.accTitle} style={{ textAlign: options?.titleAlign || 'left', fontSize: options?.titleSize==='sm' ? '0.95rem' : options?.titleSize==='lg' ? '1.15rem' : '1.05rem' }}>
@@ -606,113 +931,105 @@ const AccordionBlock = ({ id, items = [], options = {}, styles: blockStyles, isE
                     </div>
                 )}
                 {isEditing && (
-                <div className={styles.accHeaderBtns}>
-                    <button type="button" className={styles.controlButton} onClick={(e)=>{ e.stopPropagation(); onShowSettings(id); }} title="Accordion settings"><SettingsIcon/></button>
-                    <button type="button" className={styles.controlButton} onClick={(e)=>{ e.stopPropagation(); deleteItem(it.id); }} title="Delete section"><TrashIcon/></button>
+                <div className={styles.accHeaderBtns} onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); }} onClick={(e)=> e.stopPropagation()}>
+                    <button
+                        type="button"
+                        className={styles.controlButton}
+                        onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); onShowSettings(id); }}
+                        onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); }}
+                        title="Accordion settings"
+                    >
+                        <Icons.Settings w={16} h={16} />
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.controlButton}
+                        onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); deleteItem(it.id); }}
+                        onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); }}
+                        title="Delete section"
+                    >
+                        <Icons.Trash w={16} h={16} />
+                    </button>
                 </div>
                 )}
             </div>
-            <div className={styles.accPanel}>
+            <div
+              className={`${styles.accPanel} accPanel`}
+              data-layer-type="Accordion Panel"
+              data-layer-label="Panel"
+              data-layer-id={`${it.id}::panel`}
+              onClick={(e) => {
+                if (!isEditing) return;
+                if (e.target !== e.currentTarget) return;
+                e.stopPropagation();
+                onSelectLayer(e.currentTarget);
+              }}
+            >
               <div className={styles.accPanelInner}>
                 <BlockRenderer
                     blocks={it.blocks}
                     isEditing={isEditing}
                     onUpdateBlock={onUpdateBlock}
                     onDeleteBlock={onDeleteBlock}
-                    /* Route all adds/moves explicitly into THIS item by id */
-                    onAddBlock={onAddBlock} // <-- FIX
+                    onAddBlock={onAddBlock}
                     onMoveBlock={onMoveBlock}
                     onShowSettings={onShowSettings}
-                    onExecCommand={onExecCommand} // <-- Pass down
-                    selectedBlockId={selectedBlockId}
-                    setSelectedBlockId={setSelectedBlockId}
+                    onExecCommand={onExecCommand}
+                    onSelectLayer={onSelectLayer}
+                    onSetSelectedLayer={onSetSelectedLayer}
+                    selectedLayer={selectedLayer}
                     openImagePickerFor={openImagePickerFor}
                     openAudioPickerFor={openAudioPickerFor}
                     openVideoPickerFor={openVideoPickerFor}
-                    /* For nested operations, bind the parent to the ITEM id */
-                    parentId={it.id}
-                    parentIndex={null}
+                    parentId={it.id} // The ID of this AccordionItem
+                    parentIndex={null} // Accordion items only have one block list, no index needed
                 />
               </div>
             </div>
             </div>
         ))}
         {isEditing && (
-            <button type="button" className={`${styles.btn} ${styles.btn_secondary} ${styles.btnSize_sm}`} onClick={addItem}>Add section</button>
+            <button type="button" className={`${styles.btn} ${styles.btn_secondary} ${styles.btnSize_sm} ${styles.accAddButton}`} onClick={addItem}>
+                <Icons.Plus w={16} h={16} /> Add Section
+            </button>
         )}
         </div>
     );
 };
 
-const blockMap = {
-    heading: HeadingBlock,
-    text: TextBlock,
-    image: ImageBlock,
-    audio: AudioBlock,
-    video: VideoBlock,
-    button: ButtonBlock,
-    columns: ColumnsBlock,
-    accordion: AccordionBlock
-};
+// Add complex blocks to the map
+blockMap.columns = ColumnsBlock;
+blockMap.accordion = AccordionBlock;
 
-// --- NEW Text Toolbar Component ---
-const TextToolbar = ({ onExecCommand }) => {
-    const commands = [
-        { cmd: 'bold', icon: <BoldIcon />, title: 'Bold' },
-        { cmd: 'italic', icon: <ItalicIcon />, title: 'Italic' },
-        { cmd: 'insertUnorderedList', icon: <ListIcon />, title: 'Bulleted List' },
-        { cmd: 'insertOrderedList', icon: <ListOrderedIcon />, title: 'Numbered List' },
-    ];
-
-    const handleMouseDown = (e, cmd) => {
-        e.preventDefault(); // Prevent the contentEditable from losing focus
-        e.stopPropagation();
-        onExecCommand(cmd);
-    };
-
-    return (
-        <div className={styles.textToolbar} onMouseDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
-            {commands.map(({ cmd, icon, title }) => (
-                <button
-                    key={cmd}
-                    type="button"
-                    className={styles.toolbarButton}
-                    title={title}
-                    onMouseDown={e => handleMouseDown(e, cmd)} // Use mousedown to prevent blur
-                    onClick={e => e.preventDefault()} // Fallback just in case
-                >
-                    {icon}
-                </button>
-            ))}
-        </div>
-    );
-};
-
-
-// --- RENDERER & UI ---
+/**
+ * The core recursive rendering component.
+ * Renders a list of blocks and handles all interactions.
+ */
 const BlockRenderer = ({
     blocks = [],
     isEditing,
     onUpdateBlock,
     onDeleteBlock,
     onAddBlock,
-    onMoveBlock, // Receive move handler
+    onMoveBlock,
     openImagePickerFor = () => {},
     openAudioPickerFor = () => {},
     openVideoPickerFor = () => {},
     onShowSettings,
     onReorderColumn,
-    onExecCommand, // <-- Receive rich text command handler
+    onExecCommand,
+    onSelectLayer,
+    onSetSelectedLayer,
+    selectedLayer,
     parentId = null,
-    parentIndex = null, // Receive index for nested blocks (columns, accordion items)
-    selectedBlockId,
-    setSelectedBlockId,
-    suppressTerminalAddAtEnd = false
+    parentIndex = null,
 }) => (
-    <div className={styles.renderer}>
+    <div className={styles.blockRendererRoot}>
         {blocks.map((block, index) => {
+            if (!block) return null; // Safety check
             const Component = blockMap[block.type];
             if (!Component) return <div key={block.id || index}>Unknown block type: {block.type}</div>;
+            
             const hasContent = (
                 block.type === 'columns' || block.type === 'accordion' ||
                 (block.data && (
@@ -721,415 +1038,204 @@ const BlockRenderer = ({
                     : (typeof block.data.text !== 'undefined' && block.data.text !== '')
                 ))
             );
-            const isSelected = isEditing && block.id === selectedBlockId;
-            // <-- Show toolbar if selected and it's a text or heading block -->
+            
+            // Check if the *block's layer* is selected
+            const isSelected = isEditing && selectedLayer?.id === block.id;
+            
+            // Show toolbar if selected and it's a text or heading block
             const showTextToolbar = isSelected && (block.type === 'text' || block.type === 'heading');
 
             return (
-                // <-- Add data-block-id here for querySelector to find -->
-                <div key={block.id} className={styles.blockContainer} data-block-id={block.id}>
+                <div
+                  key={block.id}
+                  className={styles.blockContainer}
+                  data-block-id={block.id} // Used for DOM lookups
+                  data-block-type={block.type}
+                >
                     <div
-                        className={`${styles.blockWrapper} ${!hasContent && isEditing ? styles.blockWrapperEmpty : ''} ${isSelected ? styles.blockWrapperSelected : ''}`}
+                        className={`${styles.blockWrapper} blockWrapper ${!hasContent && isEditing ? styles.blockWrapperEmpty : ''}`}
+                        data-layer-type={block.type.charAt(0).toUpperCase() + block.type.slice(1)}
+                        data-layer-label={block.data?.text?.substring(0, 20) || block.data?.src || block.type}
+                        data-layer-id={block.id} // This is the ID for the layer itself
                         onClick={(e) => {
                             if (isEditing) {
                                 e.stopPropagation();
-                                setSelectedBlockId(block.id);
+                                onSelectLayer(e.currentTarget);
                             }
                         }}
                     >
-                        {/* <-- NEW: Render Toolbar --> */}
                         {showTextToolbar && (
-                            <TextToolbar onExecCommand={onExecCommand(block.id)} />
+                            <div onMouseDown={(e)=>e.stopPropagation()} onClick={(e)=>e.stopPropagation()}>
+                                <TextToolbar onExecCommand={onExecCommand(block.id)} />
+                            </div>
                         )}
 
                         {isEditing && (
-                            <div className={styles.blockControls}>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, index, -1, parentId, parentIndex); }} className={styles.controlButton} title="Move Up" disabled={index === 0}><MoveUpIcon /></button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, index, 1, parentId, parentIndex); }} className={styles.controlButton} title="Move Down" disabled={index === blocks.length - 1}><MoveDownIcon /></button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onAddBlock(block.type, index + 1, parentId, parentIndex, block); /* Pass block for duplication */ }} className={styles.controlButton} title="Duplicate Block"><DuplicateIcon /></button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onShowSettings(block.id); }} className={styles.controlButton} title="Settings & Layout"><SettingsIcon /></button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onDeleteBlock(block.id); }} className={`${styles.controlButton} ${styles.deleteButton}`} title="Delete Block"><TrashIcon /></button>
+                            <div onMouseDown={(e)=>e.stopPropagation()} onClick={(e)=>e.stopPropagation()}>
+                                <BlockControls 
+                                    blockId={block.id}
+                                    onMoveUp={() => onMoveBlock(block.id, index, -1, parentId, parentIndex)}
+                                    onMoveDown={() => onMoveBlock(block.id, index, 1, parentId, parentIndex)}
+                                    onDuplicate={() => onAddBlock(block.type, index + 1, parentId, parentIndex, block)}
+                                    onShowSettings={() => onShowSettings(block.id)}
+                                    onDelete={() => onDeleteBlock(block.id)}
+                                    isFirst={index === 0}
+                                    isLast={index === blocks.length - 1}
+                                />
                             </div>
                         )}
                         <Component
                             {...block}
                             isEditing={isEditing}
                             onUpdate={(newData) => {
-                                const updatedData = typeof newData === 'object' ? newData : { text: newData };
-                                onUpdateBlock(block.id, { data: { ...(block.data || {}), ...updatedData } });
+                                const updatedData = (typeof newData === 'object')
+                                  ? newData
+                                  : { text: newData };
+                                onUpdateBlock(block.id, {
+                                  data: { ...(block.data || {}), ...updatedData }
+                                });
                             }}
                             openImagePicker={() => openImagePickerFor(block.id)}
                             openAudioPicker={() => openAudioPickerFor(block.id)}
                             openVideoPicker={() => openVideoPickerFor(block.id)}
-                            // Pass necessary props down to nested components like ColumnsBlock and AccordionBlock
+                            onSelectLayer={onSelectLayer}
+                            // Pass down all props for nested renderers
                             onUpdateBlock={onUpdateBlock}
                             onDeleteBlock={onDeleteBlock}
                             onAddBlock={onAddBlock}
-                            onMoveBlock={onMoveBlock} // Pass down move handler
+                            onMoveBlock={onMoveBlock}
                             onShowSettings={onShowSettings}
-                            onExecCommand={onExecCommand} // <-- Pass down exec command handler
-                            onReorderColumn={onReorderColumn} // Only relevant for ColumnsBlock
-                            selectedBlockId={selectedBlockId}
-                            setSelectedBlockId={setSelectedBlockId}
-                            openImagePickerFor={openImagePickerFor} // Pass down specific pickers
+                            onExecCommand={onExecCommand}
+                            onReorderColumn={onReorderColumn}
+                            onSetSelectedLayer={onSetSelectedLayer}
+                            selectedLayer={selectedLayer}
+                            openImagePickerFor={openImagePickerFor}
                             openAudioPickerFor={openAudioPickerFor}
                             openVideoPickerFor={openVideoPickerFor}
-                            parentId={parentId} // keep the same parent container id
-                            parentIndex={parentIndex}   // Pass index within the current list
+                            parentId={parentId}
+                            parentIndex={parentIndex}
                         />
                     </div>
-                    {isEditing && !(
-                        suppressTerminalAddAtEnd &&
-                        index === blocks.length - 1
-                    ) && (
+                    {isEditing && (
                         <AddBlockButton onAdd={(type) => onAddBlock(type, index + 1, parentId, parentIndex)} />
                     )}
                 </div>
             );
         })}
         {isEditing && blocks.length === 0 && (
-            <div className={styles.emptyEditorState}><AddBlockButton onAdd={(type) => onAddBlock(type, 0, parentId, parentIndex)} isFirst={true} /></div>
+            <div className={styles.emptyEditorState}>
+                <AddBlockButton onAdd={(type) => onAddBlock(type, 0, parentId, parentIndex)} isFirst={true} />
+            </div>
         )}
     </div>
 );
 
-const AddBlockButton = ({ onAdd, isFirst = false }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const menuRef = useRef(null);
+
+// --- UI PANELS ---
+// (Part 5 will start here)
+
+// ... (Part 4 code - BlockRenderer - ends here)
+
+// --- UI PANELS ---
+
+/**
+ * A reusable, animated panel for showing settings.
+ * It detects clicks outside to close itself.
+ * * --- THIS IS THE MODIFIED COMPONENT ---
+ * It now renders as a pop-up modal, not a sidebar.
+ */
+const SettingsPanel = ({ title, children, onClose }) => {
+    const panelRef = useRef();
 
     useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target) && !e.target.closest(`.${styles.addBlockButton}`)) {
-                setIsOpen(false);
+        const handleClickOutside = (event) => {
+            if (panelRef.current && !panelRef.current.contains(event.target)) {
+                onClose();
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const blockTypes = [
-        { type: 'heading', label: 'Heading', icon: <HeadingIcon/> },
-        { type: 'text', label: 'Text', icon: <TextIcon/> },
-        { type: 'image', label: 'Image', icon: <ImageIcon/> },
-        { type: 'audio', label: 'Audio', icon: <AudioIcon/> },
-        { type: 'video', label: 'Video', icon: <VideoIcon/> },
-        { type: 'button', label: 'Button', icon: <ButtonIcon/> },
-        { type: 'columns', label: 'Columns', icon: <ColumnsIcon/> },
-        { type: 'accordion', label: 'Accordion', icon: <AccordionIcon/> }
-    ];
-    //const handleAdd = (type) => { onAdd(type); setIsOpen(false); }
-    const handleAdd = (type, e) => {
-        if (e) e.stopPropagation();
-        onAdd(type);
-        setIsOpen(false);
-    }
-
-    return (
-        <div className={`${styles.addBlockWrapper} ${isFirst ? styles.addBlockWrapperFirst : ''}`}>
-            <div className={styles.addBlockLine}></div>
-            <div className={styles.addBlockButtonContainer}>
-                <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} className={styles.addBlockButton} aria-label="Add new block" aria-haspopup="true" aria-expanded={isOpen}>
-                    <PlusIcon />
-                </button>
-            </div>
-            {isOpen && (
-                <div className={styles.addBlockMenu} ref={menuRef} role="menu">
-                    {blockTypes.map(b => (
-                        <button
-                          type="button"
-                          key={b.type}
-                          onClick={(e) => handleAdd(b.type, e)}
-                          className={styles.addBlockMenuItem}
-                          role="menuitem"
-                        >
-                            {b.icon}<span>{b.label}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Helper to convert hex to rgba for transparent previews
-const hexToRgba = (hex, alpha = 1) => {
-    const bigint = parseInt(hex.slice(1), 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const SettingsPanel = ({ block, onUpdateStyle, onUpdateLayout, onUpdateBlock, onClose }) => {
-    const panelRef = useRef();
-    const [localStyles, setLocalStyles] = useState(block.styles || {});
-    // State to manage the text input for color, synced with the color picker
-    const [bgColorText, setBgColorText] = useState(localStyles.backgroundColor || '#ffffff');
-    const [colorText, setColorText] = useState(localStyles.color || '#1e293b');
-
-    useEffect(() => {
-        const initialStyles = block.styles || {};
-        setLocalStyles(initialStyles);
-        setBgColorText(initialStyles.backgroundColor || '#ffffff');
-        setColorText(initialStyles.color || '#1e293b');
-    }, [block.styles]);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => { if (panelRef.current && !panelRef.current.contains(event.target)) onClose(); };
+        // Use mousedown to catch click before it bubbles up
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [onClose]);
 
-    // Handles changes from the color input (type="color")
-    const handleColorInputChange = (e) => {
-        const { name, value } = e.target;
-        const newStyles = { ...localStyles, [name]: value };
-        setLocalStyles(newStyles);
-        setBgColorText(value); // Sync text input
-        onUpdateStyle(block.id, newStyles);
-    };
-
-    // Handles changes from the text input for color
-    const handleColorTextChange = (e) => {
-        const newValue = e.target.value;
-        setBgColorText(newValue);
-        // Basic validation for hex color
-        if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue)) {
-            const newStyles = { ...localStyles, backgroundColor: newValue };
-            setLocalStyles(newStyles);
-            onUpdateStyle(block.id, newStyles);
-        }
-    };
-    // Handles changes from the *text color* input (type="color")
-    const handleTextColorInputChange = (e) => {
-        const { name, value } = e.target; // name will be "color"
-        const newStyles = { ...localStyles, [name]: value };
-        setLocalStyles(newStyles);
-        setColorText(value); // Sync text input
-        onUpdateStyle(block.id, newStyles);
-    };
-
-    // Handles changes from the *text color* text input
-    const handleTextColorTextChange = (e) => {
-        const newValue = e.target.value;
-        setColorText(newValue);
-        // Basic validation for hex color (or empty string to reset)
-        if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue) || newValue === '') {
-            const newStyles = { ...localStyles, color: newValue };
-            setLocalStyles(newStyles);
-            onUpdateStyle(block.id, newStyles);
-        }
-    };
-
-     // Handles generic style changes (padding, border, etc.)
-     const handleGenericStyleChange = (e) => {
-        const { name, value } = e.target;
-        const newStyles = { ...localStyles, [name]: value };
-        setLocalStyles(newStyles);
-        onUpdateStyle(block.id, newStyles);
-    };
-
     return (
-        <div className={styles.settingsPanelWrapper}>
-            <div className={styles.settingsPanel} ref={panelRef}>
-                <button onClick={onClose} className={styles.settingsCloseButton} aria-label="Close settings">&times;</button>
-                {block.type === 'button' && (
-                    <>
-                        <h4>Button Options</h4>
-                        <div className={styles.csGroup}>
-                            <label>Variant</label>
-                            <div className={styles.csBtnGroup}>
-                                {['primary','secondary','ghost','link'].map(v=>(
-                                    <button key={v} className={block.data?.variant===v?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ data:{...block.data, variant:v}})}>{v}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Size</label>
-                            <div className={styles.csBtnGroup}>
-                                {['sm','md','lg'].map(s=>(
-                                    <button key={s} className={block.data?.size===s?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ data:{...block.data, size:s}})}>{s.toUpperCase()}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.csGroup}>
-                             <label className={styles.csCheckboxLabel}>
-                                <input type="checkbox" checked={!!block.data?.full} onChange={(e)=>onUpdateBlock(block.id,{ data:{...block.data, full:e.target.checked}})}/>
-                                <span>Full width</span>
-                             </label>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Align</label>
-                            <div className={styles.csBtnGroup}>
-                                {['left','center','right'].map(a=>(
-                                    <button key={a} className={block.data?.align===a?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ data:{...block.data, align:a}})}>{a}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.styleControl}>
-                            <label>Corner radius</label>
-                            <input type="text" value={block.data?.radius||'var(--r-md)'} onChange={(e)=>onUpdateBlock(block.id,{ data:{...block.data, radius:e.target.value}})} placeholder="e.g., 8px or var(--r-lg)"/>
-                        </div>
-                    </>
-                )}
-                {block.type === 'accordion' && (
-                    <>
-                        <h4>Accordion Options</h4>
-                        <div className={styles.csGroup}>
-                             <label className={styles.csCheckboxLabel}>
-                                 <input type="checkbox" checked={!!block.options?.allowMultiple} onChange={(e)=>onUpdateBlock(block.id,{ options:{ ...(block.options||{}), allowMultiple:e.target.checked }})}/>
-                                 <span>Allow multiple open</span>
-                             </label>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Title size</label>
-                            <div className={styles.csBtnGroup}>
-                                {['sm','md','lg'].map(s=>(
-                                    <button key={s} className={block.options?.titleSize===s?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ options:{...block.options, titleSize:s}})}>{s.toUpperCase()}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Title align</label>
-                            <div className={styles.csBtnGroup}>
-                                {['left','center','right'].map(a=>(
-                                    <button key={a} className={block.options?.titleAlign===a?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ options:{...block.options, titleAlign:a}})}>{a}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Toggle icon</label>
-                            <div className={styles.csBtnGroup}>
-                                {['chevron','plus','none'].map(i=>(
-                                    <button key={i} className={block.options?.icon===i?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ options:{...block.options, icon:i}})}>{i}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.csGroup}>
-                            <label>Theme</label>
-                            <div className={styles.csBtnGroup}>
-                                {['light','dark','outline'].map(t=>(
-                                    <button key={t} className={block.options?.theme===t?styles.active:''} onClick={()=>onUpdateBlock(block.id,{ options:{...block.options, theme:t}})}>{t}</button>
-                                ))}
-                            </div>
-                        </div>
-                         <div className={styles.csGroup}>
-                            <label className={styles.csCheckboxLabel}>
-                                <input type="checkbox" checked={!!block.options?.openFirst} onChange={(e)=>onUpdateBlock(block.id,{ options:{...block.options, openFirst:e.target.checked}})} />
-                                <span>Open first section by default</span>
-                             </label>
-                         </div>
-                        <div className={styles.styleControl}>
-                            <label>Corner radius</label>
-                            <input type="text" value={block.options?.radius||'8px'} onChange={(e)=>onUpdateBlock(block.id,{ options:{...block.options, radius:e.target.value}})} placeholder="e.g., 8px or var(--r-md)"/>
-                        </div>
-                    </>
-                )}
-                {block.type==='columns' ? (
-                    <ColumnSettings block={block} onUpdateLayout={onUpdateLayout} />
-                ) : block.type!=='button' && block.type!=='accordion' ? (
-                    <>
-                        <h4>Block Styles</h4>
-                        {/* ADD THIS: Text Align Control */}
-                       <div className={styles.csGroup}>
-                           <label>Text Align</label>
-                           <div className={styles.csBtnGroup}>
-                               {['left', 'center', 'right'].map(a => {
-                                   const newStyles = { ...localStyles, textAlign: a };
-                                   return (
-                                       <button
-                                           key={a}
-                                           className={localStyles.textAlign === a ? styles.active : ''}
-                                           onClick={() => {
-                                               setLocalStyles(newStyles);
-                                               onUpdateStyle(block.id, newStyles);
-                                           }}
-                                       >
-                                           {a.charAt(0).toUpperCase() + a.slice(1)}
-                                       </button>
-                                   )
-                               })}
-                           </div>
-                       </div>
-                        <div className={`${styles.styleControl} ${styles.colorControl}`}>
-                            <label htmlFor={`bgColor-${block.id}`}>Background</label>
-                            <div className={styles.colorInputWrapper}>
-                                <div className={styles.colorPreview} style={{ backgroundColor: localStyles.backgroundColor || '#ffffff' }}>
-                                    <PaletteIcon />
-                                    <input
-                                        id={`bgColor-${block.id}`}
-                                        type="color"
-                                        name="backgroundColor"
-                                        value={localStyles.backgroundColor || '#ffffff'}
-                                        onChange={handleColorInputChange}
-                                        className={styles.colorPickerInput}
-                                    />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={bgColorText}
-                                    onChange={handleColorTextChange}
-                                    className={styles.colorTextInput}
-                                    placeholder="#ffffff"
-                                />
-                            </div>
-                            {/* ADD THIS: Text Color Control */}
-                            <div className={`${styles.styleControl} ${styles.colorControl}`}>
-                                <label htmlFor={`color-${block.id}`}>Text Color</label>
-                                <div className={styles.colorInputWrapper}>
-                                    <div className={styles.colorPreview} style={{ backgroundColor: localStyles.color || '#1e293b' }}>
-                                        <PaletteIcon />
-                                        <input
-                                            id={`color-${block.id}`}
-                                            type="color"
-                                            name="color"
-                                            value={localStyles.color || '#1e293b'}
-                                            onChange={handleTextColorInputChange}
-                                            className={styles.colorPickerInput}
-                                        />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={colorText}
-                                        onChange={handleTextColorTextChange}
-                                        className={styles.colorTextInput}
-                                        placeholder="#1e293b"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className={styles.styleControl}>
-                            <label>Padding</label>
-                            <input type="text" name="padding" value={localStyles.padding || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1rem or 10px 20px" />
-                        </div>
-
-                        {/* ADD THIS: Margin Control */}
-                       <div className={styles.styleControl}>
-                           <label>Margin</label>
-                           <input type="text" name="margin" value={localStyles.margin || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1rem or 10px 0" />
-                       </div>
-
-                       {/* ADD THIS: Font Size Control */}
-                       <div className={styles.styleControl}>
-                           <label>Font Size</label>
-                           <input type="text" name="fontSize" value={localStyles.fontSize || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1.2rem or 18px" />
-                       </div>
-
-                        <div className={styles.styleControl}>
-                            <label>Border</label>
-                            <input type="text" name="border" value={localStyles.border || ''} onChange={handleGenericStyleChange} placeholder="e.g., 1px solid #ccc" />
-                        </div>
-                        <div className={styles.styleControl}>
-                             <label>Border Radius</label>
-                             <input type="text" name="borderRadius" value={localStyles.borderRadius || ''} onChange={handleGenericStyleChange} placeholder="e.g., 8px or var(--r-md)" />
-                        </div>
-                    </>
-                ) : null}
+        <div className={styles.settingsPanelWrapper} role="dialog" aria-modal="true">
+            <div className={styles.settingsPanel} id="editor-settings-panel" ref={panelRef}>
+                {/* We use the simple close button, positioned by new CSS */}
+                <button onClick={onClose} className={styles.settingsCloseButton} aria-label="Close settings">
+                    {/* We use the new icon, but the CSS will position it like the old 'x' */}
+                    <Icons.Close w={20} h={20} />
+                </button>
+                
+                {/* We render the title and children directly, without header/body divs */}
+                <h4 style={{ marginTop: 0, marginBottom: '1.5rem' }}>{title}</h4>
+                
+                {children}
             </div>
         </div>
     );
 };
 
+
+/**
+ * A reusable form control for color pickers with text input.
+ */
+const ColorControl = ({ label, value, onChange }) => {
+    const [textValue, setTextValue] = useState(value || '');
+
+    useEffect(() => {
+        setTextValue(value || '');
+    }, [value]);
+
+    const handleColorInputChange = (e) => {
+        const newValue = e.target.value;
+        setTextValue(newValue);
+        onChange(newValue);
+    };
+
+    const handleColorTextChange = (e) => {
+        const newValue = e.target.value;
+        setTextValue(newValue);
+        // Basic validation for hex color (or empty string to reset)
+        if (/^#[0-9A-F]{6}$/i.test(newValue) || /^#[0-9A-F]{3}$/i.test(newValue) || newValue === '') {
+            onChange(newValue);
+        }
+    };
+
+    const safeLabel = String(label || 'color').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_\-:.]/g, '');
+    const inputId = `color-${safeLabel}`;
+    return (
+        <div className={`${styles.styleControl} ${styles.colorControl}`}>
+            <label htmlFor={inputId}>{label}</label>
+            <div className={styles.colorInputWrapper}>
+                <div className={styles.colorPreview} style={{ backgroundColor: value || '#ffffff' }}>
+                    <Icons.Palette w={16} h={16} />
+                    <input
+                        id={inputId}
+                        name={inputId}
+                        type="color"
+                        value={value || '#ffffff'}
+                        onChange={handleColorInputChange}
+                        className={styles.colorPickerInput}
+                    />
+                </div>
+                <input
+                    type="text"
+                    name={`${inputId}-hex`}
+                    value={textValue}
+                    onChange={handleColorTextChange}
+                    className={styles.colorTextInput}
+                    placeholder="#ffffff"
+                    aria-label={`${label} hex value`}
+                />
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Input for custom column ratio strings (e.g., "30 70").
+ */
 const CustomRatioInput = ({ ratios, columnCount, onChange }) => {
     const [inputValue, setInputValue] = useState(ratios.join(' '));
     const [error, setError] = useState('');
@@ -1165,16 +1271,21 @@ const CustomRatioInput = ({ ratios, columnCount, onChange }) => {
         <div>
             <input
                 type="text"
+                name="customRatios"
                 value={inputValue}
                 onChange={handleInputChange}
                 placeholder="e.g. 30 70 or 100 for stack"
                 className={`${styles.csCustomInput} ${error ? styles.inputError : ''}`}
+                aria-label="Custom column ratios"
             />
             {error && <p className={styles.csValidationError}>{error}</p>}
         </div>
     );
 };
 
+/**
+ * Specific settings panel for the Columns block.
+ */
 const ColumnSettings = ({ block, onUpdateLayout }) => {
     const [localLayout, setLocalLayout] = useState(() => {
         const currentLayout = block.layout;
@@ -1191,7 +1302,7 @@ const ColumnSettings = ({ block, onUpdateLayout }) => {
         if (JSON.stringify({ columns, ratios }) !== JSON.stringify(localLayout)) {
             setLocalLayout({ columns, ratios });
         }
-    }, [block.layout, localLayout]);
+    }, [block.layout]);
 
     const handleColumnCountChange = (newCount) => {
         const defaultPreset = COLUMN_PRESETS[newCount]?.[0] || Array(newCount).fill(100 / newCount);
@@ -1224,24 +1335,24 @@ const ColumnSettings = ({ block, onUpdateLayout }) => {
 
     return (
         <div className={styles.columnSettings}>
-            <h4>Column Layout</h4>
-            <div className={styles.csGroup}>
-                <label>Number of Columns</label>
+            <div className={styles.csGroup} role="group" aria-labelledby={`cols-label-${block.id}`}>
+                <span id={`cols-label-${block.id}`} className={styles.csGroupLabel}>Number of Columns</span>
                 <div className={styles.csBtnGroup}>
                     {[1, 2, 3, 4].map(num => (
-                        <button key={num} onClick={() => handleColumnCountChange(num)} className={localLayout.columns === num ? styles.active : ''}>{num}</button>
+                        <button key={num} type="button" onClick={() => handleColumnCountChange(num)} className={localLayout.columns === num ? styles.active : ''}>{num}</button>
                     ))}
                 </div>
             </div>
             <hr className={styles.csSeparator} />
             {BREAKPOINTS.map(bp => (
-                <div key={bp} className={styles.csGroup}>
-                    <label>{BREAKPOINT_MAP[bp]}</label>
+                <div key={bp} className={styles.csGroup} role="group" aria-labelledby={`bp-${bp}-label-${block.id}`}>
+                    <span id={`bp-${bp}-label-${block.id}`} className={styles.csGroupLabel}>{BREAKPOINT_MAP[bp]}</span>
                     {localLayout.columns > 1 && bp !== 'base' && (
                         <div className={styles.csPresets}>
                             {(COLUMN_PRESETS[localLayout.columns] || []).map((preset, i) => (
                                 <button
                                     key={i}
+                                    type="button"
                                     className={`${styles.csPresetButton} ${JSON.stringify(preset) === JSON.stringify(localLayout.ratios?.[bp]) ? styles.active : ''}`}
                                     onClick={() => handleLayoutChangeForBreakpoint(bp, preset)}
                                 >
@@ -1261,9 +1372,94 @@ const ColumnSettings = ({ block, onUpdateLayout }) => {
     );
 };
 
+/**
+ * The "Photoshop-style" layer outline panel.
+ */
+const LayerOutline = ({ editorRoot, selectedLayer, onSelectLayer }) => {
+    const [items, setItems] = useState([]);
+
+    useEffect(() => {
+        if (!editorRoot) return;
+        const newItems = [];
+        const walk = (el, depth = 0) => {
+            // Only capture elements we've marked as layers
+            const layerType = el.dataset?.layerType;
+            if (layerType) {
+                let label = el.dataset?.layerLabel || layerType;
+                if (layerType === 'Block' && el.dataset?.blockType) {
+                    label = el.dataset.blockType.charAt(0).toUpperCase() + el.dataset.blockType.slice(1);
+                } else if (layerType === 'Column') {
+                    label = `Column ${parseInt(el.dataset.layerId.split('::col')[1], 10) + 1}`;
+                } else if (layerType === 'Accordion Item') {
+                    label = el.querySelector(`.${styles.accTitleInput}`)?.value || el.dataset?.layerLabel || 'Accordion Item';
+                }
+
+                newItems.push({
+                    id: el.dataset.layerId,
+                    el: el,
+                    label: label,
+                    type: layerType,
+                    depth,
+                    active: selectedLayer?.id === el.dataset.layerId,
+                });
+            }
+            
+            // Recurse, but *only* into layer containers, not every single DOM node
+            const childContainer = (layerType === 'Column' || layerType === 'Accordion Panel' || layerType === 'Renderer')
+                ? el.querySelector(`:scope > .${styles.blockRendererRoot}`)
+                : el;
+
+            if (childContainer) {
+                Array.from(childContainer.children || []).forEach(child =>
+                    walk(child, depth + (layerType ? 1 : 0))
+                );
+            }
+        };
+        
+        walk(editorRoot, 0);
+        setItems(newItems);
+    }, [editorRoot, selectedLayer]); // Re-scan on selection change to update active state
+
+    return (
+        <div className={styles.outlinePanel} role="tree">
+            {items.map((it) => (
+                <div
+                    key={it.id}
+                    className={styles.outlineItem}
+                    data-active={it.active ? 'true' : 'false'}
+                    onClick={(e) => { e.stopPropagation(); onSelectLayer(it.el); }}
+                    role="treeitem"
+                    aria-selected={it.active}
+                    tabIndex={0}
+                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onSelectLayer(it.el)}
+                >
+                    {Array.from({ length: it.depth }).map((_, k) => (
+                        <span className={styles.outlineIndent} key={k} />
+                    ))}
+                    <span className={styles.outlineIcon}>
+                        {it.type === 'Renderer' && <Icons.Layout w={14} h={14} />}
+                        {it.type === 'Columns' && <Icons.Columns w={14} h={14} />}
+                        {it.type === 'Column' && <Icons.Column w={14} h={14} />}
+                        {it.type === 'Accordion' && <Icons.Accordion w={14} h={14} />}
+                        {it.type === 'Accordion Item' && <Icons.Panel w={14} h={14} />}
+                        {it.type === 'Accordion Panel' && <Icons.Panel w={14} h={14} />}
+                        {it.type === 'Heading' && <Icons.Heading w={14} h={14} />}
+                        {it.type === 'Text' && <Icons.Text w={14} h={14} />}
+                        {it.type === 'Image' && <Icons.Image w={14} h={14} />}
+                        {it.type === 'Video' && <Icons.Video w={14} h={14} />}
+                        {it.type === 'Audio' && <Icons.Audio w={14} h={14} />}
+                        {it.type === 'Button' && <Icons.Button w={14} h={14} />}
+                    </span>
+                    <span className={styles.outlineLabel}>{it.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // --- EDITOR ROOT COMPONENT ---
 const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general', externalCss = '', onEditorReady }, ref) => {
-    const editorRootRef = useRef(null);
+    const rendererRef = useRef(null); // Ref to the .renderer element
     const imageUploadInputRef = useRef(null);
     const audioUploadInputRef = useRef(null);
     const videoUploadInputRef = useRef(null);
@@ -1279,27 +1475,80 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     const [uploadError, setUploadError] = useState('');
     const [appliedCss, setAppliedCss] = useState('');
     const [previewDevice, setPreviewDevice] = useState('desktop');
-    const [editingStylesFor, setEditingStylesFor] = useState(null);
-    const [selectedBlockId, setSelectedBlockId] = useState(null);
+    
+    // UI State
+    const [isOutlineOpen, setIsOutlineOpen] = useState(true); // Default open on desktop
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    useEffect(() => {
+        if (!isSettingsOpen) return;
+        const original = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = original; };
+    }, [isSettingsOpen]);
+    const [editingBlockId, setEditingBlockId] = useState(null); // The *ID* of the block being edited
+    const editorRootRef = useRef(null);
+    // Layer & Selection State
+    const [selectedLayer, setSelectedLayer] = useState(null); // { id: string, el: HTMLElement, type: string }
+    
     const [isCodeDirty, setIsCodeDirty] = useState(false);
-    const codeDebounceRef = useRef(null);
-    const isProcessingBlur = useRef(false); // Ref to track blur processing
+    
+    // --- Canvas click: "deepest block wins" ---
+    const handleCanvasMouseDown = useCallback((e) => {
+        const t = e.target;
 
-     useEffect(() => {
+        // 1) Ignore clicks coming from editor UI chrome (controls/toolbars/menus)
+        if (
+            t.closest(`.${styles.blockControls}`) ||
+            t.closest(`.${styles.textToolbar}`) ||
+            t.closest(`.${styles.addBlockMenu}`)
+        ) {
+            return;
+        }
+
+        // 2) Ignore while actively editing a contentEditable element (prevent losing caret)
+        if (t.isContentEditable && (document.activeElement === t || t.closest('[contenteditable="true"]'))) {
+            return; // Let the user edit text
+        }
+
+        // 3) Otherwise select the closest layer host
+        const host = t.closest('[data-layer-id]');
+        if (host) {
+            // Only stopPropagation if we're NOT inside a contentEditable element
+            if (!t.closest('[contenteditable="true"]')) {
+                e.stopPropagation();
+            }
+            handleSelectLayer(host);
+        }
+        // If no host is found, let the event bubble (root selection will apply)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ------------------------------------------------------------
+    const codeDebounceRef = useRef(null);
+    const isProcessingBlur = useRef(false);
+
+    // --- Effects ---
+
+    useEffect(() => {
         setIsMounted(true);
         setBlocks(htmlToBlocks(initialContent)); // Initialize blocks here after mount
         const themeEl = document.createElement('style');
         themeEl.id = themeStyleId;
         document.head.appendChild(themeEl);
+        
+        // Select the root renderer on mount
+        if (rendererRef.current) {
+            handleSelectLayer(rendererRef.current);
+        }
+
         return () => { try { themeEl.remove(); } catch {} };
     }, [themeStyleId]); // Only run on mount/unmount
 
     useEffect(() => {
         if (isMounted) {
-             console.log("[LessonEditor] Initial content prop changed, re-parsing HTML to blocks.");
              setBlocks(htmlToBlocks(initialContent));
         }
-    }, [initialContent, isMounted]); // Rerun if initialContent changes *after* mount
+    }, [initialContent, isMounted]);
 
 
     useEffect(() => {
@@ -1321,6 +1570,8 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
             applyCssToEditor(externalCss || '');
         }
     }, [externalCss, isMounted, appliedCss, applyCssToEditor]);
+
+    // --- Content Generation ---
 
     const generateFinalHtml = useCallback((blocksArg) => {
         const STRUCTURAL_CSS = `
@@ -1362,84 +1613,64 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
 @media (min-width:1024px){.${WRAPPER_CLASS} .zporta-columns{grid-template-columns: var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)))) !important;}}`;
         const html = blocksToHtml(blocksArg || []);
         const finalHtml = `<div class="${WRAPPER_CLASS}">${html}</div>`;
-        const oneStyle = `<style>${STRUCTURAL_CSS}</style>`; // No need to prefix structural CSS
+        const oneStyle = `<style>${STRUCTURAL_CSS}</style>`;
         return `${oneStyle}\n${finalHtml}`.trim();
     }, []);
 
+    // --- Imperative Handle (API) ---
+
     useImperativeHandle(ref, () => ({
         async flush() {
-            console.log("[LessonEditor] flush() called.");
             const root = editorRootRef.current;
-            if (!root) {
-                console.log("[LessonEditor] No editor root found.");
-                return;
-            }
+            if (!root) return;
 
             let activeElement = document.activeElement;
             let needsBlur = false;
             let elementToBlur = null;
 
             if (activeElement && root.contains(activeElement) && activeElement.isContentEditable) {
-                 console.log("[LessonEditor] Active element needs blur:", activeElement);
                  needsBlur = true;
                  elementToBlur = activeElement;
             } else {
-                // Check if any block input is focused even if not activeElement (e.g., iframe focus issue)
                 const focusedInput = root.querySelector('[contenteditable="true"]:focus');
                 if(focusedInput) {
-                     console.log("[LessonEditor] Found focused editable, needs blur:", focusedInput);
                      needsBlur = true;
                      elementToBlur = focusedInput;
-                } else {
-                    console.log("[LessonEditor] No contentEditable element has focus.");
                 }
             }
 
             if (needsBlur && elementToBlur) {
-                isProcessingBlur.current = true; // Set flag before blurring
-                console.log("[LessonEditor] Blurring element:", elementToBlur);
+                isProcessingBlur.current = true;
                 elementToBlur.blur(); // Triggers the onBlur handler which updates state
-                // Wait a short time for React state update triggered by blur
                 await new Promise(resolve => setTimeout(resolve, 50));
-                isProcessingBlur.current = false; // Clear flag after timeout
-                console.log("[LessonEditor] Blur processing finished.");
-            } else {
-                 console.log("[LessonEditor] No blur needed or no element to blur.");
+                isProcessingBlur.current = false;
             }
         },
         getContent: () => {
-             if (isProcessingBlur.current) {
-                 console.warn("[LessonEditor] getContent called while blur is processing. Content might be stale.");
-             }
-             console.log("[LessonEditor] getContent() called. Current blocks state:", blocks);
              const result = generateFinalHtml(blocks);
-             console.log("[LessonEditor] getContent() returning HTML"); // Avoid logging potentially large HTML string
              return result;
         },
         getAppliedCSS: () => appliedCss,
         setCSS: (css) => applyCssToEditor(css || ''),
-    }), [blocks, generateFinalHtml, appliedCss, applyCssToEditor, editorId]); // Include dependencies
+    }), [blocks, generateFinalHtml, appliedCss, applyCssToEditor, editorId]);
 
-    // Recursive helper to find and modify/delete/insert blocks
+    // --- Recursive Block Modifiers ---
+
     const findAndModifyBlockRecursive = useCallback((targetBlocks, targetId, callback) => {
         let changed = false;
         const result = targetBlocks.reduce((acc, block) => {
             if (!block) return acc;
-
-            // Direct match
             if (block.id === targetId) {
                 const modifiedBlock = callback(block);
-                if (modifiedBlock) acc.push(modifiedBlock); // Add if callback returns a block (update/keep)
-                changed = true; // Mark change even if deleted (callback returns null)
+                if (modifiedBlock) acc.push(modifiedBlock);
+                changed = true;
                 return acc;
             }
-
-            // Recurse into Columns
             if (block.type === 'columns' && Array.isArray(block.children)) {
                 let childChanged = false;
                 const newChildren = block.children.map(col => {
                     const resultCol = findAndModifyBlockRecursive(col || [], targetId, callback);
-                    if (resultCol !== (col || [])) { // Check if the array itself changed
+                    if (resultCol !== (col || [])) {
                         childChanged = true;
                     }
                     return resultCol;
@@ -1452,8 +1683,6 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 }
                 return acc;
             }
-
-            // Recurse into Accordion Items
              if (block.type === 'accordion' && Array.isArray(block.items)) {
                 let itemChanged = false;
                 const newItems = block.items.map(item => {
@@ -1462,8 +1691,15 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                         itemChanged = true;
                         return { ...item, blocks: newBlocks };
                     }
+                    // Also check for modifications to the item itself (e.g., AccordionItem deletion)
+                    if (item.id === targetId) {
+                        const modifiedItem = callback(item); // This will be null for deletion
+                        if (modifiedItem) acc.push(modifiedItem); // Should not happen for blocks
+                        itemChanged = true;
+                        return null; // Signal to filter this item out
+                    }
                     return item;
-                });
+                }).filter(Boolean); // Filter out null (deleted) items
                  if (itemChanged) {
                     acc.push({ ...block, items: newItems });
                     changed = true;
@@ -1472,20 +1708,14 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 }
                 return acc;
              }
-
-            // No match, keep block
             acc.push(block);
             return acc;
         }, []);
-
-        // Return the original array if no changes were made, otherwise the new array
         return changed ? result : targetBlocks;
     }, []);
     
-     // Recursive helper to insert a block (fixed)
      const insertBlockRecursive = useCallback(
         (targetBlocks, insertIndex, newBlock, parentId, colIndexOrItemIdx) => {
-         // Insert at current level
          if (parentId === null) {
            const arr = [...targetBlocks];
            arr.splice(insertIndex, 0, newBlock);
@@ -1495,23 +1725,19 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
          let changed = false;
          const next = targetBlocks.map(block => {
            if (!block) return block;
-       // ✅ NEW: If parentId matches an ACCORDION *ITEM* id, insert into that item's blocks
-       if (block.type === 'accordion' && Array.isArray(block.items)) {
-         const items = [...block.items];
-         const foundIdx = items.findIndex(it => it && it.id === parentId);
-         if (foundIdx !== -1) {
-           const item = items[foundIdx];
-           const newBlocks = [...(item.blocks || [])];
-           newBlocks.splice(insertIndex, 0, newBlock);
-           items[foundIdx] = { ...item, blocks: newBlocks };
-           changed = true;
-           return { ...block, items };
-         }
-       }
-
-           // Direct parent
+           if (block.type === 'accordion' && Array.isArray(block.items)) {
+                const items = [...block.items];
+                const foundIdx = items.findIndex(it => it && it.id === parentId);
+                if (foundIdx !== -1) {
+                    const item = items[foundIdx];
+                    const newBlocks = [...(item.blocks || [])];
+                    newBlocks.splice(insertIndex, 0, newBlock);
+                    items[foundIdx] = { ...item, blocks: newBlocks };
+                    changed = true;
+                    return { ...block, items };
+                }
+           }
            if (block.id === parentId) {
-             // Columns: insert into children[colIndex]
              if (block.type === 'columns' && colIndexOrItemIdx !== null) {
                const children = (block.children || []).map(col => Array.isArray(col) ? [...col] : []);
                const idx = colIndexOrItemIdx;
@@ -1522,7 +1748,6 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                changed = true;
                return { ...block, children };
              }
-             // Accordion: insert into items[idx].blocks
              if (block.type === 'accordion' && colIndexOrItemIdx !== null) {
                const items = [...(block.items || [])];
                const idx = colIndexOrItemIdx;
@@ -1537,21 +1762,6 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
              }
              return block;
            }
-       // NEW: if parentId matches an ACCORDION *ITEM* id, insert there
-       if (block.type === 'accordion' && Array.isArray(block.items)) {
-         const items = [...block.items];
-         const foundIdx = items.findIndex(it => it && it.id === parentId);
-         if (foundIdx !== -1) {
-           const item = items[foundIdx];
-           const b = [...(item.blocks || [])];
-           b.splice(insertIndex, 0, newBlock);
-           items[foundIdx] = { ...item, blocks: b };
-           changed = true;
-           return { ...block, items };
-         }
-       }
-
-           // Recurse: columns
            if (block.type === 'columns' && Array.isArray(block.children)) {
              const newChildren = block.children.map(col =>
                insertBlockRecursive(col || [], insertIndex, newBlock, parentId, colIndexOrItemIdx)
@@ -1561,8 +1771,6 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                return { ...block, children: newChildren };
              }
            }
-
-           // Recurse: accordion items
            if (block.type === 'accordion' && Array.isArray(block.items)) {
              let localChanged = false;
              const newItems = block.items.map(item => {
@@ -1578,46 +1786,38 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                return { ...block, items: newItems };
              }
            }
-
            return block;
          });
-
          return changed ? next : targetBlocks;
         },
         []
       );
+    
+    // --- State Handlers ---
 
     const handleUpdateBlock = useCallback((blockId, newBlockData) => {
          if (isProcessingBlur.current) {
-              console.log("[LessonEditor] Skipping update during blur processing for block:", blockId);
-              return; // Avoid state update while blur is explicitly handled by flush
+              return;
          }
-        console.log(`[LessonEditor] handleUpdateBlock called for ID: ${blockId}`);
         setBlocks(currentBlocks => {
             const updatedBlocks = findAndModifyBlockRecursive(currentBlocks, blockId, block => ({
                 ...block,
                 ...newBlockData
             }));
-             if (updatedBlocks === currentBlocks) {
-                 console.log("[LessonEditor] No change detected in handleUpdateBlock.");
-             } else {
-                 console.log("[LessonEditor] Blocks state updated via handleUpdateBlock.");
-             }
             return updatedBlocks;
         });
     }, [findAndModifyBlockRecursive]);
 
     const handleDeleteBlock = useCallback((blockId) => {
-        setBlocks(current => findAndModifyBlockRecursive(current, blockId, () => null)); // Callback returns null to delete
-        // If the deleted block was selected, deselect
-        if (selectedBlockId === blockId) {
-            setSelectedBlockId(null);
+        setBlocks(current => findAndModifyBlockRecursive(current, blockId, () => null));
+        if (selectedLayer?.id === blockId) {
+            handleSelectLayer(rendererRef.current); // Select root
         }
-         // Also close settings panel if it was open for the deleted block
-        if (editingStylesFor === blockId) {
-            setEditingStylesFor(null);
+        if (editingBlockId === blockId) {
+            setIsSettingsOpen(false);
+            setEditingBlockId(null);
         }
-    }, [findAndModifyBlockRecursive, selectedBlockId, editingStylesFor]);
+    }, [findAndModifyBlockRecursive, selectedLayer, editingBlockId]);
 
     const handleUpdateStyle = useCallback((blockId, newStyles) => {
         handleUpdateBlock(blockId, { styles: newStyles });
@@ -1672,7 +1872,6 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     const handleAddBlock = useCallback((type, index, parentId = null, colIndexOrItemIdx = null, blockToDuplicate = null) => {
         let newBlock;
         if (blockToDuplicate) {
-            // Deep clone the block to duplicate, generating new IDs for nested elements
             const cloneWithNewIds = (block) => {
                 const newId = uid();
                 let clonedData = { ...(block.data || {}) };
@@ -1687,24 +1886,14 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 if (block.items) {
                      clonedItems = block.items.map(item => ({
                         ...item,
-                        id: uid(), // New ID for item
+                        id: uid(),
                         blocks: item.blocks ? item.blocks.map(cloneWithNewIds) : []
                     }));
                 }
-
-                return {
-                    ...block,
-                    id: newId,
-                    data: clonedData,
-                    styles: clonedStyles,
-                    options: clonedOptions,
-                    children: clonedChildren,
-                    items: clonedItems
-                };
+                return { ...block, id: newId, data: clonedData, styles: clonedStyles, options: clonedOptions, children: clonedChildren, items: clonedItems };
             };
             newBlock = cloneWithNewIds(blockToDuplicate);
         } else {
-            // Create a new default block
             newBlock = { id: uid(), type, data: {}, styles: {} };
              if (type === 'columns') {
                 newBlock.children = [[], []];
@@ -1722,29 +1911,28 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
         }
 
         setBlocks(currentBlocks => insertBlockRecursive(currentBlocks, index, newBlock, parentId, colIndexOrItemIdx));
-        setSelectedBlockId(newBlock.id); // Select the newly added/duplicated block
+        
+        // Select the new block
+        setTimeout(() => {
+             const newEl = editorRootRef.current?.querySelector(`[data-layer-id="${newBlock.id}"]`);
+             if(newEl) handleSelectLayer(newEl);
+        }, 0);
     }, [insertBlockRecursive]);
 
 
     const handleMoveBlock = useCallback((blockId, currentIndex, direction, parentId, parentIndex) => {
         const newIndex = currentIndex + direction;
-
         setBlocks(currentBlocks => {
             let blockToMove = null;
             let sourceArray = null;
-            let changed = false;
-
-            // Find and remove the block from its current position recursively
             const findAndRemove = (blocksArray) => {
                 if (!Array.isArray(blocksArray)) return blocksArray;
                 const index = blocksArray.findIndex(b => b && b.id === blockId);
                 if (index !== -1) {
                     blockToMove = blocksArray[index];
-                    sourceArray = blocksArray; // Reference to modify later
+                    sourceArray = blocksArray;
                     return [...blocksArray.slice(0, index), ...blocksArray.slice(index + 1)];
                 }
-
-                // Recurse
                 return blocksArray.map(block => {
                     if (!block) return block;
                     if (block.type === 'columns' && block.children) {
@@ -1768,39 +1956,22 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                     return block;
                 });
             };
-
             const blocksWithoutMoved = findAndRemove(currentBlocks);
-
             if (!blockToMove || !sourceArray) {
-                console.warn("Could not find block to move:", blockId);
-                return currentBlocks; // Block not found or already moved
+                return currentBlocks;
             }
-
-             // Now insert the block at the new position
             return insertBlockRecursive(blocksWithoutMoved, newIndex, blockToMove, parentId, parentIndex);
-
         });
-    }, [insertBlockRecursive]); // Dependencies will include helpers if they are not useCallback
+    }, [insertBlockRecursive]);
 
-    // --- NEW: Rich Text Command Handler ---
     const handleExecCommand = useCallback((blockId) => (command) => {
-        // 1. Execute the browser command
         document.execCommand(command, false, null);
-        
-        // 2. Find the block's contentEditable element
         const blockElement = editorRootRef.current?.querySelector(`[data-block-id="${blockId}"]`);
         if (!blockElement) return;
-
         const editorDiv = blockElement.querySelector(`.${styles.blockContentEditable}`);
         if (editorDiv) {
-            // 3. Get the new HTML content
             const updatedText = editorDiv.innerHTML;
-            
-            // 4. Find the current text in state to prevent unnecessary updates
             let currentText = '';
-            
-            // Need to find the block in the state tree
-            // This is a simplified finder; a real implementation might need to be more robust
             const findBlockRecursive = (blockArray) => {
                  if (!Array.isArray(blockArray)) return;
                  for (const block of blockArray) {
@@ -1823,14 +1994,87 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                  return false;
             };
             findBlockRecursive(blocks);
-
-            // 5. If content changed, call the main update handler
             if (updatedText !== currentText) {
                 handleUpdateBlock(blockId, { data: { text: updatedText } });
             }
         }
-    }, [blocks, handleUpdateBlock]); // Depend on blocks and the update handler
+    }, [blocks, handleUpdateBlock]);
 
+    // --- Layer Selection ---
+    
+    const handleSelectLayer = useCallback((el) => {
+            if (!el) return;
+            
+            const newLayerId = el.dataset.layerId;
+            const newLayerType = el.dataset.layerType;
+
+            setSelectedLayer(currentLayer => {
+                // Prevent re-setting state if it's the same layer
+                if (currentLayer && currentLayer.id === newLayerId) {
+                    return currentLayer;
+                }
+
+                // Remove highlight from old layer
+                if (currentLayer?.el) {
+                    currentLayer.el.classList.remove(styles.isLayerSelected);
+                }
+
+                // Add highlight to new layer
+                el.classList.add(styles.isLayerSelected);
+                el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+                return {
+                    id: newLayerId,
+                    el: el,
+                    type: newLayerType,
+                };
+            });
+
+        }, []); // Empty dependency array makes this function stable
+
+    // --- Settings Panel Logic ---
+
+    const handleShowSettings = useCallback((blockId) => {
+        setEditingBlockId(blockId);
+        setIsSettingsOpen(true);
+        // Also select the block's layer - use blockWrapper selector to ensure we get the right element
+        const el = editorRootRef.current?.querySelector(`.blockWrapper[data-layer-id="${blockId}"]`);
+        if (el) {
+            handleSelectLayer(el);
+        } else {
+            // Fallback for non-wrapper blocks (columns, accordion items, etc.)
+            const fallbackEl = editorRootRef.current?.querySelector(`[data-layer-id="${blockId}"]`);
+            if (fallbackEl) handleSelectLayer(fallbackEl);
+        }
+    }, [handleSelectLayer]);
+
+    const handleCloseSettings = useCallback(() => {
+        setIsSettingsOpen(false);
+        setEditingBlockId(null);
+    }, []);
+
+    const editingBlock = useMemo(() => {
+        if (!editingBlockId) return null;
+        let foundBlock = null;
+        const findBlockRecursive = (blockArray) => {
+             if (!Array.isArray(blockArray)) return;
+             for (const block of blockArray) {
+                 if (!block) continue;
+                 if (block.id === editingBlockId) { foundBlock = block; return; }
+                 if (block.children && Array.isArray(block.children)) {
+                     block.children.forEach(childColumn => { findBlockRecursive(childColumn); });
+                 }
+                 if (block.items && Array.isArray(block.items)) {
+                      block.items.forEach(item => { findBlockRecursive(item.blocks || []); });
+                 }
+                 if (foundBlock) return;
+             }
+        };
+        findBlockRecursive(blocks);
+        return foundBlock;
+    }, [editingBlockId, blocks]);
+
+    // --- File Uploads ---
 
     const openImagePickerFor = useCallback((blockId) => {
         const el = imageUploadInputRef.current;
@@ -1883,36 +2127,16 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
         }
     };
 
+    // --- View Switching & Code ---
+
     const renderedPreview = useMemo(() => <BlockRenderer blocks={blocks} isEditing={false} />, [blocks]);
-
-    const editingBlock = useMemo(() => {
-        if (!editingStylesFor) return null;
-        let foundBlock = null;
-        const findBlockRecursive = (blockArray) => {
-             if (!Array.isArray(blockArray)) return;
-             for (const block of blockArray) {
-                 if (!block) continue;
-                 if (block.id === editingStylesFor) { foundBlock = block; return; }
-                 if (block.children && Array.isArray(block.children)) {
-                     block.children.forEach(childColumn => { findBlockRecursive(childColumn); });
-                 }
-                 if (block.items && Array.isArray(block.items)) {
-                      block.items.forEach(item => { findBlockRecursive(item.blocks || []); });
-                 }
-                 if (foundBlock) return;
-             }
-        };
-        findBlockRecursive(blocks);
-        return foundBlock;
-    }, [editingStylesFor, blocks]);
-
 
     useEffect(() => {
         if (view !== 'code' || !isCodeDirty) {
             setCodeText(generateFinalHtml(blocks));
              if (view !== 'code') setIsCodeDirty(false);
         }
-    }, [blocks, view, isCodeDirty, generateFinalHtml]); // Added isCodeDirty dependency
+    }, [blocks, view, isCodeDirty, generateFinalHtml]);
 
     const handleCopyCode = useCallback(async () => {
         try { await navigator.clipboard.writeText(codeText || ''); } catch (e) {}
@@ -1931,19 +2155,19 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 setCodeError('');
             } catch (e) { setCodeError('Invalid HTML. Please check code.'); }
         }, 300);
-     }, [codeImportEnabled]); // Removed setBlocks from deps
+     }, [codeImportEnabled]);
 
     const handleImportCode = useCallback(() => {
         try {
             setCodeError('');
             const newBlocks = htmlToBlocks(codeText || '');
             setBlocks(newBlocks);
-            setIsCodeDirty(false); // Mark as clean after successful import
+            setIsCodeDirty(false);
         } catch (e) { setCodeError('Invalid HTML. Please check code.'); }
-    }, [codeText]); // Removed setBlocks from deps
+    }, [codeText]);
 
 
-    useEffect(() => { // Sync back changes from code view if enabled and dirty when switching tabs
+    useEffect(() => {
         if (view !== 'code' && codeImportEnabled && isCodeDirty) {
              try {
                  const newBlocks = htmlToBlocks(codeText);
@@ -1952,107 +2176,423 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                  setIsCodeDirty(false);
              } catch (e) { setCodeError('Invalid HTML.'); }
         }
-     }, [view, codeImportEnabled, isCodeDirty, codeText]); // Removed setBlocks
+     }, [view, codeImportEnabled, isCodeDirty, codeText]);
 
-    useEffect(() => { // Cleanup debounce timer
+    useEffect(() => {
         return () => { if (codeDebounceRef.current) clearTimeout(codeDebounceRef.current); };
     }, []);
 
+    // --- Render ---
+
     if (!isMounted) return <div className={styles.loadingState}>Loading Editor...</div>;
 
-    return (
-        <div id={editorId} className={styles.editorContainer} ref={editorRootRef}>
-            <header className={styles.header}>
-                <h1>Lesson Editor</h1>
-                <p>Visually build your lesson page, block by block.</p>
-            </header>
-            {uploadError && <div className={styles.uploadError} onClick={() => setUploadError('')}>{uploadError} (click to dismiss)</div>}
+    const getSettingsTitle = () => {
+        if (!editingBlock) return "Settings";
+        return `${editingBlock.type.charAt(0).toUpperCase() + editingBlock.type.slice(1)} Settings`;
+    };
 
-            <div className={styles.editorWrapper}>
-                <div className={styles.tabs}>
-                    <div>
-                        <button onClick={() => setView('editor')} className={`${styles.tabButton} ${view === 'editor' ? styles.active : ''}`}>Editor</button>
-                        <button onClick={() => setView('preview')} className={`${styles.tabButton} ${view === 'preview' ? styles.active : ''}`}>Preview</button>
-                        <button onClick={() => setView('code')} className={`${styles.tabButton} ${view === 'code' ? styles.active : ''}`}>Code</button>
-                    </div>
+    return (
+        <div 
+            id={editorId} 
+            className={`${styles.editorContainer} ${isOutlineOpen ? styles.asideOpen : ''}`} 
+            ref={editorRootRef}
+            onKeyDown={(e) => {
+                // Keyboard: Esc → parent; Shift+Esc → root
+                if (e.key !== 'Escape') return;
+                if (!selectedLayer) return;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (e.shiftKey) {
+                    const root = rendererRef.current;
+                    if (root) handleSelectLayer(root);
+                    return;
+                }
+                
+                // Find parent layer in the DOM
+                const parentLayer = selectedLayer.el.parentElement.closest('[data-layer-id]');
+                if (parentLayer) {
+                    handleSelectLayer(parentLayer);
+                } else if (rendererRef.current) {
+                    handleSelectLayer(rendererRef.current); // Fallback to root
+                }
+            }}
+        >
+            <header className={styles.header}>
+                <div className={styles.headerMain}>
+                    <button 
+                        type="button" 
+                        className={styles.headerToggle} 
+                        onClick={() => setIsOutlineOpen(!isOutlineOpen)}
+                        title={isOutlineOpen ? "Hide Layers" : "Show Layers"}
+                    >
+                        <Icons.Panel />
+                    </button>
+                    <h1>Lesson Editor</h1>
+                </div>
+                <div className={styles.headerTabs}>
+                    <button
+                        type="button"
+                        onClick={() => setView('editor')}
+                        className={`${styles.tabButton} ${view === 'editor' ? styles.active : ''}`}
+                        aria-pressed={view === 'editor'}
+                    >
+                        <Icons.Edit w={16} h={16} /><span>Editor</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setView('preview')}
+                        className={`${styles.tabButton} ${view === 'preview' ? styles.active : ''}`}
+                        aria-pressed={view === 'preview'}
+                    >
+                        <Icons.Eye w={16} h={16} /><span>Preview</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setView('code')}
+                        className={`${styles.tabButton} ${view === 'code' ? styles.active : ''}`}
+                        aria-pressed={view === 'code'}
+                    >
+                        <Icons.Code w={16} h={16} /><span>Code</span>
+                    </button>
+                </div>
+                <div className={styles.headerActions}>
                     {view === 'preview' && (
                         <div className={styles.deviceToggles}>
-                            <button onClick={()=> setPreviewDevice('desktop')} className={previewDevice === 'desktop' ? styles.active : ''} title="Desktop View"><DesktopIcon /></button>
-                            <button onClick={()=> setPreviewDevice('tablet')} className={previewDevice === 'tablet' ? styles.active : ''} title="Tablet View"><TabletIcon /></button>
-                            <button onClick={()=> setPreviewDevice('mobile')} className={previewDevice === 'mobile' ? styles.active : ''} title="Mobile View"><MobileIcon /></button>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDevice('desktop')}
+                                className={previewDevice === 'desktop' ? styles.active : ''}
+                                title="Desktop View"
+                            >
+                                <Icons.Desktop />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDevice('tablet')}
+                                className={previewDevice === 'tablet' ? styles.active : ''}
+                                title="Tablet View"
+                            >
+                                <Icons.Tablet />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewDevice('mobile')}
+                                className={previewDevice === 'mobile' ? styles.active : ''}
+                                title="Mobile View"
+                            >
+                                <Icons.Mobile />
+                            </button>
                         </div>
                     )}
                 </div>
+            </header>
 
-                <div className={styles.contentArea}>
-                    {view === 'editor' ? (
-                        <div className={styles.editorView} onClick={() => setSelectedBlockId(null)}>
-                            <BlockRenderer
-                                blocks={blocks}
-                                isEditing={true}
-                                onUpdateBlock={handleUpdateBlock}
-                                onDeleteBlock={handleDeleteBlock}
-                                onAddBlock={handleAddBlock}
-                                onMoveBlock={handleMoveBlock} // Pass move handler
-                                onExecCommand={handleExecCommand} // <-- Pass rich text handler
-                                openImagePickerFor={openImagePickerFor}
-                                openAudioPickerFor={openAudioPickerFor}
-                                openVideoPickerFor={openVideoPickerFor}
-                                onShowSettings={setEditingStylesFor}
-                                onReorderColumn={handleReorderColumn}
-                                selectedBlockId={selectedBlockId}
-                                setSelectedBlockId={setSelectedBlockId}
-                            />
-                            {editingBlock && <SettingsPanel
-                                block={editingBlock}
-                                onUpdateStyle={handleUpdateStyle}
-                                onUpdateBlock={handleUpdateBlock}
-                                onUpdateLayout={handleUpdateLayout}
-                                onClose={() => setEditingStylesFor(null)}
-                            />}
+            {uploadError && (
+            <div className={styles.uploadError} onClick={() => setUploadError('')}>
+                {uploadError} (click to dismiss)
+            </div>
+            )}
+
+            <div className={styles.editorLayout}>
+                <aside className={styles.editorSidebar}>
+                    <LayerOutline 
+                        editorRoot={rendererRef.current}
+                        selectedLayer={selectedLayer}
+                        onSelectLayer={handleSelectLayer}
+                    />
+                </aside>
+
+                <main className={styles.editorMain}>
+                    <div className={styles.contentArea}>
+                        {view === 'editor' ? (
+                        <div className={styles.editorView}>
+                            <div
+                                ref={rendererRef}
+                                className={`${styles.renderer} renderer`}
+                                data-layer-type="Renderer"
+                                data-layer-label="Editor Canvas"
+                                data-layer-id="root"
+                                onMouseDown={handleCanvasMouseDown}
+                                onClick={(e) => {
+                                    // Only select root when clicking empty canvas space
+                                    const t = e.target;
+                                    if (
+                                        t !== e.currentTarget ||
+                                        t.closest(`.${styles.blockControls}`) ||
+                                        t.closest(`.${styles.textToolbar}`) ||
+                                        t.closest(`.${styles.addBlockMenu}`) ||
+                                        t.closest(`.${styles.outlinePanel}`) ||
+                                        t.closest(`.${styles.settingsPanelWrapper}`) ||
+                                        t.closest('[contenteditable="true"]')
+                                    ) {
+                                        return;
+                                    }
+                                    e.stopPropagation();
+                                    handleSelectLayer(e.currentTarget);
+                                }}
+                            >
+                                <BlockRenderer
+                                    blocks={blocks}
+                                    isEditing={true}
+                                    onUpdateBlock={handleUpdateBlock}
+                                    onDeleteBlock={handleDeleteBlock}
+                                    onAddBlock={handleAddBlock}
+                                    onMoveBlock={handleMoveBlock}
+                                    onExecCommand={handleExecCommand}
+                                    openImagePickerFor={openImagePickerFor}
+                                    openAudioPickerFor={openAudioPickerFor}
+                                    openVideoPickerFor={openVideoPickerFor}
+                                    onShowSettings={handleShowSettings}
+                                    onReorderColumn={handleReorderColumn}
+                                    onSelectLayer={handleSelectLayer}
+                                    onSetSelectedLayer={setSelectedLayer}
+                                    selectedLayer={selectedLayer}
+                                />
+                            </div>
+
+                            {isSettingsOpen && editingBlock && (
+                                <SettingsPanel
+                                    title={getSettingsTitle()}
+                                    onClose={handleCloseSettings}
+                                >
+                                {/* --- 1. General Style Settings (For ALL blocks) --- */}
+                                <h4>Block Styles</h4>
+                                {/* This is the CORRECTED Text Align block */}
+                                {(editingBlock.type === 'text' || editingBlock.type === 'heading') && (
+                                    <div className={styles.csGroup} role="group" aria-labelledby={`text-align-label-${editingBlock.id}`}>
+                                        <span id={`text-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Text Align</span>
+                                        <div className={styles.csBtnGroup}>
+                                            {['left', 'center', 'right'].map(a => (
+                                                <button
+                                                    key={a} type="button"
+                                                    className={editingBlock.styles?.textAlign === a ? styles.active : ''}
+                                                    onClick={() => handleUpdateStyle(editingBlock.id, { ...editingBlock.styles, textAlign: a })}
+                                                >
+                                                    {a.charAt(0).toUpperCase() + a.slice(1)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <ColorControl 
+                                    label="Background"
+                                        value={editingBlock.styles?.backgroundColor}
+                                        onChange={(val) => handleUpdateStyle(editingBlock.id, { ...editingBlock.styles, backgroundColor: val })}
+                                    />
+                                    <ColorControl 
+                                        label="Text Color"
+                                        value={editingBlock.styles?.color}
+                                        onChange={(val) => handleUpdateStyle(editingBlock.id, { ...editingBlock.styles, color: val })}
+                                    />
+                                    
+                                    <div className={styles.styleControl}>
+                                        <label htmlFor={`style-padding-${editingBlock.id}`}>Padding</label>
+                                        <input id={`style-padding-${editingBlock.id}`} type="text" name="padding" value={editingBlock.styles?.padding || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, padding: e.target.value})} placeholder="e.g., 1rem" />
+                                    </div>
+                                    <div className={styles.styleControl}>
+                                        <label htmlFor={`style-margin-${editingBlock.id}`}>Margin</label>
+                                        <input id={`style-margin-${editingBlock.id}`} type="text" name="margin" value={editingBlock.styles?.margin || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, margin: e.target.value})} placeholder="e.g., 1rem 0" />
+                                    </div>
+                                    <div className={styles.styleControl}>
+                                        <label htmlFor={`style-fontSize-${editingBlock.id}`}>Font Size</label>
+                                        <input id={`style-fontSize-${editingBlock.id}`} type="text" name="fontSize" value={editingBlock.styles?.fontSize || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, fontSize: e.target.value})} placeholder="e.g., 1.2rem" />
+                                    </div>
+                                    <div className={styles.styleControl}>
+                                        <label htmlFor={`style-border-${editingBlock.id}`}>Border</label>
+                                        <input id={`style-border-${editingBlock.id}`} type="text" name="border" value={editingBlock.styles?.border || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, border: e.target.value})} placeholder="e.g., 1px solid #ccc" />
+                                    </div>
+                                    <div className={styles.styleControl}>
+                                        <label htmlFor={`style-borderRadius-${editingBlock.id}`}>Border Radius</label>
+                                        <input id={`style-borderRadius-${editingBlock.id}`} type="text" name="borderRadius" value={editingBlock.styles?.borderRadius || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, borderRadius: e.target.value})} placeholder="e.g., 8px" />
+                                    </div>
+                                    
+                                    <hr className={styles.csSeparator} />
+
+                                    {/* --- 2. Block-Specific Settings --- */}
+                                    {editingBlock.type === 'button' && (
+                                        <>
+                                            <h4>Button Options</h4>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`btn-variant-label-${editingBlock.id}`}>
+                                                <span id={`btn-variant-label-${editingBlock.id}`} className={styles.csGroupLabel}>Variant</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['primary','secondary','ghost','link'].map(v=>(
+                                                        <button key={v} type="button" className={editingBlock.data?.variant===v?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, variant:v}})}>{v}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`btn-size-label-${editingBlock.id}`}>
+                                                <span id={`btn-size-label-${editingBlock.id}`} className={styles.csGroupLabel}>Size</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['sm','md','lg'].map(s=>(
+                                                        <button key={s} type="button" className={editingBlock.data?.size===s?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, size:s}})}>{s.toUpperCase()}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup}>
+                                                <label className={styles.csCheckboxLabel}>
+                                                    <input type="checkbox" checked={!!editingBlock.data?.full} onChange={(e)=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, full:e.target.checked}})}/>
+                                                    <span>Full width</span>
+                                                </label>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`btn-align-label-${editingBlock.id}`}>
+                                                <span id={`btn-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Align</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['left','center','right'].map(a=>(
+                                                        <button key={a} type="button" className={editingBlock.data?.align===a?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, align:a}})}>{a}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.styleControl}>
+                                                <label htmlFor={`button-radius-${editingBlock.id}`}>Corner radius</label>
+                                                <input id={`button-radius-${editingBlock.id}`} type="text" value={editingBlock.data?.radius||'var(--r-md)'} onChange={(e)=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, radius:e.target.value}})} placeholder="e.g., 8px"/>
+                                            </div>
+
+                                        </>
+                                    )}
+                                    {editingBlock.type === 'accordion' && (
+                                        <>
+                                            <h4>Accordion Options</h4>
+                                            <div className={styles.csGroup}>
+                                                <label className={styles.csCheckboxLabel}>
+                                                    <input type="checkbox" checked={!!editingBlock.options?.allowMultiple} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{ ...(editingBlock.options||{}), allowMultiple:e.target.checked }})}/>
+                                                    <span>Allow multiple open</span>
+                                                </label>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`acc-title-size-label-${editingBlock.id}`}>
+                                                <span id={`acc-title-size-label-${editingBlock.id}`} className={styles.csGroupLabel}>Title size</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['sm','md','lg'].map(s=>(
+                                                        <button key={s} type="button" className={editingBlock.options?.titleSize===s?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleSize:s}})}>{s.toUpperCase()}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`acc-title-align-label-${editingBlock.id}`}>
+                                                <span id={`acc-title-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Title align</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['left','center','right'].map(a=>(
+                                                        <button key={a} type="button" className={editingBlock.options?.titleAlign===a?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleAlign:a}})}>{a}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`acc-toggle-icon-label-${editingBlock.id}`}>
+                                                <span id={`acc-toggle-icon-label-${editingBlock.id}`} className={styles.csGroupLabel}>Toggle icon</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['chevron','plus','none'].map(i=>(
+                                                        <button key={i} type="button" className={editingBlock.options?.icon===i?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, icon:i}})}>{i}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`acc-theme-label-${editingBlock.id}`}>
+                                                <span id={`acc-theme-label-${editingBlock.id}`} className={styles.csGroupLabel}>Theme</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['light','dark','outline'].map(t=>(
+                                                        <button key={t} type="button" className={editingBlock.options?.theme===t?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, theme:t}})}>{t}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.csGroup}>
+                                                <label className={styles.csCheckboxLabel}>
+                                                    <input type="checkbox" checked={!!editingBlock.options?.openFirst} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, openFirst:e.target.checked}})} />
+                                                    <span>Open first section by default</span>
+                                                </label>
+                                            </div>
+                                            <div className={styles.styleControl}>
+                                                <label htmlFor={`accordion-radius-${editingBlock.id}`}>Corner radius</label>
+                                                <input id={`accordion-radius-${editingBlock.id}`} type="text" value={editingBlock.options?.radius||'8px'} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, radius:e.target.value}})} placeholder="e.g., 8px"/>
+                                            </div>
+                                        </>
+                                    )}
+                                    {editingBlock.type === 'columns' && (
+                                        <ColumnSettings block={editingBlock} onUpdateLayout={handleUpdateLayout} />
+                                    )}
+                                </SettingsPanel>
+                            )}
                         </div>
-                    ) : view === 'preview' ? (
+                        ) : view === 'preview' ? (
                         <div className={`${styles.previewWrapper} ${styles[previewDevice]}`}>
                             <div className={styles.previewView}>{renderedPreview}</div>
                         </div>
-                    ) : ( // Code View
+                        ) : (
                         <div className={styles.codeView}>
                             <div className={styles.codeToolbar}>
                                 <label className={styles.codeToggle}>
-                                    <input type="checkbox" checked={codeImportEnabled} onChange={(e)=>setCodeImportEnabled(e.target.checked)} />
+                                    <input
+                                    type="checkbox"
+                                    checked={codeImportEnabled}
+                                    onChange={e => setCodeImportEnabled(e.target.checked)}
+                                    />
                                     Enable import/edit
                                 </label>
                                 <div className={styles.codeActions}>
-                                    <button type="button" className={`${styles.btn} ${styles.btn_secondary} ${styles.btnSize_sm}`} onClick={handleCopyCode}>Copy</button>
-                                    <button type="button" className={`${styles.btn} ${styles.btn_primary} ${styles.btnSize_sm}`} onClick={handleImportCode} disabled={!codeImportEnabled} title={codeImportEnabled ? 'Import pasted code' : "Check 'Enable import/edit' first"}>
+                                    <button
+                                        type="button"
+                                        className={`${styles.btn} ${styles.btn_secondary} ${styles.btnSize_sm}`}
+                                        onClick={handleCopyCode}
+                                    >
+                                        Copy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.btn} ${styles.btn_primary} ${styles.btnSize_sm}`}
+                                        onClick={handleImportCode}
+                                        disabled={!codeImportEnabled}
+                                        title={codeImportEnabled ? 'Import pasted code' : "Check 'Enable import/edit' first"}
+                                    >
                                         Import
                                     </button>
                                 </div>
                             </div>
-                            {codeError && (<div className={styles.uploadError} onClick={()=>setCodeError('')}>{codeError} (click to dismiss)</div>)}
+                            {codeError && (
+                            <div className={styles.uploadError} onClick={() => setCodeError('')}>
+                                {codeError} (click to dismiss)
+                            </div>
+                            )}
                             <textarea
                                 className={styles.codeTextarea}
                                 value={codeText}
-                                onChange={(e)=> handleCodeChange(e.target.value)}
+                                onChange={e => handleCodeChange(e.target.value)}
                                 spellCheck={false}
                                 readOnly={!codeImportEnabled}
                                 aria-label="Lesson HTML Code"
                             />
                             <p className={styles.codeInfo}>
-                                The code includes layout styles and content. Theme/custom CSS is applied separately.
+                            The code includes layout styles and content. Theme/custom CSS is applied separately.
                             </p>
                         </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                </main>
             </div>
 
-            {/* Optional Debug Panel */}
-            {/* <div className={styles.debugView}><h4>Live State (Blocks)</h4><pre>{JSON.stringify(blocks, null, 2)}</pre></div> */}
-
             {/* Hidden File Inputs */}
-            <input ref={imageUploadInputRef} type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.svg" onChange={(e) => handleFileUpload(e, 'image')} className={styles.visuallyHiddenInput} tabIndex={-1} aria-hidden="true" />
-            <input ref={audioUploadInputRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac" onChange={(e) => handleFileUpload(e, 'audio')} className={styles.visuallyHiddenInput} tabIndex={-1} aria-hidden="true" />
-            <input ref={videoUploadInputRef} type="file" accept="video/*,.mp4,.mov,.avi,.webm,.ogg" onChange={(e) => handleFileUpload(e, 'video')} className={styles.visuallyHiddenInput} tabIndex={-1} aria-hidden="true" />
+            <input
+                ref={imageUploadInputRef}
+                type="file"
+                accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.svg"
+                onChange={e => handleFileUpload(e, 'image')}
+                className={styles.visuallyHiddenInput}
+                tabIndex={-1}
+                aria-hidden="true"
+            />
+            <input
+                ref={audioUploadInputRef}
+                type="file"
+                accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac"
+                onChange={e => handleFileUpload(e, 'audio')}
+                className={styles.visuallyHiddenInput}
+                tabIndex={-1}
+                aria-hidden="true"
+            />
+            <input
+                ref={videoUploadInputRef}
+                type="file"
+                accept="video/*,.mp4,.mov,.avi,.webm,.ogg"
+                onChange={e => handleFileUpload(e, 'video')}
+                className={styles.visuallyHiddenInput}
+                tabIndex={-1}
+                aria-hidden="true"
+            />
         </div>
     );
 });
@@ -2078,7 +2618,6 @@ function prefixCss(scope, css) {
                     const pseudoMatch = individualSelector.match(/::?[\w-]+(\(.*\))?$/);
                     const baseSelector = pseudoMatch ? individualSelector.slice(0, pseudoMatch.index) : individualSelector;
                     const pseudoPart = pseudoMatch ? pseudoMatch[0] : '';
-                    // Handle direct descendant and other combinators carefully
                     if (/^[>~+]/.test(baseSelector.trim())) {
                         return `${scope}${baseSelector.trim()}${pseudoPart}`;
                     }
@@ -2094,3 +2633,4 @@ function prefixCss(scope, css) {
 }
 
 export default LessonEditor;
+

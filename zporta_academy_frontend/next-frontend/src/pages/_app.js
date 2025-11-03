@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import { AuthProvider, AuthContext } from '@/context/AuthContext';
 import { AuthModalProvider } from '@/context/AuthModalContext';
 import AppLayout from '@/components/layout/AppLayout';
-import '@/styles/Editor/ViewerAccordion.module.css'
+// Note: avoid importing CSS Modules globally here; import them in components instead.
 // client-only
 const BottomMenu = dynamic(() => import('@/components/common/BottomMenu'), { ssr: false });
 
