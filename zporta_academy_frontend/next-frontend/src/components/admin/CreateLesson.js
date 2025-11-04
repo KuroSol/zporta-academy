@@ -538,7 +538,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                     </div>
                 </fieldset>
 
-                {/* Section 2: Styling & Templates */}
+                {/* Section 2: Styling & Templates 
                 <fieldset className={styles.formSection}>
                     <legend>Styling & Presentation</legend>
                     <div className={styles.formGrid}>
@@ -569,8 +569,8 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                             />
                         </div>
 
-                        {/* CORRECTED className TEMPLATE LITERAL */}
-                        <div className={`${styles.formGroup} ${styles.formGroupSpan2}`}> {/* Spans 2 columns for better layout */}
+                        {/* CORRECTED className TEMPLATE LITERAL}
+                        <div className={`${styles.formGroup} ${styles.formGroupSpan2}`}> {/* Spans 2 columns for better layout }
                             <label htmlFor="adminTemplateRef">Use Admin Template (Optional)</label>
                             <select
                                 id="adminTemplateRef"
@@ -593,10 +593,10 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                             )}
                         </div>
 
-                        {/* CORRECTED className TEMPLATE LITERAL */}
+                        {/* CORRECTED className TEMPLATE LITERAL }
                         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                             <label htmlFor="customCSS">Custom CSS (Overrides template CSS if provided)</label>
-                             {/* CORRECTED self-closing tag */}
+                             {/* CORRECTED self-closing tag }
                             <textarea
                                 id="customCSS"
                                 rows="6"
@@ -612,11 +612,11 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                             </p>
                         </div>
 
-                        {/* Custom JS (scoped to this lesson only) */}
-                         {/* CORRECTED className TEMPLATE LITERAL */}
+                        {/* Custom JS (scoped to this lesson only) }
+                         {/* CORRECTED className TEMPLATE LITERAL }
                         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                             <label htmlFor="customJS">Custom JS (runs only on this lesson)</label>
-                             {/* CORRECTED self-closing tag */}
+                             {/* CORRECTED self-closing tag }
                             <textarea
                                 id="customJS"
                                 rows="6"
@@ -637,6 +637,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                         </div>
                     </div>
                 </fieldset>
+                */}
                 {/* Section 2.5: Attach to Course (Optional) */}
                 <fieldset className={styles.formSection}>
                     <legend>Attach to Course {isPremium ? '(Required for Premium before publish)' : '(Optional)'}</legend>
