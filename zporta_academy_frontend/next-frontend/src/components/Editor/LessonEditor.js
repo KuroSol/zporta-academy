@@ -2492,7 +2492,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`btn-variant-label-${editingBlock.id}`} className={styles.csGroupLabel}>Variant</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['primary','secondary','ghost','link'].map(v=>(
-                                                        <button key={v} type="button" className={editingBlock.data?.variant===v?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, variant:v}})}>{v}</button>
+                                                        <button key={v} type="button" className={editingBlock.data?.variant===v?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, variant:v}})}>{v}</button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -2500,13 +2500,13 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`btn-size-label-${editingBlock.id}`} className={styles.csGroupLabel}>Size</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['sm','md','lg'].map(s=>(
-                                                        <button key={s} type="button" className={editingBlock.data?.size===s?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, size:s}})}>{s.toUpperCase()}</button>
+                                                        <button key={s} type="button" className={editingBlock.data?.size===s?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, size:s}})}>{s.toUpperCase()}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className={styles.csGroup}>
                                                 <label className={styles.csCheckboxLabel}>
-                                                    <input type="checkbox" checked={!!editingBlock.data?.full} onChange={(e)=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, full:e.target.checked}})}/>
+                                                    <input type="checkbox" checked={!!editingBlock.data?.full} onChange={(e)=>handleUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, full:e.target.checked}})}/>
                                                     <span>Full width</span>
                                                 </label>
                                             </div>
@@ -2514,13 +2514,13 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`btn-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Align</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['left','center','right'].map(a=>(
-                                                        <button key={a} type="button" className={editingBlock.data?.align===a?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, align:a}})}>{a}</button>
+                                                        <button key={a} type="button" className={editingBlock.data?.align===a?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, align:a}})}>{a}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className={styles.styleControl}>
                                                 <label htmlFor={`button-radius-${editingBlock.id}`}>Corner radius</label>
-                                                <input id={`button-radius-${editingBlock.id}`} type="text" value={editingBlock.data?.radius||'var(--r-md)'} onChange={(e)=>onUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, radius:e.target.value}})} placeholder="e.g., 8px"/>
+                                                <input id={`button-radius-${editingBlock.id}`} type="text" value={editingBlock.data?.radius||'var(--r-md)'} onChange={(e)=>handleUpdateBlock(editingBlock.id,{ data:{...editingBlock.data, radius:e.target.value}})} placeholder="e.g., 8px"/>
                                             </div>
 
                                         </>
@@ -2530,7 +2530,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                             <h4>Accordion Options</h4>
                                             <div className={styles.csGroup}>
                                                 <label className={styles.csCheckboxLabel}>
-                                                    <input type="checkbox" checked={!!editingBlock.options?.allowMultiple} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{ ...(editingBlock.options||{}), allowMultiple:e.target.checked }})}/>
+                                                    <input type="checkbox" checked={!!editingBlock.options?.allowMultiple} onChange={(e)=>handleUpdateBlock(editingBlock.id,{ options:{ ...(editingBlock.options||{}), allowMultiple:e.target.checked }})}/>
                                                     <span>Allow multiple open</span>
                                                 </label>
                                             </div>
@@ -2538,7 +2538,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`acc-title-size-label-${editingBlock.id}`} className={styles.csGroupLabel}>Title size</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['sm','md','lg'].map(s=>(
-                                                        <button key={s} type="button" className={editingBlock.options?.titleSize===s?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleSize:s}})}>{s.toUpperCase()}</button>
+                                                        <button key={s} type="button" className={editingBlock.options?.titleSize===s?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleSize:s}})}>{s.toUpperCase()}</button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -2546,7 +2546,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`acc-title-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Title align</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['left','center','right'].map(a=>(
-                                                        <button key={a} type="button" className={editingBlock.options?.titleAlign===a?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleAlign:a}})}>{a}</button>
+                                                        <button key={a} type="button" className={editingBlock.options?.titleAlign===a?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, titleAlign:a}})}>{a}</button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -2554,7 +2554,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`acc-toggle-icon-label-${editingBlock.id}`} className={styles.csGroupLabel}>Toggle icon</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['chevron','plus','none'].map(i=>(
-                                                        <button key={i} type="button" className={editingBlock.options?.icon===i?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, icon:i}})}>{i}</button>
+                                                        <button key={i} type="button" className={editingBlock.options?.icon===i?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, icon:i}})}>{i}</button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -2562,19 +2562,19 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                 <span id={`acc-theme-label-${editingBlock.id}`} className={styles.csGroupLabel}>Theme</span>
                                                 <div className={styles.csBtnGroup}>
                                                     {['light','dark','outline'].map(t=>(
-                                                        <button key={t} type="button" className={editingBlock.options?.theme===t?styles.active:''} onClick={()=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, theme:t}})}>{t}</button>
+                                                        <button key={t} type="button" className={editingBlock.options?.theme===t?styles.active:''} onClick={()=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, theme:t}})}>{t}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className={styles.csGroup}>
                                                 <label className={styles.csCheckboxLabel}>
-                                                    <input type="checkbox" checked={!!editingBlock.options?.openFirst} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, openFirst:e.target.checked}})} />
+                                                    <input type="checkbox" checked={!!editingBlock.options?.openFirst} onChange={(e)=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, openFirst:e.target.checked}})} />
                                                     <span>Open first section by default</span>
                                                 </label>
                                             </div>
                                             <div className={styles.styleControl}>
                                                 <label htmlFor={`accordion-radius-${editingBlock.id}`}>Corner radius</label>
-                                                <input id={`accordion-radius-${editingBlock.id}`} type="text" value={editingBlock.options?.radius||'8px'} onChange={(e)=>onUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, radius:e.target.value}})} placeholder="e.g., 8px"/>
+                                                <input id={`accordion-radius-${editingBlock.id}`} type="text" value={editingBlock.options?.radius||'8px'} onChange={(e)=>handleUpdateBlock(editingBlock.id,{ options:{...editingBlock.options, radius:e.target.value}})} placeholder="e.g., 8px"/>
                                             </div>
                                         </>
                                     )}
