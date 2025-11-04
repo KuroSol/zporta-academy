@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 // We will rename the CSS file to match the new component-based structure
 import styles from '@/styles/Editor/LessonEditor.module.css';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 
 const ELEMENT_NODE = 1;
 
@@ -121,6 +122,8 @@ const Icons = {
     Code: (p) => <I {...p}><path fillRule="evenodd" d="M6.33 4.61l-4.72 4.72a.75.75 0 000 1.06l4.72 4.72a.75.75 0 001.06-1.06L3.165 10l4.225-4.225a.75.75 0 00-1.06-1.165zM13.67 4.61a.75.75 0 011.06 0l4.72 4.72a.75.75 0 010 1.06l-4.72 4.72a.75.75 0 01-1.06-1.06L16.835 10l-4.225-4.225a.75.75 0 011.06-1.165z" clipRule="evenodd" /></I>,
     Eye: (p) => <I {...p}><path fillRule="evenodd" d="M10 3a7 7 0 00-7 7 7 7 0 007 7 7 7 0 007-7 7 7 0 00-7-7zm0 1.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zm0 2.5a3 3 0 100 6 3 3 0 000-6z" clipRule="evenodd" /></I>,
     Edit: (p) => <I {...p}><path fillRule="evenodd" d="M13.293 3.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-9 9a1 1 0 01-.39.242l-3 1a1 1 0 01-1.22-1.22l1-3a1 1 0 01.242-.39l9-9zM14 6.414l-8.5 8.5L5 15.414l.5-1.5L13.586 6l.414.414zM15 4.414L15.586 5 14 6.414 13.586 6 15 4.414z" clipRule="evenodd" /></I>,
+    Fullscreen: (p) => <I {...p}><path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v2a1 1 0 102 0V5h2a1 1 0 000-2H5zm10 0a2 2 0 012 2v2a1 1 0 11-2 0V5h-2a1 1 0 110-2h2zM3 13a2 2 0 002 2h2a1 1 0 110 2H5a2 2 0 01-2-2v-2a1 1 0 112 0v2zm14 0a2 2 0 01-2 2h-2a1 1 0 110 2h2a2 2 0 002-2v-2a1 1 0 11-2 0v2z" clipRule="evenodd" /></I>,
+    FullscreenExit: (p) => <I {...p}><path fillRule="evenodd" d="M8 3a1 1 0 00-1 1v3a1 1 0 01-1 1H3a1 1 0 100 2h3a3 3 0 003-3V4a1 1 0 00-1-1zm4 0a1 1 0 011 1v3a3 3 0 003 3h3a1 1 0 110 2h-3a3 3 0 01-3-3V4a1 1 0 011-1zM3 12a1 1 0 011-1h3a3 3 0 013 3v3a1 1 0 11-2 0v-3a1 1 0 00-1-1H4a1 1 0 01-1-1zm14 0a1 1 0 00-1-1h-3a3 3 0 00-3 3v3a1 1 0 102 0v-3a1 1 0 011-1h3a1 1 0 001-1z" clipRule="evenodd" /></I>,
     Sidebar: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3zm4 0v12h8V4H7z" clipRule="evenodd" /></I>,
     SidebarOpen: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h4V4H3zm6 0v12h8V4H9z" clipRule="evenodd" /></I>,
     PanelClose: (p) => <I {...p}><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></I>,
@@ -1160,7 +1163,7 @@ const SettingsPanel = ({ title, children, onClose }) => {
 
     return (
         <div className={styles.settingsPanelWrapper} role="dialog" aria-modal="true">
-            <div className={styles.settingsPanel} id="editor-settings-panel" ref={panelRef}>
+            <div className={`${styles.settingsPanel} modal-scroll-content`} id="editor-settings-panel" ref={panelRef}>
                 {/* We use the simple close button, positioned by new CSS */}
                 <button onClick={onClose} className={styles.settingsCloseButton} aria-label="Close settings">
                     {/* We use the new icon, but the CSS will position it like the old 'x' */}
@@ -1479,13 +1482,21 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     // UI State
     const [isOutlineOpen, setIsOutlineOpen] = useState(true); // Default open on desktop
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    useEffect(() => {
-        if (!isSettingsOpen) return;
-        const original = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = original; };
-    }, [isSettingsOpen]);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    
     const [editingBlockId, setEditingBlockId] = useState(null); // The *ID* of the block being edited
+
+    // On mount: collapse the sidebar by default on small screens (mobile)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (window.innerWidth < 768) {
+            setIsOutlineOpen(false);
+        }
+    }, []);
+    
+    // Lock body scroll when any modal/popup is open (using global scroll lock system)
+    useBodyScrollLock(isSettingsOpen || !!editingBlockId);
+    
     const editorRootRef = useRef(null);
     // Layer & Selection State
     const [selectedLayer, setSelectedLayer] = useState(null); // { id: string, el: HTMLElement, type: string }
@@ -2053,6 +2064,54 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
         setEditingBlockId(null);
     }, []);
 
+    // --- Fullscreen Mode ---
+    const toggleFullscreen = useCallback(() => {
+        const elem = editorRootRef.current;
+        if (!elem) return;
+
+        if (!isFullscreen) {
+            // Enter fullscreen
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { // Safari
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { // IE11
+                elem.msRequestFullscreen();
+            }
+        } else {
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { // Safari
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { // IE11
+                document.msExitFullscreen();
+            }
+        }
+    }, [isFullscreen]);
+
+    // Listen for fullscreen change events
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            const isCurrentlyFullscreen = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement
+            );
+            setIsFullscreen(isCurrentlyFullscreen);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+        };
+    }, []);
+
     const editingBlock = useMemo(() => {
         if (!editingBlockId) return null;
         let foundBlock = null;
@@ -2285,6 +2344,14 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                             </button>
                         </div>
                     )}
+                    <button
+                        type="button"
+                        className={styles.fullscreenButton}
+                        onClick={toggleFullscreen}
+                        title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen (F11)"}
+                    >
+                        {isFullscreen ? <Icons.FullscreenExit /> : <Icons.Fullscreen />}
+                    </button>
                 </div>
             </header>
 
@@ -2295,6 +2362,14 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
             )}
 
             <div className={styles.editorLayout}>
+                {/* Mobile-only backdrop (visible via CSS @media). Click to close sidebar */}
+                {isOutlineOpen && (
+                    <div
+                        className={styles.sidebarBackdrop}
+                        onClick={() => setIsOutlineOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
                 <aside className={styles.editorSidebar}>
                     <LayerOutline 
                         editorRoot={rendererRef.current}

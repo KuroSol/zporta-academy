@@ -6,8 +6,8 @@
 /* --- :root CSS Variables (Design System) --- */
 .editorContainer {
     /* Colors */
-    --brand-blue: #0A2342;
-    --brand-blue-light: #1a3a69;
+    --brand-blue: #1B2735;
+    --brand-blue-light: #e09e00;
     --brand-gold: #ffb606;
     --brand-gold-light: #fff8e1;
     --brand-gold-dark: #e09e00;
@@ -70,6 +70,39 @@
     line-height: 1.5;
     margin: 1rem auto;
     max-width: 1600px;
+}
+
+/* Fullscreen Mode Styles */
+.editorContainer:fullscreen {
+    max-height: 100vh;
+    max-width: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+.editorContainer:-webkit-full-screen {
+    max-height: 100vh;
+    max-width: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+.editorContainer:-moz-full-screen {
+    max-height: 100vh;
+    max-width: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+.editorContainer:-ms-fullscreen {
+    max-height: 100vh;
+    max-width: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 0;
 }
 
 .loadingState {
@@ -183,6 +216,28 @@
     gap: var(--space-2);
 }
 
+.fullscreenButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2);
+    background: transparent;
+    border: none;
+    border-radius: var(--r-md);
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all var(--transition-speed) var(--transition-curve);
+}
+
+.fullscreenButton:hover {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.fullscreenButton:active {
+    transform: scale(0.95);
+}
+
 .deviceToggles {
     display: none; /* Hide on mobile by default */
     align-items: center;
@@ -267,13 +322,27 @@
 .outlinePanel {
     display: flex;
     flex-direction: column;
-    padding: var(--space-2);
+    padding: var(--space-4);
+    gap: var(--space-1);
+    height: 100%;
+    overflow-y: auto;
 }
+
+.outlinePanel h3 {
+    margin: 0 0 var(--space-3) 0;
+    padding: 0 var(--space-2);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-light);
+}
+
 .outlineItem {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2);
+    padding: var(--space-3) var(--space-2);
     border-radius: var(--r-md);
     cursor: pointer;
     border: 1px solid transparent;
@@ -281,15 +350,38 @@
     user-select: none;
     width: 100%;
     text-align: left;
+    background: transparent;
+    position: relative;
 }
+
+.outlineItem::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--brand-gold);
+    border-radius: 0 2px 2px 0;
+    transition: height 0.2s ease;
+}
+
 .outlineItem:hover {
     background-color: var(--bg-hover);
+    transform: translateX(2px);
 }
+
 .outlineItem[data-active="true"] {
     background-color: var(--bg-selected);
-    border-color: var(--brand-gold);
+    border-color: transparent;
     color: var(--text-primary);
     font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+.outlineItem[data-active="true"]::before {
+    height: 70%;
 }
 
 .outlineIndent {
@@ -298,20 +390,38 @@
     height: 1px;
     flex-shrink: 0;
 }
+
 .outlineIcon {
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     color: var(--text-light);
     flex-shrink: 0;
+    transition: all 0.2s ease;
 }
+
+.outlineItem:hover .outlineIcon {
+    color: var(--text-secondary);
+}
+
 .outlineItem[data-active="true"] .outlineIcon {
-    color: var(--brand-blue);
+    color: var(--brand-gold-dark);
+    transform: scale(1.1);
 }
+
 .outlineLabel {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.outlineItem[data-active="true"] .outlineLabel {
+    color: var(--text-primary);
 }
 
 /* --- Upload Error Bar --- */
@@ -836,144 +946,281 @@
 .settingsPanelWrapper {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.45);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;            /* center on desktop */
-  padding: 1.25rem;
-  z-index: 10000;                 /* ensure above everything */
+  align-items: center;
+  padding: var(--space-4);
+  z-index: 10000;
   animation: fadeIn 0.15s ease-out;
-  overscroll-behavior: contain;   /* prevent rubber-banding behind modal */
+  overscroll-behavior: contain;
+  backdrop-filter: blur(4px);
+  
 }
+
 .settingsPanel {
   position: relative;
-  background: var(--bg-surface);
-  width: min(560px, 96vw);        /* a bit smaller on desktop */
-  max-height: min(85vh, 900px);
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--r-lg);
+  background: #1a1d24;
+  width: min(620px, 100%);
+  max-height: min(90vh, 900px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  overflow: auto;                 /* scroll inside modal if needed */
+  overflow:auto;
   animation: slideInFromRight var(--transition-speed) ease-out;
+  padding: inherit;
 }
 
+.settingsPanel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-gold), var(--brand-gold-dark));
+  border-radius: 12px 12px 0 0;
+  z-index: 1;
+}
 
 .settingsHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #333;
+  background: #20232a;
+  flex-shrink: 0;
+  position: relative;
 }
+
 .settingsHeader h4 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
+
 .settingsCloseButton {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: var(--bg-hover);
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: 50%;
-    transition: all var(--transition-speed) var(--transition-curve);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  border-radius: var(--r-md);
+  transition: all var(--transition-speed);
+  margin-left: auto;
 }
+
 .settingsCloseButton:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+  transform: rotate(90deg);
 }
+
+.settingsCloseButton:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
 .settingsBody {
-    padding: var(--space-4);
-    overflow-y: auto;
-    flex-grow: 1;
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex-grow: 1;
+  background: #1a1d24;
+}
+
+.settingsBody::-webkit-scrollbar {
+  width: 10px;
+}
+
+.settingsBody::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 5px;
+}
+
+.settingsBody::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 5px;
+}
+
+.settingsBody::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 /* --- Settings Panel Controls (for Columns, Buttons, Accordions) --- */
-.csGroup { margin-bottom: 1.5rem; }
-.csGroup label { 
-    display: block; 
-    font-weight: 600; 
-    font-size: 0.9rem; 
-    margin-bottom: 0.75rem; 
-    color: var(--text-primary); 
+.csGroup { 
+  margin-bottom: 24px;
+  padding: 0;
 }
+
+.csGroup:last-child {
+  margin-bottom: 0;
+}
+
+.csGroup > h5 {
+  margin: 0 0 16px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #888;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+}
+
+.csGroup label { 
+  display: block; 
+  font-weight: 600; 
+  font-size: 0.875rem; 
+  margin-bottom: 8px;
+  padding: 4px 0;
+  color: #ccc;
+  letter-spacing: 0.01em;
+}
+
 .csGroup label.csCheckboxLabel {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: #ccc;
   cursor: pointer;
   user-select: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
-.csBtnGroup { display: flex; gap: 0.5rem; flex-wrap: wrap;}
+
+.csGroup label.csCheckboxLabel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.csBtnGroup { 
+  display: flex; 
+  gap: 8px; 
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
 .csBtnGroup button {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-surface);
-    border-radius: var(--r-md);
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--text-secondary);
-    transition: all var(--transition-speed) var(--transition-curve);
+  padding: 10px 16px;
+  border: 1px solid #444;
+  background: #2a2d35;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #ccc;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
+
+.csBtnGroup button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--brand-gold);
+  opacity: 0;
+  transition: opacity var(--transition-speed);
+}
+
 .csBtnGroup button:hover { 
-    background: var(--bg-hover); 
-    border-color: var(--border-color-dark);
-    color: var(--text-primary);
+  background: #343842; 
+  border-color: #666;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
 .csBtnGroup button.active { 
-    background: var(--brand-blue-light); 
-    color: var(--text-on-brand); 
-    border-color: var(--brand-blue-light); 
-}
-.csBtnGroup button.active:hover {
-  filter: brightness(1.15);
-}
-.csPresets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
-.csPresets button { 
-    font-family: monospace; 
-    padding: 0.5rem; 
-    border: 1px solid var(--border-color); 
-    background: var(--bg-surface); 
-    border-radius: var(--r-sm); 
-    cursor: pointer; 
-}
-.csPresets button:hover { background: var(--bg-hover); }
-.csPresets button.active { 
-    background: var(--brand-blue-light); 
-    color: var(--text-on-brand); 
-    border-color: var(--brand-blue-light); 
-}
-.csCustomInput {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--r-md);
-    font-size: 1rem;
-    font-family: inherit;
-    background: var(--bg-hover);
-}
-.csCustomInput.inputError {
-  border-color: var(--error-border);
-  background-color: var(--error-bg);
-  color: var(--error-text);
-}
-.csCustomInput:focus-visible, .csCustomInput:focus {
-  outline: 2px solid var(--brand-gold);
+  background: var(--brand-gold); 
+  color: #1a1d24; 
   border-color: var(--brand-gold);
-  background: var(--bg-surface);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(224, 165, 52, 0.3);
+}
+
+.csBtnGroup button.active:hover {
+  filter: brightness(1.1);
+}
+
+.csPresets { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 8px; 
+  margin-bottom: 12px;
+  padding: 4px 0;
+}
+
+.csPresets button { 
+  font-family: 'Consolas', 'Monaco', monospace; 
+  padding: 8px 12px; 
+  border: 1px solid #444; 
+  background: #2a2d35; 
+  border-radius: 6px; 
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #ccc;
+  transition: all 0.2s ease;
+}
+
+.csPresets button:hover { 
+  background: #343842;
+  border-color: #666;
+  transform: translateY(-1px);
+}
+
+.csPresets button.active { 
+  background: var(--brand-gold); 
+  color: #1a1d24; 
+  border-color: var(--brand-gold);
+  font-weight: 600;
+}
+
+.csCustomInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  background: #2a2d35;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.csCustomInput:hover {
+  border-color: #666;
+}
+
+.csCustomInput.inputError {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.csCustomInput:focus-visible, 
+.csCustomInput:focus {
+  outline: none;
+  border-color: var(--brand-gold);
+  box-shadow: 0 0 0 3px rgba(224, 165, 52, 0.15);
+  background: #343842;
+}
+
+.csCustomInput::placeholder {
+  color: #888;
+  opacity: 1;
 }
 .csValidationError { 
     color: var(--error-text); 
@@ -1216,7 +1463,9 @@
 }
 
 @media (prefers-color-scheme: dark){
+  /*
   .editorContainer {
+    
     --bg-surface: #0f172a;
     --bg-canvas: #0b1220;
     --bg-app: #020617;
@@ -1236,7 +1485,8 @@
     --error-bg: #400c14;
     --error-text: #ffaab3;
     --error-border: #be123c;
-  }
+  
+    }
   
   .deviceToggles { background-color: var(--bg-app); }
   .deviceToggles button.active { background: var(--bg-surface); }
@@ -1247,6 +1497,7 @@
     border-color: var(--border-color-dark); 
     color: var(--text-primary);
   }
+    */
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -1350,9 +1601,10 @@
     /* Settings panel becomes a full-screen modal */
   .settingsPanelWrapper {
     align-items: stretch;         /* allow full-height sheet */
-    padding: 0;
+    
   }
   .settingsPanel {
+    padding: inherit;
     width: 100%;
     max-width: 100%;
     height: 100%;
