@@ -775,6 +775,48 @@ const CustomEditor = forwardRef(({
                     </div>
                 )}
                 
+                {/* --- CONTEXTUAL: Accordion Style (Caret / Plus / Chevron) --- */}
+                {selectedBlockType === 'accordion' && (
+                    <div className="toolbarGroup">
+                        {(() => {
+                            const variant = selectedElement?.dataset.accVariant || 'caret';
+                            const setVariant = (v) => {
+                                if (!selectedElement) return;
+                                selectedElement.dataset.accVariant = v;
+                                updateStateFromEditor();
+                            };
+                            return (
+                                <>
+                                    <button
+                                        type="button"
+                                        className={variant === 'caret' ? 'active' : ''}
+                                        onClick={() => setVariant('caret')}
+                                        title="Accordion style: caret"
+                                    >
+                                        ▶
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={variant === 'plus' ? 'active' : ''}
+                                        onClick={() => setVariant('plus')}
+                                        title="Accordion style: plus"
+                                    >
+                                        +
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={variant === 'chevron' ? 'active' : ''}
+                                        onClick={() => setVariant('chevron')}
+                                        title="Accordion style: chevron"
+                                    >
+                                        ❯
+                                    </button>
+                                </>
+                            );
+                        })()}
+                    </div>
+                )}
+
                 {/* --- CONTEXTUAL: Image Alignment --- */}
                 {(selectedBlockType === 'image' || selectedBlockType === 'audio') && (
                     <div className="toolbarGroup">
@@ -965,7 +1007,7 @@ const getEditorStyles = (id) => `
     #${id} .loadingPlaceholder { display: flex; align-items: center; justify-content: center; min-height: 400px; background-color: var(--zporta-background-medium); color: var(--zporta-text-light); border-radius: var(--zporta-radius-md); }
     #${id} .editorArea { flex-grow: 1; position: relative; display: flex; overflow-y: auto; padding: 16px 20px; }
     #${id} .editor { flex-grow: 1; outline: none; line-height: 1.7; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch; }
-    #${id} .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid var(--zporta-border-color); background: var(--zporta-background-medium); position: sticky; top: 0; z-index: 100; user-select: none; }
+    #${id} .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid var(--zporta-border-color); background: var(--zporta-background-medium); position: sticky; top: 0; z-index: 1500; user-select: none; }
     #${id} .toolbarGroup { display: flex; align-items: center; gap: 2px; padding: 0 6px; }
     #${id} .toolbarGroup:not(:last-child) { border-right: 1px solid var(--zporta-border-color); }
     #${id} .rightAlignedGroup { margin-left: auto; border-right: none; }
@@ -979,7 +1021,7 @@ const getEditorStyles = (id) => `
     #${id} .colorInputLabel:hover { background-color: var(--zporta-background-dark); }
     #${id} .colorInputLabel input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     #${id} .dropdown { position: relative; display: inline-block; }
-    #${id} .dropdownContent { visibility: hidden; opacity: 0; position: absolute; top: 100%; left: 0; background-color: var(--zporta-background-light); min-width: 200px; box-shadow: var(--zporta-box-shadow); border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-md); z-index: 101; overflow: hidden; padding: 4px; transition: all 0.1s ease; }
+    #${id} .dropdownContent { visibility: hidden; opacity: 0; position: absolute; top: 100%; left: 0; background-color: var(--zporta-background-light); min-width: 200px; box-shadow: var(--zporta-box-shadow); border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-md); z-index: 1600; overflow: hidden; padding: 4px; transition: all 0.1s ease; }
     #${id} .dropdown:hover .dropdownContent { visibility: visible; opacity: 1; }
     #${id} .dropdownContent a,
     #${id} .dropdownContent button.dropdownItem { color: var(--zporta-text-color); padding: 8px 12px; background: transparent; border: 0; text-align: left; width: 100%; display: block; font-size: 14px; border-radius: 4px; cursor: pointer; }
@@ -1038,8 +1080,12 @@ const getEditorStyles = (id) => `
     #${id} .layoutColumn { flex: 1; min-width: 150px; border: 1px dotted var(--zporta-border-light); padding: 10px; background-color: var(--zporta-background-light); outline: none; border-radius: var(--zporta-radius-sm); }
     #${id} .layoutColumn > :first-child { margin-top: 0; }
     #${id} .layoutColumn > :last-child { margin-bottom: 0; }
-    #${id} .accordionItem { border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-sm); margin: 1em 0; background-color: var(--zporta-background-light); }
-    #${id} .accordionHeader { padding: 10px 15px; font-weight: 600; background-color: var(--zporta-background-medium); border-bottom: 1px solid var(--zporta-border-color); outline: none; }
+    #${id} .accordionItem { border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-sm); margin: 1em 0; background-color: var(--zporta-background-light); overflow: visible; }
+    #${id} .accordionHeader { padding: 10px 15px; font-weight: 600; background-color: var(--zporta-background-medium); border-bottom: 1px solid var(--zporta-border-color); outline: none; position: relative; padding-left: 36px; }
+    /* Accordion Header Icon by variant */
+    #${id} .accordionItem .accordionHeader::before { content: '▶'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.7; }
+    #${id} .accordionItem[data-acc-variant="plus"] .accordionHeader::before { content: '+'; font-weight: 700; }
+    #${id} .accordionItem[data-acc-variant="chevron"] .accordionHeader::before { content: '❯'; font-weight: 700; }
     #${id} .accordionItem:last-child .accordionHeader { border-bottom: none; }
     #${id} .accordionContent { padding: 15px; outline: none; border-top: 1px solid var(--zporta-border-color); }
     #${id} .accordionContent:first-of-type { border-top: none; }
