@@ -80,6 +80,18 @@
   text-decoration: none; /* Keep underline off on hover */
 }
 
+/* Explicit class for course link used in JSX */
+.courseLink {
+  color: var(--zporta-info-link, #f39c12);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--zporta-info-link, #07408a);
+}
+.courseLink:hover {
+  border-bottom-style: solid;
+  text-decoration: none;
+}
+
 /* Free preview CTA for free lessons attached to a course */
 .freePreviewBanner{
   margin-top:12px;
@@ -119,6 +131,42 @@
   margin: 0;
 }
 
+/* Standalone/Status banner when not attached to a course */
+.lessonStatusInfo {
+  margin: 25px 0;
+  padding: 12px 18px;
+  border: 1px solid var(--zporta-border-light, #eee);
+  border-radius: 6px;
+  background: var(--zporta-background-medium, #f8f9fa);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.badgePremium {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--zporta-warning-badge-bg, #f39c12);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.badgeFree {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--zporta-success-badge-bg, #22c55e);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.enrollPrompt {
+  margin-top: 8px;
+  color: var(--zporta-secondary-text, #198754);
+}
+
 /* --- Removed Course Lessons Accordion Styles --- */
 /* ... (styles remain removed as before) ... */
 /* --- End Removed Course Lessons Accordion Styles --- */
@@ -145,6 +193,11 @@
   background: var(--zporta-success-bg, #d4edda);
   color: var(--zporta-success-text, #155724); /* Dark green text */
   border-color: var(--zporta-success-border, #c3e6cb);
+}
+.warning { /* Warning specific styles */
+  background: var(--zporta-warning-bg, #fff3cd);
+  color: var(--zporta-warning-text, #664d03);
+  border-color: var(--zporta-warning-border, #ffecb5);
 }
 .formError { /* Specific style for errors within the edit form */
    text-align: left;
@@ -378,6 +431,23 @@
     margin-right: 5px;
 }
 
+/* Wrapper around meta and tags */
+.metaContainer {
+  margin-top: 20px;
+}
+.metaItem { display: inline-flex; align-items: center; gap: 6px; }
+.metaIcon { width: 1em; height: 1em; }
+.metaSeparator { opacity: 0.6; }
+.tagItem {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--zporta-background-medium, #f1f3f5);
+  color: var(--zporta-text-main, #333);
+  font-size: 12px;
+}
+
 /* -----------------------------------------
     Navigation Buttons (Prev / Next)
 ----------------------------------------- */
@@ -497,6 +567,12 @@
   font-size: 15px;
 }
 
+/* Container for completion CTA */
+.completionAction {
+  display: flex;
+  justify-content: center;
+}
+
 /* Owner Action Buttons (Edit/Delete) */
 .lessonActions {
     margin-top: 30px;
@@ -578,6 +654,11 @@
 }
 .mainButton:hover {
   background: var(--zporta-primary-hover, #0b5ed7);
+}
+/* Optional local override for the main FAB if needed in JSX */
+.localFab {
+  /* placeholder custom property to avoid empty ruleset */
+  --_localFab: 1;
 }
 /* Styles when the menu is open */
 .radialMenu.open .radialMenuButton { /* Make items visible and positioned */
@@ -715,7 +796,8 @@
 
 /* Specific class for this section (optional, for overrides) */
 .quizManagementSection {
-  /* Add overrides here if needed */
+  /* placeholder custom property to avoid empty ruleset */
+  --_quizMgmt: 1;
 }
 
 /* Area containing the list */

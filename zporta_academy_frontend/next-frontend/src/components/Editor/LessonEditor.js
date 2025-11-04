@@ -241,7 +241,21 @@ const htmlToBlocks = (htmlString) => {
                     blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
-                    blocks.push({ id, type: 'image', data: { src: img?.src || '', caption: node.querySelector('figcaption')?.textContent || '' }, styles: {} });
+                    const link = node.querySelector('a');
+                    const alignStyle = node.style.alignItems || 'center';
+                    const align = alignStyle.includes('start') ? 'left' : alignStyle.includes('end') ? 'right' : 'center';
+                    blocks.push({ 
+                        id, 
+                        type: 'image', 
+                        data: { 
+                            src: img?.src || '', 
+                            caption: node.querySelector('figcaption')?.textContent || '',
+                            align: align,
+                            href: link?.href || '',
+                            openInNewTab: link?.target === '_blank'
+                        }, 
+                        styles: {} 
+                    });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('audio')) {
                     const audio = node.querySelector('audio');
                     blocks.push({ id, type: 'audio', data: { src: audio?.src || '' }, styles: {} });
@@ -332,8 +346,16 @@ const blocksToHtml = (blocks) => {
                     return `<div style="${styleString}">${isEmpty ? '<br>' : block.data.text}</div>`;
                 }
                 return `<p style="${styleString}">${isEmpty ? '<br>' : block.data.text}</p>`;
-            case 'image':
-                return `<figure style="${styleString}"><img src="${block.data.src || ''}" alt="${block.data.caption || ''}" /><figcaption>${block.data.caption || ''}</figcaption></figure>`;
+            case 'image': {
+                const align = block.data.align || 'center';
+                const alignStyle = `display:flex;flex-direction:column;align-items:${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};`;
+                const combinedStyle = [styleString, alignStyle].filter(Boolean).join(' ');
+                const imgTag = `<img src="${block.data.src || ''}" alt="${block.data.caption || ''}" />`;
+                const imgContent = block.data.href 
+                    ? `<a href="${block.data.href}"${block.data.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${imgTag}</a>`
+                    : imgTag;
+                return `<figure style="${combinedStyle}">${imgContent}${block.data.caption ? `<figcaption>${block.data.caption}</figcaption>` : ''}</figure>`;
+            }
             case 'audio':
                 return `<figure style="${styleString}"><audio controls src="${block.data.src || ''}"></audio></figure>`;
             case 'video':
@@ -483,9 +505,34 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
             ? <Placeholder icon={<Icons.Image />} title="Image" description="Click to upload an image" onClick={openImagePicker} />
             : null;
     }
+    
+    // Determine alignment style
+    const align = data.align || 'center';
+    const alignStyle = {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
+    };
+    
+    // Wrap image in link if href exists
+    const imgElement = (
+        <img src={data.src} alt={data.caption || ''} className={styles.imageContent}/>
+    );
+    
+    const imageContent = !isEditing && data.href ? (
+        <a 
+            href={data.href} 
+            target={data.openInNewTab ? '_blank' : undefined}
+            rel={data.openInNewTab ? 'noopener noreferrer' : undefined}
+            style={{ display: 'inline-block' }}
+        >
+            {imgElement}
+        </a>
+    ) : imgElement;
+    
     return (
         <figure
-            style={blockStyles}
+            style={{ ...blockStyles, ...alignStyle }}
             className={`${styles.imageFigure} ${isEditing ? styles.mediaEditable : ''}`}
             onClick={(e)=>{ if (isEditing) { e.stopPropagation(); openImagePicker(); } }}
             title={isEditing ? 'Click to replace image' : undefined}
@@ -495,7 +542,7 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
                     <Icons.Settings w={16} h={16} />
                 </button>
             )}
-            <img src={data.src} alt={data.caption || ''} className={styles.imageContent}/>
+            {imageContent}
             {isEditing && (
                 <input
                     type="text"
@@ -2485,6 +2532,48 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                     <hr className={styles.csSeparator} />
 
                                     {/* --- 2. Block-Specific Settings --- */}
+                                    {editingBlock.type === 'image' && (
+                                        <>
+                                            <h4>Image Options</h4>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`img-align-label-${editingBlock.id}`}>
+                                                <span id={`img-align-label-${editingBlock.id}`} className={styles.csGroupLabel}>Alignment</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {['left', 'center', 'right'].map(a => (
+                                                        <button
+                                                            key={a} type="button"
+                                                            className={editingBlock.data?.align === a ? styles.active : ''}
+                                                            onClick={() => handleUpdateBlock(editingBlock.id, { data: { ...editingBlock.data, align: a } })}
+                                                        >
+                                                            {a.charAt(0).toUpperCase() + a.slice(1)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.styleControl}>
+                                                <label htmlFor={`image-href-${editingBlock.id}`}>Link URL (optional)</label>
+                                                <input 
+                                                    id={`image-href-${editingBlock.id}`}
+                                                    type="url"
+                                                    name="imageHref"
+                                                    value={editingBlock.data?.href || ''}
+                                                    onChange={(e) => handleUpdateBlock(editingBlock.id, { data: { ...editingBlock.data, href: e.target.value } })}
+                                                    placeholder="https://example.com or leave empty"
+                                                />
+                                            </div>
+                                            {editingBlock.data?.href && (
+                                                <div className={styles.csGroup}>
+                                                    <label className={styles.csCheckboxLabel}>
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={!!editingBlock.data?.openInNewTab}
+                                                            onChange={(e) => handleUpdateBlock(editingBlock.id, { data: { ...editingBlock.data, openInNewTab: e.target.checked } })}
+                                                        />
+                                                        <span>Open link in new tab</span>
+                                                    </label>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                     {editingBlock.type === 'button' && (
                                         <>
                                             <h4>Button Options</h4>
