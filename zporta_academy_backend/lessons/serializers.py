@@ -14,6 +14,13 @@ from quizzes.serializers import QuizSerializer
 
 # NOTE: Ensure you have installed beautifulsoup4: pip install beautifulsoup4
 
+# Lightweight quiz serializer for lesson detail view (avoids fetching all questions)
+class LightweightQuizSerializer(serializers.ModelSerializer):
+    """Minimal quiz data for lesson detail - no questions loaded"""
+    class Meta:
+        model = Quiz
+        fields = ['id', 'title', 'permalink', 'quiz_type', 'status']
+
 class SimpleLessonSerializerForCompletion(serializers.ModelSerializer):
     """ Minimal Lesson details needed for the history card """
     course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
@@ -63,7 +70,8 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
     user_quizzes = serializers.SerializerMethodField(read_only=True)
-    quizzes      = QuizSerializer(many=True, read_only=True)
+    # Use lightweight serializer by default to avoid loading all quiz questions
+    quizzes = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Lesson
@@ -83,7 +91,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'quizzes',         # the quizzes already attached to *this* lesson
-            'user_quizzes',    # all quizzes the user owns, regardless of attachment
+            'user_quizzes',    # all quizzes the user owns, regardless of attachment (ONLY in edit context)
         ]
         # Define fields not settable via API or derived
         read_only_fields = [
@@ -94,12 +102,29 @@ class LessonSerializer(serializers.ModelSerializer):
         
     template_name = serializers.CharField(source='template_ref.name', read_only=True)
 
+    def get_quizzes(self, lesson):
+        """Return lightweight quiz data for lesson detail view"""
+        request = self.context.get('request')
+        is_edit_context = self.context.get('is_edit_context', False)
+        
+        # In edit context, return full quiz data with questions
+        if is_edit_context:
+            return QuizSerializer(lesson.quizzes.all(), many=True, context=self.context).data
+        
+        # In public view, return lightweight quiz data (no questions)
+        return LightweightQuizSerializer(lesson.quizzes.all(), many=True).data
+
     def get_user_quizzes(self, lesson):
         request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
+        # OPTIMIZATION: Only fetch user_quizzes in edit/admin context, not public view
+        # Check if this is being called from an edit endpoint
+        is_edit_context = self.context.get('is_edit_context', False)
+        
+        if not is_edit_context or not request or not request.user.is_authenticated:
             return []
+        
         # pull every quiz the user created; the front‑end can then
-        # look at each quiz’s .lesson and .course to know what's free
+        # look at each quiz's .lesson and .course to know what's free
         queryset = Quiz.objects.filter(created_by=request.user)
         return QuizSerializer(queryset, many=True, context=self.context).data
   

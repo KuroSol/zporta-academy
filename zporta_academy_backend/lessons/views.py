@@ -143,6 +143,12 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = "permalink"
 
+    def get_serializer_context(self):
+        """Add is_edit_context flag to enable full quiz data in edit views"""
+        context = super().get_serializer_context()
+        context['is_edit_context'] = True
+        return context
+
     def get_object(self):
         lesson = get_object_or_404(Lesson, permalink=self.kwargs.get("permalink"))
 
@@ -169,11 +175,24 @@ class DynamicLessonView(APIView):
     """
     Public detail view for a lesson (with SEO metadata).
     If the lesson is part of a premium course, enrollment is checked.
+    OPTIMIZED: Uses select_related and prefetch_related to minimize database queries.
     """
     permission_classes = [AllowAny]
 
     def get(self, request, permalink):
-        lesson = get_object_or_404(Lesson, permalink=permalink)
+        # Optimize query with select_related for ForeignKeys and prefetch_related for Many-to-Many
+        lesson = get_object_or_404(
+            Lesson.objects.select_related(
+                'course',          # Prefetch course data
+                'subject',         # Prefetch subject data
+                'created_by',      # Prefetch creator data
+                'template_ref'     # Prefetch template data
+            ).prefetch_related(
+                'tags',            # Prefetch tags
+                'quizzes'          # Prefetch related quizzes (but don't fetch their questions yet)
+            ),
+            permalink=permalink
+        )
         # --- DRAFT PRIVACY: only creator (or staff) can see ---
         if lesson.status == Lesson.DRAFT:
             if not request.user.is_authenticated or (
@@ -251,10 +270,30 @@ class DynamicLessonView(APIView):
                 resp["Vary"] = "Accept, Cookie, Authorization, Origin"
                 return resp
 
+        # OPTIMIZATION: Include enrollment status in the same response to avoid second API call
+        is_enrolled = False
+        is_completed = False
+        
+        if request.user.is_authenticated and lesson.course:
+            course_ct = ContentType.objects.get_for_model(Course)
+            is_enrolled = Enrollment.objects.filter(
+                user=request.user,
+                content_type=course_ct,
+                object_id=lesson.course.id,
+                enrollment_type="course"
+            ).exists()
+            
+            is_completed = LessonCompletion.objects.filter(
+                user=request.user,
+                lesson=lesson
+            ).exists()
+
         serializer = LessonSerializer(lesson, context={"request": request})
         return Response({
             "lesson": serializer.data,
-            "seo": seo
+            "seo": seo,
+            "is_enrolled": is_enrolled,
+            "is_completed": is_completed
         })
 
 
