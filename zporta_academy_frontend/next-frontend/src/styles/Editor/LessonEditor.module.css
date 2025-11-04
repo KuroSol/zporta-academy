@@ -638,7 +638,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 11;
+  /* Keep the trigger behind the dropdown menu */
+  z-index: 1;
 }
 .addBlockButton {
     background: var(--brand-gold);
@@ -682,8 +683,8 @@
   background: var(--bg-surface);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-md);
-  /* Ensure menu overlays accordion/panel layers */
-  z-index: 300;
+  /* Ensure menu overlays any neighbor wrappers/buttons */
+  z-index: 4000;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
