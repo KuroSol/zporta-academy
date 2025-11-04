@@ -614,7 +614,8 @@
   position: relative;
   height: 2rem;
   margin: -0.5rem 0;
-  z-index: 10;
+  /* Raise above surrounding containers (e.g., accordion panels) */
+  z-index: 250;
 }
 .addBlockLine {
     position: absolute;
@@ -678,7 +679,8 @@
   background: var(--bg-surface);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-md);
-  z-index: 20;
+  /* Ensure menu overlays accordion/panel layers */
+  z-index: 300;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
@@ -892,7 +894,8 @@
   border: 1px solid var(--border-color); 
   border-radius: var(--r-md); 
   margin: 0 0 12px 0; 
-  overflow: hidden; /* Hide panel content */
+  /* Don't clip floating UI (add-menu, toolbars) */
+  overflow: visible;
   position: relative;
   background: var(--bg-surface);
 }
@@ -928,6 +931,8 @@
   background:var(--bg-surface);
   border-top: 1px solid var(--border-color);
   border-radius: 0 0 var(--r-md) var(--r-md);
+  /* Allow overlays (menus) to escape the panel area */
+  overflow: visible;
 }
 .accPanel.isLayerSelected {
     border-style: solid;
