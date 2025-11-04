@@ -615,7 +615,7 @@
   height: 2rem;
   margin: -0.5rem 0;
   /* Raise above surrounding containers (e.g., accordion panels) */
-  z-index: 250;
+  z-index: 4;
 }
 .addBlockWrapperOpen { z-index: 1000; }
 .addBlockLine {
