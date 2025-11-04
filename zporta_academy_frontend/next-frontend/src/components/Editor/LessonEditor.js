@@ -734,7 +734,7 @@ const AddBlockButton = ({ onAdd, isFirst = false }) => {
     }
 
     return (
-        <div className={`${styles.addBlockWrapper} ${isFirst ? styles.addBlockWrapperFirst : ''}`}>
+        <div className={`${styles.addBlockWrapper} ${isFirst ? styles.addBlockWrapperFirst : ''} ${isOpen ? styles.addBlockWrapperOpen : ''}`}>
             <div className={styles.addBlockLine}></div>
             <div className={styles.addBlockButtonContainer}>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} className={styles.addBlockButton} aria-label="Add new block" aria-haspopup="true" aria-expanded={isOpen}>

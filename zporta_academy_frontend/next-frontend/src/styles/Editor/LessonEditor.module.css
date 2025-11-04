@@ -617,6 +617,7 @@
   /* Raise above surrounding containers (e.g., accordion panels) */
   z-index: 250;
 }
+.addBlockWrapperOpen { z-index: 1000; }
 .addBlockLine {
     position: absolute;
     top: 50%;
@@ -626,6 +627,8 @@
     background-color: var(--border-color);
     opacity: 0;
     transition: all var(--transition-speed) var(--transition-curve);
+  /* Do not block clicks on menus that overlay this line */
+  pointer-events: none;
 }
 .blockContainer:hover > .addBlockWrapper > .addBlockLine { 
     opacity: 1;
