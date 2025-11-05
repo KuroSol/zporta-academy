@@ -11,44 +11,12 @@ import React, {
 // We will rename the CSS file to match the new component-based structure
 import styles from '@/styles/Editor/LessonEditor.module.css';
 import useBodyScrollLock from '@/hooks/useBodyScrollLock';
+// Use the real API client (shared axios instance)
+import apiClient from '@/api';
 
 const ELEMENT_NODE = 1;
 
-// --- MOCK API CLIENT ---
-// (No changes here, this is your existing client)
-const apiClient = {
-    get: async (url) => {
-        if (url === '/lessons/templates/') {
-            return Promise.resolve({
-                data: [{
-                    id: 1,
-                    name: "Zporta Academic Blue",
-                    predefined_css: `h2 { color: #0A2342; } .zporta-highlight { background-color: #e0f2fe; }`
-                }]
-            });
-        }
-        console.warn(`GET request to ${url} is using a MOCK API client in LessonEditor.js`);
-        return Promise.reject(new Error(`GET request to ${url} not mocked.`));
-    },
-    post: async (url, formData) => {
-        if (url === '/user_media/upload/') {
-            console.warn(`POST request to ${url} is using a MOCK API client in LessonEditor.js`);
-            await new Promise(res => setTimeout(res, 1000)); // Simulate upload delay
-            const mediaType = formData.get('media_type');
-            let placeholderUrl;
-            if (mediaType === 'image') {
-                placeholderUrl = `https://placehold.co/800x450/e0f2fe/4a5568?text=Image+${Date.now()}`;
-            } else if (mediaType === 'audio') {
-                placeholderUrl = 'https://www.w3schools.com/html/horse.mp3'; // Placeholder audio
-            } else if (mediaType === 'video') {
-                placeholderUrl = 'https://www.w3schools.com/html/mov_bbb.mp4'; // Placeholder video
-            }
-            return Promise.resolve({ data: { url: placeholderUrl } });
-        }
-        return Promise.reject(new Error(`POST request to ${url} not mocked.`));
-    }
-};
-// --- END MOCK API CLIENT ---
+// Note: We previously had a MOCK client here. Switched to real apiClient to upload media to backend.
 
 // --- CORE UTILITIES ---
 const uid = () => crypto.randomUUID();
@@ -2290,7 +2258,9 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
         try {
             const response = await apiClient.post('/user_media/upload/', formData);
             if (response.data.url) {
-                setBlocks(current => findAndModifyBlockRecursive(current, blockId, block => ({ ...block, data: { ...(block.data || {}), src: response.data.url, uploading: false } })));
+                // Normalize to https if backend returns http
+                const safeUrl = String(response.data.url).replace('http://', 'https://');
+                setBlocks(current => findAndModifyBlockRecursive(current, blockId, block => ({ ...block, data: { ...(block.data || {}), src: safeUrl, uploading: false } })));
             } else { throw new Error(response.data.error || 'Upload failed.'); }
         } catch (err) {
             setUploadError(err.message || `A server error occurred.`);
