@@ -561,7 +561,7 @@ const DiaryMentions = () => {
                   </div>
                 ))
               ) : (
-                <p>You haven't made any comments yet on this note.</p>
+                <p>You haven&apos;t made any comments yet on this note.</p>
               )}
             </div>
           </div>

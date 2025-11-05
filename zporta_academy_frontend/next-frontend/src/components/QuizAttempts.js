@@ -229,7 +229,7 @@ const QuizAttempts = () => {
     <div className={styles.quizAttemptsPage}>
       <header className={styles.pageMasthead}>
         <h1 className={styles.mainTitle}>Your Learning Hub</h1>
-        <p className={styles.mainSubtitle}>Stay sharp! Here's what your brain is working on.</p>
+        <p className={styles.mainSubtitle}>Stay sharp! Here&apos;s what your brain is working on.</p>
       </header>
 
       {(loadingProfile || loadingOverview) && !memoryProfile && !attemptOverview && (

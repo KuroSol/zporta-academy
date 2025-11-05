@@ -537,7 +537,7 @@ const Profile = () => {
                         </div>
                       ))}
                     </div>
-                  ) : ( !coursesLoading && !coursesError && <p className="text-center py-10 text-slate-500">You haven't enrolled in any courses yet.</p> )}
+                  ) : ( !coursesLoading && !coursesError && <p className="text-center py-10 text-slate-500">You haven&apos;t enrolled in any courses yet.</p> )}
                   {isCoursesLoadingMore && <div className={`${styles.loadingState} mt-4`}>Loading</div>}
                   {!isCoursesLoadingMore && displayedCoursesCount < totalCourses && (
                     <div className={styles.loadMoreButtonContainer}>
@@ -575,7 +575,7 @@ const Profile = () => {
                         </div>
                       ))}
                     </div>
-                  ) : ( !lessonsLoading && !lessonsError && <p className="text-center py-10 text-slate-500">You haven't accessed any lessons yet.</p> )}
+                  ) : ( !lessonsLoading && !lessonsError && <p className="text-center py-10 text-slate-500">You haven&apos;t accessed any lessons yet.</p> )}
                   {isLessonsLoadingMore && <div className={`${styles.loadingState} mt-4`}>Loading</div>}
                    {!isLessonsLoadingMore && displayedLessonsCount < totalLessons && (
                      <div className={styles.loadMoreButtonContainer}>
@@ -610,7 +610,7 @@ const Profile = () => {
                         </div>
                       ))}
                     </div>
-                  ) : ( !quizzesLoading && !quizzesError && <p className="text-center py-10 text-slate-500">You haven't attempted any quizzes yet.</p> )}
+                  ) : ( !quizzesLoading && !quizzesError && <p className="text-center py-10 text-slate-500">You haven&apos;t attempted any quizzes yet.</p> )}
                   {isQuizzesLoadingMore && <div className={`${styles.loadingState} mt-4`}>Loading</div>}
                   {!isQuizzesLoadingMore && displayedQuizzesCount < totalQuizzes && (
                     <div className={styles.loadMoreButtonContainer}>

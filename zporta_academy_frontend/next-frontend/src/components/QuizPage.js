@@ -526,7 +526,7 @@ const QuizPage = ({ initialData, permalink: propPermalink, username: pUser, subj
                 if (!currentQuestion?._fill_blank) return <p>Loading question...</p>;
                 return <FillInTheBlanksQuestion question={currentQuestion} disabled={isAnswerSubmitted} onSubmit={(filledMap) => handleSubmitAnswer(currentQuestionId, filledMap)} submittedAnswer={userAnswers[currentQuestionId]} feedback={currentFeedback} />;
             default:
-                return <p>Unknown question type: '{currentQuestion.question_type}'</p>;
+                return <p>Unknown question type: &apos;{currentQuestion.question_type}&apos;</p>;
         }
     };
 

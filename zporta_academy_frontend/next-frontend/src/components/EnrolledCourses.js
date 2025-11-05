@@ -136,7 +136,7 @@ useEffect(() => {
   }
   // Keep the check for empty enrollments
   if (enrollments.length === 0) {
-    return <p className="no-enrollments-message">You haven't enrolled in any courses yet.</p>;
+    return <p className="no-enrollments-message">You haven&apos;t enrolled in any courses yet.</p>;
   }
 
   return (

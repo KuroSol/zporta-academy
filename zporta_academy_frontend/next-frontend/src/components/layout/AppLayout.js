@@ -6,9 +6,9 @@ import SidebarMenu from '@/components/SidebarMenu';
 
 
 export default function AppLayout({ children, enabled = true }) {
-  if (!enabled) return <>{children}</>;
-
   const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!enabled) return <>{children}</>;
 
   return (
     <>

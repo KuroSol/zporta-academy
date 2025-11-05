@@ -195,7 +195,7 @@ const Explorer = () => {
     }
 
     if (!searchResults || Object.values(searchResults).every(arr => arr.length === 0)) {
-        return <div className={`${styles.messageContainer} ${styles.infoMessage}`}>No results found for "{searchTerm}"</div>;
+        return <div className={`${styles.messageContainer} ${styles.infoMessage}`}>No results found for &quot;{searchTerm}&quot;</div>;
     }
     
     // Determine layout for each category within search results

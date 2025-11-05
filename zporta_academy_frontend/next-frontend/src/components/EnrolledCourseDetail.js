@@ -420,6 +420,7 @@ const CourseHeader = React.memo(({ course, onBack, theme, onToggleTheme }) => (
         </div>
     </header>
 ));
+CourseHeader.displayName = 'CourseHeader';
 
 const CourseIndexPanel = React.memo(({ lessons, quizzes, completedLessons, activeContentId, onNavigate }) => (
   <div className={styles.indexPanel}>
@@ -448,6 +449,7 @@ const CourseIndexPanel = React.memo(({ lessons, quizzes, completedLessons, activ
     </div>
   </div>
 ));
+CourseIndexPanel.displayName = 'CourseIndexPanel';
 
 const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, currentResultIndex, onNextResult, onPrevResult }) => {
   const hasResults = resultCount > 0;
@@ -475,13 +477,14 @@ const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, current
               </div>
             </>
           ) : (
-            <span>No results found for "{searchTerm}"</span>
+            <span>No results found for &quot;{searchTerm}&quot;</span>
           )}
         </div>
       )}
     </div>
   );
 });
+SearchBar.displayName = 'SearchBar';
 
 const LessonSection = React.memo(({ lesson, isCompleted, onMarkComplete, onOpenQuiz, searchTerm, ...stylerProps }) => {
   const highlightSearchTerm = useCallback((text) => {
@@ -536,6 +539,7 @@ const LessonSection = React.memo(({ lesson, isCompleted, onMarkComplete, onOpenQ
     </section>
   );
 });
+LessonSection.displayName = 'LessonSection';
 
 const QuizSection = React.memo(({ quiz, onOpenQuiz, searchTerm }) => {
     const highlightedTitle = useMemo(() => {
@@ -557,6 +561,7 @@ const QuizSection = React.memo(({ quiz, onOpenQuiz, searchTerm }) => {
         </section>
     );
 });
+QuizSection.displayName = 'QuizSection';
 
 
 const ScrollProgress = () => {

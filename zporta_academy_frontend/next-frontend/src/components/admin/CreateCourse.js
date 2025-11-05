@@ -504,7 +504,7 @@ const CreateCourse = () => {
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className={styles.noContentMessage}>No lessons created yet. Click 'Create New Lesson' to start.</p>}
+                                ) : <p className={styles.noContentMessage}>No lessons created yet. Click &apos;Create New Lesson&apos; to start.</p>}
                             </div>
                         </div>
                     )}
@@ -526,7 +526,7 @@ const CreateCourse = () => {
                                             </div>
                                         ))}
                                     </div>
-                                 ) : <p className={styles.noContentMessage}>No quizzes created yet. Click 'Create New Quiz' to start.</p>}
+                                 ) : <p className={styles.noContentMessage}>No quizzes created yet. Click &apos;Create New Quiz&apos; to start.</p>}
                             </div>
                         </div>
                     )}
@@ -536,7 +536,7 @@ const CreateCourse = () => {
                         <div className={styles.formSection}>
                             <div className={styles.formGroup}>
                                 <label>Final Review</label>
-                                <p className={styles.reviewText}>You're about to create this course. Review the details in the live preview. You can save it as a draft to hide it from students, or publish it to make it live.</p>
+                                <p className={styles.reviewText}>You&apos;re about to create this course. Review the details in the live preview. You can save it as a draft to hide it from students, or publish it to make it live.</p>
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Course Status <span className={styles.required}>*</span></label>
