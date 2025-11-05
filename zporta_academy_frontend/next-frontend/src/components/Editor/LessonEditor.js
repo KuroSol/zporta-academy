@@ -184,7 +184,15 @@ const htmlToBlocks = (htmlString) => {
         return [{ id: uid(), type: 'text', data: { text: '' }, styles: {} }];
     }
     try {
-        const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+        // Normalize whitespace: trim and fix common spacing issues
+        let normalizedHtml = htmlString
+            .trim()
+            // Remove excessive whitespace between tags while preserving single spaces
+            .replace(/>\s+</g, '><')
+            // Restore line breaks after block-level closing tags for readability
+            .replace(/<\/(div|p|h1|h2|h3|h4|h5|h6|ul|ol|li|figure|details)>/gi, '</$1>\n');
+        
+        const doc = new DOMParser().parseFromString(normalizedHtml, 'text/html');
         const wrapper = doc.querySelector(`.${WRAPPER_CLASS}`);
         const rootNode = wrapper || doc.body;
 
@@ -237,8 +245,18 @@ const htmlToBlocks = (htmlString) => {
                     blocks.push({ id, type: 'columns', children: columns, layout, styles: {} });
                 } else if (node.tagName.startsWith('H')) {
                     blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: {} });
-                } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && (node.querySelector('ul') || node.querySelector('ol')))) {
-                    blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && !node.classList.contains('zporta-accordion') && !node.classList.contains('zporta-columns') && (node.querySelector('ul') || node.querySelector('ol')))) {
+                    // Check if this text block contains nested complex blocks (accordion, columns, etc.)
+                    const hasNestedAccordion = node.querySelector('.zporta-accordion');
+                    const hasNestedColumns = node.querySelector('.zporta-columns');
+                    const hasNestedButton = node.querySelector('.zporta-button');
+                    
+                    if (hasNestedAccordion || hasNestedColumns || hasNestedButton) {
+                        // Parse nested structures as separate blocks instead of treating as text
+                        blocks.push(...parseNodes(node.childNodes));
+                    } else {
+                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                    }
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
                     const link = node.querySelector('a');
@@ -287,7 +305,13 @@ const htmlToBlocks = (htmlString) => {
                         let blocksInPanel = [];
 
                         if (panelDiv) {
+                            // Recursively parse panel contents - this will detect nested accordions
                             blocksInPanel = parseNodes(panelDiv.childNodes);
+                            
+                            // Debug: log if we find nested accordions
+                            if (panelDiv.querySelector('.zporta-accordion')) {
+                                console.log('✓ Nested accordion detected in panel:', title);
+                            }
                         } else {
                             const otherNodes = Array.from(d.childNodes).filter(n => n.nodeType === ELEMENT_NODE && n.tagName !== 'SUMMARY');
                             if (otherNodes.length > 0) {
@@ -310,8 +334,17 @@ const htmlToBlocks = (htmlString) => {
                         if (node.classList.contains('zporta-acc-panel') || node.classList.contains('zporta-column')) {
                             // Do nothing, these are handled by their parent parsers
                         } else {
-                            console.warn("Parsing unexpected DIV as text block:", node);
-                            blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                            // Check if this DIV contains complex nested structures
+                            const hasNestedAccordion = node.querySelector('.zporta-accordion');
+                            const hasNestedColumns = node.querySelector('.zporta-columns');
+                            
+                            if (hasNestedAccordion || hasNestedColumns) {
+                                // Parse nested structures as separate blocks
+                                blocks.push(...parseNodes(node.childNodes));
+                            } else {
+                                console.warn("Parsing unexpected DIV as text block:", node);
+                                blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                            }
                         }
                     }
             });
@@ -456,7 +489,7 @@ const HeadingBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate, onSe
         }
     }, [data, onUpdate]);
 
-    return isEditing ? <div
+    return isEditing ? <h2
         style={blockStyles}
         contentEditable
         suppressContentEditableWarning
@@ -570,7 +603,13 @@ const AudioBlock = ({ data, styles: blockStyles, isEditing, openAudioPicker, onS
             : null;
     }
     return (
-        <div style={blockStyles} className={`${styles.audioWrapper} ${isEditing ? styles.mediaEditable : ''}`}>
+        <div
+            style={blockStyles}
+            className={`${styles.audioWrapper} ${isEditing ? styles.mediaEditable : ''}`}
+            onClick={(e)=>{ if (isEditing) { e.stopPropagation(); openAudioPicker(); } }}
+            onDoubleClick={(e)=>{ if (isEditing) { e.stopPropagation(); openAudioPicker(); } }}
+            title={isEditing ? 'Click to replace audio' : undefined}
+        >
             {isEditing && (
                 <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); onShowSettings(); }} aria-label="Audio settings" title="Audio settings">
                     <Icons.Settings w={16} h={16} />
@@ -1444,25 +1483,44 @@ const LayerOutline = ({ editorRoot, selectedLayer, onSelectLayer }) => {
                     label = el.querySelector(`.${styles.accTitleInput}`)?.value || el.dataset?.layerLabel || 'Accordion Item';
                 }
 
-                newItems.push({
-                    id: el.dataset.layerId,
-                    el: el,
-                    label: label,
-                    type: layerType,
-                    depth,
-                    active: selectedLayer?.id === el.dataset.layerId,
-                });
+                // Skip showing "Accordion Panel" in the outline - just show its contents
+                if (layerType !== 'Accordion Panel') {
+                    newItems.push({
+                        id: el.dataset.layerId,
+                        el: el,
+                        label: label,
+                        type: layerType,
+                        depth,
+                        active: selectedLayer?.id === el.dataset.layerId,
+                    });
+                }
             }
             
-            // Recurse, but *only* into layer containers, not every single DOM node
-            const childContainer = (layerType === 'Column' || layerType === 'Accordion Panel' || layerType === 'Renderer')
-                ? el.querySelector(`:scope > .${styles.blockRendererRoot}`)
-                : el;
-
-            if (childContainer) {
-                Array.from(childContainer.children || []).forEach(child =>
-                    walk(child, depth + (layerType ? 1 : 0))
-                );
+            // Recurse into child elements
+            if (layerType === 'Column' || layerType === 'Accordion Panel' || layerType === 'Renderer') {
+                // For containers, look for the blockRendererRoot and walk its children
+                // Note: In Accordion Panel the renderer is wrapped in an extra inner div,
+                // so we must search any descendant instead of only direct children.
+                const blockRenderer = (layerType === 'Accordion Panel')
+                    ? el.querySelector(`.${styles.blockRendererRoot}`)
+                    : el.querySelector(`:scope > .${styles.blockRendererRoot}`);
+                if (blockRenderer) {
+                    // If it's an Accordion Panel, don't increase depth (since we're skipping it in the outline)
+                    const nextDepth = layerType === 'Accordion Panel' ? depth : depth + 1;
+                    
+                    Array.from(blockRenderer.children || []).forEach(child => {
+                        // Each child is a blockContainer, walk into the blockWrapper
+                        const blockWrapper = child.querySelector(`.${styles.blockWrapper}`);
+                        if (blockWrapper) {
+                            walk(blockWrapper, nextDepth);
+                        }
+                    });
+                }
+            } else {
+                // For regular blocks, recurse into direct children
+                Array.from(el.children || []).forEach(child => {
+                    walk(child, depth + 1);
+                });
             }
         };
         
@@ -1669,10 +1727,17 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
 @media (min-width:640px){.${WRAPPER_CLASS} .zporta-columns{grid-template-columns: var(--cols-sm, var(--cols-base, 1fr)) !important;}}
 @media (min-width:768px){.${WRAPPER_CLASS} .zporta-columns{grid-template-columns: var(--cols-md, var(--cols-sm, var(--cols-base, 1fr))) !important;}}
 @media (min-width:1024px){.${WRAPPER_CLASS} .zporta-columns{grid-template-columns: var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)))) !important;}}`;
+        
         const html = blocksToHtml(blocksArg || []);
-        const finalHtml = `<div class="${WRAPPER_CLASS}">${html}</div>`;
+        
+        // Format HTML with proper indentation and line breaks for better copy/paste
+        const formattedHtml = html
+            .replace(/></g, '>\n<')  // Add line breaks between tags
+            .replace(/\n\s*\n/g, '\n');  // Remove multiple consecutive newlines
+        
+        const finalHtml = `<div class="${WRAPPER_CLASS}">\n${formattedHtml}\n</div>`;
         const oneStyle = `<style>${STRUCTURAL_CSS}</style>`;
-        return `${oneStyle}\n${finalHtml}`.trim();
+        return `${oneStyle}\n\n${finalHtml}`;
     }, []);
 
     // --- Imperative Handle (API) ---
