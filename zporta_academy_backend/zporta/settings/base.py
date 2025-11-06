@@ -14,18 +14,20 @@ SERVICE_ACCOUNT_KEY_FILENAME = "firebase_credentials.json"
 SERVICE_ACCOUNT_KEY_PATH = BASE_DIR / SERVICE_ACCOUNT_KEY_FILENAME
 
 # Initialize Firebase Admin SDK (only if not already initialized)
+# Firebase is OPTIONAL for local development
 if not firebase_admin._apps:
     try:
         if SERVICE_ACCOUNT_KEY_PATH.exists(): # Check if the file exists
             cred = credentials.Certificate(str(SERVICE_ACCOUNT_KEY_PATH)) # Path object needs to be string
             firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized successfully from base.py.")
+            print("✅ Firebase Admin SDK initialized successfully.")
         else:
-            print(f"Firebase Admin SDK: Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
-            # Depending on your setup, you might want to raise an error here
-            # or handle it if Firebase Admin SDK is optional for some environments.
+            print(f"⚠️  Firebase Admin SDK: Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
+            print(f"⚠️  Firebase features will be disabled. This is OK for local development.")
+            # Firebase is optional - continue without it for local dev
     except Exception as e:
-        print(f"Error initializing Firebase Admin SDK in base.py: {e}")
+        print(f"⚠️  Error initializing Firebase Admin SDK: {e}")
+        print(f"⚠️  Continuing without Firebase. This is OK for local development.")
 # --- End of Firebase Admin SDK Initialization ---
 
 # --- Your Existing INSTALLED_APPS ---

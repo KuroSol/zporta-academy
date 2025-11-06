@@ -23,6 +23,8 @@ from rest_framework.viewsets import ModelViewSet
 from django.utils.cache import patch_cache_control
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
+from django.core.cache import cache
+import hashlib
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
@@ -175,21 +177,40 @@ class DynamicLessonView(APIView):
     """
     Public detail view for a lesson (with SEO metadata).
     If the lesson is part of a premium course, enrollment is checked.
-    OPTIMIZED: Uses select_related and prefetch_related to minimize database queries.
+    OPTIMIZED: Uses select_related, prefetch_related, and caching to minimize database queries.
     """
     permission_classes = [AllowAny]
 
     def get(self, request, permalink):
+        # Generate cache key based on permalink and user authentication status
+        user_id = request.user.id if request.user.is_authenticated else 'anon'
+        cache_key = f'lesson:{permalink}:user:{user_id}'
+        
+        # Try to get cached response (skip cache for lesson owners to see latest changes)
+        cached_response = cache.get(cache_key)
+        if cached_response and not self._is_owner(request, cached_response.get('lesson')):
+            return Response(cached_response)
         # Optimize query with select_related for ForeignKeys and prefetch_related for Many-to-Many
+        # OPTIMIZATION: Use only() to fetch only needed fields for better performance
         lesson = get_object_or_404(
             Lesson.objects.select_related(
                 'course',          # Prefetch course data
                 'subject',         # Prefetch subject data
-                'created_by',      # Prefetch creator data
+                'created_by',      # Prefetch creator data (for username)
+                'created_by__profile',  # Prefetch creator profile if needed
                 'template_ref'     # Prefetch template data
             ).prefetch_related(
                 'tags',            # Prefetch tags
-                'quizzes'          # Prefetch related quizzes (but don't fetch their questions yet)
+                'quizzes__created_by',  # Prefetch quizzes with their creators
+            ).only(
+                # Only fetch fields we actually need
+                'id', 'title', 'content', 'video_url', 'content_type',
+                'permalink', 'created_at', 'status', 'is_premium', 'is_locked',
+                'accent_color', 'custom_css', 'custom_js',
+                'seo_title', 'seo_description', 'og_title', 'og_description', 'og_image', 'canonical_url',
+                'published_at',
+                # Foreign key IDs (automatically included with select_related)
+                'course_id', 'subject_id', 'created_by_id', 'template_ref_id'
             ),
             permalink=permalink
         )
@@ -289,12 +310,25 @@ class DynamicLessonView(APIView):
             ).exists()
 
         serializer = LessonSerializer(lesson, context={"request": request})
-        return Response({
+        response_data = {
             "lesson": serializer.data,
             "seo": seo,
             "is_enrolled": is_enrolled,
             "is_completed": is_completed
-        })
+        }
+        
+        # Cache the response for 5 minutes (300 seconds)
+        # Don't cache for lesson owners or staff to ensure they see latest changes
+        if not (request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff)):
+            cache.set(cache_key, response_data, timeout=300)
+        
+        return Response(response_data)
+
+    def _is_owner(self, request, lesson_data):
+        """Helper to check if user is the lesson owner"""
+        if not request.user.is_authenticated or not lesson_data:
+            return False
+        return lesson_data.get('created_by') == request.user.username
 
 
 class UserLessonsView(APIView):
