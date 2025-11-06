@@ -22,11 +22,14 @@ export default function Notifications() {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await apiClient.get('/notifications/user-notifications/');
+        // Shorter timeout so first-load doesn’t hang UI on slow backend warmups
+        const { data } = await apiClient.get('/notifications/user-notifications/', { timeout: 8000 });
         const list = Array.isArray(data) ? data : (data?.results ?? []);
         setNotifications(list);
       } catch (err) {
-        console.error('Failed to load notifications:', err);
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Failed to load notifications:', err?.message || err);
+        }
         if (err?.response?.status === 401) logout();
         setError('Failed to load notifications.');
       } finally {

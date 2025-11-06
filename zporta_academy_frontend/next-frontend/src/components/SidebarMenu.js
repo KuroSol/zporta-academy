@@ -30,11 +30,15 @@ export default function SidebarMenu({ isExpanded, setIsExpanded }) {
     const fetchNotifications = async () => {
       if (!token) { setUnreadCount(0); return; }
       try {
-        const res = await apiClient.get("/notifications/user-notifications/");
+        // Use a shorter timeout so slow boots don't hang the UI
+        const res = await apiClient.get("/notifications/user-notifications/", { timeout: 8000 });
         const list = res.data.results ?? res.data;
         setUnreadCount(list.filter(n => !n.is_read).length);
       } catch (err) {
-        console.error("Error fetching notifications:", err);
+        // Be quiet in production to avoid noisy console on slow boots
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn("Notifications fetch failed:", err?.message || err);
+        }
         if (err.response?.status === 401) logout();
         setUnreadCount(0);
       }
