@@ -110,11 +110,23 @@ export default function EditLesson() {
       setCourses(Array.isArray(myCoursesRes.data) ? myCoursesRes.data : []);
       console.log("[EditLesson] Aux data loaded.");
     } catch (err) {
-        console.error("[EditLesson] Error fetching initial data:", err.response ? err.response.data : err.message);
+        console.error("[EditLesson] ========== ERROR DETAILS ==========");
+        console.error("[EditLesson] Full error object:", err);
+        console.error("[EditLesson] Error name:", err.name);
+        console.error("[EditLesson] Error message:", err.message);
+        console.error("[EditLesson] Error stack:", err.stack);
+        console.error("[EditLesson] Response status:", err.response?.status);
+        console.error("[EditLesson] Response data:", err.response?.data);
+        console.error("[EditLesson] Response headers:", err.response?.headers);
+        console.error("[EditLesson] =====================================");
+        
         const code = err.response?.status;
         if (code === 401 || code === 403) { setMessage(err.response?.data?.detail || 'Auth error.'); logout(); router.push('/login'); return; }
         if (code === 404) { setMessage("Lesson not found."); }
-        else { setMessage(err.response?.data?.detail || 'Failed load.'); }
+        else { 
+            const detailedMessage = err.message || err.response?.data?.detail || 'Failed to load lesson data. Check console for details.';
+            setMessage(detailedMessage); 
+        }
         setMessageType('error');
     } finally { setLoading(false); console.log("[EditLesson] fetchInitial finished."); }
   }, [permalink, user, logout, router, getEditorHTML]);
