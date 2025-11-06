@@ -284,7 +284,15 @@ const HomePage = () => {
             </div>
         );
     }
-    if (!user) return null; 
+    if (!user) {
+        return (
+            <div className={styles.pageContainer}>
+                <div className={styles.fullPageLoader}>
+                    <LoadingPlaceholder message={token ? "Loading your profile…" : "Redirecting to login…"} />
+                </div>
+            </div>
+        );
+    }
 
     const userRole = user.profile?.role || 'explorer';
     const showStudentSections = userRole === 'explorer' || userRole === 'both';
