@@ -1,6 +1,6 @@
 // src/components/LessonDetail.js
 import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
-import root from "react-shadow";
+import ShadowRootContainer from "@/components/common/ShadowRootContainer";
 import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -395,8 +395,8 @@ const LessonDetail = () => {
           );
         })()}
 
-      {/* content in shadow DOM */}
-<root.div className={styles.lessonShadowRoot} data-lesson-root="true" style={{ "--accent-color": accent }}>
+  {/* content in shadow DOM */}
+<ShadowRootContainer as="div" className={styles.lessonShadowRoot} data-lesson-root="true" style={{ "--accent-color": accent }}>
   <style>{`:host { --accent-color: ${accent}; }
 ${sanitizeLessonCss(customCSS || "")}
 
@@ -450,7 +450,7 @@ ${sanitizeLessonCss(customCSS || "")}
     className="lesson-content"
     dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
   />
-</root.div>
+</ShadowRootContainer>
 
 
       {/* quizzes display */}
