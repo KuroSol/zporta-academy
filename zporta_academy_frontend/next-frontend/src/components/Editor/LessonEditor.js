@@ -515,9 +515,12 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
         alignItems: align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
     };
     
+    // Apply maxWidth if specified
+    const imgStyle = data.maxWidth ? { maxWidth: data.maxWidth, width: '100%', height: 'auto' } : {};
+    
     // Wrap image in link if href exists
     const imgElement = (
-        <img src={data.src} alt={data.caption || ''} className={styles.imageContent}/>
+        <img src={data.src} alt={data.caption || ''} className={styles.imageContent} style={imgStyle} />
     );
     
     const imageContent = !isEditing && data.href ? (
@@ -2583,6 +2586,37 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                                         </button>
                                                     ))}
                                                 </div>
+                                            </div>
+                                            <div className={styles.csGroup} role="group" aria-labelledby={`img-size-label-${editingBlock.id}`}>
+                                                <span id={`img-size-label-${editingBlock.id}`} className={styles.csGroupLabel}>Image Size</span>
+                                                <div className={styles.csBtnGroup}>
+                                                    {[
+                                                        { label: 'Small', value: '300px' },
+                                                        { label: 'Medium', value: '500px' },
+                                                        { label: 'Large', value: '800px' },
+                                                        { label: 'Full', value: '100%' }
+                                                    ].map(({ label, value }) => (
+                                                        <button
+                                                            key={value}
+                                                            type="button"
+                                                            className={editingBlock.data?.maxWidth === value ? styles.active : ''}
+                                                            onClick={() => handleUpdateBlock(editingBlock.id, { data: { ...editingBlock.data, maxWidth: value } })}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className={styles.styleControl}>
+                                                <label htmlFor={`image-custom-width-${editingBlock.id}`}>Custom Max Width</label>
+                                                <input 
+                                                    id={`image-custom-width-${editingBlock.id}`}
+                                                    type="text"
+                                                    name="imageMaxWidth"
+                                                    value={editingBlock.data?.maxWidth || ''}
+                                                    onChange={(e) => handleUpdateBlock(editingBlock.id, { data: { ...editingBlock.data, maxWidth: e.target.value } })}
+                                                    placeholder="e.g., 600px, 80%, or leave empty for full size"
+                                                />
                                             </div>
                                             <div className={styles.styleControl}>
                                                 <label htmlFor={`image-href-${editingBlock.id}`}>Link URL (optional)</label>
