@@ -14,7 +14,7 @@ import { createPortal } from "react-dom";
  * - style?: React.CSSProperties - applied to the host element
  * - children: React.ReactNode - rendered inside the shadow root
  */
-const ShadowRootContainer = ({ as = "div", className, style, children }) => {
+const ShadowRootContainer = ({ as = "div", className, style, children, ...rest }) => {
   const hostRef = useRef(null);
   const [shadowRoot, setShadowRoot] = useState(null);
 
@@ -28,7 +28,7 @@ const ShadowRootContainer = ({ as = "div", className, style, children }) => {
 
   const Host = as;
   return (
-    <Host ref={hostRef} className={className} style={style}>
+    <Host ref={hostRef} className={className} style={style} {...rest}>
       {shadowRoot ? createPortal(children, shadowRoot) : null}
     </Host>
   );
