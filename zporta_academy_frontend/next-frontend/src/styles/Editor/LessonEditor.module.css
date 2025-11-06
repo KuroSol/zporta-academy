@@ -144,6 +144,7 @@
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
     z-index: 50;
+    position: relative;
 }
 
 .headerMain {
@@ -502,8 +503,8 @@
     z-index: 11; /* Above the selection outline */
 }
 
-/* Ensure selected block stays above selected Column wrapper */
-.blockWrapper.isLayerSelected { z-index: 30; }
+/* Ensure selected block stays above selected Column wrapper AND above header */
+.blockWrapper.isLayerSelected { z-index: 1000; }
 .column.isLayerSelected { z-index: 5; }
 .accItem.isLayerSelected, .accPanel.isLayerSelected { z-index: 5; }
 
@@ -581,7 +582,7 @@
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  z-index: 20;
+  z-index: 100000;
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-speed) var(--transition-curve);
@@ -1634,15 +1635,26 @@
         transform: none;
     }
 
-    /* Text toolbar centers above */
+    /* Ensure selected blocks appear above header on mobile */
+    .blockWrapper.isLayerSelected {
+        z-index: 1000;
+    }
+
+    /* Text toolbar uses fixed positioning on mobile to escape parent stacking context */
     .textToolbar {
-        width: calc(100% - 1rem);
+        position: fixed;
+        top: calc(var(--header-height) + 0.5rem);
         left: 0.5rem;
-        transform: scale(0.95);
+        right: 0.5rem;
+        width: auto;
+        bottom: auto;
+        transform: translateX(0) scale(0.95);
+        margin-bottom: 0;
         justify-content: center;
+        z-index: 100000;
     }
     .isLayerSelected .textToolbar {
-        transform: scale(1);
+        transform: translateX(0) scale(1);
     }
 
     /* Preview and Code views */

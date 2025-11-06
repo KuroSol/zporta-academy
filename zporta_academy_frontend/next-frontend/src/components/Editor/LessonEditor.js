@@ -114,6 +114,7 @@ const Icons = {
 // Text Toolbar
     Bold: (p) => <I {...p}><path fillRule="evenodd" d="M8 4a1 1 0 011-1h.5a3.5 3.5 0 013.5 3.5V8a1 1 0 11-2 0V6.5a1.5 1.5 0 00-1.5-1.5H9a1 1 0 01-1-1zM8 12a1 1 0 011-1h1.5a3.5 3.5 0 013.5 3.5v.5a2 2 0 11-4 0v-.5a1.5 1.5 0 00-1.5-1.5H9a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
     Italic: (p) => <I {...p}><path fillRule="evenodd" d="M7.5 3a1 1 0 011 1v.5h1.16l-2.66 9H6a1 1 0 110-2h.5l2-6H7.5a1 1 0 01-1-1V4a1 1 0 011-1zM12 3a1 1 0 011 1v.5h1.16l-2.66 9H10.5a1 1 0 110-2h.5l2-6H12.5a1 1 0 01-1-1V4a1 1 0 011-1z" clipRule="evenodd" /></I>,
+    Underline: (p) => <I {...p}><path fillRule="evenodd" d="M6 3a1 1 0 011 1v6a3 3 0 106 0V4a1 1 0 112 0v6a5 5 0 01-10 0V4a1 1 0 011-1z" clipRule="evenodd" /><path d="M4 17a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" /></I>,
     List: (p) => <I {...p}><path fillRule="evenodd" d="M5 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1zM2.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" clipRule="evenodd" /></I>,
     ListOrdered: (p) => <I {...p}><path fillRule="evenodd" d="M6 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H7a1 1 0 01-1-1z" clipRule="evenodd" /><path d="M2.12 15.34a.5.5 0 01.37.16l.13.2a.5.5 0 00.75 0l.13-.2a.5.5 0 01.62-.16 1 1 0 11.5 1.73l-.37.61a.5.5 0 01-.75 0l-.63-1.04a.5.5 0 01.37-.8zm-.13-5.26a1 1 0 100-2 1 1 0 000 2zm.59.16a1.5 1.5 0 10-1.18-2.66.5.5 0 01.5-.86 2.5 2.5 0 111.96 4.39.5.5 0 01-.78-.87zM3.5 3.5a1 1 0 10-2 0V4a1 1 0 102 0V3.5z" /></I>,
 };
@@ -134,13 +135,6 @@ const BlockTypeIcons = {
     accPanel: <I w={16} h={16}><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
     editor: <Icons.Eye />,
 };
-
-// --- DATA SERIALIZATION / DESERIALIZATION ---
-// (This logic is complex and will go in Part 2)
-
-// ... (Part 1 code from canvas)
-
-// --- DATA SERIALIZATION / DESERIALIZATION ---
 
 /**
  * Parses an HTML string into an array of block objects.
@@ -651,18 +645,93 @@ const blockMap = {
  * Floating toolbar for rich text editing (Bold, Italic, Lists).
  */
 const TextToolbar = ({ onExecCommand }) => {
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showFontPicker, setShowFontPicker] = useState(false);
+    const [showLinkInput, setShowLinkInput] = useState(false);
+    const [textColor, setTextColor] = useState('#000000');
+    const [colorInput, setColorInput] = useState('#000000');
+    const [linkUrl, setLinkUrl] = useState('');
+    const colorPickerRef = useRef(null);
+    const fontPickerRef = useRef(null);
+    const linkInputRef = useRef(null);
+
     const commands = [
         { cmd: 'bold', icon: <Icons.Bold w={16} h={16} />, title: 'Bold' },
         { cmd: 'italic', icon: <Icons.Italic w={16} h={16} />, title: 'Italic' },
+        { cmd: 'underline', icon: <Icons.Underline w={16} h={16} />, title: 'Underline' },
         { cmd: 'insertUnorderedList', icon: <Icons.List w={16} h={16} />, title: 'Bulleted List' },
         { cmd: 'insertOrderedList', icon: <Icons.ListOrdered w={16} h={16} />, title: 'Numbered List' },
     ];
 
-    const handleMouseDown = (e, cmd) => {
-        e.preventDefault(); // Prevent the contentEditable from losing focus
+    const fonts = [
+        'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Courier New', 
+        'Verdana', 'Trebuchet MS', 'Comic Sans MS', 'Impact', 'Palatino',
+        'Garamond', 'Bookman', 'Tahoma', 'Lucida Console'
+    ];
+
+    const handleMouseDown = (e, cmd, value = null) => {
+        e.preventDefault();
         e.stopPropagation();
-        onExecCommand(cmd);
+        if (cmd === 'foreColor' || cmd === 'fontName') {
+            document.execCommand(cmd, false, value);
+        } else {
+            onExecCommand(cmd);
+        }
     };
+
+    const handleColorChange = (e) => {
+        const color = e.target.value;
+        setTextColor(color);
+        setColorInput(color);
+        document.execCommand('foreColor', false, color);
+    };
+
+    const handleColorInputChange = (e) => {
+        const value = e.target.value;
+        setColorInput(value);
+        // Validate hex color format
+        if (/^#[0-9A-F]{6}$/i.test(value) || /^#[0-9A-F]{3}$/i.test(value)) {
+            setTextColor(value);
+            document.execCommand('foreColor', false, value);
+        }
+    };
+
+    const handleFontChange = (font) => {
+        document.execCommand('fontName', false, font);
+        setShowFontPicker(false);
+    };
+
+    const handleInsertLink = () => {
+        if (linkUrl.trim()) {
+            const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+            document.execCommand('createLink', false, url);
+            setLinkUrl('');
+            setShowLinkInput(false);
+        }
+    };
+
+    const handleRemoveLink = () => {
+        document.execCommand('unlink', false, null);
+        setShowLinkInput(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (colorPickerRef.current && !colorPickerRef.current.contains(event.target)) {
+                setShowColorPicker(false);
+            }
+            if (fontPickerRef.current && !fontPickerRef.current.contains(event.target)) {
+                setShowFontPicker(false);
+            }
+            if (linkInputRef.current && !linkInputRef.current.contains(event.target)) {
+                setShowLinkInput(false);
+            }
+        };
+        if (showColorPicker || showFontPicker || showLinkInput) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showColorPicker, showFontPicker, showLinkInput]);
 
     return (
         <div className={styles.textToolbar} onMouseDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
@@ -672,12 +741,264 @@ const TextToolbar = ({ onExecCommand }) => {
                     type="button"
                     className={styles.toolbarButton}
                     title={title}
-                    onMouseDown={e => handleMouseDown(e, cmd)} // Use mousedown to prevent blur
-                    onClick={e => e.preventDefault()} // Fallback just in case
+                    onMouseDown={e => handleMouseDown(e, cmd)}
+                    onClick={e => e.preventDefault()}
                 >
                     {icon}
                 </button>
             ))}
+            
+            {/* Font Picker */}
+            <div style={{ position: 'relative', display: 'inline-block' }} ref={fontPickerRef}>
+                <button
+                    type="button"
+                    className={styles.toolbarButton}
+                    title="Font Family"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowFontPicker(!showFontPicker);
+                        setShowColorPicker(false);
+                        setShowLinkInput(false);
+                    }}
+                    onClick={e => e.preventDefault()}
+                    style={{ position: 'relative', fontSize: '14px', fontWeight: 'bold' }}
+                >
+                    A
+                </button>
+                {showFontPicker && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '0',
+                        marginTop: '4px',
+                        padding: '4px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        zIndex: 99999,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        minWidth: '150px'
+                    }}>
+                        {fonts.map(font => (
+                            <button
+                                key={font}
+                                type="button"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleFontChange(font);
+                                }}
+                                style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '6px 10px',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontFamily: font,
+                                    fontSize: '14px'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            >
+                                {font}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Color Picker */}
+            <div style={{ position: 'relative', display: 'inline-block' }} ref={colorPickerRef}>
+                <button
+                    type="button"
+                    className={styles.toolbarButton}
+                    title="Text Color"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowColorPicker(!showColorPicker);
+                        setShowFontPicker(false);
+                        setShowLinkInput(false);
+                    }}
+                    onClick={e => e.preventDefault()}
+                    style={{ position: 'relative' }}
+                >
+                    <Icons.Palette w={16} h={16} />
+                    <span style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '14px',
+                        height: '3px',
+                        backgroundColor: textColor,
+                        borderRadius: '2px'
+                    }}></span>
+                </button>
+                {showColorPicker && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '0',
+                        marginTop: '4px',
+                        padding: '12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        zIndex: 99999,
+                        minWidth: '180px'
+                    }}>
+                        <div style={{ marginBottom: '8px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666' }}>
+                                Color Picker
+                            </label>
+                            <input
+                                type="color"
+                                value={textColor}
+                                onChange={handleColorChange}
+                                onMouseDown={e => e.preventDefault()}
+                                style={{ 
+                                    width: '100%', 
+                                    height: '36px', 
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer' 
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666' }}>
+                                Hex Code
+                            </label>
+                            <input
+                                type="text"
+                                value={colorInput}
+                                onChange={handleColorInputChange}
+                                onMouseDown={e => e.preventDefault()}
+                                placeholder="#000000"
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '6px 8px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    fontSize: '13px',
+                                    fontFamily: 'monospace'
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Link Button */}
+            <div style={{ position: 'relative', display: 'inline-block' }} ref={linkInputRef}>
+                <button
+                    type="button"
+                    className={styles.toolbarButton}
+                    title="Insert Link"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowLinkInput(!showLinkInput);
+                        setShowColorPicker(false);
+                        setShowFontPicker(false);
+                    }}
+                    onClick={e => e.preventDefault()}
+                    style={{ position: 'relative' }}
+                >
+                    🔗
+                </button>
+                {showLinkInput && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '0',
+                        marginTop: '4px',
+                        padding: '12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        zIndex: 99999,
+                        minWidth: '250px'
+                    }}>
+                        <div style={{ marginBottom: '8px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666' }}>
+                                URL
+                            </label>
+                            <input
+                                type="text"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                onMouseDown={e => e.preventDefault()}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleInsertLink();
+                                    }
+                                }}
+                                placeholder="https://example.com"
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '6px 8px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    fontSize: '13px'
+                                }}
+                                autoFocus
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleInsertLink();
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '6px 12px',
+                                    backgroundColor: '#0A2342',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Insert Link
+                            </button>
+                            <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveLink();
+                                }}
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#f5f5f5',
+                                    color: '#333',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px'
+                                }}
+                            >
+                                Remove Link
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
