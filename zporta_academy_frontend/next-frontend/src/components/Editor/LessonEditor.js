@@ -541,11 +541,6 @@ const ImageBlock = ({ data, styles: blockStyles, isEditing, onUpdate, openImageP
             onClick={(e)=>{ if (isEditing) { e.stopPropagation(); openImagePicker(); } }}
             title={isEditing ? 'Click to replace image' : undefined}
         >
-            {isEditing && (
-                <button type="button" className={styles.mediaGearBtn} onClick={(e)=>{ e.stopPropagation(); onShowSettings(); }} aria-label="Image settings" title="Image settings">
-                    <Icons.Settings w={16} h={16} />
-                </button>
-            )}
             {imageContent}
             {isEditing && (
                 <input
