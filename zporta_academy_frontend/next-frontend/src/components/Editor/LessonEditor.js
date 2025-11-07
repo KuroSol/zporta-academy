@@ -137,6 +137,25 @@ const BlockTypeIcons = {
 };
 
 /**
+ * Helper function to extract inline styles from an element
+ */
+const parseInlineStyles = (element) => {
+    if (!element || !element.style) return {};
+    const styles = {};
+    const styleProps = [
+        'backgroundColor', 'color', 'padding', 'margin', 
+        'fontSize', 'border', 'borderRadius', 'textAlign'
+    ];
+    
+    styleProps.forEach(prop => {
+        const value = element.style[prop];
+        if (value) styles[prop] = value;
+    });
+    
+    return styles;
+};
+
+/**
  * Parses an HTML string into an array of block objects.
  * @param {string} htmlString - The HTML string to parse.
  * @returns {Array<Object>} An array of block objects.
@@ -204,9 +223,9 @@ const htmlToBlocks = (htmlString) => {
                         columns: finalColumnCount,
                         ratios: hasParsedRatios ? ratios : defaultRatios,
                     };
-                    blocks.push({ id, type: 'columns', children: columns, layout, styles: {} });
+                    blocks.push({ id, type: 'columns', children: columns, layout, styles: parseInlineStyles(node) });
                 } else if (node.tagName.startsWith('H')) {
-                    blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: {} });
+                    blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
                 } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && !node.classList.contains('zporta-accordion') && !node.classList.contains('zporta-columns') && (node.querySelector('ul') || node.querySelector('ol')))) {
                     // Check if this text block contains nested complex blocks (accordion, columns, etc.)
                     const hasNestedAccordion = node.querySelector('.zporta-accordion');
@@ -217,13 +236,17 @@ const htmlToBlocks = (htmlString) => {
                         // Parse nested structures as separate blocks instead of treating as text
                         blocks.push(...parseNodes(node.childNodes));
                     } else {
-                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
                     }
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
                     const link = node.querySelector('a');
                     const alignStyle = node.style.alignItems || 'center';
                     const align = alignStyle.includes('start') ? 'left' : alignStyle.includes('end') ? 'right' : 'center';
+                    
+                    // Extract maxWidth from img element's inline style
+                    const imgMaxWidth = img?.style?.maxWidth || '';
+                    
                     blocks.push({ 
                         id, 
                         type: 'image', 
@@ -232,25 +255,35 @@ const htmlToBlocks = (htmlString) => {
                             caption: node.querySelector('figcaption')?.textContent || '',
                             align: align,
                             href: link?.href || '',
-                            openInNewTab: link?.target === '_blank'
+                            openInNewTab: link?.target === '_blank',
+                            maxWidth: imgMaxWidth
                         }, 
-                        styles: {} 
+                        styles: parseInlineStyles(node) 
                     });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('audio')) {
                     const audio = node.querySelector('audio');
-                    blocks.push({ id, type: 'audio', data: { src: audio?.src || '' }, styles: {} });
+                    blocks.push({ id, type: 'audio', data: { src: audio?.src || '' }, styles: parseInlineStyles(node) });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('video')) {
                     const video = node.querySelector('video');
-                    blocks.push({ id, type: 'video', data: { src: video?.src || '' }, styles: {} });
+                    blocks.push({ id, type: 'video', data: { src: video?.src || '' }, styles: parseInlineStyles(node) });
                 } else if (node.tagName === 'A' && node.classList.contains('zporta-button')) {
+                    // Extract align from justify-self style
+                    const justifySelf = node.style.justifySelf || 'start';
+                    const align = justifySelf === 'center' ? 'center' : justifySelf === 'end' ? 'right' : 'left';
+                    
+                    // Extract border radius
+                    const radius = node.style.borderRadius || 'var(--r-md)';
+                    
                     const data = {
                         text: node.textContent,
                         href: node.href,
                         variant: Array.from(node.classList).find(c => c.startsWith('zporta-btn--'))?.replace('zporta-btn--', '') || 'primary',
                         size: Array.from(node.classList).find(c => c.startsWith('zporta-btnSize--'))?.replace('zporta-btnSize--', '') || 'md',
-                        full: node.classList.contains('zporta-btn--block')
+                        full: node.classList.contains('zporta-btn--block'),
+                        align: align,
+                        radius: radius
                     };
-                    blocks.push({ id, type: 'button', data, styles: {} });
+                    blocks.push({ id, type: 'button', data, styles: parseInlineStyles(node) });
                 } else if (node.classList.contains('zporta-accordion')) {
                     const themeMatch = Array.from(node.classList).find(c => c.startsWith('zporta-acc--'));
                     const radius = node.style.getPropertyValue('--acc-radius') || '8px';
@@ -287,7 +320,7 @@ const htmlToBlocks = (htmlString) => {
                             blocks: blocksInPanel,
                         });
                     });
-                    blocks.push({ id, type: 'accordion', items, styles: {}, options: {
+                    blocks.push({ id, type: 'accordion', items, styles: parseInlineStyles(node), options: {
                         allowMultiple, openFirst: firstIsOpen, radius,
                         theme: themeMatch ? themeMatch.replace('zporta-acc--', '') : 'light',
                         titleAlign, titleSize, icon
@@ -305,7 +338,7 @@ const htmlToBlocks = (htmlString) => {
                                 blocks.push(...parseNodes(node.childNodes));
                             } else {
                                 console.warn("Parsing unexpected DIV as text block:", node);
-                                blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: {} });
+                                blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
                             }
                         }
                     }
@@ -651,9 +684,41 @@ const TextToolbar = ({ onExecCommand }) => {
     const [textColor, setTextColor] = useState('#000000');
     const [colorInput, setColorInput] = useState('#000000');
     const [linkUrl, setLinkUrl] = useState('');
+    const [inLink, setInLink] = useState(false);
     const colorPickerRef = useRef(null);
     const fontPickerRef = useRef(null);
     const linkInputRef = useRef(null);
+    const savedSelectionRef = useRef(null);
+
+    const saveSelection = useCallback(() => {
+        try {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0).cloneRange();
+                const containerEl = (range.startContainer?.nodeType === 1
+                    ? range.startContainer
+                    : range.startContainer?.parentElement)?.closest('[contenteditable="true"]');
+                savedSelectionRef.current = { range, containerEl };
+            }
+        } catch {}
+    }, []);
+
+    const restoreSelection = useCallback(() => {
+        const saved = savedSelectionRef.current;
+        if (!saved) return false;
+        const sel = window.getSelection();
+        if (!sel) return false;
+        try {
+            if (saved.containerEl && typeof saved.containerEl.focus === 'function') {
+                saved.containerEl.focus();
+            }
+            sel.removeAllRanges();
+            sel.addRange(saved.range);
+            return true;
+        } catch {
+            return false;
+        }
+    }, []);
 
     const commands = [
         { cmd: 'bold', icon: <Icons.Bold w={16} h={16} />, title: 'Bold' },
@@ -672,18 +737,16 @@ const TextToolbar = ({ onExecCommand }) => {
     const handleMouseDown = (e, cmd, value = null) => {
         e.preventDefault();
         e.stopPropagation();
-        if (cmd === 'foreColor' || cmd === 'fontName') {
-            document.execCommand(cmd, false, value);
-        } else {
-            onExecCommand(cmd);
-        }
+        // For simple commands, just execute via callback (it persists content)
+        onExecCommand(cmd, value);
     };
 
     const handleColorChange = (e) => {
         const color = e.target.value;
         setTextColor(color);
         setColorInput(color);
-        document.execCommand('foreColor', false, color);
+        restoreSelection();
+        onExecCommand('foreColor', color);
     };
 
     const handleColorInputChange = (e) => {
@@ -692,26 +755,63 @@ const TextToolbar = ({ onExecCommand }) => {
         // Validate hex color format
         if (/^#[0-9A-F]{6}$/i.test(value) || /^#[0-9A-F]{3}$/i.test(value)) {
             setTextColor(value);
-            document.execCommand('foreColor', false, value);
+            restoreSelection();
+            onExecCommand('foreColor', value);
         }
     };
 
     const handleFontChange = (font) => {
-        document.execCommand('fontName', false, font);
+        restoreSelection();
+        onExecCommand('fontName', font);
         setShowFontPicker(false);
     };
 
     const handleInsertLink = () => {
         if (linkUrl.trim()) {
             const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
-            document.execCommand('createLink', false, url);
+            
+            // Restore selection first
+            if (!restoreSelection()) {
+                setShowLinkInput(false);
+                return;
+            }
+            
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) {
+                setShowLinkInput(false);
+                return;
+            }
+            
+            // Get the selected text
+            const selectedText = sel.toString().trim();
+            
+            // If there's selected text, wrap it in a link
+            if (selectedText) {
+                onExecCommand('createLink', url);
+            } else {
+                // If no text is selected, insert "link" or the URL as clickable text
+                const linkText = url.replace(/^https?:\/\//, '').split('/')[0]; // Extract domain
+                const range = sel.getRangeAt(0);
+                const linkElement = document.createElement('a');
+                linkElement.href = url;
+                linkElement.textContent = linkText;
+                range.insertNode(linkElement);
+                
+                // Move cursor after the link
+                range.setStartAfter(linkElement);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+            
             setLinkUrl('');
             setShowLinkInput(false);
         }
     };
 
     const handleRemoveLink = () => {
-        document.execCommand('unlink', false, null);
+        restoreSelection();
+        onExecCommand('unlink', null);
         setShowLinkInput(false);
     };
 
@@ -732,6 +832,25 @@ const TextToolbar = ({ onExecCommand }) => {
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
     }, [showColorPicker, showFontPicker, showLinkInput]);
+
+    // Track if selection is inside a link and prefill URL when opening link popup
+    useEffect(() => {
+        const onSelChange = () => {
+            try {
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) { setInLink(false); return; }
+                const node = sel.anchorNode;
+                const el = (node && node.nodeType === 1 ? node : node?.parentElement);
+                const a = el?.closest && el.closest('a');
+                setInLink(!!a);
+                if (a && showLinkInput && !linkUrl) {
+                    setLinkUrl(a.getAttribute('href') || '');
+                }
+            } catch {}
+        };
+        document.addEventListener('selectionchange', onSelChange);
+        return () => document.removeEventListener('selectionchange', onSelChange);
+    }, [showLinkInput, linkUrl]);
 
     return (
         <div className={styles.textToolbar} onMouseDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
@@ -757,6 +876,7 @@ const TextToolbar = ({ onExecCommand }) => {
                     onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        saveSelection();
                         setShowFontPicker(!showFontPicker);
                         setShowColorPicker(false);
                         setShowLinkInput(false);
@@ -780,7 +900,8 @@ const TextToolbar = ({ onExecCommand }) => {
                         zIndex: 99999,
                         maxHeight: '200px',
                         overflowY: 'auto',
-                        minWidth: '150px'
+                        minWidth: '150px',
+                        color: '#111'
                     }}>
                         {fonts.map(font => (
                             <button
@@ -800,7 +921,8 @@ const TextToolbar = ({ onExecCommand }) => {
                                     textAlign: 'left',
                                     cursor: 'pointer',
                                     fontFamily: font,
-                                    fontSize: '14px'
+                                    fontSize: '14px',
+                                    color: '#111'
                                 }}
                                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
                                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
@@ -821,6 +943,7 @@ const TextToolbar = ({ onExecCommand }) => {
                     onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        saveSelection();
                         setShowColorPicker(!showColorPicker);
                         setShowFontPicker(false);
                         setShowLinkInput(false);
@@ -852,7 +975,8 @@ const TextToolbar = ({ onExecCommand }) => {
                         borderRadius: '6px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                         zIndex: 99999,
-                        minWidth: '180px'
+                        minWidth: '180px',
+                        color: '#111'
                     }}>
                         <div style={{ marginBottom: '8px' }}>
                             <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666' }}>
@@ -888,7 +1012,9 @@ const TextToolbar = ({ onExecCommand }) => {
                                     border: '1px solid #ddd',
                                     borderRadius: '4px',
                                     fontSize: '13px',
-                                    fontFamily: 'monospace'
+                                    fontFamily: 'monospace',
+                                    color: '#111',
+                                    background: '#fff'
                                 }}
                             />
                         </div>
@@ -905,12 +1031,21 @@ const TextToolbar = ({ onExecCommand }) => {
                     onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        saveSelection();
                         setShowLinkInput(!showLinkInput);
                         setShowColorPicker(false);
                         setShowFontPicker(false);
+                        // Prefill if selection already in a link
+                        try {
+                            const sel = window.getSelection();
+                            const node = sel && sel.anchorNode;
+                            const el = (node && node.nodeType === 1 ? node : node?.parentElement);
+                            const a = el?.closest && el.closest('a');
+                            if (a) setLinkUrl(a.getAttribute('href') || '');
+                        } catch {}
                     }}
                     onClick={e => e.preventDefault()}
-                    style={{ position: 'relative' }}
+                    style={{ position: 'relative', backgroundColor: inLink ? 'rgba(255,255,255,0.15)' : undefined }}
                 >
                     🔗
                 </button>
@@ -926,12 +1061,16 @@ const TextToolbar = ({ onExecCommand }) => {
                         borderRadius: '6px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                         zIndex: 99999,
-                        minWidth: '250px'
+                        minWidth: '280px',
+                        color: '#111'
                     }}>
-                        <div style={{ marginBottom: '8px' }}>
-                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666' }}>
-                                URL
+                        <div style={{ marginBottom: '4px' }}>
+                            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: '#666', fontWeight: '600' }}>
+                                Add Link to Text
                             </label>
+                            <p style={{ fontSize: '11px', color: '#888', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                                Select text first, then add a link. Example: &ldquo;click here&rdquo; → add URL
+                            </p>
                             <input
                                 type="text"
                                 value={linkUrl}
@@ -949,7 +1088,9 @@ const TextToolbar = ({ onExecCommand }) => {
                                     padding: '6px 8px',
                                     border: '1px solid #ddd',
                                     borderRadius: '4px',
-                                    fontSize: '13px'
+                                    fontSize: '13px',
+                                    color: '#111',
+                                    background: '#fff'
                                 }}
                                 autoFocus
                             />
@@ -2374,8 +2515,8 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
         });
     }, [insertBlockRecursive]);
 
-    const handleExecCommand = useCallback((blockId) => (command) => {
-        document.execCommand(command, false, null);
+    const handleExecCommand = useCallback((blockId) => (command, value = null) => {
+        document.execCommand(command, false, value);
         const blockElement = editorRootRef.current?.querySelector(`[data-block-id="${blockId}"]`);
         if (!blockElement) return;
         const editorDiv = blockElement.querySelector(`.${styles.blockContentEditable}`);

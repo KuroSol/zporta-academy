@@ -791,6 +791,11 @@
 .blockContentEditable li {
   margin-bottom: 0.25rem;
 }
+.blockContentEditable a {
+  color: var(--brand-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .headingEditable {
   font-size: 1.75rem;
   font-weight: 700;

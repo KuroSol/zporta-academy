@@ -19,12 +19,20 @@ const ShadowRootContainer = ({ as = "div", className, style, children, ...rest }
   const [shadowRoot, setShadowRoot] = useState(null);
 
   useEffect(() => {
-    if (!hostRef.current) return;
-    if (!shadowRoot) {
-      const root = hostRef.current.attachShadow({ mode: "open" });
-      setShadowRoot(root);
+    const host = hostRef.current;
+    if (!host) return;
+    // If a shadow root already exists (e.g., due to StrictMode double-invoke), reuse it.
+    if (host.shadowRoot) {
+      setShadowRoot(host.shadowRoot);
+      return;
     }
-  }, [shadowRoot]);
+    const root = host.attachShadow({ mode: "open" });
+    setShadowRoot(root);
+    return () => {
+      // Do not attempt to detach Shadow DOM (not supported); just clear our state reference.
+      setShadowRoot(null);
+    };
+  }, []);
 
   const Host = as;
   return (
