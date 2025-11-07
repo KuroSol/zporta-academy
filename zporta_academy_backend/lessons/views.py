@@ -25,6 +25,7 @@ from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from django.core.cache import cache
 import hashlib
+from .content_filters import mask_restricted_sections as _mask_restricted_sections
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
@@ -316,6 +317,23 @@ class DynamicLessonView(APIView):
             "is_enrolled": is_enrolled,
             "is_completed": is_completed
         }
+
+        # Inline-gate premium sections inside otherwise visible lessons
+        try:
+            # Do not mask for owner/staff
+            is_owner_or_staff = request.user.is_authenticated and (
+                lesson.created_by == request.user or request.user.is_staff
+            )
+            if not is_owner_or_staff and response_data.get("lesson", {}).get("content"):
+                # Enforce course-bound gating when lesson is attached to a course
+                filtered = _mask_restricted_sections(
+                    response_data["lesson"]["content"],
+                    request.user,
+                    bound_course=lesson.course if getattr(lesson, 'course', None) else None,
+                )
+                response_data["lesson"]["content"] = filtered
+        except Exception:
+            pass
         
         # Cache the response for 5 minutes (300 seconds)
         # Don't cache for lesson owners or staff to ensure they see latest changes

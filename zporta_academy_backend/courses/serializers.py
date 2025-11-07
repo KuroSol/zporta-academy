@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'content', 'created_at', 'permalink', 'is_premium', 'course']
+        fields = ['id', 'title', 'content', 'created_at', 'permalink', 'is_premium', 'course', 'status']
 
 class CourseSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()
@@ -115,7 +115,33 @@ class CourseSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # allow publish via flag on update
         publish_flag = validated_data.pop('publish', None)
+
+        # Normalize allowed_testers: accept IDs or usernames from multipart/form-data
+        incoming_allowed = None
+        if 'allowed_testers' in validated_data:
+            # DRF may have already resolved these to User instances
+            incoming_allowed = validated_data.pop('allowed_testers')
+        else:
+            # Fallback to raw payload (supports repeated keys in FormData)
+            raw = self.context['request'].data.getlist('allowed_testers') if hasattr(self.context.get('request'), 'data') else None
+            if raw:
+                users = []
+                for v in raw:
+                    try:
+                        # try by PK first
+                        users.append(User.objects.get(pk=int(v)))
+                    except (ValueError, User.DoesNotExist):
+                        try:
+                            users.append(User.objects.get(username=str(v)))
+                        except User.DoesNotExist:
+                            continue
+                incoming_allowed = users
+
         obj = super().update(instance, validated_data)
+
+        if incoming_allowed is not None and not obj.is_draft:
+            obj.allowed_testers.set(incoming_allowed)
+
         if publish_flag is True and obj.is_draft:
             obj.is_draft = False
             obj.save(update_fields=['is_draft'])

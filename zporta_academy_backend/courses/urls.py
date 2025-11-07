@@ -12,6 +12,7 @@ from .views import (
     UnpublishCourseView,
     AddQuizToCourseView,
     DetachQuizFromCourseView,
+    BulkPublishLessonsView,
 )
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path('draft/<path:permalink>/', DraftCourseDetailView.as_view(), name='draft-course-detail'),
     path('<path:permalink>/publish/', PublishCourseView.as_view(), name='course-publish'),
     path('<path:permalink>/unpublish/', UnpublishCourseView.as_view(), name='course-unpublish'),
+    path('<path:permalink>/lessons/bulk-publish/', BulkPublishLessonsView.as_view(), name='course-bulk-publish-lessons'),
     # Place add-quiz and detach-quiz before the catch-all dynamic view:
     path('<path:permalink>/add-quiz/', AddQuizToCourseView.as_view(), name='add-quiz-to-course'),
     path('<path:permalink>/detach-quiz/', DetachQuizFromCourseView.as_view(), name='detach-quiz-from-course'),

@@ -231,6 +231,37 @@ class LessonSerializer(serializers.ModelSerializer):
                     "status": "Cannot publish a lesson while its course is in draft. Publish the course first or save the lesson as draft."
                 })
 
+            # If publishing a premium lesson, ensure any inline restricted blocks
+            # reference the SAME premium course (or none) to prevent cross-course leaks.
+            if is_premium and course:
+                html = data.get('content', getattr(self.instance, 'content', ''))
+                if html:
+                    try:
+                        doc = BeautifulSoup(html, 'html.parser')
+                        mismatched = False
+                        # Check permalink-based reference
+                        for node in doc.select('[data-required-course-permalink]'):
+                            if node.get('data-required-course-permalink') != getattr(course, 'permalink', None):
+                                mismatched = True
+                                break
+                        # Check id-based reference
+                        if not mismatched:
+                            for node in doc.select('[data-required-course-id]'):
+                                try:
+                                    if int(node.get('data-required-course-id')) != getattr(course, 'id', None):
+                                        mismatched = True
+                                        break
+                                except Exception:
+                                    mismatched = True
+                                    break
+                        if mismatched:
+                            raise serializers.ValidationError({
+                                'content': 'Premium lessons can only include inline-restricted blocks that reference their own premium course while published. Use draft if cross-course previews are needed.'
+                            })
+                    except Exception:
+                        # If parsing fails, do not block publishing silently
+                        pass
+
         return data
 
     # --- create Method ---

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef, useLayoutEffect } from "react";
+import React, { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
@@ -644,6 +644,67 @@ const CourseDetail = () => {
     }
   };
 
+  const handleBulkPublishLessons = async () => {
+    if (!permalink) return;
+    const confirmBulk = window.confirm("Publish all draft lessons attached to this course? This will make them publicly visible.");
+    if (!confirmBulk) return;
+    try {
+      const res = await apiClient.post(`/courses/${permalink}/lessons/bulk-publish/`);
+      const count = res.data?.published_count ?? 0;
+      alert(count > 0 ? `Published ${count} lesson(s).` : `No draft lessons to publish.`);
+      // Refresh course data to update lessons list/status
+      const refreshed = await apiClient.get(`/courses/${permalink}/`);
+      if (refreshed.data?.course) {
+        setCourse(refreshed.data.course);
+        setLessons(refreshed.data.lessons || []);
+        setQuizzes(refreshed.data.quizzes || []);
+      }
+    } catch (err) {
+      const apiErrorMessage = err.response?.data?.error || err.response?.data?.detail || err.message;
+      alert(`Bulk publish failed: ${apiErrorMessage || "Please try again."}`);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
+  // Fetch latest lessons for the owner (includes drafts if server exposes them)
+  const fetchDraftCourseLessons = useCallback(async () => {
+    try {
+      const refreshed = await apiClient.get(`/courses/${permalink}/`);
+      if (refreshed.data?.lessons) {
+        setLessons(refreshed.data.lessons);
+      }
+      if (refreshed.data?.course) {
+        setCourse(refreshed.data.course);
+      }
+    } catch (err) {
+      console.warn("Could not refresh draft lessons:", err.response?.data || err.message);
+    }
+  }, [permalink]);
+
+  // Publish a single attached lesson (owner-only)
+  const handlePublishSingleLesson = async (lesson) => {
+    if (!lesson?.permalink) return;
+    if (course?.is_draft) {
+      alert("Publish the course first, then publish its lessons.");
+      return;
+    }
+    const confirmOne = window.confirm(`Publish lesson: "${lesson.title}"?`);
+    if (!confirmOne) return;
+    try {
+      await apiClient.post(`/lessons/${lesson.permalink}/publish/`);
+      // Update local list to reflect published status
+      setLessons(prev => prev.map(l => l.id === lesson.id ? { ...l, status: 'published' } : l));
+    } catch (err) {
+      const apiErrorMessage = err.response?.data?.detail || err.response?.data?.error || err.message;
+      alert(`Failed to publish lesson: ${apiErrorMessage || "Please try again."}`);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
   useEffect(() => {
     if (editMode && course) {
       const subjectObj = subjects.find((s) => s.id === course.subject) || { id: course.subject, name: "" };
@@ -654,8 +715,10 @@ const CourseDetail = () => {
         subject: subjectObj.id ? { value: subjectObj.id, label: subjectObj.name } : null,
         tags: Array.isArray(course.tags) ? course.tags.join(", ") : "",
       }));
+      // When editing, fetch draft detail to include draft lessons as well
+      fetchDraftCourseLessons();
     }
-  }, [editMode, course, subjects]);
+  }, [editMode, course, subjects, fetchDraftCourseLessons]);
 
 
   // --- Render Logic ---
@@ -671,6 +734,8 @@ const CourseDetail = () => {
 
   // --- RENDER Creator Edit View ---
   if (isCreator && editMode) {
+    const draftCount = Array.isArray(lessons) ? lessons.filter(l => l.status === 'draft').length : 0;
+    const publishedCount = Array.isArray(lessons) ? lessons.filter(l => l.status === 'published').length : 0;
     return (
         <div className={styles.courseDetailContainer}>
             <form onSubmit={handleSaveEdit} className={styles.editForm}>
@@ -734,6 +799,16 @@ const CourseDetail = () => {
                                 {lessons.map(l => (
                                     <li key={l.id}>
                                         <span>{l.title}</span>
+                                        <span className={`${styles.statusPill} ${l.status === 'published' ? styles.statusPublished : styles.statusDraft}`} style={{ marginLeft: 8 }}>
+                                          {l.status === 'published' ? 'Published' : 'Draft'}
+                                        </span>
+                                        {l.status === 'draft' && (
+                                          course.is_draft ? (
+                                            <button className={`${styles.btn} ${styles.btnSecondary}`} style={{ marginLeft: 8 }} disabled title="Publish the course first">Publish</button>
+                                          ) : (
+                                            <button onClick={() => handlePublishSingleLesson(l)} className={`${styles.btn} ${styles.btnSuccess}`} style={{ marginLeft: 8 }}>Publish</button>
+                                          )
+                                        )}
                                         <button onClick={() => handleDetachLesson(l.id)} className={styles.detachBtn} title="Detach Lesson" disabled={isLocked}><FaTimes/></button>
                                     </li>
                                 ))}
@@ -791,6 +866,15 @@ const CourseDetail = () => {
                     )}
                     {statusUpdateMessage && <p className={styles.statusMessage}>{statusUpdateMessage}</p>}
                  </div>
+            <div className={styles.statusBox}>
+             <p>Lessons — Published: <strong>{publishedCount}</strong> • Draft: <strong>{draftCount}</strong></p>
+             {!course.is_draft && draftCount > 0 && (
+               <button onClick={handleBulkPublishLessons} className={`${styles.btn} ${styles.btnPrimary}`}>Publish all draft lessons</button>
+             )}
+             {course.is_draft && draftCount > 0 && (
+               <p className={styles.statusMessage}>Publish the course first to bulk publish lessons.</p>
+             )}
+            </div>
             </div>
 
             <div className={`${styles.adminSection} ${styles.dangerZone}`}>

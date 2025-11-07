@@ -450,3 +450,79 @@
 .scrollProgressContainer { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 5000; }
 .scrollProgressBar { height: 100%; background-color: var(--accent-color-interactive); transition: width 0.1s linear; }
 
+/* --- Gated content card inside lesson content --- */
+.lessonContent .gated-content {
+  position: relative;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border: 1px solid var(--border-light);
+  padding: 14px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+.dark .lessonContent .gated-content {
+  background: linear-gradient(180deg, #0b1220, #0f172a);
+  border-color: var(--border-dark);
+}
+.lessonContent .gated-content::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(120px 50px at top left, rgba(10,35,66,.08), transparent), radial-gradient(150px 80px at bottom right, rgba(10,35,66,.06), transparent);
+  pointer-events: none;
+}
+.dark .lessonContent .gated-content::before {
+  background-image: radial-gradient(120px 50px at top left, rgba(148,163,184,.12), transparent), radial-gradient(150px 80px at bottom right, rgba(148,163,184,.1), transparent);
+}
+.lessonContent .gated-content .gc-card {
+  display: flex; gap: 14px; align-items: center;
+}
+.lessonContent .gated-content .gc-icon {
+  flex: 0 0 40px; width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--zporta-dark-blue); color: #fff;
+  box-shadow: 0 6px 14px rgba(10,35,66,.2);
+}
+.lessonContent .gated-content .gc-body { display: flex; flex-direction: column; gap: 6px; }
+.lessonContent .gated-content .gc-title { font-weight: 800; letter-spacing: .2px; color: var(--text-primary-light); }
+.dark .lessonContent .gated-content .gc-title { color: var(--text-primary-dark); }
+.lessonContent .gated-content .gc-text { color: var(--text-secondary-light); }
+.dark .lessonContent .gated-content .gc-text { color: var(--text-secondary-dark); }
+.lessonContent .gated-content .gc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: .5rem .9rem; border-radius: 10px; border: 1px solid var(--zporta-dark-blue);
+  background: var(--zporta-dark-blue); color: #fff; text-decoration: none; font-weight: 700;
+  box-shadow: 0 6px 14px rgba(10,35,66,.20); transition: transform .12s ease, box-shadow .12s ease;
+}
+.lessonContent .gated-content .gc-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(10,35,66,.25); }
+
+/* Compact variant: blurred line + small link */
+.lessonContent .gated-content.gc-compact {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border: 1px solid var(--border-light);
+  margin: .5rem 0;
+}
+.dark .lessonContent .gated-content.gc-compact {
+  background: linear-gradient(180deg, #0b1220, #0f172a);
+  border-color: var(--border-dark);
+}
+.lessonContent .gated-content.gc-compact::before { display: none; }
+.lessonContent .gated-content.gc-compact .gc-blur-line {
+  flex: 1 1 auto; height: .9em; max-width: 220px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--border-light) 25%, var(--bg-card-light) 50%, var(--border-light) 75%);
+  background-size: 200px 100%; filter: blur(1.2px); opacity: .7; animation: ecShimmer 1.6s linear infinite;
+}
+.dark .lessonContent .gated-content.gc-compact .gc-blur-line {
+  background: linear-gradient(90deg, var(--border-dark) 25%, var(--bg-card-dark) 50%, var(--border-dark) 75%);
+}
+@keyframes ecShimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+.lessonContent .gated-content.gc-compact .gc-link {
+  flex: 0 0 auto; font-weight: 700; font-size: .85rem;
+  color: var(--accent-color); text-decoration: none;
+  padding: 4px 10px; border: 1px solid var(--accent-color);
+  border-radius: 9999px; background: #fff;
+}
+.dark .lessonContent .gated-content.gc-compact .gc-link { background: #0b1220; }
+.lessonContent .gated-content.gc-compact .gc-link:hover { filter: brightness(0.95); }
+

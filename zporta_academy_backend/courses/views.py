@@ -13,6 +13,7 @@ from quizzes.models import Quiz
 from quizzes.serializers import QuizSerializer
 from django.db.models import Count, Q
 from rest_framework.viewsets import ModelViewSet
+from django.utils import timezone
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
@@ -223,7 +224,13 @@ class CourseDetailView(APIView):
                 or request.user.is_superuser
             ):
                 raise Http404("Course not found.")
-        lessons = Lesson.objects.filter(course=course).order_by(
+        # For public view, hide draft lessons unless the requester is owner/staff/tester
+        base_lessons = Lesson.objects.filter(course=course)
+        is_privileged = request.user.is_authenticated and (
+            request.user == course.created_by or request.user.is_staff or request.user.is_superuser
+        )
+        lessons_qs = base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)
+        lessons = lessons_qs.order_by(
             Case(When(course__isnull=True, then=Value(0)), default=Value(1), output_field=IntegerField()),
             'title'
         )
@@ -260,7 +267,12 @@ class DynamicCourseView(APIView):
             ):
                 raise Http404("Course not found.")
                 
-        lessons = Lesson.objects.filter(course=course).order_by('title')
+        # Public dynamic view should also hide drafts for non-owners
+        base_lessons = Lesson.objects.filter(course=course)
+        is_privileged = request.user.is_authenticated and (
+            request.user == course.created_by or request.user.is_staff or request.user.is_superuser
+        )
+        lessons = (base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)).order_by('title')
         is_owner = request.user.is_authenticated and request.user == course.created_by
         progress_percentage = 0
         if request.user.is_authenticated:
@@ -311,3 +323,35 @@ class AddQuizToCourseView(APIView):
         
         serializer = QuizSerializer(quiz, context={"request": request})
         return Response({"message": "Quiz added successfully.", "quiz": serializer.data})
+
+
+class BulkPublishLessonsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, permalink):
+        course = get_object_or_404(Course.all_objects, permalink=permalink)
+        # only owner, staff, or superuser
+        if not (request.user == course.created_by or request.user.is_staff or request.user.is_superuser):
+            return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+        # cannot publish lessons while course is draft
+        if course.is_draft:
+            return Response({"error": "Publish the course first before publishing its lessons."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # select draft lessons attached to this course
+        draft_lessons = Lesson.objects.filter(course=course, status=Lesson.DRAFT)
+        if not draft_lessons.exists():
+            return Response({"message": "No draft lessons to publish.", "published_count": 0})
+
+        published_count = 0
+        for lesson in draft_lessons:
+            # For premium lessons, ensure course is premium
+            if lesson.is_premium and getattr(course, "course_type", None) != "premium":
+                # skip invalid premium lessons; keep them draft
+                continue
+            lesson.status = Lesson.PUBLISHED
+            lesson.published_at = timezone.now()
+            lesson.save(update_fields=["status", "published_at"])
+            published_count += 1
+
+        return Response({"message": "Lessons published.", "published_count": published_count})

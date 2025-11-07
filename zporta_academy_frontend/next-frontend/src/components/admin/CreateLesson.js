@@ -733,6 +733,9 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
                            // Removed onSave prop as LessonEditor doesn't use it
                             mediaCategory="lesson"
                             externalCss={customCSS}
+                            boundCoursePermalink={(filteredCourses.find(c => String(c.id) === String(selectedCourse)) || {}).permalink || null}
+                            boundCourseTitle={(filteredCourses.find(c => String(c.id) === String(selectedCourse)) || {}).title || ''}
+                            boundCourseType={(filteredCourses.find(c => String(c.id) === String(selectedCourse)) || {}).course_type || null}
                         />
                         ) : (
                             <div className={styles.editorPlaceholder}>Editor is currently disabled...</div>

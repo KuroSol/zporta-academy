@@ -31,6 +31,37 @@ const COLUMN_PRESETS = {
     4: [[25, 25, 25, 25], [20, 30, 30, 20]]
 };
 const WRAPPER_CLASS = "lesson-content";
+// --- Content restriction helpers ---
+// We support per-block gating by attaching one of these data attributes
+//   data-required-course-permalink="<permalink>" (preferred)
+//   data-required-course-id="<id>" (optional alternative)
+// Optional nice-to-have message:
+//   data-gated-message="<text>"
+const parseGate = (el) => {
+    if (!el || !el.getAttribute) return null;
+    const requiredCoursePermalink = el.getAttribute('data-required-course-permalink');
+    const requiredCourseId = el.getAttribute('data-required-course-id');
+    const message = el.getAttribute('data-gated-message');
+    if (requiredCoursePermalink || requiredCourseId || message) {
+        return {
+            requiredCoursePermalink: requiredCoursePermalink || null,
+            requiredCourseId: requiredCourseId || null,
+            message: message || null,
+        };
+    }
+    return null;
+};
+
+const gateAttrString = (block) => {
+    const g = block && block.gate;
+    if (!g) return '';
+    const attrs = [];
+    if (g.requiredCoursePermalink) attrs.push(`data-required-course-permalink="${g.requiredCoursePermalink}"`);
+    if (g.requiredCourseId) attrs.push(`data-required-course-id="${g.requiredCourseId}"`);
+    if (g.message) attrs.push(`data-gated-message="${g.message}"`);
+    return attrs.length ? ' ' + attrs.join(' ') : '';
+};
+
 
 // Normalizes layout ratios
 function normalizeRatios(arr, cols) {
@@ -223,9 +254,9 @@ const htmlToBlocks = (htmlString) => {
                         columns: finalColumnCount,
                         ratios: hasParsedRatios ? ratios : defaultRatios,
                     };
-                    blocks.push({ id, type: 'columns', children: columns, layout, styles: parseInlineStyles(node) });
+                    blocks.push({ id, type: 'columns', children: columns, layout, styles: parseInlineStyles(node), gate: parseGate(node) });
                 } else if (node.tagName.startsWith('H')) {
-                    blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
+                    blocks.push({ id, type: 'heading', data: { text: node.innerHTML }, styles: parseInlineStyles(node), gate: parseGate(node) });
                 } else if (node.tagName === 'P' || node.tagName === 'UL' || node.tagName === 'OL' || (node.tagName === 'DIV' && !node.classList.contains('zporta-accordion') && !node.classList.contains('zporta-columns') && (node.querySelector('ul') || node.querySelector('ol')))) {
                     // Check if this text block contains nested complex blocks (accordion, columns, etc.)
                     const hasNestedAccordion = node.querySelector('.zporta-accordion');
@@ -236,7 +267,7 @@ const htmlToBlocks = (htmlString) => {
                         // Parse nested structures as separate blocks instead of treating as text
                         blocks.push(...parseNodes(node.childNodes));
                     } else {
-                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
+                        blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node), gate: parseGate(node) });
                     }
                 } else if (node.tagName === 'FIGURE' && node.querySelector('img')) {
                     const img = node.querySelector('img');
@@ -258,14 +289,15 @@ const htmlToBlocks = (htmlString) => {
                             openInNewTab: link?.target === '_blank',
                             maxWidth: imgMaxWidth
                         }, 
-                        styles: parseInlineStyles(node) 
+                        styles: parseInlineStyles(node),
+                        gate: parseGate(node)
                     });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('audio')) {
                     const audio = node.querySelector('audio');
-                    blocks.push({ id, type: 'audio', data: { src: audio?.src || '' }, styles: parseInlineStyles(node) });
+                    blocks.push({ id, type: 'audio', data: { src: audio?.src || '' }, styles: parseInlineStyles(node), gate: parseGate(node) });
                 } else if (node.tagName === 'FIGURE' && node.querySelector('video')) {
                     const video = node.querySelector('video');
-                    blocks.push({ id, type: 'video', data: { src: video?.src || '' }, styles: parseInlineStyles(node) });
+                    blocks.push({ id, type: 'video', data: { src: video?.src || '' }, styles: parseInlineStyles(node), gate: parseGate(node) });
                 } else if (node.tagName === 'A' && node.classList.contains('zporta-button')) {
                     // Extract align from justify-self style
                     const justifySelf = node.style.justifySelf || 'start';
@@ -283,7 +315,7 @@ const htmlToBlocks = (htmlString) => {
                         align: align,
                         radius: radius
                     };
-                    blocks.push({ id, type: 'button', data, styles: parseInlineStyles(node) });
+                    blocks.push({ id, type: 'button', data, styles: parseInlineStyles(node), gate: parseGate(node) });
                 } else if (node.classList.contains('zporta-accordion')) {
                     const themeMatch = Array.from(node.classList).find(c => c.startsWith('zporta-acc--'));
                     const radius = node.style.getPropertyValue('--acc-radius') || '8px';
@@ -320,7 +352,7 @@ const htmlToBlocks = (htmlString) => {
                             blocks: blocksInPanel,
                         });
                     });
-                    blocks.push({ id, type: 'accordion', items, styles: parseInlineStyles(node), options: {
+                    blocks.push({ id, type: 'accordion', items, styles: parseInlineStyles(node), gate: parseGate(node), options: {
                         allowMultiple, openFirst: firstIsOpen, radius,
                         theme: themeMatch ? themeMatch.replace('zporta-acc--', '') : 'light',
                         titleAlign, titleSize, icon
@@ -338,7 +370,7 @@ const htmlToBlocks = (htmlString) => {
                                 blocks.push(...parseNodes(node.childNodes));
                             } else {
                                 console.warn("Parsing unexpected DIV as text block:", node);
-                                blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node) });
+                                blocks.push({ id, type: 'text', data: { text: node.innerHTML }, styles: parseInlineStyles(node), gate: parseGate(node) });
                             }
                         }
                     }
@@ -363,17 +395,18 @@ const blocksToHtml = (blocks) => {
     return blocks.map(block => {
         if (!block) return '';
         const styleString = Object.entries(block.styles || {}).map(([k, v]) => `${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`).join(';');
+        const gatingAttrs = gateAttrString(block);
 
         switch (block.type) {
             case 'heading':
-                return `<h2 style="${styleString}">${block.data.text || ''}</h2>`;
+                return `<h2 style="${styleString}"${gatingAttrs}>${block.data.text || ''}</h2>`;
             case 'text':
                 const isEmpty = !block.data.text || block.data.text.trim() === '' || block.data.text.trim() === '<br>';
                 const hasBlockElements = /<\/(ul|ol|div|p)>/.test(block.data.text);
                 if (hasBlockElements) {
-                    return `<div style="${styleString}">${isEmpty ? '<br>' : block.data.text}</div>`;
+                    return `<div style="${styleString}"${gatingAttrs}>${isEmpty ? '<br>' : block.data.text}</div>`;
                 }
-                return `<p style="${styleString}">${isEmpty ? '<br>' : block.data.text}</p>`;
+                return `<p style="${styleString}"${gatingAttrs}>${isEmpty ? '<br>' : block.data.text}</p>`;
             case 'image': {
                 const align = block.data.align || 'center';
                 const alignStyle = `display:flex;flex-direction:column;align-items:${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};`;
@@ -391,12 +424,12 @@ const blocksToHtml = (blocks) => {
                 const imgContent = block.data.href 
                     ? `<a href="${block.data.href}"${block.data.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${imgTag}</a>`
                     : imgTag;
-                return `<figure style="${combinedStyle}">${imgContent}${block.data.caption ? `<figcaption>${block.data.caption}</figcaption>` : ''}</figure>`;
+                return `<figure style="${combinedStyle}"${gatingAttrs}>${imgContent}${block.data.caption ? `<figcaption>${block.data.caption}</figcaption>` : ''}</figure>`;
             }
             case 'audio':
-                return `<figure style="${styleString}"><audio controls src="${block.data.src || ''}"></audio></figure>`;
+                return `<figure style="${styleString}"${gatingAttrs}><audio controls src="${block.data.src || ''}"></audio></figure>`;
             case 'video':
-                return `<figure style="${styleString}"><video controls src="${block.data.src || ''}"></video></figure>`;
+                return `<figure style="${styleString}"${gatingAttrs}><video controls src="${block.data.src || ''}"></video></figure>`;
             case 'button': {
                 const v = block.data?.variant || 'primary';
                 const s = block.data?.size || 'md';
@@ -404,7 +437,7 @@ const blocksToHtml = (blocks) => {
                 const alignStyle = `justify-self: ${block.data?.align === 'center' ? 'center' : block.data?.align === 'right' ? 'end' : 'start'};`;
                 const radiusStyle = `border-radius: ${block.data?.radius || 'var(--r-md)'};`;
                 const combinedStyle = [styleString, alignStyle, radiusStyle].filter(Boolean).join(' ');
-                return `<a href="${block.data?.href || '#'}" class="zporta-button zporta-btn--${v} zporta-btnSize--${s}${f}" style="${combinedStyle}">${block.data?.text || 'Click Me'}</a>`;
+                return `<a href="${block.data?.href || '#'}" class="zporta-button zporta-btn--${v} zporta-btnSize--${s}${f}" style="${combinedStyle}"${gatingAttrs}>${block.data?.text || 'Click Me'}</a>`;
             }
             case 'columns': {
                 let allStyles = styleString;
@@ -423,7 +456,7 @@ const blocksToHtml = (blocks) => {
                     allStyles = [styleString, ...ratioRules].filter(Boolean).join('; ');
                 }
                 const columnsHtml = (block.children || []).map(col => `<div class="zporta-column">${blocksToHtml(col || [])}</div>`).join('');
-                return `<div class="zporta-columns" style="${allStyles.trim()}">${columnsHtml}</div>`;
+                return `<div class="zporta-columns" style="${allStyles.trim()}"${gatingAttrs}>${columnsHtml}</div>`;
             }
             case 'accordion': {
                  const o = block.options || {};
@@ -443,7 +476,7 @@ const blocksToHtml = (blocks) => {
                            </details>`;
                  }).join('');
                  const allowAttr = allowMulti ? ' data-allow-multiple="1"' : '';
-                 return `<div class="zporta-accordion zporta-acc--${theme}"${allowAttr} style="--acc-radius:${radius};${styleString}">${itemsHtml}</div>`;
+                 return `<div class="zporta-accordion zporta-acc--${theme}"${allowAttr} style="--acc-radius:${radius};${styleString}"${gatingAttrs}>${itemsHtml}</div>`;
             }
             default:
                 console.warn("Unknown block type during serialization:", block.type);
@@ -2003,7 +2036,7 @@ const LayerOutline = ({ editorRoot, selectedLayer, onSelectLayer }) => {
 }
 
 // --- EDITOR ROOT COMPONENT ---
-const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general', externalCss = '', onEditorReady }, ref) => {
+const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general', externalCss = '', onEditorReady, boundCoursePermalink = null, boundCourseTitle = '', boundCourseType = null }, ref) => {
     const rendererRef = useRef(null); // Ref to the .renderer element
     const imageUploadInputRef = useRef(null);
     const audioUploadInputRef = useRef(null);
@@ -2027,6 +2060,10 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
     const [isFullscreen, setIsFullscreen] = useState(false);
     
     const [editingBlockId, setEditingBlockId] = useState(null); // The *ID* of the block being edited
+    // Creator's premium published courses for gating
+    const [premiumCourses, setPremiumCourses] = useState([]);
+    const [coursesLoading, setCoursesLoading] = useState(false);
+    const [coursesError, setCoursesError] = useState('');
 
     // On mount: collapse the sidebar by default on small screens (mobile)
     useEffect(() => {
@@ -2109,6 +2146,31 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
             Promise.resolve().then(onEditorReady);
         }
     }, [onEditorReady]);
+
+    // Lazy-load creator's premium courses for the gating selector when settings is opened
+    useEffect(() => {
+        const loadCourses = async () => {
+            try {
+                setCoursesLoading(true);
+                setCoursesError('');
+                const resp = await apiClient.get('/courses/my/');
+                const items = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp?.data?.results) ? resp.data.results : []);
+                const filtered = (items || []).filter(c => (c?.course_type === 'premium') && (c?.is_draft === false));
+                const mapped = filtered.map(c => ({ title: c.title, permalink: c.permalink }));
+                setPremiumCourses(mapped);
+            } catch (e) {
+                setCoursesError('Failed to load your courses.');
+            } finally {
+                setCoursesLoading(false);
+            }
+        };
+        // Only load if not bound to a specific course (bound mode doesn't need the list)
+        if (!boundCoursePermalink) {
+            if (isSettingsOpen && editingBlockId && premiumCourses.length === 0 && !coursesLoading && !coursesError) {
+                loadCourses();
+            }
+        }
+    }, [isSettingsOpen, editingBlockId, premiumCourses.length, coursesLoading, coursesError, boundCoursePermalink]);
 
     const applyCssToEditor = useCallback((rawCss = '') => {
         const target = document.getElementById(themeStyleId);
@@ -2437,6 +2499,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 let clonedData = { ...(block.data || {}) };
                 let clonedStyles = { ...(block.styles || {}) };
                 let clonedOptions = { ...(block.options || {}) };
+                let clonedGate = block.gate ? { ...block.gate } : null;
                 let clonedChildren = null;
                 let clonedItems = null;
 
@@ -2450,7 +2513,7 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                         blocks: item.blocks ? item.blocks.map(cloneWithNewIds) : []
                     }));
                 }
-                return { ...block, id: newId, data: clonedData, styles: clonedStyles, options: clonedOptions, children: clonedChildren, items: clonedItems };
+                return { ...block, id: newId, data: clonedData, styles: clonedStyles, options: clonedOptions, gate: clonedGate, children: clonedChildren, items: clonedItems };
             };
             newBlock = cloneWithNewIds(blockToDuplicate);
         } else {
@@ -3033,6 +3096,94 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                                         <input id={`style-borderRadius-${editingBlock.id}`} type="text" name="borderRadius" value={editingBlock.styles?.borderRadius || ''} onChange={(e) => handleUpdateStyle(editingBlock.id, {...editingBlock.styles, borderRadius: e.target.value})} placeholder="e.g., 8px" />
                                     </div>
                                     
+                                    {/* --- 1b. Visibility & Gating (For ALL blocks) --- */}
+                                    <div className={styles.csGroup} role="group" aria-labelledby={`gating-label-${editingBlock.id}`}>
+                                        <span id={`gating-label-${editingBlock.id}`} className={styles.csGroupLabel}>Visibility</span>
+                                        {boundCoursePermalink && boundCourseType === 'premium' ? (
+                                            <>
+                                                <div className={styles.csGroup}>
+                                                    <label className={styles.csCheckboxLabel} htmlFor={`gate-toggle-${editingBlock.id}`}>
+                                                        <input
+                                                            id={`gate-toggle-${editingBlock.id}`}
+                                                            type="checkbox"
+                                                            checked={!!editingBlock.gate}
+                                                            onChange={(e) => {
+                                                                const on = e.target.checked;
+                                                                if (on) {
+                                                                    handleUpdateBlock(editingBlock.id, { gate: { requiredCoursePermalink: boundCoursePermalink, message: editingBlock.gate?.message || '' } });
+                                                                } else {
+                                                                    handleUpdateBlock(editingBlock.id, { gate: null });
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span>Restrict this section to enrolled students of “{boundCourseTitle || 'this course'}”.</span>
+                                                    </label>
+                                                </div>
+                                                {!!editingBlock.gate && (
+                                                    <div className={styles.styleControl}>
+                                                        <label htmlFor={`gate-msg-${editingBlock.id}`}>Custom lock message (optional)</label>
+                                                        <input
+                                                            id={`gate-msg-${editingBlock.id}`}
+                                                            type="text"
+                                                            value={editingBlock.gate?.message || ''}
+                                                            onChange={(e) => handleUpdateBlock(editingBlock.id, { gate: { requiredCoursePermalink: boundCoursePermalink, message: e.target.value } })}
+                                                            placeholder="e.g., Enroll to unlock this section."
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
+                                                    Gating is tied to this lesson’s course to avoid cross-course confusion.
+                                                </div>
+                                            </>
+                                        ) : boundCoursePermalink && boundCourseType !== 'premium' ? (
+                                            <div className={styles.styleControl}>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                                    This lesson is attached to a free course. Inline premium gating isn’t applicable.
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className={styles.styleControl}>
+                                                    <label htmlFor={`gate-course-${editingBlock.id}`}>Restrict this section to buyers of</label>
+                                                    <select
+                                                        id={`gate-course-${editingBlock.id}`}
+                                                        value={editingBlock.gate?.requiredCoursePermalink || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (!val) {
+                                                                handleUpdateBlock(editingBlock.id, { gate: null });
+                                                            } else {
+                                                                handleUpdateBlock(editingBlock.id, { gate: { requiredCoursePermalink: val, message: editingBlock.gate?.message || '' } });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">— No restriction (visible to all) —</option>
+                                                        {premiumCourses.map(c => (
+                                                            <option key={c.permalink} value={c.permalink}>{c.title}</option>
+                                                        ))}
+                                                    </select>
+                                                    {coursesLoading && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>Loading your courses…</div>}
+                                                    {coursesError && <div className={styles.uploadError} onClick={() => setCoursesError('')}>{coursesError} (click to dismiss)</div>}
+                                                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
+                                                        Only premium, published courses you own are shown. Readers must be enrolled to view this section.
+                                                    </div>
+                                                </div>
+                                                {!!editingBlock.gate && (
+                                                    <div className={styles.styleControl}>
+                                                        <label htmlFor={`gate-msg-${editingBlock.id}`}>Custom lock message (optional)</label>
+                                                        <input
+                                                            id={`gate-msg-${editingBlock.id}`}
+                                                            type="text"
+                                                            value={editingBlock.gate?.message || ''}
+                                                            onChange={(e) => handleUpdateBlock(editingBlock.id, { gate: { requiredCoursePermalink: editingBlock.gate?.requiredCoursePermalink || '', message: e.target.value } })}
+                                                            placeholder="e.g., Enroll to unlock this section."
+                                                        />
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
                                     <hr className={styles.csSeparator} />
 
                                     {/* --- 2. Block-Specific Settings --- */}

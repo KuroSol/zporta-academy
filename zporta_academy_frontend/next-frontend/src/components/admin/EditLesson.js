@@ -432,6 +432,9 @@ export default function EditLesson() {
                    initialContent={initialContent}
                    mediaCategory="lesson"
                    externalCss={customCSS}
+                   boundCoursePermalink={(courses.find(c => String(c.id) === String(selectedCourse || originalCourseId)) || {}).permalink || null}
+                   boundCourseTitle={(courses.find(c => String(c.id) === String(selectedCourse || originalCourseId)) || {}).title || ''}
+                   boundCourseType={(courses.find(c => String(c.id) === String(selectedCourse || originalCourseId)) || {}).course_type || null}
                    // *** REMOVED onEditorReady prop ***
                  />
              ) : (

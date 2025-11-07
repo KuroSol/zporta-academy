@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useState, useContext, useRef, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { 
     FaPlus, FaBook, FaQuestion, FaSpinner, FaTimes, FaEdit, FaTrash, 
@@ -229,7 +230,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token]);
+    }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
 
     /**
      * @callback fetchEnrollmentStatus
@@ -264,7 +265,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         // keep dropdowns fresh
         // ignore errors silently when course not ready yet
         refreshContentLists();
-    }, [permalink, initialCourse, token, fetchCourseData, refreshContentLists]);
+    }, [permalink, initialCourse, token, course, fetchCourseData, refreshContentLists, fetchEnrollmentStatus]);
 
     /**
      * @callback initializeEditMode
@@ -308,11 +309,21 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             setCoverImagePreview(course.cover_image || null);
             setCurrentEditStep(1);
             setEditMode(true);
+            // Refresh course detail with authenticated request so attached draft lessons are included
+            try {
+                const res = await apiClient.get(`/courses/${permalink}/`);
+                const { course: freshCourse, lessons: freshLessons, quizzes: freshQuizzes } = res.data || {};
+                if (freshCourse) setCourse(freshCourse);
+                if (Array.isArray(freshLessons)) setLessons(freshLessons);
+                if (Array.isArray(freshQuizzes)) setQuizzes(freshQuizzes);
+            } catch (refreshErr) {
+                console.warn("Could not refresh owner course details:", refreshErr.response?.data || refreshErr.message);
+            }
             setMessage({}); // Clear loading message
         } catch (err) {
             handleApiError(err, "Failed to load resources required for editing.");
         }
-    }, [isCreator, course, lessons, quizzes]);
+    }, [isCreator, course, lessons, quizzes, permalink, handleApiError]);
     
     /**
      * `useEffect` to automatically trigger edit mode if the user is the creator and on the correct admin route.
@@ -346,7 +357,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
      * @param {Error} err - The error object from the API call.
      * @param {string} defaultMessage - A fallback message to show the user.
      */
-    const handleApiError = (err, defaultMessage) => {
+    const handleApiError = useCallback((err, defaultMessage) => {
         console.error("API Error:", err.response?.data || err.message);
         const status = err.response?.status;
         const apiMessage = err.response?.data?.detail || JSON.stringify(err.response?.data);
@@ -355,7 +366,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             logout();
             router.push("/login");
         }
-    };
+    }, [logout, router]);
 
     /**
      * @function showMessage
@@ -488,6 +499,23 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             handleApiError(err, "Failed to detach quiz.");
         }
     };
+
+    // Publish a single attached draft lesson (owner-only)
+    const handlePublishSingleLesson = async (lesson) => {
+        if (!lesson?.permalink) return;
+        if (course?.is_draft) {
+            return showMessage("Publish the course first, then publish its lessons.", "warning");
+        }
+        if (!window.confirm(`Publish lesson: "${lesson.title}"?`)) return;
+        try {
+            await apiClient.post(`/lessons/${lesson.permalink}/publish/`);
+            // Update local state: mark this lesson as published
+            setLessons(prev => prev.map(l => l.id === lesson.id ? { ...l, status: 'published' } : l));
+            showMessage("Lesson published.", "success");
+        } catch (err) {
+            handleApiError(err, "Failed to publish lesson.");
+        }
+    };
     /**
      * @function validateEditStep
      * @description Validates the inputs for a given step in the edit wizard.
@@ -575,6 +603,17 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } catch (err) {
             return handleApiError(err, "Failed to update attached lessons/quizzes.");
         }
+
+        // 3.2 Handle publish/unpublish transitions
+        try {
+            if (course && course.is_draft && !editData.isDraft) {
+                // Will publish via serializer flag below
+            } else if (course && !course.is_draft && editData.isDraft) {
+                await apiClient.post(`/courses/${permalink}/unpublish/`);
+            }
+        } catch (err) {
+            return handleApiError(err, "Failed to change course publish status.");
+        }
         
         const formData = new FormData();
         formData.append('title', editData.title);
@@ -585,7 +624,9 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         }
         
         formData.append('is_draft', editData.isDraft);
-        if(!editData.isDraft) {
+        if (!editData.isDraft) {
+            // Use serializer's publish flag to flip from draft -> published
+            formData.append('publish', 'true');
             (editData.testers || "").split(',').map(t => t.trim()).filter(Boolean).forEach(tester => {
                 formData.append('allowed_testers', tester);
             });
@@ -608,6 +649,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             handleApiError(err, "Failed to save changes. Please check the form and try again.");
         }
     };
+
     
     /**
      * @function handleDeleteCourse
@@ -703,7 +745,15 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="editCoverImage">Cover Image</label>
-                                {coverImagePreview && <img src={coverImagePreview} alt="Cover preview" className={styles.coverPreview} />}
+                                                                {coverImagePreview && (
+                                                                    <Image
+                                                                        src={coverImagePreview}
+                                                                        alt="Cover preview"
+                                                                        className={styles.coverPreview}
+                                                                        width={1200}
+                                                                        height={400}
+                                                                    />
+                                                                )}
                                 <input id="editCoverImage" type="file" accept="image/*" onChange={handleEditCoverImageChange} />
                             </div>
                         </div>
@@ -732,21 +782,31 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                       </button>
                                     </div>
                                     <div className={styles.scrollableBox}>
-                                      {lessons.length ? (
-                                        lessons.map(l => (
-                                          <div key={l.id} className={styles.attachedRow}>
-                                            <span className={styles.attachedTitle}>{l.title}</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleDetachLessonImmediate(l.id)}
-                                              className={styles.detachBtn}
-                                              title="Detach"
-                                            >
-                                              <FaTimes/>
-                                            </button>
-                                          </div>
-                                        ))
-                                      ) : <p>No lessons attached.</p>}
+                                                                            {lessons.length ? (
+                                                                                lessons.map(l => (
+                                                                                    <div key={l.id} className={styles.attachedRow}>
+                                                                                        <span className={styles.attachedTitle}>{l.title}</span>
+                                                                                        <span className={`${styles.statusPill} ${l.status === 'published' ? styles.statusPublished : styles.statusDraft}`} style={{ marginLeft: 8 }}>
+                                                                                            {l.status === 'published' ? 'Published' : 'Draft'}
+                                                                                        </span>
+                                                                                        {l.status === 'draft' && (
+                                                                                            course.is_draft ? (
+                                                                                                <button type="button" className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`} style={{ marginLeft: 8 }} disabled title="Publish the course first">Publish</button>
+                                                                                            ) : (
+                                                                                                <button type="button" className={`${styles.zportaBtn} ${styles.btnSuccess}`} style={{ marginLeft: 8 }} onClick={() => handlePublishSingleLesson(l)}>Publish</button>
+                                                                                            )
+                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleDetachLessonImmediate(l.id)}
+                                                                                            className={styles.detachBtn}
+                                                                                            title="Detach"
+                                                                                        >
+                                                                                            <FaTimes/>
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ))
+                                                                            ) : <p>No lessons attached.</p>}
                                     </div>
                                     <h4 className={styles.contentSubheader}>Available Lessons</h4>
                                     <div className={styles.scrollableBox}>
@@ -894,7 +954,13 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             )}
 
             <header className={styles.header}>
-                 <img src={course.cover_image || 'https://placehold.co/1200x400/34495e/ffffff?text=Zporta+Academy'} alt={course.title} className={styles.coverImage} />
+                                 <Image
+                                     src={course.cover_image || 'https://placehold.co/1200x400/34495e/ffffff?text=Zporta+Academy'}
+                                     alt={course.title}
+                                     className={styles.coverImage}
+                                     width={1200}
+                                     height={400}
+                                 />
                  <div className={styles.headerOverlay}>
                      <div className={styles.headerContent}>
                          <span className={styles.subjectPill}>{course.subject_name}</span>

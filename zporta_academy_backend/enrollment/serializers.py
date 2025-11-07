@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from .models import Enrollment
 from courses.models import Course    
 from lessons.serializers import LessonSerializer # Ensure these exist and work
+from lessons.content_filters import mask_restricted_sections
 from quizzes.serializers import QuizSerializer # Ensure these exist and work
 from lessons.models import LessonCompletion 
 import logging # Import logging
@@ -96,8 +97,19 @@ class EnrollmentSerializer(serializers.ModelSerializer):
             serialized_lessons = []
             if hasattr(course_obj, 'lessons'):
                 try:
-                    lessons = course_obj.lessons.all()
+                    from lessons.models import Lesson
+                    # Only expose published lessons to enrolled users
+                    lessons = course_obj.lessons.filter(status=Lesson.PUBLISHED)
                     serialized_lessons = LessonSerializer(lessons, many=True, context={'request': request}).data
+                    # Mask any inline-restricted sections for the current user
+                    # (e.g., blocks that point to other premium courses)
+                    if request and serialized_lessons:
+                        user = getattr(request, 'user', None)
+                        if not (getattr(user, 'is_authenticated', False) and getattr(user, 'is_staff', False)):
+                            for l in serialized_lessons:
+                                if 'content' in l and l['content']:
+                                    # Enforce course-bound gating to the current course context
+                                    l['content'] = mask_restricted_sections(l['content'], user, bound_course=course_obj)
                 except Exception as e:
                     logger.error(f"Error serializing lessons for course {course_obj.id}: {e}")
 
