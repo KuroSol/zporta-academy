@@ -378,7 +378,16 @@ const blocksToHtml = (blocks) => {
                 const align = block.data.align || 'center';
                 const alignStyle = `display:flex;flex-direction:column;align-items:${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};`;
                 const combinedStyle = [styleString, alignStyle].filter(Boolean).join(' ');
-                const imgTag = `<img src="${block.data.src || ''}" alt="${block.data.caption || ''}" />`;
+                // Persist maxWidth onto the <img> so the size survives copy/save and re-import
+                const imgInlineStyles = [];
+                if (block.data.maxWidth) {
+                    imgInlineStyles.push(`max-width:${block.data.maxWidth}`);
+                    // Ensure responsive rendering when maxWidth set
+                    imgInlineStyles.push('width:100%');
+                    imgInlineStyles.push('height:auto');
+                }
+                const imgStyleAttr = imgInlineStyles.length ? ` style="${imgInlineStyles.join(';')}"` : '';
+                const imgTag = `<img src="${block.data.src || ''}" alt="${block.data.caption || ''}"${imgStyleAttr} />`;
                 const imgContent = block.data.href 
                     ? `<a href="${block.data.href}"${block.data.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${imgTag}</a>`
                     : imgTag;
