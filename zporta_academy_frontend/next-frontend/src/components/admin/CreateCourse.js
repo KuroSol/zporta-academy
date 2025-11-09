@@ -36,6 +36,19 @@ const CoursePreview = ({ courseData, coverImagePreview }) => (
                     {courseData.courseType === 'premium' ? `$${parseFloat(courseData.price || 0).toFixed(2)}` : 'Free'}
                 </div>
                 <div className={styles.previewDescription} dangerouslySetInnerHTML={{ __html: courseData.description || '<p>Your course description will appear here...</p>' }} />
+                {Array.isArray(courseData.sellingPoints) && courseData.sellingPoints.filter(p => p && p.trim()).length > 0 && (
+                    <div className={styles.previewSellingPointsCard}>
+                        <div className={styles.previewSellingPointsHeader}>What you&apos;ll get</div>
+                        <ul className={styles.previewSellingPointsList}>
+                            {courseData.sellingPoints.filter(p => p && p.trim()).slice(0,3).map((pt, idx) => (
+                                <li key={idx} className={styles.previewSellingPointItem}>
+                                    <span className={styles.previewSellingPointIcon}>★</span>
+                                    <span className={styles.previewSellingPointText}>{pt.trim()}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     </div>
@@ -62,6 +75,8 @@ const CreateCourse = () => {
     const [selectedQuizzes, setSelectedQuizzes] = useState([]);
     const [isDraft, setIsDraft] = useState(true);
     const [testers, setTesters] = useState('');
+    // Selling points (up to 3 short benefit bullets)
+    const [sellingPoints, setSellingPoints] = useState(['', '', '']);
 
     // UI State
     const [loadingInitial, setLoadingInitial] = useState(true);
@@ -105,7 +120,7 @@ const CreateCourse = () => {
         } finally {
             setLoadingInitial(false);
         }
-    }, [logout]);
+    }, [logout, handleApiError]);
 
     useEffect(() => {
         if (localStorage.getItem('token')) {
@@ -126,7 +141,7 @@ const CreateCourse = () => {
         } catch (error) {
             handleApiError(error, 'Failed to refresh lesson/quiz lists.');
         }
-    }, [logout]);
+    }, [logout, handleApiError]);
 
 
     // --- Event Handlers ---
@@ -327,6 +342,16 @@ const CreateCourse = () => {
 
         const finalDescription = readEditorHtml();
         formData.append('description', finalDescription);
+        // Selling points: keep up to 3 non-empty points, trimmed
+        try {
+            const cleaned = (sellingPoints || [])
+                .map(p => (p || '').trim())
+                .filter(Boolean)
+                .slice(0, 3);
+            formData.append('selling_points', JSON.stringify(cleaned));
+        } catch (_) {
+            // ignore if serialization fails; backend will default
+        }
         return formData;
     };
     
@@ -382,7 +407,7 @@ const CreateCourse = () => {
     }
 
     const subjectName = subjects.find(s => s.id == subject)?.name;
-    const previewData = { title, subjectName, courseType, price, description };
+    const previewData = { title, subjectName, courseType, price, description, sellingPoints };
 
     return (
         <div className={styles.createCoursePage}>
@@ -462,6 +487,27 @@ const CreateCourse = () => {
                                             <button type="button" onClick={clearCoverImage} className={styles.clearImageButton} title="Remove image">&times;</button>
                                         </div>
                                     )}
+                                </div>
+                            </div>
+                            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                                <label>Key Selling Points (up to 3 short benefits)</label>
+                                <div className={styles.sellingPointsInputs}>
+                                    {sellingPoints.map((pt, idx) => (
+                                        <input
+                                            key={idx}
+                                            type="text"
+                                            maxLength={120}
+                                            placeholder={`Benefit ${idx + 1} (optional)`}
+                                            value={pt}
+                                            onChange={(e) => {
+                                                const next = [...sellingPoints];
+                                                next[idx] = e.target.value;
+                                                setSellingPoints(next);
+                                                setUnsavedChanges(true);
+                                            }}
+                                        />
+                                    ))}
+                                    <small className={styles.fieldNote}>Keep each point concise (max 120 characters). Empty inputs are ignored.</small>
                                 </div>
                             </div>
                         </div>

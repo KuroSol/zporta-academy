@@ -42,6 +42,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'og_title', 'og_description', 'og_image',
             'lesson_count', 'is_owner', 'is_draft', 'allowed_testers',
             'enrolled_count', 'completed_count',
+            'selling_points',
             'publish',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink', 'unique_code', 'is_draft']

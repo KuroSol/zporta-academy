@@ -328,6 +328,52 @@
     display: block;
 }
 
+/* Selling Points Card */
+.sellingPointsCard {
+    margin-top: 1.5rem;
+    background: linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+.sellingPointsHeader {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.sellingPointsList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.sellingPointItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #334155;
+    background: #f1f5f9;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: background-color 0.15s ease;
+}
+.sellingPointItem:hover {
+    background: #e2e8f0;
+}
+@media (max-width: 900px) {
+    .sellingPointsCard { margin-top: 2rem; }
+}
+
 /* --- Description fade + custom scrollbars --- */
 .descriptionViewer::after {
     /* subtle bottom fade to indicate more content */

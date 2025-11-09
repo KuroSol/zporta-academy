@@ -65,6 +65,10 @@ class Course(models.Model):
     og_description = models.TextField(max_length=200, blank=True)
     og_image = models.URLField(blank=True)
     
+    # Up to 3 short selling points to highlight benefits on the detail page
+    # Stored as a JSON list of strings for flexibility and i18n friendliness.
+    selling_points = models.JSONField(default=list, blank=True)
+    
     # Default manager returns only published courses.
     objects = PublishedCourseManager()
     # Use all_objects when you need access to every course (drafts and published).

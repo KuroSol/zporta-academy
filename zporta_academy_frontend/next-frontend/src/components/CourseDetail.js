@@ -302,6 +302,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 title: course.title || "",
                 subject: course.subject || "",
                 description: course.description || "",
+                sellingPoints: Array.isArray(course.selling_points) ? course.selling_points.slice(0,3) : [],
                 coverImageFile: null, // For new file uploads
                 selectedLessons: lessons.map(l => l.id),
                 selectedQuizzes: quizzes.map(q => q.id),
@@ -325,7 +326,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } catch (err) {
             handleApiError(err, "Failed to load resources required for editing.");
         }
-    }, [isCreator, course, lessons, quizzes, permalink]);
+    }, [isCreator, course, lessons, quizzes, permalink, handleApiError]);
     
     /**
      * `useEffect` to automatically trigger edit mode if the user is the creator and on the correct admin route.
@@ -529,6 +530,12 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             case 1:
                 if (!editData.title.trim()) return "Course Title is required.";
                 if (!editData.subject) return "Please select a Subject.";
+                // Validate up to 3 concise selling points
+                if (Array.isArray(editData.sellingPoints)) {
+                    const cleaned = editData.sellingPoints.map(p => (p || "").trim()).filter(Boolean);
+                    if (cleaned.length > 3) return "Please limit to 3 selling points.";
+                    if (cleaned.some(p => p.length > 120)) return "Each selling point should be under 120 characters.";
+                }
                 return null;
             case 2:
                 const desc = editorRef.current?.getContent() || editData.description;
@@ -621,6 +628,11 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         formData.append('title', editData.title);
         formData.append('subject', editData.subject);
         formData.append('description', editData.description);
+        // send selling points as JSON list
+        if (Array.isArray(editData.sellingPoints)) {
+            const cleaned = editData.sellingPoints.map(p => (p || '').trim()).filter(Boolean).slice(0,3);
+            formData.append('selling_points', JSON.stringify(cleaned));
+        }
         if (editData.coverImageFile) {
             formData.append('cover_image', editData.coverImageFile);
         }
@@ -744,6 +756,26 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                         {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Key Points (up to 3)</label>
+                                {Array.from({ length: 3 }).map((_, idx) => (
+                                  <input
+                                    key={idx}
+                                    type="text"
+                                    value={(editData.sellingPoints?.[idx]) || ''}
+                                    onChange={(e) => {
+                                        const next = [...(editData.sellingPoints||[])];
+                                        next[idx] = e.target.value;
+                                        setEditData(prev => ({ ...prev, sellingPoints: next }));
+                                    }}
+                                    className={styles.inputField}
+                                    placeholder={idx === 0 ? 'e.g., Learn by building real projects' : idx === 1 ? 'e.g., Step-by-step videos and code' : 'e.g., Lifetime access and updates'}
+                                    maxLength={120}
+                                    style={{ marginTop: idx ? 8 : 0 }}
+                                  />
+                                ))}
+                                <small className={styles.fieldNote}>Short, benefit-driven bullets appear on the course page.</small>
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="editCoverImage">Cover Image</label>
@@ -1014,6 +1046,19 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
                         </div>
                     </div>
+                                        {Array.isArray(course.selling_points) && course.selling_points.length > 0 && (
+                                                                    <div className={styles.sellingPointsCard}>
+                                                                        <div className={styles.sellingPointsHeader}>What you&apos;ll get</div>
+                                                <ul className={styles.sellingPointsList}>
+                                                    {course.selling_points.slice(0,3).map((p, i) => (
+                                                        <li key={i} className={styles.sellingPointItem}>
+                                                            <FaStar style={{ color: 'var(--zporta-primary-color, #3b82f6)' }} />
+                                                            <span>{p}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                 </aside>
             </div>
         </div>
