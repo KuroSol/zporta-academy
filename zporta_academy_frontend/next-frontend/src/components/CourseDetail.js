@@ -223,6 +223,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             setLessons(fetchedLessons || []);
             setQuizzes(fetchedQuizzes || []);
 
+            // Check enrollment status if user is authenticated
             if (token) fetchEnrollmentStatus(fetchedCourse.id);
 
         } catch (err) {
@@ -230,7 +231,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token]); // Fixed: Removed circular dependencies
+    }, [permalink, token]);
 
     /**
      * @callback fetchEnrollmentStatus
