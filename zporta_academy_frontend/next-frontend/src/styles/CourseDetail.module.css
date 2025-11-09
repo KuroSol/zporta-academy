@@ -222,9 +222,20 @@
     border-bottom: 2px solid #e2e8f0; /* slate-200 */
 }
 .descriptionViewer {
+    /* Make the description feel like a card: readable, tactile, and scrollable */
     line-height: 1.8;
-    color: #334155; /* slate-700 */
+    color: #0f172a; /* slate-900 for stronger contrast */
     font-size: 1.05rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    border: 1px solid #e6eef8; /* softer border for the card */
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 24px rgba(16,24,40,0.04);
+    position: relative;
+    /* Limit height on larger screens and allow internal scroll for long descriptions */
+    max-height: 360px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .descriptionViewer .accordion-item {
     border: 1px solid #e2e8f0;
@@ -315,6 +326,78 @@
 }
 .courseMeta span {
     display: block;
+}
+
+/* --- Description fade + custom scrollbars --- */
+.descriptionViewer::after {
+    /* subtle bottom fade to indicate more content */
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 60px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 85%);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* WebKit scrollbar styling */
+.descriptionViewer::-webkit-scrollbar {
+    width: 10px;
+}
+.descriptionViewer::-webkit-scrollbar-track {
+    background: transparent;
+}
+.descriptionViewer::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.6);
+}
+
+/* Firefox scrollbar */
+.descriptionViewer {
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 transparent;
+}
+
+/* --- Sidebar CTA / Price polish --- */
+.sidebarCard .price {
+    display: block;
+    font-size: 2.75rem;
+    font-weight: 900;
+    color: var(--zporta-primary-color, #3b82f6);
+    margin-bottom: 0.5rem;
+}
+.sidebarCard .priceSmall {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+.sidebarCard .ctaRow {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.sidebarCard .zportaBtnPrimary {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(59,130,246,0.12);
+}
+.sidebarCard .secondarySmall {
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
+/* Small helper: reduce fade on small screens where header/overlay already limits space */
+@media (max-width: 768px) {
+    .descriptionViewer::after { height: 40px; }
+    .descriptionViewer { max-height: 260px; }
 }
 
 /* * Edit Mode View Styles
