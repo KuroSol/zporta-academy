@@ -230,7 +230,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token]);
+    }, [permalink, token]); // Fixed: Removed circular dependencies
 
     /**
      * @callback fetchEnrollmentStatus
