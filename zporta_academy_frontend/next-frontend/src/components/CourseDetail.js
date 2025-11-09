@@ -1009,7 +1009,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                         <div className={styles.courseMeta}>
                             <span>Created by: <strong>{course.created_by}</strong></span>
                             <span>Subject: <strong>{course.subject_name}</strong></span>
-                            <span>Last updated: <strong>{new Date(course.updated_at).toLocaleDateString()}</strong></span>
+                            <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
                         </div>
                     </div>
                 </aside>
