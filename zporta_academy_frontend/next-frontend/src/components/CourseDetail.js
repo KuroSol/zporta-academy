@@ -215,6 +215,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         if (!permalink) return;
         setLoading(true);
         setError("");
+        if (process.env.NODE_ENV === 'development') console.log('[CourseDetail] Fetching course:', permalink);
         try {
             const res = await apiClient.get(`/courses/${permalink}/`);
             const { course: fetchedCourse, lessons: fetchedLessons, quizzes: fetchedQuizzes } = res.data;
