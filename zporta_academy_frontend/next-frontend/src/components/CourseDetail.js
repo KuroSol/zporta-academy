@@ -230,7 +230,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
+    }, [permalink, token]);
 
     /**
      * @callback fetchEnrollmentStatus
