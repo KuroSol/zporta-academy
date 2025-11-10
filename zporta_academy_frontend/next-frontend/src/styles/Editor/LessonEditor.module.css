@@ -900,6 +900,66 @@
 
 /* --- Accordion Block --- */
 .accordion { width: 100%; position: relative; }
+
+/* --- Table Block --- */
+.tableWrapper {
+  position: relative;
+  margin: var(--space-3) 0;
+}
+.tableToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+.tableToolbar .toolbarButton {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.tableToolbar .toolbarButton:hover {
+  background: var(--bg-hover);
+}
+.tableToolbar .toolbarLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  table-layout: fixed;
+}
+.table td,
+.table th {
+  padding: 10px;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.tableCell {
+  min-height: 24px;
+}
+@media (max-width: 600px) {
+  .table td, .table th { padding: 8px; font-size: 0.95rem; }
+}
 .accItem { 
   border: 1px solid var(--border-color); 
   border-radius: var(--r-md); 

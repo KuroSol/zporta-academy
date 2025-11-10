@@ -139,6 +139,12 @@ const Icons = {
     Button: (p) => <I {...p}><path fillRule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2-1a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5a1 1 0 00-1-1H6z" clipRule="evenodd" /><path d="M6 8.5a.5.5 0 01.5-.5h7a.5.5 0 010 1h-7a.5.5 0 01-.5-.5z" /></I>,
     Columns: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm9 1V16H3V4h8zm2 0V16h4V4h-4z" clipRule="evenodd" /></I>,
     Accordion: (p) => <I {...p}><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
+    Table: (p) => (
+        <I {...p}>
+            <rect x="3" y="3" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M3 8h14M3 12h14M8 3v14M12 3v14" stroke="currentColor" strokeWidth="1.5" />
+        </I>
+    ),
     Layout: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3zm4 0v12h8V4H7z" clipRule="evenodd" /></I>,
     Column: (p) => <I {...p}><path fillRule="evenodd" d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm1 1v12h12V4H3z" clipRule="evenodd" /></I>,
     Panel: (p) => <I {...p}><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></I>,
@@ -158,6 +164,7 @@ const BlockTypeIcons = {
     audio: <Icons.Audio />,
     video: <Icons.Video />,
     button: <Icons.Button />,
+    table: <Icons.Table />,
     columns: <Icons.Columns />,
     accordion: <Icons.Accordion />,
     // For containers
@@ -357,6 +364,27 @@ const htmlToBlocks = (htmlString) => {
                         theme: themeMatch ? themeMatch.replace('zporta-acc--', '') : 'light',
                         titleAlign, titleSize, icon
                     }});
+                } else if (node.classList.contains('zporta-table-wrapper') || node.tagName === 'TABLE') {
+                    // Parse table blocks (either wrapped or plain <table>)
+                    const tableEl = node.tagName === 'TABLE' ? node : node.querySelector('table');
+                    if (tableEl) {
+                        const rows = Array.from(tableEl.rows || []);
+                        const cells = rows.map(tr => Array.from(tr.cells).map(td => td.innerHTML || ''));
+                        const rowsCount = rows.length;
+                        const colsCount = rows[0]?.cells?.length || 0;
+                        // Extract basic styling
+                        const bw = parseInt((tableEl.style.borderWidth || '').replace('px', ''), 10);
+                        const data = {
+                            rows: rowsCount,
+                            cols: colsCount,
+                            cells,
+                            bgColor: tableEl.style.backgroundColor || '',
+                            borderColor: tableEl.style.borderColor || '#e2e8f0',
+                            borderWidth: isNaN(bw) ? 1 : bw,
+                        };
+                        const styleSource = node.tagName === 'TABLE' ? tableEl : node;
+                        blocks.push({ id, type: 'table', data, styles: parseInlineStyles(styleSource), gate: parseGate(styleSource) });
+                    }
                     } else if (node.tagName === 'DIV' && (node.innerHTML.trim() || node.classList.contains('zporta-column'))){
                         if (node.classList.contains('zporta-acc-panel') || node.classList.contains('zporta-column')) {
                             // Do nothing, these are handled by their parent parsers
@@ -364,8 +392,9 @@ const htmlToBlocks = (htmlString) => {
                             // Check if this DIV contains complex nested structures
                             const hasNestedAccordion = node.querySelector('.zporta-accordion');
                             const hasNestedColumns = node.querySelector('.zporta-columns');
+                        const hasNestedTable = node.querySelector('table');
                             
-                            if (hasNestedAccordion || hasNestedColumns) {
+                        if (hasNestedAccordion || hasNestedColumns || hasNestedTable) {
                                 // Parse nested structures as separate blocks
                                 blocks.push(...parseNodes(node.childNodes));
                             } else {
@@ -438,6 +467,25 @@ const blocksToHtml = (blocks) => {
                 const radiusStyle = `border-radius: ${block.data?.radius || 'var(--r-md)'};`;
                 const combinedStyle = [styleString, alignStyle, radiusStyle].filter(Boolean).join(' ');
                 return `<a href="${block.data?.href || '#'}" class="zporta-button zporta-btn--${v} zporta-btnSize--${s}${f}" style="${combinedStyle}"${gatingAttrs}>${block.data?.text || 'Click Me'}</a>`;
+            }
+            case 'table': {
+                const d = block.data || {};
+                const rows = Math.max(1, parseInt(d.rows || 0, 10));
+                const cols = Math.max(1, parseInt(d.cols || 0, 10));
+                const bw = Math.max(0, parseInt(d.borderWidth || 1, 10));
+                const bStyle = bw > 0 ? 'solid' : 'none';
+                const tStyle = [
+                    styleString,
+                    d.bgColor ? `background-color:${d.bgColor}` : '',
+                    `border-width:${bw}px`,
+                    `border-style:${bStyle}`,
+                    `border-color:${d.borderColor || '#e2e8f0'}`,
+                    'table-layout:fixed'
+                ].filter(Boolean).join(';');
+                const cellStyle = `style="border-width:${bw}px;border-style:${bStyle};border-color:${d.borderColor || '#e2e8f0'};word-wrap:break-word;overflow-wrap:anywhere;"`;
+                const cells = (d.cells || Array.from({length: rows}, () => Array.from({length: cols}, () => '')));
+                const tableRows = cells.map(row => `<tr>${row.map(html => `<td contenteditable="false" ${cellStyle}>${(html && html.trim() !== '') ? html : '<br>'}</td>`).join('')}</tr>`).join('');
+                return `<div class="zporta-table-wrapper"${gatingAttrs}><div class="zporta-table-scroll"><table class="zporta-table" style="${tStyle}">${tableRows}</table></div></div>`;
             }
             case 'columns': {
                 let allStyles = styleString;
@@ -561,6 +609,111 @@ const TextBlock = ({ id, data, styles: blockStyles, isEditing, onUpdate, onSelec
         /<\/(ul|ol|div|p)>/.test(data.text)
         ? <div style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || '<br>' }} />
         : <p style={blockStyles} dangerouslySetInnerHTML={{ __html: data.text || 'Paragraph text will appear here.' }} />
+    );
+};
+
+/**
+ * Block: Table
+ * Editable table with responsive scroll and simple styling controls.
+ */
+const TableBlock = ({ data = {}, styles: blockStyles, isEditing, onUpdate }) => {
+    const rows = Math.max(1, parseInt(data.rows || (data.cells?.length || 2), 10));
+    const cols = Math.max(1, parseInt(data.cols || (data.cells?.[0]?.length || 2), 10));
+    const cells = useMemo(() => {
+        const base = Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => (data.cells?.[r]?.[c] ?? '')));
+        return base;
+    }, [rows, cols, data.cells]);
+
+    const borderWidth = Math.max(0, parseInt(data.borderWidth ?? 1, 10));
+    const borderColor = data.borderColor || '#e2e8f0';
+    const bgColor = data.bgColor || '';
+
+    const updateCell = useCallback((r, c, html) => {
+        const next = cells.map((row, ri) => row.map((val, ci) => (ri === r && ci === c ? html : val)));
+        onUpdate({ rows, cols, cells: next, borderWidth, borderColor, bgColor });
+    }, [cells, rows, cols, borderWidth, borderColor, bgColor, onUpdate]);
+
+    const addRow = () => {
+        const next = [...cells, Array.from({ length: cols }, () => '')];
+        onUpdate({ rows: rows + 1, cols, cells: next, borderWidth, borderColor, bgColor });
+    };
+    const removeRow = () => {
+        if (rows <= 1) return;
+        const next = cells.slice(0, -1);
+        onUpdate({ rows: rows - 1, cols, cells: next, borderWidth, borderColor, bgColor });
+    };
+    const addCol = () => {
+        const next = cells.map(row => [...row, '']);
+        onUpdate({ rows, cols: cols + 1, cells: next, borderWidth, borderColor, bgColor });
+    };
+    const removeCol = () => {
+        if (cols <= 1) return;
+        const next = cells.map(row => row.slice(0, -1));
+        onUpdate({ rows, cols: cols - 1, cells: next, borderWidth, borderColor, bgColor });
+    };
+
+    const onBgChange = (color) => onUpdate({ rows, cols, cells, borderWidth, borderColor, bgColor: color });
+    const onBorderColorChange = (color) => onUpdate({ rows, cols, cells, borderWidth, borderColor: color || '#e2e8f0', bgColor });
+    const onBorderWidthChange = (w) => {
+        const n = Math.max(0, Math.min(6, parseInt(w || 0, 10)));
+        onUpdate({ rows, cols, cells, borderWidth: n, borderColor, bgColor });
+    };
+
+    const tableStyle = {
+        ...blockStyles,
+        backgroundColor: bgColor || undefined,
+        borderWidth: borderWidth,
+        borderStyle: borderWidth > 0 ? 'solid' : 'none',
+        borderColor: borderColor,
+        tableLayout: 'fixed'
+    };
+    const cellStyle = {
+        borderWidth: borderWidth,
+        borderStyle: borderWidth > 0 ? 'solid' : 'none',
+        borderColor: borderColor,
+        wordWrap: 'break-word',
+        overflowWrap: 'anywhere'
+    };
+
+    return (
+        <div className={styles.tableWrapper}>
+            {isEditing && (
+                <div className={styles.tableToolbar} onMouseDown={(e)=>e.stopPropagation()} onClick={(e)=>e.stopPropagation()}>
+                    <button type="button" className={styles.toolbarButton} onClick={addRow}>+ Row</button>
+                    <button type="button" className={styles.toolbarButton} onClick={removeRow}>− Row</button>
+                    <button type="button" className={styles.toolbarButton} onClick={addCol}>+ Col</button>
+                    <button type="button" className={styles.toolbarButton} onClick={removeCol}>− Col</button>
+                    <label className={styles.toolbarLabel}>BG<input type="color" value={bgColor || '#ffffff'} onChange={(e)=>onBgChange(e.target.value)} /></label>
+                    <label className={styles.toolbarLabel}>Border<input type="color" value={borderColor} onChange={(e)=>onBorderColorChange(e.target.value)} /></label>
+                    <label className={styles.toolbarLabel}>Width<input type="range" min="0" max="6" value={borderWidth} onChange={(e)=>onBorderWidthChange(e.target.value)} /></label>
+                </div>
+            )}
+            <div className={styles.tableScroll}>
+                <table className={styles.table} style={tableStyle}>
+                    <tbody>
+                        {cells.map((row, r) => (
+                            <tr key={`r-${r}`}>
+                                {row.map((html, c) => (
+                                    <td key={`c-${c}`} style={cellStyle}>
+                                        {isEditing ? (
+                                            <div
+                                                contentEditable
+                                                suppressContentEditableWarning
+                                                className={styles.tableCell}
+                                                onBlur={(e)=> updateCell(r, c, e.currentTarget.innerHTML)}
+                                                dangerouslySetInnerHTML={{ __html: html || '' }}
+                                            />
+                                        ) : (
+                                            <div className={styles.tableCell} dangerouslySetInnerHTML={{ __html: html || '<br>' }} />
+                                        )}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
 };
 
@@ -710,6 +863,7 @@ const blockMap = {
     audio: AudioBlock,
     video: VideoBlock,
     button: ButtonBlock,
+    table: TableBlock,
     // Complex blocks (Columns, Accordion) will be defined in Part 4
     // and added to this map there.
 };
@@ -1279,6 +1433,7 @@ const AddBlockButton = ({ onAdd, isFirst = false }) => {
         { type: 'audio', label: 'Audio', icon: <Icons.Audio/> },
         { type: 'video', label: 'Video', icon: <Icons.Video/> },
         { type: 'button', label: 'Button', icon: <Icons.Button/> },
+        { type: 'table', label: 'Table', icon: <Icons.Table/> },
         { type: 'columns', label: 'Columns', icon: <Icons.Columns/> },
         { type: 'accordion', label: 'Accordion', icon: <Icons.Accordion/> }
     ];
@@ -2525,6 +2680,8 @@ const LessonEditor = forwardRef(({ initialContent = '', mediaCategory = 'general
                 newBlock.data = { uploading: false, src: '' };
             } else if (type === 'button') {
                 newBlock.data = { text: 'Click Me', href: '#', variant:'primary', size:'md', full:false, align:'left', radius:'var(--r-md)' };
+            } else if (type === 'table') {
+                newBlock.data = { rows: 2, cols: 2, cells: [['',''],['','']], bgColor: '', borderColor: '#e2e8f0', borderWidth: 1 };
             } else if (type === 'accordion') {
                 newBlock.items = [{ id: uid(), title: 'Section 1', blocks: [] }];
                 newBlock.options = { allowMultiple: false, titleSize:'md', titleAlign:'left', icon:'chevron', theme:'light', openFirst:true, radius:'8px' };

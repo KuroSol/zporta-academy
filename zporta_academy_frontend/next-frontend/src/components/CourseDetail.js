@@ -1147,6 +1147,23 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             </div>
                         )}
                     </div>
+
+                    {/* Mobile-only: Price/Enroll card under content */}
+                    <div className={`${styles.sidebarCard} ${styles.mobileOnly}`}>
+                        <h3>{course.course_type === 'premium' ? `$${course.price}` : 'Free'}</h3>
+                        {enrolled ? (
+                             <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
+                        ) : (
+                             <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
+                                {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
+                            </button>
+                        )}
+                        <div className={styles.courseMeta}>
+                            <span>Created by: <strong>{course.created_by}</strong></span>
+                            <span>Subject: <strong>{course.subject_name}</strong></span>
+                            <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
+                        </div>
+                    </div>
                 </div>
                 <aside className={styles.rightColumn}>
                     <div className={styles.sidebarCard}>

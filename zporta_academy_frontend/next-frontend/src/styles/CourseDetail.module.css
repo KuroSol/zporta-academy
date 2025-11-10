@@ -761,7 +761,7 @@
 
 /* Show selling points in content area only on mobile (sidebar is hidden) */
 .mobileOnly { display: none; }
-@media (max-width: 480px) {
+@media (max-width: 900px) {
     .mobileOnly { display: block; }
 }
 
@@ -1094,9 +1094,13 @@
     .header { height: 200px; }
     .adminActions { flex-direction: column; width: 100%; }
     .adminActions .zportaBtn { width: 100%; }
-    .rightColumn { display: none; } /* Hide sidebar on very small screens */
     .editNavigation { flex-direction: column-reverse; gap: 1rem; }
     .editNavigation .zportaBtn { width: 100%; }
+}
+
+/* Hide sidebar on small and medium screens where layout stacks (ensure single-column experience) */
+@media (max-width: 900px) {
+    .rightColumn { display: none; }
 }
 
 /* --- Manage Content: headers, attached rows, detach button --- */

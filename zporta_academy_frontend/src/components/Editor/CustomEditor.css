@@ -136,7 +136,9 @@
   border-radius: 0;
 }
 .fullscreen .editor-save {
-  /* Styles specific to save button in fullscreen if needed */
+  /* Ensure consistent button styling in fullscreen */
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 
@@ -258,7 +260,10 @@
 .accordion-item {
   position: relative; /* Needed for absolute positioning of the handle */
   /* Your existing accordion-item styles */
-   @apply border border-gray-300 mb-3 bg-white rounded;
+  border: 1px solid #e5e7eb; /* gray-300 */
+  margin-bottom: 0.75rem;
+  background: #ffffff;
+  border-radius: 6px;
 }
 .accordion-select-handle {
   position: absolute;
@@ -312,15 +317,16 @@
 */
 
 
+
+
 /* --- Selection Styles --- */
 /* Consistent style for all selected wrappers */
 .image-wrapper.editor-element-selected,
 .audio-wrapper.editor-element-selected,
 .editable-layout-container.editor-element-selected,
-.accordion-item.editor-element-selected
-{
+.accordion-item.editor-element-selected {
   /* This @apply line might be causing errors and is redundant if you have the rule below */
-  /* @apply outline-solid outline-2 outline-offset-1; */ /* <<< REMOVE or COMMENT OUT this @apply line */
+  /* @apply outline-solid outline-2 outline-offset-1; */
 
   /* This standard CSS rule works */
   outline: 3px solid var(--editor-theme-color) !important; /* <<< KEEP this (or adjust thickness/style if you prefer) */
@@ -330,7 +336,9 @@
 
 /* --- Contextual Actions Toolbar --- */
 .editor-element-actions {
-   /* Styles inherited from .toolbar button */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .editor-element-actions button {
   margin-left: 5px;

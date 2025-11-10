@@ -2,8 +2,8 @@ import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } f
 import './CustomEditor.css';
 import mammoth from 'mammoth';
 import {
-    FaBold, FaItalic, FaUnderline, FaExpand, FaCompress, FaImage, FaLink,
-    FaUpload, FaFileWord, FaCode, FaMusic, FaColumns, FaTrashAlt, FaSyncAlt
+    FaBold, FaItalic, FaUnderline, FaExpand, FaCompress,
+    FaFileWord, FaCode, FaColumns, FaTrashAlt, FaSyncAlt
 } from 'react-icons/fa';
 import apiClient from '../../api';
 
@@ -25,7 +25,7 @@ const CustomEditor = forwardRef(({
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [viewSource, setViewSource] = useState(false);
     const [content, setContent] = useState('');
-    const [privacy, setPrivacy] = useState('private');
+    const [privacy] = useState('private');
     const [uploadError, setUploadError] = useState('');
     const [selectedElement, setSelectedElement] = useState(null);
     // --- NEW STATE for tracking replacement target ---
@@ -156,20 +156,13 @@ const CustomEditor = forwardRef(({
 
     // --- Element Selection & Editing ---
 
-     const clearSelection = () => {
+    const clearSelection = React.useCallback(() => {
         if (selectedElement) {
             selectedElement.classList.remove('editor-element-selected');
             setSelectedElement(null);
         }
-        // Also clear replacement target if selection is cleared externally
-        if (elementToReplaceState) {
-             // Check if the currently selected element IS the one marked for replacement.
-             // If so, clearing selection implies cancelling the replacement.
-             // This check might need refinement based on exact UX desired.
-             // For now, let's clear it unconditionally when selection clears.
-             // setElementToReplaceState(null); // Let's NOT clear it here automatically, clear it after upload/cancel only
-        }
-    };
+        // Do not clear elementToReplaceState here; handled explicitly after upload/cancel.
+    }, [selectedElement]);
 
 
     const addClickListenersToMedia = (container) => {
@@ -258,7 +251,7 @@ const CustomEditor = forwardRef(({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [selectedElement]); // Re-run if selectedElement changes might be needed if logic inside depends on it
+    }, [selectedElement, clearSelection]); // Re-run if selectedElement changes might be needed if logic inside depends on it
 
     const handleDeleteSelectedElement = () => {
         if (selectedElement) {
@@ -284,6 +277,7 @@ const CustomEditor = forwardRef(({
           setElementToReplaceState(null); // Reset state if type is wrong
       }
   };
+
 
     // --- Image Handling ---
     const handleImageInsert = (type) => {
@@ -330,7 +324,7 @@ const CustomEditor = forwardRef(({
 
     const enableImageResizing = (wrapper, img, resizeHandle) => {
         let isResizing = false;
-        let startX, startY, startWidth, startHeight;
+    let startX, startWidth, startHeight;
 
         const existingMouseMove = wrapper._onMouseMove;
         const existingMouseUp = wrapper._onMouseUp;
@@ -342,7 +336,6 @@ const CustomEditor = forwardRef(({
             e.stopPropagation();
             isResizing = true;
             startX = e.clientX;
-            startY = e.clientY;
             startWidth = img.offsetWidth;
             startHeight = img.offsetHeight;
             document.addEventListener('mousemove', onMouseMove);
@@ -751,7 +744,7 @@ const handleAddAccordionContentSection = () => {
     // --- Blurring and Saving ---
     // Using onBlur on the container now
     const handleBlur = (e) => {
-        const relatedTarget = e.relatedTarget;
+    // const relatedTarget = e.relatedTarget; // not used
         const currentTarget = e.currentTarget; // The editor-container div
 
         // Check if focus is truly leaving the container and its children
@@ -820,6 +813,7 @@ const handleAddAccordionContentSection = () => {
                     <FaFileWord />
                     <input type="file" accept=".docx" onChange={handleWordUpload} style={{ display: 'none' }} />
                 </label>
+                {/* Insert Table (removed in this editor; use Lesson Editor instead) */}
                 <button type="button" onClick={toggleViewSource} title={viewSource ? "View Editor" : "View Source"}>
                     <FaCode />
                 </button>
@@ -838,6 +832,8 @@ const handleAddAccordionContentSection = () => {
                      <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleDeleteSelectedElement} title="Delete Layout"><FaTrashAlt /></button>
                  </span>
               )}
+
+              {/* Contextual Actions for Table removed in this editor */}
 
 
                 {/* --- Contextual Actions for Accordion --- */}
