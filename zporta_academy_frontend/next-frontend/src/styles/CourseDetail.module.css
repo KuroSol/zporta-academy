@@ -235,7 +235,10 @@
     /* Limit height on larger screens and allow internal scroll for long descriptions */
     max-height: 360px;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    /* Fix for content being cut off at the top during scroll */
+    scroll-padding-top: 0;
 }
 .descriptionViewer .accordion-item {
     border: 1px solid #e2e8f0;
@@ -378,15 +381,19 @@
 .descriptionViewer::after {
     /* subtle bottom fade to indicate more content */
     content: '';
-    position: absolute;
+    position: sticky;
+    display: block;
     left: 0;
     right: 0;
     bottom: 0;
     height: 60px;
+    margin-top: -60px;
+    margin-bottom: 0;
     pointer-events: none;
-    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 85%);
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(251,253,255,0.95) 70%, rgba(251,253,255,1) 100%);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
+    z-index: 1;
 }
 
 /* WebKit scrollbar styling */
@@ -442,8 +449,26 @@
 
 /* Small helper: reduce fade on small screens where header/overlay already limits space */
 @media (max-width: 768px) {
-    .descriptionViewer::after { height: 40px; }
-    .descriptionViewer { max-height: 260px; }
+    .descriptionViewer::after { 
+        height: 40px; 
+        margin-top: -40px;
+    }
+    .descriptionViewer { 
+        max-height: 260px;
+        padding: 1rem;
+    }
+}
+
+/* Fix scroll behavior on tablet and desktop */
+@media (min-width: 769px) {
+    .descriptionViewer {
+        /* Ensure content starts at the top properly */
+        display: flex;
+        flex-direction: column;
+    }
+    .descriptionViewer > * {
+        flex-shrink: 0;
+    }
 }
 
 /* * Edit Mode View Styles
