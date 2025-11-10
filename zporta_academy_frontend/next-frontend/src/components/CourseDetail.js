@@ -181,6 +181,19 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     /** @state {boolean} isQuizModalOpen - Controls the visibility of the "Create New Quiz" modal. */
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
+    // --- Accordion State (Public View) ---
+    /** @state {string|null} openAccordion - Tracks which accordion is currently open ('description', 'lessons', 'quizzes', or null) */
+    const [openAccordion, setOpenAccordion] = useState('description');
+    
+    /**
+     * @function toggleAccordion
+     * @description Toggles accordion sections - closes current if same section clicked, otherwise opens new section
+     * @param {string} section - The section to toggle ('description', 'lessons', 'quizzes')
+     */
+    const toggleAccordion = (section) => {
+        setOpenAccordion(prev => prev === section ? null : section);
+    };
+
     
   // Ensure popups do not persist outside management
   useEffect(() => {
@@ -1005,30 +1018,117 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
 
             <div className={styles.mainContentLayout}>
                 <div className={styles.leftColumn}>
-                    <section className={styles.contentSection}>
-                        <h2>About this Course</h2>
-                        <div ref={descriptionViewerRef} className={styles.descriptionViewer}>
-                            {/* Content is rendered here by useEffect */}
+                    {/* Modern Accordion Section */}
+                    <div className={styles.accordionContainer}>
+                        
+                        {/* About This Course Accordion */}
+                        <div className={`${styles.accordionItem} ${openAccordion === 'description' ? styles.accordionOpen : ''}`}>
+                            <button 
+                                className={styles.accordionHeader}
+                                onClick={() => toggleAccordion('description')}
+                                aria-expanded={openAccordion === 'description'}
+                            >
+                                <div className={styles.accordionHeaderContent}>
+                                    <FaBook className={styles.accordionIcon} />
+                                    <h2 className={styles.accordionTitle}>About this Course</h2>
+                                </div>
+                                <span className={styles.accordionToggle}>
+                                    {openAccordion === 'description' ? '−' : '+'}
+                                </span>
+                            </button>
+                            <div className={styles.accordionContent}>
+                                <div className={styles.accordionInner}>
+                                    <div ref={descriptionViewerRef} className={styles.descriptionViewer}>
+                                        {/* Content is rendered here by useEffect */}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </section>
-                    
-                    {lessons.length > 0 && (
-                        <section className={styles.contentSection}>
-                            <h2><FaBook /> Lessons in this Course ({lessons.length})</h2>
-                            <ul className={styles.contentList}>
-                                {lessons.map(l => <li key={l.id}><a href={`/lessons/${l.permalink}`}>{l.title}</a></li>)}
-                            </ul>
-                        </section>
-                    )}
 
-                     {quizzes.length > 0 && (
-                        <section className={styles.contentSection}>
-                            <h2><FaQuestion /> Quizzes in this Course ({quizzes.length})</h2>
-                            <ul className={styles.contentList}>
-                                {quizzes.map(q => <li key={q.id}>{q.title}</li>)}
-                            </ul>
-                        </section>
-                    )}
+                        {/* Lessons Accordion */}
+                        {lessons.length > 0 && (
+                            <div className={`${styles.accordionItem} ${openAccordion === 'lessons' ? styles.accordionOpen : ''}`}>
+                                <button 
+                                    className={styles.accordionHeader}
+                                    onClick={() => toggleAccordion('lessons')}
+                                    aria-expanded={openAccordion === 'lessons'}
+                                >
+                                    <div className={styles.accordionHeaderContent}>
+                                        <FaBook className={styles.accordionIcon} />
+                                        <h2 className={styles.accordionTitle}>Course Lessons</h2>
+                                        <span className={styles.accordionCount}>{lessons.length}</span>
+                                    </div>
+                                    <span className={styles.accordionToggle}>
+                                        {openAccordion === 'lessons' ? '−' : '+'}
+                                    </span>
+                                </button>
+                                <div className={styles.accordionContent}>
+                                    <div className={styles.accordionInner}>
+                                        <div className={styles.lessonsGrid}>
+                                            {lessons.map((lesson, index) => (
+                                                <a 
+                                                    key={lesson.id} 
+                                                    href={`/lessons/${lesson.permalink}`}
+                                                    className={styles.lessonCard}
+                                                >
+                                                    <div className={styles.lessonNumber}>{index + 1}</div>
+                                                    <div className={styles.lessonInfo}>
+                                                        <h3 className={styles.lessonTitle}>{lesson.title}</h3>
+                                                        {lesson.description && (
+                                                            <p className={styles.lessonDescription}>
+                                                                {lesson.description.substring(0, 100)}...
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <FaArrowLeft className={styles.lessonArrow} style={{ transform: 'rotate(180deg)' }} />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Quizzes Accordion */}
+                        {quizzes.length > 0 && (
+                            <div className={`${styles.accordionItem} ${openAccordion === 'quizzes' ? styles.accordionOpen : ''}`}>
+                                <button 
+                                    className={styles.accordionHeader}
+                                    onClick={() => toggleAccordion('quizzes')}
+                                    aria-expanded={openAccordion === 'quizzes'}
+                                >
+                                    <div className={styles.accordionHeaderContent}>
+                                        <FaQuestion className={styles.accordionIcon} />
+                                        <h2 className={styles.accordionTitle}>Course Quizzes</h2>
+                                        <span className={styles.accordionCount}>{quizzes.length}</span>
+                                    </div>
+                                    <span className={styles.accordionToggle}>
+                                        {openAccordion === 'quizzes' ? '−' : '+'}
+                                    </span>
+                                </button>
+                                <div className={styles.accordionContent}>
+                                    <div className={styles.accordionInner}>
+                                        <div className={styles.quizzesGrid}>
+                                            {quizzes.map((quiz, index) => (
+                                                <div key={quiz.id} className={styles.quizCard}>
+                                                    <div className={styles.quizNumber}>{index + 1}</div>
+                                                    <div className={styles.quizInfo}>
+                                                        <h3 className={styles.quizTitle}>{quiz.title}</h3>
+                                                        {quiz.description && (
+                                                            <p className={styles.quizDescription}>
+                                                                {quiz.description.substring(0, 80)}...
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <FaCheckCircle className={styles.quizIcon} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <aside className={styles.rightColumn}>
                     <div className={styles.sidebarCard}>

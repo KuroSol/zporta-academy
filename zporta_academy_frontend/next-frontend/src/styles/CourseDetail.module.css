@@ -226,14 +226,14 @@
     line-height: 1.8;
     color: #0f172a; /* slate-900 for stronger contrast */
     font-size: 1.05rem;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    background: white;
     border: 1px solid #e6eef8; /* softer border for the card */
     border-radius: 10px;
-    padding: 1.25rem;
-    box-shadow: 0 8px 24px rgba(16,24,40,0.04);
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(16,24,40,0.04);
     position: relative;
     /* Limit height on larger screens and allow internal scroll for long descriptions */
-    max-height: 360px;
+    max-height: 500px;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -298,6 +298,388 @@
 .contentList li a {
     text-decoration: none;
     color: #1e293b;
+}
+
+/* ============================================
+ * MODERN ACCORDION STYLES
+ * ============================================ */
+
+.accordionContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.accordionItem {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.accordionItem:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
+}
+
+.accordionOpen {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: var(--zporta-primary-color, #3b82f6);
+}
+
+.accordionHeader {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.accordionHeader::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--zporta-primary-color, #3b82f6);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.accordionOpen .accordionHeader::before {
+    transform: scaleY(1);
+}
+
+.accordionHeader:hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+}
+
+.accordionHeaderContent {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.accordionIcon {
+    font-size: 1.5rem;
+    color: var(--zporta-primary-color, #3b82f6);
+    transition: transform 0.3s ease;
+}
+
+.accordionOpen .accordionIcon {
+    transform: scale(1.1);
+}
+
+.accordionTitle {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+.accordionOpen .accordionTitle {
+    color: var(--zporta-primary-color, #3b82f6);
+}
+
+.accordionCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    background: linear-gradient(135deg, var(--zporta-primary-color, #3b82f6), #2563eb);
+    color: white;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.accordionToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.accordionOpen .accordionToggle {
+    background: var(--zporta-primary-color, #3b82f6);
+    border-color: var(--zporta-primary-color, #3b82f6);
+    color: white;
+    transform: rotate(180deg);
+}
+
+.accordionContent {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordionOpen .accordionContent {
+    max-height: 2000px;
+}
+
+.accordionInner {
+    padding: 2rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Lessons Grid Styles */
+.lessonsGrid {
+    display: grid;
+    gap: 1rem;
+}
+
+.lessonCard {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.lessonCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--zporta-primary-color, #3b82f6), #2563eb);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.lessonCard:hover {
+    transform: translateX(8px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: var(--zporta-primary-color, #3b82f6);
+}
+
+.lessonCard:hover::before {
+    transform: scaleY(1);
+}
+
+.lessonNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #475569;
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-radius: 10px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.lessonCard:hover .lessonNumber {
+    background: linear-gradient(135deg, var(--zporta-primary-color, #3b82f6), #2563eb);
+    color: white;
+    transform: scale(1.1);
+}
+
+.lessonInfo {
+    flex: 1;
+}
+
+.lessonTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+    transition: color 0.3s ease;
+}
+
+.lessonCard:hover .lessonTitle {
+    color: var(--zporta-primary-color, #3b82f6);
+}
+
+.lessonDescription {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.lessonArrow {
+    font-size: 1.25rem;
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.lessonCard:hover .lessonArrow {
+    color: var(--zporta-primary-color, #3b82f6);
+    transform: translateX(4px) rotate(180deg) !important;
+}
+
+/* Quizzes Grid Styles */
+.quizzesGrid {
+    display: grid;
+    gap: 1rem;
+}
+
+.quizCard {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.quizCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: #22c55e;
+}
+
+.quizNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    color: #166534;
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-radius: 10px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.quizCard:hover .quizNumber {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+}
+
+.quizInfo {
+    flex: 1;
+}
+
+.quizTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+    transition: color 0.3s ease;
+}
+
+.quizCard:hover .quizTitle {
+    color: #22c55e;
+}
+
+.quizDescription {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.quizIcon {
+    font-size: 1.5rem;
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.quizCard:hover .quizIcon {
+    color: #22c55e;
+    transform: scale(1.2);
+}
+
+/* Responsive accordion adjustments */
+@media (max-width: 768px) {
+    .accordionHeader {
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .accordionTitle {
+        font-size: 1.2rem;
+    }
+    
+    .accordionIcon {
+        font-size: 1.25rem;
+    }
+    
+    .accordionInner {
+        padding: 1.5rem;
+    }
+    
+    .lessonCard, .quizCard {
+        padding: 1rem 1.25rem;
+        gap: 1rem;
+    }
+    
+    .lessonNumber, .quizNumber {
+        min-width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .lessonTitle, .quizTitle {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .accordionHeader {
+        padding: 1rem;
+    }
+    
+    .accordionHeaderContent {
+        gap: 0.75rem;
+    }
+    
+    .accordionTitle {
+        font-size: 1.1rem;
+    }
+    
+    .accordionCount {
+        min-width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    
+    .accordionToggle {
+        width: 32px;
+        height: 32px;
+        font-size: 1.25rem;
+    }
 }
 
 /* --- Sidebar Card --- */
