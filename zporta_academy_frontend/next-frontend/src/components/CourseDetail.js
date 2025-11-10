@@ -232,7 +232,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
+    }, [permalink, token]);
 
     /**
      * @callback fetchEnrollmentStatus
@@ -326,7 +326,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } catch (err) {
             handleApiError(err, "Failed to load resources required for editing.");
         }
-    }, [isCreator, course, lessons, quizzes, permalink, handleApiError]);
+    }, [isCreator, course, lessons, quizzes, permalink]);
     
     /**
      * `useEffect` to automatically trigger edit mode if the user is the creator and on the correct admin route.
