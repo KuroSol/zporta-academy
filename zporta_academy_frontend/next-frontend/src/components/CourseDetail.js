@@ -1018,6 +1018,24 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
 
             <div className={styles.mainContentLayout}>
                 <div className={styles.leftColumn}>
+                    {/* Mobile-only: What you'll get (selling points) */}
+                    {Array.isArray(course.selling_points) && course.selling_points.map(p => (p || '').trim()).filter(Boolean).length > 0 && (
+                        <div className={`${styles.sellingPointsCard} ${styles.mobileOnly}`}>
+                            <div className={styles.sellingPointsHeader}>What you&apos;ll get</div>
+                            <ul className={styles.sellingPointsList}>
+                                {course.selling_points
+                                    .map(p => (p || '').trim())
+                                    .filter(Boolean)
+                                    .slice(0,3)
+                                    .map((p, i) => (
+                                        <li key={`mobile-sp-${i}`} className={styles.sellingPointItem}>
+                                            <FaStar style={{ color: 'var(--zporta-primary-color, #3b82f6)' }} />
+                                            <span>{p}</span>
+                                        </li>
+                                    ))}
+                            </ul>
+                        </div>
+                    )}
                     {/* Modern Accordion Section */}
                     <div className={styles.accordionContainer}>
                         

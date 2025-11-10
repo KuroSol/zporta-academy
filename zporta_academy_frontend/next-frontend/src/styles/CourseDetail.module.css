@@ -759,6 +759,12 @@
     .sellingPointsCard { margin-top: 2rem; }
 }
 
+/* Show selling points in content area only on mobile (sidebar is hidden) */
+.mobileOnly { display: none; }
+@media (max-width: 480px) {
+    .mobileOnly { display: block; }
+}
+
 /* --- Description fade + custom scrollbars --- */
 .descriptionViewer::after {
     /* subtle bottom fade to indicate more content */
