@@ -232,7 +232,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token]);
+    }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
 
     /**
      * @callback fetchEnrollmentStatus
@@ -1046,19 +1046,23 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
                         </div>
                     </div>
-                                        {Array.isArray(course.selling_points) && course.selling_points.length > 0 && (
-                                                                    <div className={styles.sellingPointsCard}>
-                                                                        <div className={styles.sellingPointsHeader}>What you&apos;ll get</div>
-                                                <ul className={styles.sellingPointsList}>
-                                                    {course.selling_points.slice(0,3).map((p, i) => (
-                                                        <li key={i} className={styles.sellingPointItem}>
-                                                            <FaStar style={{ color: 'var(--zporta-primary-color, #3b82f6)' }} />
-                                                            <span>{p}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
+                    {Array.isArray(course.selling_points) && course.selling_points.map(p => (p || '').trim()).filter(Boolean).length > 0 && (
+                        <div className={styles.sellingPointsCard}>
+                            <div className={styles.sellingPointsHeader}>What you&apos;ll get</div>
+                            <ul className={styles.sellingPointsList}>
+                                {course.selling_points
+                                    .map(p => (p || '').trim())
+                                    .filter(Boolean)
+                                    .slice(0,3)
+                                    .map((p, i) => (
+                                        <li key={i} className={styles.sellingPointItem}>
+                                            <FaStar style={{ color: 'var(--zporta-primary-color, #3b82f6)' }} />
+                                            <span>{p}</span>
+                                        </li>
+                                    ))}
+                            </ul>
+                        </div>
+                    )}
                 </aside>
             </div>
         </div>
