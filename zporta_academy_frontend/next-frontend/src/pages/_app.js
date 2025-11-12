@@ -1,6 +1,5 @@
 // src/pages/_app.js
 import '@/styles/globals.css';
-import '@/styles/lesson-content.css';
 
 import React, { useContext, useMemo } from 'react';
 import dynamic from 'next/dynamic';

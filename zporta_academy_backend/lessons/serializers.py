@@ -85,7 +85,6 @@ class LessonSerializer(serializers.ModelSerializer):
             'course_title',    # Read-only Course Title
             'tags',            # <-- write_only input field (MUST be in fields)
             'tags_output',     # <-- read_only output field
-            'position',        # Explicit ordering inside a course
             'permalink', 'created_by', 'created_at', 'is_locked',
             'is_premium',      # Allow clients to mark lessons as premium or free.
             'status', 'published_at',
