@@ -1129,6 +1129,54 @@
   border-radius: 8px;
   background: #ffffff;
   margin-bottom: 0.6rem;
+  cursor: move;
+  transition: all 0.2s ease;
+}
+
+.attachedRow.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.attachedRow.dragOver {
+  border-color: #3b82f6;
+  border-width: 2px;
+  background: #eff6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.dragHandle {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  cursor: grab;
+  padding: 0 0.5rem;
+  user-select: none;
+  line-height: 1;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.lessonNumber {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.dragInstruction {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  font-style: italic;
 }
 
 .attachedTitle {

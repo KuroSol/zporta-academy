@@ -194,6 +194,12 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         setOpenAccordion(prev => prev === section ? null : section);
     };
 
+    // --- Drag and Drop State for Lesson Reordering ---
+    /** @state {number|null} draggedLessonIndex - Tracks the index of the lesson being dragged */
+    const [draggedLessonIndex, setDraggedLessonIndex] = useState(null);
+    /** @state {number|null} dragOverIndex - Tracks which lesson position the dragged item is hovering over */
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+
     
   // Ensure popups do not persist outside management
   useEffect(() => {
@@ -532,6 +538,61 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             handleApiError(err, "Failed to publish lesson.");
         }
     };
+
+    // --- Drag and Drop Handlers for Lesson Reordering ---
+    const handleDragStart = (e, index) => {
+        setDraggedLessonIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (index !== dragOverIndex) {
+            setDragOverIndex(index);
+        }
+    };
+
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+
+    const handleDrop = async (e, dropIndex) => {
+        e.preventDefault();
+        
+        if (draggedLessonIndex === null || draggedLessonIndex === dropIndex) {
+            setDraggedLessonIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        // Reorder lessons array locally
+        const reorderedLessons = [...lessons];
+        const [movedLesson] = reorderedLessons.splice(draggedLessonIndex, 1);
+        reorderedLessons.splice(dropIndex, 0, movedLesson);
+
+        // Optimistically update UI
+        setLessons(reorderedLessons);
+        setDraggedLessonIndex(null);
+        setDragOverIndex(null);
+
+        // Send new order to backend
+        try {
+            const lessonOrder = reorderedLessons.map(l => l.id);
+            await apiClient.post(`/courses/${permalink}/lessons/reorder/`, { order: lessonOrder });
+            showMessage("Lesson order updated.", "success");
+        } catch (err) {
+            // Revert on error
+            setLessons(lessons);
+            handleApiError(err, "Failed to reorder lessons.");
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggedLessonIndex(null);
+        setDragOverIndex(null);
+    };
+
     /**
      * @function validateEditStep
      * @description Validates the inputs for a given step in the edit wizard.
@@ -828,10 +889,27 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                         <FaPlus/> Create Lesson
                                       </button>
                                     </div>
+                                    {lessons.length > 1 && (
+                                        <p className={styles.dragInstruction}>
+                                            <FaArrowLeft style={{transform: 'rotate(90deg)', marginRight: '6px'}} />
+                                            Drag lessons to reorder them
+                                        </p>
+                                    )}
                                     <div className={styles.scrollableBox}>
                                                                             {lessons.length ? (
-                                                                                lessons.map(l => (
-                                                                                    <div key={l.id} className={styles.attachedRow}>
+                                                                                lessons.map((l, index) => (
+                                                                                    <div 
+                                                                                        key={l.id} 
+                                                                                        className={`${styles.attachedRow} ${draggedLessonIndex === index ? styles.dragging : ''} ${dragOverIndex === index ? styles.dragOver : ''}`}
+                                                                                        draggable={true}
+                                                                                        onDragStart={(e) => handleDragStart(e, index)}
+                                                                                        onDragOver={(e) => handleDragOver(e, index)}
+                                                                                        onDragLeave={handleDragLeave}
+                                                                                        onDrop={(e) => handleDrop(e, index)}
+                                                                                        onDragEnd={handleDragEnd}
+                                                                                    >
+                                                                                        <span className={styles.dragHandle} title="Drag to reorder">⋮⋮</span>
+                                                                                        <span className={styles.lessonNumber}>#{index + 1}</span>
                                                                                         <span className={styles.attachedTitle}>{l.title}</span>
                                                                                         <span className={`${styles.statusPill} ${l.status === 'published' ? styles.statusPublished : styles.statusDraft}`} style={{ marginLeft: 8 }}>
                                                                                             {l.status === 'published' ? 'Published' : 'Draft'}
