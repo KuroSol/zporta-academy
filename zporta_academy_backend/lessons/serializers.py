@@ -85,6 +85,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'course_title',    # Read-only Course Title
             'tags',            # <-- write_only input field (MUST be in fields)
             'tags_output',     # <-- read_only output field
+            'position',        # Explicit ordering inside a course
             'permalink', 'created_by', 'created_at', 'is_locked',
             'is_premium',      # Allow clients to mark lessons as premium or free.
             'status', 'published_at',
@@ -148,6 +149,18 @@ class LessonSerializer(serializers.ModelSerializer):
                 "permalink": obj.course.permalink
             }
         return None
+
+    def validate_content(self, value):
+        """
+        Strip top-level <style> blocks to avoid SSR hydration issues on frontend.
+        Lesson styles should be in custom_css field or shared stylesheet instead.
+        """
+        if not value:
+            return value
+        import re
+        # Remove all <style>...</style> blocks (case-insensitive)
+        cleaned = re.sub(r'<style[\s\S]*?>[\s\S]*?</style>', '', value, flags=re.IGNORECASE)
+        return cleaned
 
     # --- Private helper for media processing ---
     def _process_lesson_media(self, lesson_instance, content_html, user):

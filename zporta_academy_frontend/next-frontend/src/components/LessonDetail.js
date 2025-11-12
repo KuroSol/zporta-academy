@@ -1,5 +1,6 @@
 // src/components/LessonDetail.js
 import React, { useEffect, useState, useContext, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
 import ShadowRootContainer from "@/components/common/ShadowRootContainer";
 import Link from "next/link";
 import Head from "next/head";
@@ -11,6 +12,9 @@ import { AuthContext } from "@/context/AuthContext";
 import QuizCard from "@/components/QuizCard";
 import styles from "@/styles/LessonDetail.module.css";
 import "@/styles/Editor/ViewerAccordion.module.css";
+
+// Client-only component to avoid SSR hydration issues with audio/details elements
+const SafeLessonHtml = dynamic(() => import("@/components/SafeLessonHtml"), { ssr: false });
 
 /* ---- helpers kept (used by accordion + content render) ---- */
 function initializeAccordions(containerElement) {
@@ -463,11 +467,10 @@ ${sanitizeLessonCss(customCSS || "")}
 .lesson-content .gated-content.gc-compact .gc-link:hover{background:#0A2342;color:#fff}
 `}</style>
 
-  <div
+  <SafeLessonHtml
     key={`html-${lesson.id}-${lesson.content?.length}`}
-    ref={lessonContentDisplayRef}
+    html={sanitizeContentViewerHTML(lesson.content || "")}
     className="lesson-content"
-    dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
   />
 </ShadowRootContainer>
 
