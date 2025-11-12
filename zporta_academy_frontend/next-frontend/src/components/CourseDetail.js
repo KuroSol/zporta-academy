@@ -579,9 +579,15 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         // Send new order to backend
         try {
             const lessonOrder = reorderedLessons.map(l => l.id);
-            await apiClient.post(`/courses/${permalink}/lessons/reorder/`, { order: lessonOrder });
+            console.log('Reordering lessons for course:', permalink);
+            console.log('Lesson order:', lessonOrder);
+            console.log('URL:', `/courses/${permalink}/lessons/reorder/`);
+            
+            const response = await apiClient.post(`/courses/${permalink}/lessons/reorder/`, { order: lessonOrder });
+            console.log('Reorder response:', response.data);
             showMessage("Lesson order updated.", "success");
         } catch (err) {
+            console.error('Reorder error:', err.response || err);
             // Revert on error
             setLessons(lessons);
             handleApiError(err, "Failed to reorder lessons.");
