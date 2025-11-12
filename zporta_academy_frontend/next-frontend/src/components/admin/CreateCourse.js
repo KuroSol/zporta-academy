@@ -102,6 +102,34 @@ const CreateCourse = () => {
         { id: 5, title: 'Publish' }
     ];
 
+    // --- Helpers & Validation (moved before data fetching) ---
+    const extractErrorMessage = (error) => {
+        if (!error.response?.data) return error.message;
+        const data = error.response.data;
+        if (typeof data === 'string') return data;
+        if (typeof data === 'object') {
+            return Object.entries(data)
+                .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`)
+                .join(' | ');
+        }
+        return 'An unknown error occurred.';
+    };
+
+    const handleApiError = useCallback((error, defaultMessage) => {
+        console.error("API Error:", error.response?.data || error.message);
+        const errorMsg = extractErrorMessage(error);
+        showFeedback(errorMsg || defaultMessage, 'error');
+        if (error.response?.status === 401 || error.response?.status === 403) logout();
+    }, [logout]);
+
+    const showFeedback = (msg, type) => {
+        setMessage(msg);
+        setMessageType(type);
+        if(type !== 'error') {
+            setTimeout(() => setMessage(''), 4000);
+        }
+    };
+
     // --- Data Fetching ---
     const fetchInitialData = useCallback(async () => {
         setLoadingInitial(true);
@@ -120,7 +148,7 @@ const CreateCourse = () => {
         } finally {
             setLoadingInitial(false);
         }
-    }, [logout, handleApiError]);
+    }, [handleApiError]);
 
     useEffect(() => {
         if (localStorage.getItem('token')) {
@@ -141,7 +169,7 @@ const CreateCourse = () => {
         } catch (error) {
             handleApiError(error, 'Failed to refresh lesson/quiz lists.');
         }
-    }, [logout, handleApiError]);
+    }, [handleApiError]);
 
 
     // --- Event Handlers ---
@@ -296,23 +324,6 @@ const CreateCourse = () => {
         setUnsavedChanges(false);
     };
 
-
-    // --- Helpers & Validation ---
-    const handleApiError = (error, defaultMessage) => {
-        console.error("API Error:", error.response?.data || error.message);
-        const errorMsg = extractErrorMessage(error);
-        showFeedback(errorMsg || defaultMessage, 'error');
-        if (error.response?.status === 401 || error.response?.status === 403) logout();
-    };
-
-    const showFeedback = (msg, type) => {
-        setMessage(msg);
-        setMessageType(type);
-        if(type !== 'error') {
-            setTimeout(() => setMessage(''), 4000);
-        }
-    };
-
     // Treat "<p><br></p>" and "&nbsp;" as empty
     const isEmptyHtml = (html) => {
         if (!html) return true;
@@ -387,18 +398,6 @@ const CreateCourse = () => {
             isValid = false;
         }
         return isValid;
-    };
-    
-    const extractErrorMessage = (error) => {
-        if (!error.response?.data) return error.message;
-        const data = error.response.data;
-        if (typeof data === 'string') return data;
-        if (typeof data === 'object') {
-            return Object.entries(data)
-                .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`)
-                .join(' | ');
-        }
-        return 'An unknown error occurred.';
     };
     
     // --- Render Logic ---
