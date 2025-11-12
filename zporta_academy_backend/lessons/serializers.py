@@ -150,18 +150,6 @@ class LessonSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def validate_content(self, value):
-        """
-        Strip top-level <style> blocks to avoid SSR hydration issues on frontend.
-        Lesson styles should be in custom_css field or shared stylesheet instead.
-        """
-        if not value:
-            return value
-        import re
-        # Remove all <style>...</style> blocks (case-insensitive)
-        cleaned = re.sub(r'<style[\s\S]*?>[\s\S]*?</style>', '', value, flags=re.IGNORECASE)
-        return cleaned
-
     # --- Private helper for media processing ---
     def _process_lesson_media(self, lesson_instance, content_html, user):
         if not content_html or not user:
