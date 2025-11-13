@@ -223,8 +223,64 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     const isCreator = useMemo(() => 
         user && course && user.username.toLowerCase() === course.created_by.toLowerCase(), 
     [user, course]);
+
+    // #region Utility & Feedback Handlers
+
+    /**
+     * @function handleApiError
+     * @description A centralized function to handle errors from API calls. It logs the error,
+     * sets a user-facing error message, and logs the user out on authentication failures.
+     * @param {Error} err - The error object from the API call.
+     * @param {string} defaultMessage - A fallback message to show the user.
+     */
+    const handleApiError = useCallback((err, defaultMessage) => {
+        console.error("API Error:", err.response?.data || err.message);
+        const status = err.response?.status;
+        const apiMessage = err.response?.data?.detail || JSON.stringify(err.response?.data);
+        setMessage({ text: apiMessage || defaultMessage, type: "error" });
+        if (status === 401 || status === 403) {
+            logout();
+            router.push("/login");
+        }
+    }, [logout, router]);
+
+    /**
+     * @function showMessage
+     * @description A utility to display a temporary feedback message to the user.
+     * @param {string} text - The message content.
+     * @param {'success'|'error'|'info'|'warning'} [type='success'] - The type of message.
+     * @param {number} [duration=4000] - How long the message should be visible in milliseconds.
+     */
+    const showMessage = (text, type = 'success', duration = 4000) => {
+        setMessage({ text, type });
+        if (duration > 0) {
+           setTimeout(() => setMessage({ text: "", type: "error" }), duration);
+        }
+    };
+
+    // #endregion
     
     // #region Data Fetching and Initialization
+
+    /**
+     * @callback fetchEnrollmentStatus
+     * @description Fetches the current user's enrollment status for this specific course.
+     * @param {number} courseId - The ID of the course to check.
+     */
+    const fetchEnrollmentStatus = useCallback(async (courseId) => {
+        if (viewAsPublic) { 
+            setEnrolled(false); 
+            return; 
+        }
+        try {
+            const res = await apiClient.get("/enrollments/user/");
+            const isEnrolled = res.data?.some(e => e.enrollment_type === "course" && e.object_id === courseId);
+            setEnrolled(isEnrolled);
+        } catch (err) {
+            console.error("Could not fetch enrollment status:", err);
+            setEnrolled(false);
+        }
+    }, [viewAsPublic]);
 
     /**
      * @callback fetchCourseData
@@ -253,26 +309,6 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             setLoading(false);
         }
     }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
-
-    /**
-     * @callback fetchEnrollmentStatus
-     * @description Fetches the current user's enrollment status for this specific course.
-     * @param {number} courseId - The ID of the course to check.
-     */
-    const fetchEnrollmentStatus = useCallback(async (courseId) => {
-        if (viewAsPublic) { 
-            setEnrolled(false); 
-            return; 
-        }
-        try {
-            const res = await apiClient.get("/enrollments/user/");
-            const isEnrolled = res.data?.some(e => e.enrollment_type === "course" && e.object_id === courseId);
-            setEnrolled(isEnrolled);
-        } catch (err) {
-            console.error("Could not fetch enrollment status:", err);
-            setEnrolled(false);
-        }
-    }, [viewAsPublic]);
 
     /**
      * `useEffect` for initial data load on the client.
@@ -371,41 +407,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     
     // #endregion
 
-    // #region Utility & Feedback Handlers
-
-    /**
-     * @function handleApiError
-     * @description A centralized function to handle errors from API calls. It logs the error,
-     * sets a user-facing error message, and logs the user out on authentication failures.
-     * @param {Error} err - The error object from the API call.
-     * @param {string} defaultMessage - A fallback message to show the user.
-     */
-    const handleApiError = useCallback((err, defaultMessage) => {
-        console.error("API Error:", err.response?.data || err.message);
-        const status = err.response?.status;
-        const apiMessage = err.response?.data?.detail || JSON.stringify(err.response?.data);
-        setMessage({ text: apiMessage || defaultMessage, type: "error" });
-        if (status === 401 || status === 403) {
-            logout();
-            router.push("/login");
-        }
-    }, [logout, router]);
-
-    /**
-     * @function showMessage
-     * @description A utility to display a temporary feedback message to the user.
-     * @param {string} text - The message content.
-     * @param {'success'|'error'|'info'|'warning'} [type='success'] - The type of message.
-     * @param {number} [duration=4000] - How long the message should be visible in milliseconds.
-     */
-    const showMessage = (text, type = 'success', duration = 4000) => {
-        setMessage({ text, type });
-        if (duration > 0) {
-           setTimeout(() => setMessage({ text: "", type: "error" }), duration);
-        }
-    };
-
-    // #endregion
+    
 
     // #region Event Handlers (Read Mode)
 
