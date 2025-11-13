@@ -3,16 +3,20 @@ const nextConfig = {
   reactStrictMode: true,
   trailingSlash: true,
   images: {
-    // Allow images from production domains, placeholder, and local dev servers
-    domains: [
-      'zportaacademy.com',
-      'www.zportaacademy.com',
-      'placehold.co',
-      '127.0.0.1',
-      'localhost',
-    ],
-    // Explicit patterns for local Django media during development
+    // Modern remotePatterns config (replaces deprecated domains)
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'zportaacademy.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.zportaacademy.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
       {
         protocol: 'http',
         hostname: '127.0.0.1',
@@ -25,7 +29,20 @@ const nextConfig = {
         port: '8000',
         pathname: '/media/**',
       },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '3001',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+      },
     ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/',
