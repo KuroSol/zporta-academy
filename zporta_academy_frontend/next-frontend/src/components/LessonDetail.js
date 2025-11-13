@@ -53,7 +53,7 @@ const sanitizeLessonCss = (css) => {
 const getLessonHTML = (l) => l?.content ?? "";
 
 /* ---- component ---- */
-const LessonDetail = () => {
+const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const router = useRouter();
   const { username: paramUsername, subject, date, lessonSlug } = router.query || {};
   const permalink = useMemo(() => {
@@ -62,10 +62,10 @@ const LessonDetail = () => {
   }, [paramUsername, subject, date, lessonSlug]);
   const { user, token, logout } = useContext(AuthContext);
 
-  const [lessonData, setLessonData] = useState(null);
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [lessonData, setLessonData] = useState(initialData);
+  const [isEnrolled, setIsEnrolled] = useState(initialData?.is_enrolled || false);
+  const [isCompleted, setIsCompleted] = useState(initialData?.is_completed || false);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,6 +90,11 @@ const LessonDetail = () => {
   useEffect(() => {
     let isMounted = true;
     const initialize = async () => {
+      // If we rendered with initial data for this permalink, skip client fetch
+      if (initialData && initialPermalink && initialPermalink === permalink) {
+        setLoading(false);
+        return;
+      }
       if (!permalink) {
         if (isMounted) {
           setLoading(false);
@@ -114,12 +119,21 @@ const LessonDetail = () => {
         } else {
           throw new Error("Lesson data not found in response.");
         }
-
-        if (token && lessonRes.data.lesson) {
-          const statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
-          if (!isMounted) return;
-          setIsEnrolled(statusRes.data.is_enrolled);
-          setIsCompleted(statusRes.data.is_completed);
+        // Prefer server-computed flags to avoid an extra network trip
+        if (lessonRes.data && typeof lessonRes.data.is_enrolled !== "undefined") {
+          setIsEnrolled(!!lessonRes.data.is_enrolled);
+          setIsCompleted(!!lessonRes.data.is_completed);
+        } else if (token && lessonRes.data.lesson) {
+          // Fallback only if API didn't include the flags (backward compatibility)
+          try {
+            const statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
+            if (!isMounted) return;
+            setIsEnrolled(!!statusRes.data.is_enrolled);
+            setIsCompleted(!!statusRes.data.is_completed);
+          } catch (_) {
+            setIsEnrolled(false);
+            setIsCompleted(false);
+          }
         } else {
           setIsEnrolled(false);
           setIsCompleted(false);
@@ -142,14 +156,15 @@ const LessonDetail = () => {
     return () => {
       isMounted = false;
     };
-  }, [permalink, token, logout, router]);
+  }, [permalink, token, logout, router, initialData, initialPermalink]);
 
   /* Accordions on read-only view */
   useEffect(() => {
     let timeoutId = null;
     let raf = null;
+    const container = lessonContentDisplayRef.current;
     const init = () => {
-      if (lessonHTML && lessonContentDisplayRef.current) initializeAccordions(lessonContentDisplayRef.current);
+      if (lessonHTML && container) initializeAccordions(container);
     };
     if (lessonHTML) {
       raf = requestAnimationFrame(() => {
@@ -159,15 +174,15 @@ const LessonDetail = () => {
     return () => {
       if (raf) cancelAnimationFrame(raf);
       if (timeoutId) clearTimeout(timeoutId);
-      if (lessonContentDisplayRef.current) {
-        const headers = lessonContentDisplayRef.current.querySelectorAll(".accordion-header");
+      if (container) {
+        const headers = container.querySelectorAll(".accordion-header");
         headers.forEach((header) => {
           if (header.__accordionClickHandler__) {
             header.removeEventListener("click", header.__accordionClickHandler__);
             delete header.__accordionClickHandler__;
           }
         });
-        lessonContentDisplayRef.current
+        container
           .querySelectorAll(".accordion-item")
           .forEach((item) => delete item.dataset.accordionInitialized);
       }
@@ -188,7 +203,7 @@ const LessonDetail = () => {
       } catch {}
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [loading, lessonData, styles.lessonShadowRoot]);
+  }, [loading, lessonData]);
 
   /* Google Fonts into shadow DOM if present in CSS */
   useEffect(() => {
@@ -211,7 +226,7 @@ const LessonDetail = () => {
         if (existing) shadowRoot.removeChild(existing);
       } catch {}
     };
-  }, [lessonData?.lesson?.custom_css, styles.lessonShadowRoot]);
+  }, [lessonData?.lesson?.custom_css]);
 
   /* actions */
   const handleCompleteLesson = async () => {

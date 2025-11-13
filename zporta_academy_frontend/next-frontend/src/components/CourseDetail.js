@@ -10,6 +10,7 @@
 
 import React, { useEffect, useState, useContext, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { 
     FaPlus, FaBook, FaQuestion, FaSpinner, FaTimes, FaEdit, FaTrash, 
@@ -251,7 +252,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } finally {
             setLoading(false);
         }
-    }, [permalink, token]);
+    }, [permalink, token, fetchEnrollmentStatus, handleApiError]);
 
     /**
      * @callback fetchEnrollmentStatus
@@ -345,7 +346,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         } catch (err) {
             handleApiError(err, "Failed to load resources required for editing.");
         }
-    }, [isCreator, course, lessons, quizzes, permalink]);
+    }, [isCreator, course, lessons, quizzes, permalink, handleApiError]);
     
     /**
      * `useEffect` to automatically trigger edit mode if the user is the creator and on the correct admin route.
@@ -425,6 +426,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 const response = await apiClient.post("/payments/create-checkout-session/", { course_id: course.id });
                 const { sessionId } = response.data;
                 if (sessionId) {
+                    try { localStorage.setItem('courseId', String(course.id)); } catch {}
                     const stripe = await stripePromise;
                     await stripe.redirectToCheckout({ sessionId });
                 } else {
@@ -1168,10 +1170,11 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                     <div className={styles.accordionInner}>
                                         <div className={styles.lessonsGrid}>
                                             {lessons.map((lesson, index) => (
-                                                <a 
-                                                    key={lesson.id} 
+                                                <Link
+                                                    key={lesson.id}
                                                     href={`/lessons/${lesson.permalink}`}
                                                     className={styles.lessonCard}
+                                                    prefetch
                                                 >
                                                     <div className={styles.lessonNumber}>{index + 1}</div>
                                                     <div className={styles.lessonInfo}>
@@ -1183,7 +1186,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                                         )}
                                                     </div>
                                                     <FaArrowLeft className={styles.lessonArrow} style={{ transform: 'rotate(180deg)' }} />
-                                                </a>
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>

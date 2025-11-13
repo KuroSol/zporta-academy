@@ -3,55 +3,93 @@ import stripe
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from courses.models import Course  # Import the Course model
-from django.contrib.auth.models import User  # Import the User model
-from enrollment.models import Enrollment  # Import the Enrollment model
+from courses.models import Course
+from django.contrib.auth.models import User
+from enrollment.models import Enrollment
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
 
-# Set your Stripe API key from settings.
+# Configure Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
-print("Stripe key prefix:", stripe.api_key[:10])
 
-@csrf_exempt
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def create_checkout_session(request):
-    if request.method == 'POST':
+    """Create a Stripe Checkout Session for a premium course.
+    Requires authentication so we can persist the user_id in metadata reliably.
+    """
+    try:
+        course_id = request.data.get('course_id')
+        if not course_id:
+            return Response({'error': 'course_id required'}, status=400)
         try:
-            data = json.loads(request.body)
-            course_id = data.get('course_id')
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found'}, status=404)
 
-            try:
-                course = Course.objects.get(id=course_id)
-            except Course.DoesNotExist:
-                return JsonResponse({'error': 'Course not found'}, status=404)
+        if course.price is None:
+            return Response({'error': 'Course has no price configured'}, status=400)
 
-            price_in_cents = int(course.price * 100)
-            domain_url = "http://localhost:3000/"
+        price_in_cents = int(float(course.price) * 100)
+        domain_url = getattr(settings, 'FRONTEND_URL_BASE', 'https://zportaacademy.com').rstrip('/') + '/'
 
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': course.title,
-                        },
-                        'unit_amount': price_in_cents,
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': course.title,
                     },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=f"{domain_url}payment-success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{domain_url}payment-cancel",
-                metadata={
-                    'course_id': course.id,
-                    'user_id': request.user.id if request.user.is_authenticated else 'guest'
-                }
-            )
-            return JsonResponse({'sessionId': checkout_session['id']})
-        except Exception as e:
-            print("Checkout session error:", str(e))  # ✅ Add this line
-            return JsonResponse({'error': str(e)}, status=400)
-    return HttpResponse(status=405)
+                    'unit_amount': price_in_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f"{domain_url}payment-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{domain_url}payment-cancel",
+            metadata={
+                'course_id': str(course.id),
+                'user_id': str(request.user.id),
+            }
+        )
+        return Response({'sessionId': checkout_session['id']})
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
 
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def confirm_checkout_session(request):
+    """Verify a Stripe session and enroll the current user if paid.
+    This avoids relying solely on webhooks (which might not be configured).
+    """
+    session_id = request.data.get('session_id')
+    if not session_id:
+        return Response({'error': 'session_id required'}, status=400)
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.get('payment_status') != 'paid':
+            return Response({'status': session.get('payment_status', 'unknown')}, status=402)
+        course_id = session.get('metadata', {}).get('course_id')
+        if not course_id:
+            return Response({'error': 'No course metadata on session'}, status=400)
+        course = Course.objects.filter(id=course_id).first()
+        if not course:
+            return Response({'error': 'Course not found'}, status=404)
+
+        # Create enrollment if not exists
+        Enrollment.objects.get_or_create(
+            user=request.user,
+            object_id=course.id,
+            enrollment_type='course'
+        )
+        return Response({'ok': True, 'course_id': course.id, 'course_permalink': getattr(course, 'permalink', '')})
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
 
 
 @csrf_exempt
@@ -72,7 +110,7 @@ def stripe_webhook(request):
             try:
                 course = Course.objects.get(id=course_id)
                 user = User.objects.get(id=user_id)
-                Enrollment.objects.create(
+                Enrollment.objects.get_or_create(
                     user=user,
                     object_id=course.id,
                     enrollment_type="course"
