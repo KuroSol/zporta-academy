@@ -12,10 +12,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Set the path to your .env file (located in the backend root)
 env_path = os.path.join(BASE_DIR, '.env')
-config = Config(RepositoryEnv(env_path))
+prod_config = Config(RepositoryEnv(env_path))
 
 # Production settings
-DEBUG = True
+DEBUG = False
 
 # --- STEP 1: Update ALLOWED_HOSTS ---
 # Add your new domain (and www subdomain) that will access the server.
@@ -47,19 +47,19 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # MEDIA_URL = '/media/' # Inherited from base.py
 
 # Pull sensitive keys from your .env file
-SECRET_KEY = config('SECRET_KEY')
-STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
-STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY')
+SECRET_KEY = prod_config('SECRET_KEY')
+STRIPE_SECRET_KEY = prod_config('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = prod_config('STRIPE_PUBLISHABLE_KEY')
 
 # Database configuration using MySQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'NAME': prod_config('DB_NAME'),
+        'USER': prod_config('DB_USER'),
+        'PASSWORD': prod_config('DB_PASSWORD'),
+        'HOST': prod_config('DB_HOST'),  # Socket path from .env
+        'PORT': prod_config('DB_PORT', default=''),  # Blank for socket
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET NAMES utf8mb4",
