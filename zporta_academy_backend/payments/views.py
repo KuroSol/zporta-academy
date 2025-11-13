@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from courses.models import Course
 from django.contrib.auth.models import User
 from enrollment.models import Enrollment
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -82,10 +83,15 @@ def confirm_checkout_session(request):
             return Response({'error': 'Course not found'}, status=404)
 
         # Create enrollment if not exists
+        course_ct = ContentType.objects.get_for_model(Course)
         Enrollment.objects.get_or_create(
             user=request.user,
+            content_type=course_ct,
             object_id=course.id,
-            enrollment_type='course'
+            defaults={
+                'enrollment_type': 'course',
+                'status': 'active',
+            }
         )
         return Response({'ok': True, 'course_id': course.id, 'course_permalink': getattr(course, 'permalink', '')})
     except Exception as e:
@@ -110,10 +116,15 @@ def stripe_webhook(request):
             try:
                 course = Course.objects.get(id=course_id)
                 user = User.objects.get(id=user_id)
+                course_ct = ContentType.objects.get_for_model(Course)
                 Enrollment.objects.get_or_create(
                     user=user,
+                    content_type=course_ct,
                     object_id=course.id,
-                    enrollment_type="course"
+                    defaults={
+                        'enrollment_type': 'course',
+                        'status': 'active',
+                    }
                 )
             except Exception as e:
                 print("Enrollment error:", e)
