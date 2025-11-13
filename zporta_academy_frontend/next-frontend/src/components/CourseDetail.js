@@ -430,7 +430,14 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 if (sessionId) {
                     try { localStorage.setItem('courseId', String(course.id)); } catch {}
                     const stripe = await stripePromise;
-                    await stripe.redirectToCheckout({ sessionId });
+                    if (!stripe) {
+                        showMessage("Payments are temporarily unavailable. Please try again later.", "error");
+                        return;
+                    }
+                    const result = await stripe.redirectToCheckout({ sessionId });
+                    if (result?.error?.message) {
+                        showMessage(result.error.message, "error");
+                    }
                 } else {
                     throw new Error("Missing session ID.");
                 }
@@ -1087,6 +1094,8 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                     </div>
                 )
             )}
+
+            <MessageDisplay message={message} />
 
             <header className={styles.header}>
                                  <Image
