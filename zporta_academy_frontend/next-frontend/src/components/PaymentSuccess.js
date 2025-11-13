@@ -7,7 +7,8 @@ import { AuthContext } from '@/context/AuthContext';
 export default function PaymentSuccess() {
   const [loading, setLoading] = useState(true);
   const [enrollmentRecord, setEnrollmentRecord] = useState(null);
-  const [fallbackTried, setFallbackTried] = useState(false);
+  const [confirmCalled, setConfirmCalled] = useState(false);
+  const [error, setError] = useState('');
   const [storedCourseId, setStoredCourseId] = useState(null);
 
   const router = useRouter();
@@ -23,24 +24,44 @@ export default function PaymentSuccess() {
   // optional session id from query
   const sessionId = router.query?.session_id;
 
-  // fetch enrollment list first
+  // Call confirm endpoint first to ensure enrollment is created
   useEffect(() => {
-    if (!router.isReady) return;
+  if (!router.isReady || confirmCalled) return;
     if (!token) { router.replace('/login'); return; }
-    if (!storedCourseId) { router.replace('/enrolled-courses'); return; }
+    if (!sessionId) {
+      setError('No session ID provided');
+      setLoading(false);
+      return;
+    }
 
     const run = async () => {
       setLoading(true);
+  setConfirmCalled(true);
       try {
-        const resp = await apiClient.get('/enrollments/');
-        if (Array.isArray(resp.data)) {
-          const found = resp.data.find(
-            e => e.enrollment_type === 'course' &&
-                 String(e.object_id) === String(storedCourseId)
-          );
-          if (found) setEnrollmentRecord(found);
+        // Call confirm endpoint to create enrollment server-side
+        const confirmResp = await apiClient.post('/payments/confirm/', {
+          session_id: sessionId
+        });
+        
+        if (confirmResp.data?.ok) {
+          // Now fetch the enrollment record
+          const enrollResp = await apiClient.get('/enrollments/');
+          if (Array.isArray(enrollResp.data)) {
+            const courseId = confirmResp.data.course_id;
+            const found = enrollResp.data.find(
+              e => e.enrollment_type === 'course' && String(e.object_id) === String(courseId)
+            );
+            if (found) {
+              setEnrollmentRecord(found);
+              // Clear the stored courseId
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('courseId');
+              }
+            }
+          }
         }
       } catch (err) {
+  setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to confirm enrollment');
         if (err.response?.status === 401 || err.response?.status === 403) {
           logout();
           router.replace('/login');
@@ -51,30 +72,7 @@ export default function PaymentSuccess() {
       }
     };
     run();
-  }, [router.isReady, token, storedCourseId, logout, router, sessionId]);
-
-  // fallback: create enrollment if webhook not finished yet
-  useEffect(() => {
-    if (loading || enrollmentRecord || fallbackTried || !storedCourseId || !token) return;
-
-    const run = async () => {
-      setFallbackTried(true);
-      try {
-        const payload = {
-          object_id: parseInt(storedCourseId, 10),
-          enrollment_type: 'course',
-        };
-        const resp = await apiClient.post('/enrollments/', payload);
-        if (resp.data?.id) setEnrollmentRecord(resp.data);
-      } catch (err) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          logout();
-          router.replace('/login');
-        }
-      }
-    };
-    run();
-  }, [loading, enrollmentRecord, fallbackTried, storedCourseId, token, logout, router]);
+  }, [router.isReady, token, sessionId, logout, router, confirmCalled]);
 
   // redirect once we have the record
   useEffect(() => {
@@ -93,11 +91,12 @@ export default function PaymentSuccess() {
   return (
     <div style={{ maxWidth: 720, margin: '24px auto', padding: 20 }}>
       <h2>Payment Successful</h2>
+  {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
       {loading
         ? <p>Loading…</p>
         : enrollmentRecord
           ? <p>Enrollment found. Redirecting…</p>
-          : <p>Processing enrollment…</p>}
+          : <p>Unable to find enrollment. Please contact support.</p>}
       <button onClick={() => router.push('/enrolled-courses')}>Go to Enrolled Courses</button>
     </div>
   );

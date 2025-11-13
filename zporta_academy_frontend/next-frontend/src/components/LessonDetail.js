@@ -91,7 +91,24 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     let isMounted = true;
     const initialize = async () => {
       // If we rendered with initial data for this permalink, skip client fetch
-      if (initialData && initialPermalink && initialPermalink === permalink) {
+  // BUT: always re-fetch if user is authenticated to check enrollment status
+  const shouldSkipFetch = initialData && initialPermalink && initialPermalink === permalink && !token;
+  if (shouldSkipFetch) {
+        // But still need to process gated status and enrollment flags
+        if (initialData?.access === "gated" && !initialData.lesson) {
+          setGateInfo({ message: initialData.message, course: initialData.course });
+          setLessonData({ lesson: null, seo: initialData.seo || null });
+        } else if (initialData.lesson) {
+          setLessonData(initialData);
+          setAccentColor(initialData.lesson.accent_color || "#222E3B");
+          setCustomCSS(initialData.lesson.custom_css || "");
+          setCustomJS(initialData.lesson.custom_js || "");
+          setQuizzes(initialData.lesson.quizzes || []);
+          if (typeof initialData.is_enrolled !== "undefined") {
+            setIsEnrolled(!!initialData.is_enrolled);
+            setIsCompleted(!!initialData.is_completed);
+          }
+        }
         setLoading(false);
         return;
       }
