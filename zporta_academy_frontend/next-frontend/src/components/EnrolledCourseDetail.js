@@ -9,11 +9,12 @@ import {
 } from 'lucide-react';
 import QuizCard from '@/components/QuizCard';
 import styles from '@/styles/EnrolledCourseDetail.module.css';
-import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
-import { useCollaboration } from '@/hooks/useCollaboration';
-import CollaborationZoneSection from '@/components/collab/CollaborationZoneSection';
-import { ref, onValue, get, set } from 'firebase/database';
-import { db } from '@/firebase/firebase';
+// Collaboration features commented out - not in use
+// import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
+// import { useCollaboration } from '@/hooks/useCollaboration';
+// import CollaborationZoneSection from '@/components/collab/CollaborationZoneSection';
+// import { ref, onValue, get, set } from 'firebase/database';
+// import { db } from '@/firebase/firebase';
 import StudyNoteSection from '@/components/study/StudyNoteSection';
 
 import rangy from 'rangy';
@@ -61,15 +62,17 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
         redoStack.current = [];
         
-        if (isCollaborative && roomId) {
-            if (isUpdatingFromFirebase.current) return;
-            set(ref(db, `sessions/${roomId}/content`), currentState);
-        } else if (!isCollaborative && enrollmentId) {
+        // Firebase collaboration disabled
+        // if (isCollaborative && roomId) {
+        //     if (isUpdatingFromFirebase.current) return;
+        //     set(ref(db, `sessions/${roomId}/content`), currentState);
+        // } else 
+        if (!isCollaborative && enrollmentId) {
             apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
                 highlight_data: currentState 
             }).catch(err => console.error("Failed to save annotations via API:", err));
         }
-    }, [isCollaborative, roomId, enrollmentId]);
+    }, [isCollaborative, enrollmentId]);
 
     useEffect(() => {
         if (!htmlContent) return;
@@ -77,11 +80,13 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         const loadAnnotations = async () => {
             let initialHtml = htmlContent;
             try {
-                if (isCollaborative && roomId) {
-                    const contentRef = ref(db, `sessions/${roomId}/content`);
-                    const snapshot = await get(contentRef);
-                    if (snapshot.exists()) initialHtml = snapshot.val();
-                } else if (!isCollaborative && enrollmentId) {
+                // Firebase collaboration disabled
+                // if (isCollaborative && roomId) {
+                //     const contentRef = ref(db, `sessions/${roomId}/content`);
+                //     const snapshot = await get(contentRef);
+                //     if (snapshot.exists()) initialHtml = snapshot.val();
+                // } else 
+                if (!isCollaborative && enrollmentId) {
                     const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
                     if (response.data && response.data.highlight_data) initialHtml = response.data.highlight_data;
                 }
@@ -97,20 +102,21 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
 
         loadAnnotations();
         
-        if (isCollaborative && roomId) {
-            const contentRef = ref(db, `sessions/${roomId}/content`);
-            const unsubscribe = onValue(contentRef, (snapshot) => {
-                const remoteHtml = snapshot.val();
-                if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
-                    isUpdatingFromFirebase.current = true;
-                    editorRef.current.innerHTML = remoteHtml;
-                    setHistory(prev => [...prev.slice(-29), remoteHtml]);
-                    setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
-                }
-            });
-            return () => unsubscribe();
-        }
-    }, [htmlContent, isCollaborative, roomId, enrollmentId]);
+        // Firebase real-time sync disabled
+        // if (isCollaborative && roomId) {
+        //     const contentRef = ref(db, `sessions/${roomId}/content`);
+        //     const unsubscribe = onValue(contentRef, (snapshot) => {
+        //         const remoteHtml = snapshot.val();
+        //         if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
+        //             isUpdatingFromFirebase.current = true;
+        //             editorRef.current.innerHTML = remoteHtml;
+        //             setHistory(prev => [...prev.slice(-29), remoteHtml]);
+        //             setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
+        //         }
+        //     });
+        //     return () => unsubscribe();
+        // }
+    }, [htmlContent, isCollaborative, enrollmentId]);
 
     const undo = useCallback(() => {
         if (history.length > 1) {
@@ -402,24 +408,43 @@ const getYoutubeEmbedUrl = (url) => {
 // --- Sub-Components for the Main Page ---
 // ==================================================================
 
-const CourseHeader = React.memo(({ course, onBack, theme, onToggleTheme }) => (
-    <header className={styles.courseHeader}>
-        <div>
-            <button onClick={onBack} className={styles.backButton}>
-                <ArrowLeft size={16} /> Back to My Learning
-            </button>
-            <h1 className={styles.courseTitle}>{course.title}</h1>
-            {course.description && (
-                <div className="mt-2 text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }} />
-            )}
-        </div>
-        <div className="flex-shrink-0 self-start">
-            <button onClick={onToggleTheme} className={styles.themeToggle} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-        </div>
-    </header>
-));
+const CourseHeader = React.memo(({ course, onBack, theme, onToggleTheme }) => {
+    const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+    
+    return (
+        <header className={styles.courseHeader}>
+            <div>
+                <button onClick={onBack} className={styles.backButton}>
+                    <ArrowLeft size={16} /> Back to My Learning
+                </button>
+                <h1 className={styles.courseTitle}>{course.title}</h1>
+                {course.description && (
+                    <div className={styles.courseDescription}>
+                        <button 
+                            onClick={() => setIsDescriptionOpen(!isDescriptionOpen)} 
+                            className={styles.descriptionToggle}
+                            aria-expanded={isDescriptionOpen}
+                        >
+                            {isDescriptionOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            {isDescriptionOpen ? 'Hide' : 'Show'} Course Description
+                        </button>
+                        {isDescriptionOpen && (
+                            <div 
+                                className={styles.descriptionContent} 
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }} 
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
+            <div className="flex-shrink-0 self-start">
+                <button onClick={onToggleTheme} className={styles.themeToggle} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                </button>
+            </div>
+        </header>
+    );
+});
 CourseHeader.displayName = 'CourseHeader';
 
 const CourseIndexPanel = React.memo(({ lessons, quizzes, completedLessons, activeContentId, onNavigate }) => (
@@ -584,6 +609,38 @@ const ScrollProgress = () => {
   );
 };
 
+const BackToTopButton = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    setIsVisible(scrollTop > 400);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial scroll position
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <button 
+      onClick={scrollToTop} 
+      className={styles.backToTopButton}
+      aria-label="Back to top"
+      title="Back to top"
+    >
+      <ArrowUp size={24} />
+    </button>
+  );
+};
+
 
 // ==================================================================
 // --- Main Component: EnrolledCourseStudyPage ---
@@ -614,11 +671,12 @@ function EnrolledCourseStudyPage() {
   const [searchMatches, setSearchMatches] = useState([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
   
-  // Collaboration State
+  // Collaboration State - disabled
   const [isCollaborative, setIsCollaborative] = useState(false);
   const [collabRoomId, setCollabRoomId] = useState(null);
   const [myId, setMyId] = useState(null);
-  const { peerCursors, updateCursor } = useCollaboration(collabRoomId, myId, user?.username);
+  // const { peerCursors, updateCursor } = useCollaboration(collabRoomId, myId, user?.username);
+  const peerCursors = {}; // Empty object for disabled collaboration
   const [activeTool, setActiveTool] = useState(null);
 
   // --- Effects ---
@@ -725,28 +783,28 @@ function EnrolledCourseStudyPage() {
     }
   }, [searchTerm]);
 
-  // Collaboration cursor updates
-  useEffect(() => {
-    const contentEl = mainContentRef.current;
-    if (!contentEl || !isCollaborative || activeTool !== 'laser') {
-        updateCursor(null, null);
-        return;
-    }
+  // Collaboration cursor updates - disabled
+  // useEffect(() => {
+  //   const contentEl = mainContentRef.current;
+  //   if (!contentEl || !isCollaborative || activeTool !== 'laser') {
+  //       updateCursor(null, null);
+  //       return;
+  //   }
 
-    const mouseHandler = (e) => {
-        const rect = contentEl.getBoundingClientRect();
-        const normX = (e.clientX - rect.left) / rect.width;
-        const normY = (e.clientY - rect.top) / rect.height;
-        updateCursor(normX, normY);
-    };
+  //   const mouseHandler = (e) => {
+  //       const rect = contentEl.getBoundingClientRect();
+  //       const normX = (e.clientX - rect.left) / rect.width;
+  //       const normY = (e.clientY - rect.top) / rect.height;
+  //       updateCursor(normX, normY);
+  //   };
     
-    contentEl.addEventListener('mousemove', mouseHandler);
-    contentEl.addEventListener('mouseleave', () => updateCursor(null, null));
-    return () => {
-        contentEl.removeEventListener('mousemove', mouseHandler);
-        contentEl.removeEventListener('mouseleave', () => updateCursor(null, null));
-    };
-  }, [isCollaborative, updateCursor, activeTool]);
+  //   contentEl.addEventListener('mousemove', mouseHandler);
+  //   contentEl.addEventListener('mouseleave', () => updateCursor(null, null));
+  //   return () => {
+  //       contentEl.removeEventListener('mousemove', mouseHandler);
+  //       contentEl.removeEventListener('mouseleave', () => updateCursor(null, null));
+  //   };
+  // }, [isCollaborative, updateCursor, activeTool]);
 
 
   // --- Handlers ---
@@ -858,7 +916,8 @@ function EnrolledCourseStudyPage() {
 
       <ScrollProgress />
       
-      <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} />
+      {/* Collaboration features disabled */}
+      {/* <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} /> */}
       
       <StudyNoteSection enrollmentId={enrollmentId} />
 
@@ -878,7 +937,8 @@ function EnrolledCourseStudyPage() {
                 activeContentId={activeContentId}
                 onNavigate={handleNavigate}
             />
-            <CollaborationZoneSection isCollabActive={isCollaborative} setIsInviteModalOpen={setIsInviteModalOpen} shareInvites={[]}/>
+            {/* Collaboration Zone hidden - not in use */}
+            {/* <CollaborationZoneSection isCollabActive={isCollaborative} setIsInviteModalOpen={setIsInviteModalOpen} shareInvites={[]}/> */}
         </aside>
         
         <div ref={mainContentRef} className={styles.mainContent}>
@@ -938,6 +998,8 @@ function EnrolledCourseStudyPage() {
       <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={styles.floatingMenuToggle} aria-label={isSidebarOpen ? "Close course menu" : "Open course menu"}>
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
+      
+      <BackToTopButton />
       
       {modalQuiz && createPortal(
           <div className={styles.modalOverlay} onMouseDown={() => setModalQuiz(null)}>
