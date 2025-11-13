@@ -52,6 +52,8 @@ STRIPE_SECRET_KEY = prod_config('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = prod_config('STRIPE_PUBLISHABLE_KEY')
 
 # Database configuration using MySQL
+print("[DEBUG] DB_HOST:", prod_config('DB_HOST'))
+print("[DEBUG] DB_PORT:", prod_config('DB_PORT', default=''))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
