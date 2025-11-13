@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { BookOpen, Clock, Award, TrendingUp, ChevronRight } from 'lucide-react';
 import apiClient from '@/api';
 import { AuthContext } from '@/context/AuthContext';
 import styles from '@/styles/EnrolledCourses.module.css';
@@ -140,37 +142,94 @@ useEffect(() => {
   }
 
   return (
-    <div className="enrolled-courses-container">
-      <h2 className="heading">My Enrolled Courses</h2>
-      <div className="grid-container">
-        {paginatedEnrollments.map(enrollment => (
-          <Link href={`/courses/enrolled/${enrollment.id}`} key={enrollment.id} className={styles["grid-item-link"]}>
+    <div className={styles.enrolledCoursesContainer}>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>My Learning Journey</h1>
+          <p className={styles.pageSubtitle}>Continue where you left off and explore new courses</p>
+        </div>
+        <div className={styles.statsBar}>
+          <div className={styles.statItem}>
+            <BookOpen size={20} />
+            <div>
+              <div className={styles.statValue}>{enrollments.length}</div>
+              <div className={styles.statLabel}>Enrolled</div>
+            </div>
+          </div>
+          <div className={styles.statItem}>
+            <Award size={20} />
+            <div>
+              <div className={styles.statValue}>
+                {enrollments.filter(e => e.progress === 100).length}
+              </div>
+              <div className={styles.statLabel}>Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="grid-item-card">
+      <div className={styles.coursesGrid}>
+        {paginatedEnrollments.map(enrollment => (
+          <Link 
+            href={`/courses/enrolled/${enrollment.id}`} 
+            key={enrollment.id} 
+            className={styles.courseCard}
+          >
+            <div className={styles.courseImageWrapper}>
               {enrollment.course.cover_image ? (
-                <img
+                <Image
                   src={enrollment.course.cover_image}
                   alt={`${enrollment.course.title} cover`}
-                  className="grid-item-image"
+                  className={styles.courseImage}
+                  width={400}
+                  height={225}
                 />
               ) : (
-                <div className="grid-item-placeholder">
-                  <p>No Image</p>
+                <div className={styles.coursePlaceholder}>
+                  <BookOpen size={48} />
                 </div>
               )}
-              <div className="grid-item-info">
-                <h3>{enrollment.course.title}</h3>
-                <p className="grid-item-meta">
-                  Enrolled on {new Date(enrollment.enrollment_date).toLocaleDateString()}
-                </p>
-                {enrollment.progress !== null && (
-                  <div>
-                    <div className="progress-container">
-                      <div className="progress-bar" style={{ width: `${enrollment.progress}%` }}></div>
-                    </div>
-                    <div className="progress-number">{enrollment.progress}%</div>
+              {enrollment.progress !== null && enrollment.progress > 0 && (
+                <div className={styles.progressBadge}>
+                  <TrendingUp size={14} />
+                  {Math.round(enrollment.progress)}%
+                </div>
+              )}
+            </div>
+            
+            <div className={styles.courseContent}>
+              <h3 className={styles.courseTitle}>{enrollment.course.title}</h3>
+              
+              <div className={styles.courseMeta}>
+                <div className={styles.metaItem}>
+                  <Clock size={14} />
+                  <span>Enrolled {new Date(enrollment.enrollment_date).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {enrollment.progress !== null && (
+                <div className={styles.progressSection}>
+                  <div className={styles.progressBar}>
+                    <div 
+                      className={styles.progressFill} 
+                      style={{ width: `${enrollment.progress}%` }}
+                    />
                   </div>
-                )}
+                  <div className={styles.progressText}>
+                    {enrollment.progress === 100 ? (
+                      <span className={styles.completedText}>
+                        <Award size={14} /> Completed
+                      </span>
+                    ) : (
+                      <span>{Math.round(enrollment.progress)}% Complete</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.continueButton}>
+                <span>Continue Learning</span>
+                <ChevronRight size={16} />
               </div>
             </div>
           </Link>
@@ -191,30 +250,40 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Suggested Courses Section */}
-      {<section className="suggested-section">
-          <h2>Suggested Courses</h2>
-          <div className="suggested-grid">
+      {suggestedCourses.length > 0 && (
+        <section className={styles.suggestedSection}>
+          <h2 className={styles.sectionTitle}>Recommended for You</h2>
+          <div className={styles.suggestedGrid}>
             {suggestedCourses.map(course => (
               <div
                 key={course.id}
-                className="suggested-card"
+                className={styles.suggestedCard}
                 onClick={() => router.push(`/courses/${course.permalink}`)}
               >
                 {course.cover_image ? (
-                  <img src={course.cover_image} alt={course.title} className="suggested-image" />
+                  <Image 
+                    src={course.cover_image} 
+                    alt={course.title} 
+                    className={styles.suggestedImage}
+                    width={300}
+                    height={180}
+                  />
                 ) : (
-                  <div className="suggested-placeholder">No Image</div>
+                  <div className={styles.suggestedPlaceholder}>
+                    <BookOpen size={32} />
+                  </div>
                 )}
-                <div className="suggested-info">
+                <div className={styles.suggestedInfo}>
                   <h3>{course.title}</h3>
-                  <p>{course.course_type === 'premium' ? 'Premium Course' : 'Free Course'}</p>
+                  <p className={styles.suggestedType}>
+                    {course.course_type === 'premium' ? 'Premium Course' : 'Free Course'}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </section>
-/*      )*/} 
+      )} 
     </div>
   );
 };

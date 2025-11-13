@@ -326,6 +326,27 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     }, [permalink, initialCourse, token, course, fetchCourseData, refreshContentLists, fetchEnrollmentStatus]);
 
     /**
+     * `useEffect` to redirect enrolled users (non-creators) to the study page
+     */
+    useEffect(() => {
+        if (enrolled && course && !isCreator && !viewAsPublic && !isEditRoute) {
+            // Find the enrollment ID for this course
+            const checkEnrollment = async () => {
+                try {
+                    const res = await apiClient.get("/enrollments/user/");
+                    const enrollment = res.data?.find(e => e.enrollment_type === "course" && e.object_id === course.id);
+                    if (enrollment?.id) {
+                        router.push(`/courses/enrolled/${enrollment.id}`);
+                    }
+                } catch (err) {
+                    console.error("Could not fetch enrollment ID:", err);
+                }
+            };
+            checkEnrollment();
+        }
+    }, [enrolled, course, isCreator, viewAsPublic, isEditRoute, router]);
+
+    /**
      * @callback initializeEditMode
      * @description Prepares the component for edit mode by fetching necessary resources (subjects, user's lessons/quizzes)
      * and populating the `editData` state with the current course's data.
