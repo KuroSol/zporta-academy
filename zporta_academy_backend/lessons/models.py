@@ -89,6 +89,9 @@ class Lesson(models.Model):
     og_title = models.CharField(max_length=100, blank=True)
     og_description = models.TextField(max_length=200, blank=True)
     og_image = models.URLField(blank=True)
+    # Creator-controlled ordering within a course. Lower numbers appear first.
+    # Not unique across unattached lessons (course is NULL), unique per attached course.
+    position = models.PositiveIntegerField(default=0, db_index=True)
 
     CONTENT_TYPE_CHOICES = [
         ('text', 'Text'),
@@ -169,6 +172,11 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["course", "position"]),
+        ]
 
     
 class LessonCompletion(models.Model):

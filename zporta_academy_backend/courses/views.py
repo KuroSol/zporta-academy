@@ -125,7 +125,7 @@ class DraftCourseDetailView(APIView):
             or request.user.is_superuser
         ):
             return Response({"error": "You don't have permission to view this draft."}, status=403)
-        lessons = Lesson.objects.filter(course=course)
+        lessons = Lesson.objects.filter(course=course).order_by('position', 'created_at')
         return Response({
             "course": CourseSerializer(course, context={"request": request}).data,
             "lessons": LessonSerializer(lessons, many=True).data
@@ -158,8 +158,12 @@ class AddLessonToCourseView(APIView):
         lesson = get_object_or_404(Lesson, id=lesson_id, created_by=request.user)
         if lesson.course is not None:
             return Response({"error": "This lesson is already attached to a course."}, status=status.HTTP_400_BAD_REQUEST)
+        # Assign next position at the end of current list
+        last = Lesson.objects.filter(course=course).order_by('-position').first()
+        next_pos = (last.position + 1) if last and last.position is not None else 1
         lesson.course = course
-        lesson.save()
+        lesson.position = next_pos
+        lesson.save(update_fields=["course", "position"])
         serializer = LessonSerializer(lesson)
         return Response({"message": "Lesson added successfully.", "lesson": serializer.data})
 
@@ -230,10 +234,7 @@ class CourseDetailView(APIView):
             request.user == course.created_by or request.user.is_staff or request.user.is_superuser
         )
         lessons_qs = base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)
-        lessons = lessons_qs.order_by(
-            Case(When(course__isnull=True, then=Value(0)), default=Value(1), output_field=IntegerField()),
-            'title'
-        )
+        lessons = lessons_qs.order_by('position', 'created_at')
         is_owner = request.user.is_authenticated and request.user == course.created_by
         return Response({
             "course": CourseSerializer(course, context={"request": request}).data,
@@ -272,7 +273,7 @@ class DynamicCourseView(APIView):
         is_privileged = request.user.is_authenticated and (
             request.user == course.created_by or request.user.is_staff or request.user.is_superuser
         )
-        lessons = (base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)).order_by('title')
+        lessons = (base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)).order_by('position', 'created_at')
         is_owner = request.user.is_authenticated and request.user == course.created_by
         progress_percentage = 0
         if request.user.is_authenticated:
@@ -355,3 +356,36 @@ class BulkPublishLessonsView(APIView):
             published_count += 1
 
         return Response({"message": "Lessons published.", "published_count": published_count})
+
+class ReorderLessonsInCourseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, permalink):
+        """
+        Reorder lessons within a course. Body: {"order": [lesson_id, ...]}
+        Only the course owner (or staff/superuser) can reorder.
+        Lessons not included will be appended after, preserving current order.
+        """
+        course = get_object_or_404(Course.all_objects, permalink=permalink)
+        if not (request.user == course.created_by or request.user.is_staff or request.user.is_superuser):
+            return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+        order = request.data.get("order")
+        if not isinstance(order, list) or not all(isinstance(i, int) for i in order):
+            return Response({"error": "Provide 'order' as a list of lesson IDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        course_lessons = list(Lesson.objects.filter(course=course).values_list('id', flat=True))
+        filtered_ids = [lid for lid in order if lid in course_lessons]
+        missing_ids = [lid for lid in course_lessons if lid not in filtered_ids]
+        final_order = filtered_ids + missing_ids
+
+        from django.db import transaction
+        with transaction.atomic():
+            for idx, lesson_id in enumerate(final_order, start=1):
+                Lesson.objects.filter(id=lesson_id, course=course).update(position=idx)
+
+        lessons = Lesson.objects.filter(course=course).order_by('position', 'created_at')
+        return Response({
+            "message": "Lesson order updated.",
+            "lessons": LessonSerializer(lessons, many=True).data
+        })

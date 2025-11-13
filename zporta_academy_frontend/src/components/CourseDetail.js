@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaPlus, FaBook, FaQuestion, FaSpinner, FaBookOpen, FaTimes, FaEdit, FaTrash, FaCheckCircle, FaExclamationTriangle, FaArrowUp, FaArrowDown, FaGripVertical } from "react-icons/fa";
 import CustomEditor from "./Editor/CustomEditor";
 import CreateSubjectSelect from "./Admin/CreateSubjectSelect";
 import styles from "./CourseDetail.module.css"; // This should point to the new responsive CSS
@@ -705,6 +705,46 @@ const CourseDetail = () => {
     }
   };
 
+  // Reorder lessons (owner-only)
+  const handleReorderLessons = async (newOrder) => {
+    if (!permalink || !newOrder || newOrder.length === 0) return;
+    try {
+      const response = await apiClient.post(`/courses/${permalink}/lessons/reorder/`, {
+        order: newOrder
+      });
+      // Update local state with the reordered lessons from API response
+      if (response.data?.lessons) {
+        setLessons(response.data.lessons);
+      }
+    } catch (err) {
+      console.error("Error reordering lessons:", err.response?.data || err.message);
+      alert(`Failed to reorder lessons: ${err.response?.data?.error || err.message}`);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
+  // Move lesson up in the list
+  const moveLessonUp = (index) => {
+    if (index === 0) return;
+    const newLessons = [...lessons];
+    [newLessons[index - 1], newLessons[index]] = [newLessons[index], newLessons[index - 1]];
+    const newOrder = newLessons.map(l => l.id);
+    setLessons(newLessons);
+    handleReorderLessons(newOrder);
+  };
+
+  // Move lesson down in the list
+  const moveLessonDown = (index) => {
+    if (index === lessons.length - 1) return;
+    const newLessons = [...lessons];
+    [newLessons[index], newLessons[index + 1]] = [newLessons[index + 1], newLessons[index]];
+    const newOrder = newLessons.map(l => l.id);
+    setLessons(newLessons);
+    handleReorderLessons(newOrder);
+  };
+
   useEffect(() => {
     if (editMode && course) {
       const subjectObj = subjects.find((s) => s.id === course.subject) || { id: course.subject, name: "" };
@@ -796,9 +836,27 @@ const CourseDetail = () => {
                     <div className={styles.accordionContent}>
                         {lessons.length > 0 ? (
                             <ul className={styles.attachedList}>
-                                {lessons.map(l => (
+                                {lessons.map((l, index) => (
                                     <li key={l.id}>
-                                        <span>{l.title}</span>
+                                        <div className={styles.lessonReorderControls}>
+                                            <button 
+                                                onClick={() => moveLessonUp(index)} 
+                                                disabled={index === 0 || isLocked}
+                                                className={styles.reorderBtn}
+                                                title="Move up"
+                                            >
+                                                <FaArrowUp />
+                                            </button>
+                                            <button 
+                                                onClick={() => moveLessonDown(index)} 
+                                                disabled={index === lessons.length - 1 || isLocked}
+                                                className={styles.reorderBtn}
+                                                title="Move down"
+                                            >
+                                                <FaArrowDown />
+                                            </button>
+                                        </div>
+                                        <span className={styles.lessonTitle}>{l.title}</span>
                                         <span className={`${styles.statusPill} ${l.status === 'published' ? styles.statusPublished : styles.statusDraft}`} style={{ marginLeft: 8 }}>
                                           {l.status === 'published' ? 'Published' : 'Draft'}
                                         </span>

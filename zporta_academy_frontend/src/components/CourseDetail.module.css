@@ -370,6 +370,47 @@
     padding: 0.5rem 1rem;
     background: var(--light-color);
     border-radius: var(--border-radius);
+    gap: 0.5rem;
+}
+
+.lessonReorderControls {
+    display: flex;
+    gap: 0.25rem;
+    margin-right: 0.5rem;
+}
+
+.reorderBtn {
+    background: var(--white-color);
+    border: 1px solid var(--border-color);
+    color: var(--medium-color);
+    cursor: pointer;
+    padding: 0.375rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.reorderBtn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border-color: var(--primary-color);
+}
+
+.reorderBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.lessonTitle {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .detachBtn {
     background: none;
