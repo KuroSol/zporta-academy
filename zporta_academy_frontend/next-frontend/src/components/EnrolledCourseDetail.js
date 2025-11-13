@@ -29,11 +29,9 @@ let _isToolbarMounted = false;
 // --- TextStyler Component (Annotation & Highlighting Tool) ---
 // ==================================================================
 const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick }) => {
-    const [showToolbar, setShowToolbar] = useState(() => !_isToolbarMounted);
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
     const isUpdatingFromFirebase = useRef(false);
-    const [isToolbarOpen, setIsToolbarOpen] = useState(false);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [history, setHistory] = useState([]);
     const redoStack = useRef([]);
@@ -42,19 +40,6 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
     useEffect(() => {
         rangy.init();
     }, []);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setIsToolbarOpen(window.innerWidth >= 768);
-        }
-    }, []);
-    
-    useEffect(() => {
-       if (showToolbar) _isToolbarMounted = true;
-       return () => {
-         if (showToolbar) _isToolbarMounted = false;
-       };
-     }, [showToolbar]);
 
     const saveState = useCallback(() => {
         if (!editorRef.current) return;
@@ -144,12 +129,6 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
       }
       onToolClick(null);
     }, [saveState, onToolClick]);
-
-    const handleToolClick = useCallback((tool) => {
-        if (tool === 'undo') undo();
-        else if (tool === 'redo') redo();
-        else onToolClick(tool);
-    }, [undo, redo, onToolClick]);
     
     const openNote = useCallback((popup) => {
         if (overlayRef.current) overlayRef.current.style.display = 'block';
@@ -328,27 +307,6 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
               </div>, document.body
             )}
 
-            {showToolbar && typeof document !== 'undefined' && createPortal(
-                <div className={`${styles.floatingToolbarContainer} ${!isToolbarOpen ? styles.collapsed : ''}`}>
-                    <div className={styles.toolbarContent}>
-                        <button onClick={() => handleToolClick('laser')} className={`${styles.stylerToolBtn} ${activeTool === 'laser' ? styles.active : ''}`} title="Laser Pointer"><Radio size={18} /></button>
-                        <div className={styles.separator}></div>
-                        <button onClick={() => handleToolClick('highlight')} className={`${styles.stylerToolBtn} ${activeTool === 'highlight' ? styles.active : ''}`} title="Highlight"><Home size={18} /></button>
-                        <button onClick={() => handleToolClick('box')} className={`${styles.stylerToolBtn} ${activeTool === 'box' ? styles.active : ''}`} title="Box"><Square size={18} /></button>
-                        <button onClick={() => handleToolClick('circle')} className={`${styles.stylerToolBtn} ${activeTool === 'circle' ? styles.active : ''}`} title="Circle"><CircleIcon size={18} /></button>
-                        <button onClick={() => handleToolClick('note')} className={`${styles.stylerToolBtn} ${activeTool === 'note' ? styles.active : ''}`} title="Add Note"><MessageSquare size={18} /></button>
-                        <div className={styles.separator}></div>
-                        <button onClick={() => handleToolClick('eraser')} className={`${styles.stylerToolBtn} ${activeTool === 'eraser' ? styles.active : ''}`} title="Eraser"><Eraser size={18} /></button>
-                        <button onClick={() => handleToolClick('undo')} className={styles.stylerToolBtn} title="Undo"><Undo size={18} /></button>
-                        <button onClick={() => handleToolClick('redo')} className={styles.stylerToolBtn} title="Redo"><Redo size={18} /></button>
-                    </div>
-                    <button onClick={() => setIsToolbarOpen(!isToolbarOpen)} className={styles.toolbarToggle}>
-                        {isToolbarOpen ? <ChevronDown size={20} /> : <BookOpen size={18} />}
-                    </button>
-                </div>,
-                document.body
-            )}
-
             <div
                 ref={editorRef}
                 className={`${styles.stylerEditor} prose dark:prose-invert max-w-none ${activeTool === 'laser' ? styles.laserActive : ''}`}
@@ -359,6 +317,41 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
 };
 // ==================================================================
 // --- End of TextStyler Component ---
+// ==================================================================
+
+// ==================================================================
+// --- Shared Annotation Toolbar Component ---
+// ==================================================================
+const AnnotationToolbar = ({ activeTool, onToolClick }) => {
+    const [isToolbarOpen, setIsToolbarOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsToolbarOpen(window.innerWidth >= 768);
+        }
+    }, []);
+
+    return createPortal(
+        <div className={`${styles.annotationToolbar} ${!isToolbarOpen ? styles.collapsed : ''}`}>
+            <div className={styles.toolbarContent}>
+                <button onClick={() => onToolClick('highlight')} className={`${styles.toolBtn} ${activeTool === 'highlight' ? styles.active : ''}`} title="Highlight"><Home size={20} /></button>
+                <button onClick={() => onToolClick('box')} className={`${styles.toolBtn} ${activeTool === 'box' ? styles.active : ''}`} title="Box"><Square size={20} /></button>
+                <button onClick={() => onToolClick('circle')} className={`${styles.toolBtn} ${activeTool === 'circle' ? styles.active : ''}`} title="Circle"><CircleIcon size={20} /></button>
+                <button onClick={() => onToolClick('note')} className={`${styles.toolBtn} ${activeTool === 'note' ? styles.active : ''}`} title="Add Note"><MessageSquare size={20} /></button>
+                <div className={styles.separator}></div>
+                <button onClick={() => onToolClick('eraser')} className={`${styles.toolBtn} ${activeTool === 'eraser' ? styles.active : ''}`} title="Eraser"><Eraser size={20} /></button>
+                <button onClick={() => onToolClick('undo')} className={styles.toolBtn} title="Undo"><Undo size={20} /></button>
+                <button onClick={() => onToolClick('redo')} className={styles.toolBtn} title="Redo"><Redo size={20} /></button>
+            </div>
+            <button onClick={() => setIsToolbarOpen(!isToolbarOpen)} className={styles.toolbarToggle} title={isToolbarOpen ? "Hide toolbar" : "Show toolbar"}>
+                {isToolbarOpen ? <ChevronDown size={20} /> : <BookOpen size={20} />}
+            </button>
+        </div>,
+        document.body
+    );
+};
+// ==================================================================
+// --- End of Annotation Toolbar ---
 // ==================================================================
 
 
@@ -511,7 +504,7 @@ const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, current
 });
 SearchBar.displayName = 'SearchBar';
 
-const LessonSection = React.memo(({ lesson, isCompleted, onMarkComplete, onOpenQuiz, searchTerm, ...stylerProps }) => {
+const LessonSection = ({ lesson, isCompleted, onMarkComplete, onOpenQuiz, searchTerm, ...stylerProps }) => {
   const highlightSearchTerm = useCallback((text) => {
     if (!searchTerm || !text) return text;
     const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -563,8 +556,7 @@ const LessonSection = React.memo(({ lesson, isCompleted, onMarkComplete, onOpenQ
       </footer>
     </section>
   );
-});
-LessonSection.displayName = 'LessonSection';
+};
 
 const QuizSection = React.memo(({ quiz, onOpenQuiz, searchTerm }) => {
     const highlightedTitle = useMemo(() => {
@@ -1000,6 +992,11 @@ function EnrolledCourseStudyPage() {
       </button>
       
       <BackToTopButton />
+      
+      <AnnotationToolbar 
+        activeTool={activeTool} 
+        onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)} 
+      />
       
       {modalQuiz && createPortal(
           <div className={styles.modalOverlay} onMouseDown={() => setModalQuiz(null)}>
