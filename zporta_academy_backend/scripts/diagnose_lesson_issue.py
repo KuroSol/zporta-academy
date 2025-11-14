@@ -57,10 +57,12 @@ def diagnose_user_lessons(username_or_email):
             lessons = Lesson.objects.filter(course=course).order_by('position')
             print(f"   Total Lessons: {lessons.count()}")
             
-            # Show ALL lessons with their positions
+            # Show ALL lessons with their positions and content preview
             print(f"\n   📖 All Lessons in Course:")
             for lesson in lessons:
+                content_preview = lesson.content[:100] if lesson.content else "NO CONTENT"
                 print(f"      {lesson.position}. {lesson.title} (ID: {lesson.id})")
+                print(f"         Content: {content_preview}...")
             
             # Get lesson progress
             progress_records = LessonCompletion.objects.filter(
