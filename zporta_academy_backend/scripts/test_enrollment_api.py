@@ -26,9 +26,9 @@ def test_enrollment_data():
     user = User.objects.get(username='zporta')
     enrollment = Enrollment.objects.get(id=102)  # The Business English course
     
-    # Create a fake request context
+    # Create a fake request context with proper SERVER_NAME
     factory = APIRequestFactory()
-    request = factory.get('/api/enrollments/102/')
+    request = factory.get('/api/enrollments/102/', SERVER_NAME='eduhab.com')
     request.user = user
     
     # Serialize the enrollment
