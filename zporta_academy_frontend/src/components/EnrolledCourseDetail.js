@@ -922,12 +922,23 @@ function EnrolledCourseStudyPage() {
         if (!course) throw new Error("Course data not found.");
         setCourseData(course);
 
+        // Use lessons from enrollment response directly - they already include full content
+        // Only refetch if a lesson is missing critical data
         const lessonsData = await Promise.all(
-          (course.lessons || []).map(lsn =>
-            apiClient.get(`/lessons/${lsn.permalink || lsn.id}/`)
-              .then(res => ({ ...res.data.lesson, id: res.data.lesson.id || lsn.id }))
-              .catch(() => ({ ...lsn, title: `${lsn.title} (Error)`, content: null, id: lsn.id }))
-          )
+          (course.lessons || []).map(async (lsn) => {
+            // If lesson already has content, use it directly
+            if (lsn.content || lsn.video_url) {
+              return { ...lsn, id: lsn.id };
+            }
+            // Only refetch if lesson is missing content
+            try {
+              const res = await apiClient.get(`/lessons/${lsn.permalink || lsn.id}/`);
+              return { ...res.data.lesson, id: res.data.lesson.id || lsn.id };
+            } catch (err) {
+              console.error(`Error fetching lesson ${lsn.id}:`, err);
+              return { ...lsn, title: `${lsn.title} (Error)`, content: null, id: lsn.id };
+            }
+          })
         );
 
         lessonsData.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || String(a.id).localeCompare(String(b.id)));
