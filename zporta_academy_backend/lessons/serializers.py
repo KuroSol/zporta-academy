@@ -87,7 +87,7 @@ class LessonSerializer(serializers.ModelSerializer):
             'tags_output',     # <-- read_only output field
             'permalink', 'created_by', 'created_at', 'is_locked',
             'is_premium',      # Allow clients to mark lessons as premium or free.
-            'status', 'published_at',
+            'status', 'published_at', 'position',  # Include position for proper ordering
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'quizzes',         # the quizzes already attached to *this* lesson
