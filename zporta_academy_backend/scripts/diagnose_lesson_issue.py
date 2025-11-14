@@ -15,8 +15,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from enrollment.models import Enrollment
-from learning.models import LessonProgress
-from lessons.models import Lesson
+from lessons.models import LessonCompletion, Lesson
 from courses.models import Course
 
 User = get_user_model()
@@ -55,8 +54,9 @@ def diagnose_user_lessons(username_or_email):
             print(f"   Total Lessons: {lessons.count()}")
             
             # Get lesson progress
-            progress_records = LessonProgress.objects.filter(
-                enrollment=enrollment
+            progress_records = LessonCompletion.objects.filter(
+                user=enrollment.user,
+                lesson__course=enrollment.content_object
             ).select_related('lesson')
             
             print(f"   Completed Lessons: {progress_records.count()}")
@@ -75,8 +75,8 @@ def diagnose_user_lessons(username_or_email):
             # Issue 1: Duplicate progress records
             duplicate_lessons = []
             for lesson in lessons:
-                count = LessonProgress.objects.filter(
-                    enrollment=enrollment,
+                count = LessonCompletion.objects.filter(
+                    user=enrollment.user,
                     lesson=lesson
                 ).count()
                 if count > 1:
@@ -88,9 +88,9 @@ def diagnose_user_lessons(username_or_email):
                     print(f"      - {lesson.title}: {count} records")
             
             # Issue 2: Progress for lessons not in course
-            orphan_progress = LessonProgress.objects.filter(
-                enrollment=enrollment
-            ).exclude(lesson__course=enrollment.course)
+            orphan_progress = LessonCompletion.objects.filter(
+                user=enrollment.user
+            ).exclude(lesson__course=enrollment.content_object)
             
             if orphan_progress.exists():
                 print(f"   ⚠️  ISSUE: Found progress for lessons not in this course!")
@@ -115,15 +115,15 @@ def diagnose_user_lessons(username_or_email):
 
 
 def fix_duplicate_progress(enrollment_id):
-    """Remove duplicate LessonProgress records for an enrollment"""
+    """Remove duplicate LessonCompletion records for an enrollment"""
     try:
         enrollment = Enrollment.objects.get(id=enrollment_id)
-        lessons = Lesson.objects.filter(course=enrollment.course)
+        lessons = Lesson.objects.filter(course=enrollment.content_object)
         
         fixed_count = 0
         for lesson in lessons:
-            progress_records = LessonProgress.objects.filter(
-                enrollment=enrollment,
+            progress_records = LessonCompletion.objects.filter(
+                user=enrollment.user,
                 lesson=lesson
             ).order_by('completed_at')
             
@@ -150,17 +150,17 @@ def fix_duplicate_progress(enrollment_id):
 
 def list_recent_completions(limit=20):
     """List recent lesson completions to identify patterns"""
-    print(f"\n{'='*60}")
+    print(f"{'='*60}")
     print(f"📊 RECENT LESSON COMPLETIONS (Last {limit})")
     print(f"{'='*60}\n")
     
-    recent = LessonProgress.objects.select_related(
-        'lesson', 'enrollment__user', 'enrollment__course'
+    recent = LessonCompletion.objects.select_related(
+        'lesson', 'user'
     ).order_by('-completed_at')[:limit]
     
     for progress in recent:
-        print(f"   User: {progress.enrollment.user.username}")
-        print(f"   Course: {progress.enrollment.course.title}")
+        print(f"   User: {progress.user.username}")
+        print(f"   Course: {progress.lesson.course.title}")
         print(f"   Lesson: {progress.lesson.title} (Position: {progress.lesson.position})")
         print(f"   Completed: {progress.completed_at}")
         print(f"   {'-'*50}")
