@@ -57,6 +57,11 @@ def diagnose_user_lessons(username_or_email):
             lessons = Lesson.objects.filter(course=course).order_by('position')
             print(f"   Total Lessons: {lessons.count()}")
             
+            # Show ALL lessons with their positions
+            print(f"\n   📖 All Lessons in Course:")
+            for lesson in lessons:
+                print(f"      {lesson.position}. {lesson.title} (ID: {lesson.id})")
+            
             # Get lesson progress
             progress_records = LessonCompletion.objects.filter(
                 user=enrollment.user,
