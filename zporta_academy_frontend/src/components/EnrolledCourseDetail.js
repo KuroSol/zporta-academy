@@ -926,13 +926,18 @@ function EnrolledCourseStudyPage() {
         // Only refetch if a lesson is missing critical data
         const lessonsData = await Promise.all(
           (course.lessons || []).map(async (lsn) => {
+            // ALWAYS create a new object to avoid reference issues
+            const lessonData = { ...lsn, id: lsn.id };
+            
             // If lesson already has content, use it directly
             if (lsn.content || lsn.video_url) {
-              return { ...lsn, id: lsn.id };
+              console.log(`Using existing data for lesson ${lsn.id}: ${lsn.title}`);
+              return lessonData;
             }
             // Only refetch if lesson is missing content
             try {
               const res = await apiClient.get(`/lessons/${lsn.permalink || lsn.id}/`);
+              console.log(`Fetched lesson ${lsn.id}: ${lsn.title}`);
               return { ...res.data.lesson, id: res.data.lesson.id || lsn.id };
             } catch (err) {
               console.error(`Error fetching lesson ${lsn.id}:`, err);
