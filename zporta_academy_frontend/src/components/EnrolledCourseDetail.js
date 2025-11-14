@@ -466,7 +466,11 @@ const QuizSection = React.memo(({ quiz, searchTerm, onOpenQuiz }) => {
   );
 });
 
-const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, completedAt, onMarkComplete, onOpenQuiz, searchTerm, isCollaborative, roomId, enrollmentId, userId, activeTool, onToolClick }) => {
+const LessonSection = ({ lesson, associatedQuiz, isCompleted, completedAt, onMarkComplete, onOpenQuiz, searchTerm, isCollaborative, roomId, enrollmentId, userId, activeTool, onToolClick }) => {
+  // Debug: Log lesson content hash to verify uniqueness
+  const contentHash = lesson.content ? lesson.content.substring(0, 100) : 'no-content';
+  console.log(`[LessonSection] Rendering lesson ${lesson.id}: ${lesson.title}, content preview:`, contentHash);
+
   const highlightSearchTerm = useCallback((text) => {
     if (!searchTerm || !text) return text;
     const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -474,7 +478,11 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
     return text.replace(regex, `<mark class="bg-yellow-200 dark:bg-yellow-600 search-match-highlight">$1</mark>`);
   }, [searchTerm]);
 
-  const sanitizedContent = useMemo(() => sanitizeHtml(lesson.content), [lesson.content]);
+  const sanitizedContent = useMemo(() => {
+    const result = sanitizeHtml(lesson.content);
+    console.log(`[LessonSection] Sanitized content for lesson ${lesson.id}, length: ${result.length}`);
+    return result;
+  }, [lesson.content, lesson.id]);
   const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, highlightSearchTerm]);
   const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, highlightSearchTerm]);
   const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
@@ -582,7 +590,7 @@ const LessonSection = React.memo(({ lesson, associatedQuiz, isCompleted, complet
       </div>
     </section>
   );
-});
+};
 
 const LessonIndexModal = ({ isOpen, onClose, lessons, quizzes, onNavigate, completedLessons, completionTimestamps, activeLessonId }) => {
     if (!isOpen) return null;
@@ -1223,24 +1231,29 @@ function EnrolledCourseStudyPage() {
                   This course currently has no lessons or quizzes.
                 </p>
               )}
-              {lessonsWithQuizzes.map(lesson => (
-                <LessonSection
-                  key={lesson.id}
-                  lesson={lesson}
-                  associatedQuiz={lesson.associatedQuiz}
-                  isCompleted={completedLessons.has(lesson.id)}
-                  completedAt={completionTimestamps[lesson.id]}
-                  onMarkComplete={handleMarkComplete}
-                  onOpenQuiz={openQuizModal}
-                  searchTerm={searchTerm}
-                  isCollaborative={isCollaborative}
-                  roomId={collabRoomId}
-                  enrollmentId={enrollmentId}
-                  userId={myId}
-                  activeTool={activeTool}
-                  onToolClick={handleToolClick}
-                />
-              ))}
+              {lessonsWithQuizzes.map(lesson => {
+                // Force unique key and log to verify each lesson has unique content
+                const contentPreview = lesson.content ? lesson.content.substring(0, 100) : 'no-content';
+                console.log(`[Main] Rendering lesson ${lesson.id}: "${lesson.title}", content preview:`, contentPreview);
+                return (
+                  <LessonSection
+                    key={`lesson-${lesson.id}-${lesson.position || 0}`}
+                    lesson={lesson}
+                    associatedQuiz={lesson.associatedQuiz}
+                    isCompleted={completedLessons.has(lesson.id)}
+                    completedAt={completionTimestamps[lesson.id]}
+                    onMarkComplete={handleMarkComplete}
+                    onOpenQuiz={openQuizModal}
+                    searchTerm={searchTerm}
+                    isCollaborative={isCollaborative}
+                    roomId={collabRoomId}
+                    enrollmentId={enrollmentId}
+                    userId={myId}
+                    activeTool={activeTool}
+                    onToolClick={handleToolClick}
+                  />
+                );
+              })}
             </main>
           </div>
         </div>
