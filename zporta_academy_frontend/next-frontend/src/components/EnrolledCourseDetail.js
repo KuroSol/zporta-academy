@@ -657,6 +657,7 @@ function EnrolledCourseStudyPage() {
   const [modalQuiz, setModalQuiz] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [activeContentId, setActiveContentId] = useState(null);
+  const [confirmComplete, setConfirmComplete] = useState(null); // { lessonId, lessonTitle }
   
   // Search State
   const [searchTerm, setSearchTerm] = useState("");
@@ -818,9 +819,26 @@ function EnrolledCourseStudyPage() {
         return;
     }
     
+    // Show confirmation dialog
+    setConfirmComplete({ lessonId, lessonTitle: lesson.title || 'this lesson' });
+  }, [completedLessons, lessons]);
+
+  const confirmMarkComplete = useCallback(async () => {
+    if (!confirmComplete) return;
+    const { lessonId } = confirmComplete;
+    
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) {
+        console.error("Could not find lesson to mark complete:", lessonId);
+        setConfirmComplete(null);
+        return;
+    }
+    
     const lessonIdentifier = lesson.permalink || lesson.id;
     
     setCompletedLessons(prev => new Set(prev).add(lessonId));
+    setConfirmComplete(null);
+    
     try {
       await apiClient.post(`/lessons/${lessonIdentifier}/complete/`, {});
     } catch (err) {
@@ -832,7 +850,7 @@ function EnrolledCourseStudyPage() {
         return newSet;
       });
     }
-  }, [completedLessons, lessons]);
+  }, [confirmComplete, lessons]);
 
   const handleNavigate = useCallback((targetId) => {
     const element = document.getElementById(targetId);
@@ -997,6 +1015,26 @@ function EnrolledCourseStudyPage() {
         activeTool={activeTool} 
         onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)} 
       />
+      
+      {confirmComplete && createPortal(
+        <div className={styles.modalOverlay} onMouseDown={() => setConfirmComplete(null)}>
+          <div className={styles.confirmModal} onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className={styles.confirmTitle}>Mark Lesson Complete?</h3>
+            <p className={styles.confirmMessage}>
+              Are you sure you want to mark <strong>{confirmComplete.lessonTitle}</strong> as complete?
+            </p>
+            <div className={styles.confirmActions}>
+              <button onClick={confirmMarkComplete} className={styles.confirmButton}>
+                <CheckCircle size={18} /> Yes, Mark Complete
+              </button>
+              <button onClick={() => setConfirmComplete(null)} className={styles.cancelButton}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       
       {modalQuiz && createPortal(
           <div className={styles.modalOverlay} onMouseDown={() => setModalQuiz(null)}>
