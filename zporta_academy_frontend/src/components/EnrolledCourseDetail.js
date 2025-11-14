@@ -941,7 +941,12 @@ function EnrolledCourseStudyPage() {
           })
         );
 
-        lessonsData.sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity) || String(a.id).localeCompare(String(b.id)));
+        lessonsData.sort((a, b) => {
+          // Sort by position if available, otherwise by id
+          const posA = (a.position !== undefined && a.position !== null) ? a.position : a.id;
+          const posB = (b.position !== undefined && b.position !== null) ? b.position : b.id;
+          return posA - posB;
+        });
         setLessons(lessonsData);
 
         const quizzesData = lessonsData.flatMap(lesson => lesson.quizzes || []);
