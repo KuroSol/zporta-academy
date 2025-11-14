@@ -36,21 +36,25 @@ def diagnose_user_lessons(username_or_email):
         print(f"{'='*60}\n")
         
         # Get all enrollments
-        enrollments = Enrollment.objects.filter(user=user).select_related('course')
+        enrollments = Enrollment.objects.filter(user=user)
         
         if not enrollments:
             print("⚠️  No enrollments found for this user")
             return
         
         for enrollment in enrollments:
-            print(f"\n📚 COURSE: {enrollment.course.title}")
+            course = enrollment.content_object
+            if not course:
+                print(f"\n⚠️  Enrollment {enrollment.id} has no course attached")
+                continue
+                
+            print(f"\n📚 COURSE: {course.title}")
             print(f"   Enrollment ID: {enrollment.id}")
             print(f"   Enrolled: {enrollment.enrollment_date}")
-            print(f"   Completed: {enrollment.completed}")
-            print(f"   Progress: {enrollment.progress_percentage}%")
+            print(f"   Status: {enrollment.status}")
             
             # Get lessons for this course
-            lessons = Lesson.objects.filter(course=enrollment.course).order_by('position')
+            lessons = Lesson.objects.filter(course=course).order_by('position')
             print(f"   Total Lessons: {lessons.count()}")
             
             # Get lesson progress
