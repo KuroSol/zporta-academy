@@ -452,7 +452,12 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         if (course.course_type === "premium") {
             try {
                 const response = await apiClient.post("/payments/create-checkout-session/", { course_id: course.id });
-                const { sessionId } = response.data;
+                const { sessionId, url } = response.data || {};
+                if (url) {
+                    try { localStorage.setItem('courseId', String(course.id)); } catch {}
+                    window.location.href = url; // Directly use hosted Checkout URL
+                    return;
+                }
                 if (sessionId) {
                     try { localStorage.setItem('courseId', String(course.id)); } catch {}
                     const stripe = stripePromise ? await stripePromise : null;

@@ -57,7 +57,10 @@ def create_checkout_session(request):
                 'user_id': str(request.user.id),
             }
         )
-        return Response({'sessionId': checkout_session['id']})
+        # Return both the session id and the hosted Checkout URL. Redirecting
+        # directly to the hosted URL avoids any mismatch with publishable keys
+        # on the frontend and works without Stripe.js.
+        return Response({'sessionId': checkout_session['id'], 'url': checkout_session.get('url')})
     except Exception as e:
         return Response({'error': str(e)}, status=400)
 
