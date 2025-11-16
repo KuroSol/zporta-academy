@@ -524,6 +524,50 @@
     color: var(--zporta-primary-color, #3b82f6);
 }
 
+.lessonBadges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.15rem 0 0.35rem 0;
+    flex-wrap: wrap;
+}
+
+.lessonBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    border: 1px solid transparent;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    user-select: none;
+}
+
+.badgeIcon {
+    font-size: 0.9rem;
+}
+
+.badgePremium {
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    color: #7c2d12;
+    border-color: #f59e0b;
+}
+
+.badgeFree {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #166534;
+    border-color: #22c55e;
+}
+
+.badgeStandard {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
 .lessonDescription {
     font-size: 0.9rem;
     color: #64748b;
@@ -654,6 +698,8 @@
     .lessonTitle, .quizTitle {
         font-size: 1rem;
     }
+    .lessonBadges { gap: 0.4rem; }
+    .lessonBadge { padding: 3px 8px; font-weight: 700; }
 }
 
 @media (max-width: 480px) {

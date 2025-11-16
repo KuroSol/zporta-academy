@@ -1211,6 +1211,23 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                                     <div className={styles.lessonNumber}>{index + 1}</div>
                                                     <div className={styles.lessonInfo}>
                                                         <h3 className={styles.lessonTitle}>{lesson.title}</h3>
+                                                        <div className={styles.lessonBadges}>
+                                                            {lesson.is_premium ? (
+                                                                <span className={`${styles.lessonBadge} ${styles.badgePremium}`}>
+                                                                    <FaCrown className={styles.badgeIcon} /> Premium
+                                                                </span>
+                                                            ) : (
+                                                                course.course_type === 'premium' ? (
+                                                                    <span className={`${styles.lessonBadge} ${styles.badgeFree}`}>
+                                                                        <FaUnlock className={styles.badgeIcon} /> Free Preview
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className={`${styles.lessonBadge} ${styles.badgeStandard}`}>
+                                                                        <FaRegStar className={styles.badgeIcon} /> Standard
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                        </div>
                                                         {lesson.description && (
                                                             <p className={styles.lessonDescription}>
                                                                 {lesson.description.substring(0, 100)}...
