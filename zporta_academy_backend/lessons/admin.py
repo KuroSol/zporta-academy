@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lesson, LessonTemplate
+from .models import Lesson, LessonTemplate, LessonCompletion
 
 
 @admin.register(LessonTemplate)
@@ -19,4 +19,17 @@ class LessonAdmin(admin.ModelAdmin):
         if not obj.permalink:
             obj.save()
         super().save_model(request, obj, form, change)
+
+@admin.register(LessonCompletion)
+class LessonCompletionAdmin(admin.ModelAdmin):
+    list_display = ['user', 'lesson', 'completed_at']
+    list_filter = ['user', 'completed_at', 'lesson__course']
+    search_fields = ['user__username', 'lesson__title']
+    readonly_fields = ['completed_at']
+    ordering = ['-completed_at']
+    
+    def has_add_permission(self, request):
+        # Prevent manual creation - completions should only be created via API
+        return False
+
 

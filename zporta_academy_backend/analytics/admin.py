@@ -6,15 +6,104 @@ from .models import ActivityEvent, MemoryStat, QuizSessionProgress
 
 @admin.register(ActivityEvent)
 class ActivityEventAdmin(admin.ModelAdmin):
+    actions = ['export_lesson_completions_csv', 'export_quiz_completions_csv', 'export_course_completions_csv']
+
+    def export_lesson_completions_csv(self, request, queryset):
+        import csv
+        from django.http import HttpResponse
+        lesson_events = queryset.filter(event_type='lesson_completed')
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=lesson_completions.csv'
+        writer = csv.writer(response)
+        writer.writerow(['User', 'Lesson', 'Timestamp'])
+        for event in lesson_events:
+            user = event.user.username if event.user else 'Anonymous'
+            lesson = str(event.content_object) if event.content_object else f'ID {event.object_id}'
+            writer.writerow([user, lesson, event.timestamp.strftime('%Y-%m-%d %H:%M:%S')])
+        return response
+    export_lesson_completions_csv.short_description = "Export selected lesson completions as CSV"
+
+    def export_quiz_completions_csv(self, request, queryset):
+        import csv
+        from django.http import HttpResponse
+        quiz_events = queryset.filter(event_type='quiz_completed')
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=quiz_completions.csv'
+        writer = csv.writer(response)
+        writer.writerow(['User', 'Quiz', 'Timestamp'])
+        for event in quiz_events:
+            user = event.user.username if event.user else 'Anonymous'
+            quiz = str(event.content_object) if event.content_object else f'ID {event.object_id}'
+            writer.writerow([user, quiz, event.timestamp.strftime('%Y-%m-%d %H:%M:%S')])
+        return response
+    export_quiz_completions_csv.short_description = "Export selected quiz completions as CSV"
+
+    def export_course_completions_csv(self, request, queryset):
+        import csv
+        from django.http import HttpResponse
+        course_events = queryset.filter(event_type='course_completed')
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=course_completions.csv'
+        writer = csv.writer(response)
+        writer.writerow(['User', 'Course', 'Timestamp'])
+        for event in course_events:
+            user = event.user.username if event.user else 'Anonymous'
+            course = str(event.content_object) if event.content_object else f'ID {event.object_id}'
+            writer.writerow([user, course, event.timestamp.strftime('%Y-%m-%d %H:%M:%S')])
+        return response
+    export_course_completions_csv.short_description = "Export selected course completions as CSV"
     """
     Admin configuration for the ActivityEvent model.
     This model logs various user interactions throughout the platform.
     """
     list_display = ('id', 'user_link', 'event_type_display', 'content_object_link', 'timestamp_formatted', 'session_id')
     list_filter = ('event_type', 'timestamp', 'content_type')
-    search_fields = ('user__username', 'metadata__question_id', 'object_id', 'session_id')
+
+    class CompletionEventFilter(admin.SimpleListFilter):
+        title = 'Completion Type'
+        parameter_name = 'completion_type'
+
+        def lookups(self, request, model_admin):
+            return [
+                ('lesson_completed', 'Lesson Completed'),
+                ('quiz_completed', 'Quiz Completed'),
+                ('course_completed', 'Course Completed'),
+            ]
+
+        def queryset(self, request, queryset):
+            value = self.value()
+            if value:
+                return queryset.filter(event_type=value)
+            return queryset
+
+    # Add the filter class to list_filter after its definition
+    list_filter = ('event_type', 'timestamp', 'content_type', CompletionEventFilter)
+    search_fields = ('user__username', 'object_id', 'session_id', 'content_object__title')
     readonly_fields = ('timestamp',)
     list_select_related = ('user', 'content_type')
+
+    class CompletionEventFilter(admin.SimpleListFilter):
+        title = 'Completion Type'
+        parameter_name = 'completion_type'
+
+        def lookups(self, request, model_admin):
+            return [
+                ('lesson_completed', 'Lesson Completed'),
+                ('quiz_completed', 'Quiz Completed'),
+                ('course_completed', 'Course Completed'),
+            ]
+
+        def queryset(self, request, queryset):
+            value = self.value()
+            if value:
+                return queryset.filter(event_type=value)
+            return queryset
+
+    def get_help_text(self, request):
+        return (
+            "<b>Tip:</b> Use the 'Completion Type' filter to view only lesson, quiz, or course completions. "
+            "To undo a user's completion, simply delete the corresponding event record."
+        )
 
     def user_link(self, obj):
         if obj.user:
