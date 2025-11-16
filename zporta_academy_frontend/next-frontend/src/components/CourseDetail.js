@@ -29,13 +29,18 @@ import apiClient from "@/api";
 import "@/styles/Editor/ViewerAccordion.module.css"; // Ensure accordion styles are available.
 
 /**
- * @constant {Promise<Stripe>} stripePromise
+ * @constant {Promise<Stripe>|null} stripePromise
  * @description Initializes Stripe.js with the public key for payment processing.
- * Falls back to a test key if the environment variable is not set.
+ * If the env variable is missing, Stripe will be disabled (especially in local dev).
  */
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51KuSZdAyDb4VsWsQVWaz6RYSufh5e8ns6maCvV4b0g1waYUL4TvvgrB14G73tirboPQ67w3l8n8Tt631kACShVaT003wDftkeU"
-);
+const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+if (!publishableKey && typeof window !== "undefined") {
+  // In local dev without env, payments will be disabled but the page still works.
+  console.warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set; Stripe payments are disabled.");
+}
+
+const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 // #region Helper Functions & Components
 
@@ -450,7 +455,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 const { sessionId } = response.data;
                 if (sessionId) {
                     try { localStorage.setItem('courseId', String(course.id)); } catch {}
-                    const stripe = await stripePromise;
+                    const stripe = stripePromise ? await stripePromise : null;
                     if (!stripe) {
                         showMessage("Payments are temporarily unavailable. Please try again later.", "error");
                         return;
