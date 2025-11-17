@@ -50,6 +50,7 @@ def create_checkout_session(request):
                 'quantity': 1,
             }],
             mode='payment',
+            allow_promotion_codes=True,
             success_url=f"{domain_url}payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{domain_url}payment-cancel",
             metadata={
@@ -133,3 +134,109 @@ def stripe_webhook(request):
                 print("Enrollment error:", e)
                 return HttpResponse(status=400)
     return HttpResponse(status=200)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_promo_code(request):
+    """Create a Stripe Coupon + Promotion Code for a course.
+    Accepts percent_off, optional custom code (or generates one), expiration, and limits.
+    """
+    data = request.data or {}
+    course_id = data.get('course_id')
+    if not course_id:
+        return Response({'error': 'course_id required'}, status=400)
+    try:
+        course = Course.all_objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=404)
+
+    # Only the creator can create codes for this course
+    if not request.user.is_authenticated or request.user.id != course.created_by_id:
+        return Response({'error': 'Not authorized'}, status=403)
+
+    try:
+        percent_off = int(data.get('percent_off', 10))
+        if percent_off < 1 or percent_off > 100:
+            return Response({'error': 'percent_off must be between 1 and 100'}, status=400)
+    except Exception:
+        return Response({'error': 'percent_off must be an integer'}, status=400)
+
+    code = (data.get('code') or '').strip()
+    max_redemptions = data.get('max_redemptions')
+    first_time_only = bool(data.get('first_time_only', False))
+    expires_at = data.get('expires_at')  # ISO8601 or epoch seconds
+
+    # Parse expires_at into epoch seconds if provided as string
+    expires_ts = None
+    if expires_at:
+        try:
+            if isinstance(expires_at, (int, float)):
+                expires_ts = int(expires_at)
+            else:
+                # ISO8601 -> epoch
+                from datetime import datetime
+                expires_ts = int(datetime.fromisoformat(str(expires_at).replace('Z','+00:00')).timestamp())
+        except Exception:
+            return Response({'error': 'Invalid expires_at format'}, status=400)
+
+    # Create coupon
+    coupon = stripe.Coupon.create(
+        percent_off=percent_off,
+        duration='once',
+        metadata={
+            'course_id': str(course.id),
+            'creator_id': str(request.user.id),
+        }
+    )
+
+    # Generate a random code if not provided
+    import random, string
+    def gen_code(n=10):
+        chars = string.ascii_uppercase + string.digits
+        return ''.join(random.choice(chars) for _ in range(n))
+    if not code:
+        code = gen_code(10)
+
+    # Create promotion code
+    promo_kwargs = dict(
+        coupon=coupon.id,
+        code=code,
+        active=True,
+        metadata={
+            'course_id': str(course.id),
+            'creator_id': str(request.user.id),
+        }
+    )
+    if expires_ts:
+        promo_kwargs['expires_at'] = expires_ts
+    if max_redemptions:
+        try:
+            promo_kwargs['max_redemptions'] = int(max_redemptions)
+        except Exception:
+            return Response({'error': 'max_redemptions must be an integer'}, status=400)
+    restrictions = {}
+    if first_time_only:
+        restrictions['first_time_transaction'] = True
+    if restrictions:
+        promo_kwargs['restrictions'] = restrictions
+
+    try:
+        promo = stripe.PromotionCode.create(**promo_kwargs)
+    except stripe.error.InvalidRequestError as e:
+        # If code already exists, try with a new random code
+        if 'already exists' in str(e).lower():
+            promo_kwargs['code'] = gen_code(12)
+            promo = stripe.PromotionCode.create(**promo_kwargs)
+        else:
+            raise
+
+    return Response({
+        'coupon_id': coupon.id,
+        'promotion_code_id': promo.id,
+        'code': promo.code,
+        'percent_off': percent_off,
+        'expires_at': promo.expires_at,
+        'max_redemptions': getattr(promo, 'max_redemptions', None),
+        'first_time_only': first_time_only,
+    }, status=201)

@@ -144,6 +144,15 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     const [error, setError] = useState("");
     /** @state {{text: string, type: string}} message - Holds non-critical feedback for the user (e.g., success/error on save). */
     const [message, setMessage] = useState({ text: "", type: "error" });
+    // Discount code creation state (Edit step 4)
+    const [discountForm, setDiscountForm] = useState({
+        percent_off: 20,
+        code: "",
+        expires_at: "", // ISO string yyyy-mm-ddThh:mm
+        max_redemptions: "",
+        first_time_only: true,
+    });
+    const [lastCreatedCode, setLastCreatedCode] = useState(null);
 
     // --- Edit Mode State ---
     /** @state {boolean} editMode - Toggles the entire component between read-only and edit views. */
@@ -804,6 +813,31 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         }
     };
 
+    // Create Stripe Promotion Code for this course (owner only)
+    const generateRandomCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let s = '';
+        for (let i = 0; i < 10; i++) s += chars[Math.floor(Math.random() * chars.length)];
+        setDiscountForm(prev => ({ ...prev, code: s }));
+    };
+
+    const handleCreatePromoCode = async () => {
+        if (!course?.id) return;
+        try {
+            const payload = { course_id: course.id, ...discountForm };
+            // Convert empty strings to undefined to avoid API type issues
+            if (!payload.code) delete payload.code;
+            if (!payload.max_redemptions) delete payload.max_redemptions;
+            if (!payload.expires_at) delete payload.expires_at;
+            const res = await apiClient.post('/payments/create-promo-code/', payload);
+            const data = res.data || {};
+            setLastCreatedCode(data);
+            showMessage(`Discount code created: ${data.code}`, 'success');
+        } catch (err) {
+            handleApiError(err, 'Failed to create discount code.');
+        }
+    };
+
     // #endregion
 
     // #region Render Logic
@@ -1050,6 +1084,49 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                     <input id="editTesters" type="text" value={editData.testers || ''} onChange={handleEditInputChange('testers')} className={styles.inputField} disabled={editData.isDraft} />
                                     {editData.isDraft && <small className={styles.fieldNote}>Testers can only be assigned to published courses. They get free access.</small>}
                                 </div>
+                            </div>
+                            <div className={styles.formSection}>
+                                <h3>Discount Codes</h3>
+                                <div className={styles.formGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label>Percent Off</label>
+                                        <input type="number" min={1} max={100} value={discountForm.percent_off}
+                                            onChange={(e)=> setDiscountForm(p=> ({...p, percent_off: Math.max(1, Math.min(100, parseInt(e.target.value||'0',10)))}))}
+                                            className={styles.inputField} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Custom Code (optional)</label>
+                                        <div style={{ display:'flex', gap:8 }}>
+                                            <input type="text" value={discountForm.code}
+                                                onChange={(e)=> setDiscountForm(p=> ({...p, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'')}))}
+                                                className={styles.inputField} />
+                                            <button type="button" onClick={generateRandomCode} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}>Random</button>
+                                        </div>
+                                        <small className={styles.fieldNote}>Use letters and numbers only. Leave blank to auto-generate.</small>
+                                    </div>
+                                </div>
+                                <div className={styles.formGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label>Expires At (optional)</label>
+                                        <input type="datetime-local" value={discountForm.expires_at}
+                                            onChange={(e)=> setDiscountForm(p=> ({...p, expires_at: e.target.value}))}
+                                            className={styles.inputField} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Max Redemptions (optional)</label>
+                                        <input type="number" min={1} value={discountForm.max_redemptions}
+                                            onChange={(e)=> setDiscountForm(p=> ({...p, max_redemptions: e.target.value}))}
+                                            className={styles.inputField} />
+                                    </div>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label><input type="checkbox" checked={discountForm.first_time_only}
+                                        onChange={(e)=> setDiscountForm(p=> ({...p, first_time_only: e.target.checked}))} /> First purchase only</label>
+                                </div>
+                                <button type="button" onClick={handleCreatePromoCode} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}><FaSave/> Create Discount Code</button>
+                                {lastCreatedCode?.code && (
+                                    <div className={styles.fieldNote} style={{marginTop:8}}>Created code: <strong>{lastCreatedCode.code}</strong>{lastCreatedCode.expires_at ? ` • Expires: ${new Date(lastCreatedCode.expires_at*1000).toLocaleString()}` : ''}</div>
+                                )}
                             </div>
                             <div className={`${styles.formSection} ${styles.dangerZone}`}>
                                 <h3>Danger Zone</h3>
