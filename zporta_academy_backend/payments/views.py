@@ -37,6 +37,7 @@ def create_checkout_session(request):
         price_in_cents = int(float(course.price) * 100)
         domain_url = getattr(settings, 'FRONTEND_URL_BASE', 'https://zportaacademy.com').rstrip('/') + '/'
 
+        # Store course_id in metadata so we can validate promo codes in webhook
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -44,6 +45,9 @@ def create_checkout_session(request):
                     'currency': 'usd',
                     'product_data': {
                         'name': course.title,
+                        'metadata': {
+                            'course_id': str(course.id),
+                        }
                     },
                     'unit_amount': price_in_cents,
                 },
@@ -116,6 +120,25 @@ def stripe_webhook(request):
         session = event['data']['object']
         course_id = session.get('metadata', {}).get('course_id')
         user_id = session.get('metadata', {}).get('user_id')
+        
+        # Validate promo code if one was used
+        discount = session.get('total_details', {}).get('breakdown', {}).get('discounts', [])
+        if discount and len(discount) > 0:
+            # Get the promotion code that was used
+            promo_code_id = discount[0].get('discount', {}).get('promotion_code')
+            if promo_code_id:
+                try:
+                    promo = stripe.PromotionCode.retrieve(promo_code_id)
+                    promo_course_id = promo.get('metadata', {}).get('course_id')
+                    # If promo has a course_id and it doesn't match, reject the payment
+                    if promo_course_id and promo_course_id != course_id:
+                        print(f"Promo code mismatch: promo for course {promo_course_id}, session for course {course_id}")
+                        # Note: At this point payment is already completed, so we log the issue
+                        # In a production system, you might want to refund automatically
+                        return HttpResponse(status=200)  # Still return 200 to acknowledge webhook
+                except Exception as e:
+                    print(f"Error validating promo code: {e}")
+        
         if course_id and user_id and user_id != "guest":
             try:
                 course = Course.objects.get(id=course_id)
@@ -241,3 +264,52 @@ def create_promo_code(request):
         'max_redemptions': getattr(promo, 'max_redemptions', None),
         'first_time_only': first_time_only,
     }, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def validate_promo_code(request):
+    """Validate that a promo code can be used for a specific course.
+    This is called before checkout to ensure the code is valid for the course.
+    """
+    code = request.data.get('code', '').strip().upper()
+    course_id = request.data.get('course_id')
+    
+    if not code or not course_id:
+        return Response({'error': 'code and course_id required'}, status=400)
+    
+    try:
+        # Find the promotion code
+        promo_list = stripe.PromotionCode.list(code=code, active=True, limit=1)
+        if not promo_list.data:
+            return Response({'valid': False, 'error': 'Promo code not found or inactive'}, status=200)
+        
+        promo = promo_list.data[0]
+        promo_course_id = promo.get('metadata', {}).get('course_id')
+        
+        # If promo has no course_id metadata, it's a global code (valid for all)
+        if not promo_course_id:
+            return Response({
+                'valid': True,
+                'code': promo.code,
+                'message': 'Valid for all courses'
+            }, status=200)
+        
+        # If promo has course_id, it must match
+        if promo_course_id != str(course_id):
+            return Response({
+                'valid': False,
+                'error': f'This promo code is only valid for a different course'
+            }, status=200)
+        
+        # Code is valid for this specific course
+        coupon = stripe.Coupon.retrieve(promo.coupon.id if hasattr(promo.coupon, 'id') else promo.coupon)
+        return Response({
+            'valid': True,
+            'code': promo.code,
+            'percent_off': coupon.percent_off,
+            'message': f'{coupon.percent_off}% off'
+        }, status=200)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
