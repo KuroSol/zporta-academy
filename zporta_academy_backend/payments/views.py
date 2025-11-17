@@ -224,12 +224,13 @@ def create_promo_code(request):
     try:
         promo = stripe.PromotionCode.create(**promo_kwargs)
     except stripe.error.InvalidRequestError as e:
-        # If code already exists, try with a new random code
+        # If code already exists, return a clear error instead of auto-generating
         if 'already exists' in str(e).lower():
-            promo_kwargs['code'] = gen_code(12)
-            promo = stripe.PromotionCode.create(**promo_kwargs)
+            return Response({
+                'error': f'Promotion code "{code}" already exists. Please choose a different code or leave blank for random.'
+            }, status=400)
         else:
-            raise
+            return Response({'error': str(e)}, status=400)
 
     return Response({
         'coupon_id': coupon.id,
