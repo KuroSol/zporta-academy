@@ -136,6 +136,10 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     const [quizzes, setQuizzes] = useState(initialQuizzes);
     /** @state {boolean} enrolled - The enrollment status of the current user. */
     const [enrolled, setEnrolled] = useState(false);
+    /** @state {string} promoCode - Promo code input for course enrollment */
+    const [promoCode, setPromoCode] = useState('');
+    /** @state {object|null} promoValidation - Result of promo code validation */
+    const [promoValidation, setPromoValidation] = useState(null);
 
     // --- Page Status State ---
     /** @state {boolean} loading - True while initial data is being fetched on the client. */
@@ -460,7 +464,11 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
 
         if (course.course_type === "premium") {
             try {
-                const response = await apiClient.post("/payments/create-checkout-session/", { course_id: course.id });
+                const payload = { course_id: course.id };
+                if (promoCode.trim()) {
+                    payload.promo_code = promoCode.trim().toUpperCase();
+                }
+                const response = await apiClient.post("/payments/create-checkout-session/", payload);
                 const { sessionId, url } = response.data || {};
                 if (url) {
                     try { localStorage.setItem('courseId', String(course.id)); } catch {}
@@ -492,6 +500,29 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             } catch (err) {
                 handleApiError(err, "Could not enroll in the course.");
             }
+        }
+    };
+    
+    /**
+     * @function validatePromoCode
+     * @description Validates a promo code for the current course before enrollment
+     */
+    const validatePromoCode = async () => {
+        if (!promoCode.trim() || !course?.id) return;
+        try {
+            const res = await apiClient.post('/payments/validate-promo-code/', {
+                code: promoCode.trim().toUpperCase(),
+                course_id: course.id
+            });
+            setPromoValidation(res.data);
+            if (res.data.valid) {
+                showMessage(res.data.message || 'Promo code valid!', 'success');
+            } else {
+                showMessage(res.data.error || 'Invalid promo code', 'error');
+            }
+        } catch (err) {
+            setPromoValidation(null);
+            handleApiError(err, 'Failed to validate promo code');
         }
     };
     
@@ -1377,9 +1408,35 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                         {enrolled ? (
                              <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
                         ) : (
-                             <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
-                                {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
-                            </button>
+                             <>
+                                {course.course_type === 'premium' && (
+                                    <div style={{marginBottom: '12px'}}>
+                                        <div style={{display: 'flex', gap: '6px', marginBottom: '6px'}}>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Promo code (optional)" 
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                className={styles.inputField}
+                                                style={{flex: 1}}
+                                            />
+                                            <button 
+                                                onClick={validatePromoCode} 
+                                                className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                                                disabled={!promoCode.trim()}
+                                                style={{padding: '6px 12px', fontSize: '14px'}}
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {promoValidation?.valid && <small style={{color: 'green', display: 'block'}}>✓ {promoValidation.message}</small>}
+                                        {promoValidation?.valid === false && <small style={{color: 'red', display: 'block'}}>✗ {promoValidation.error}</small>}
+                                    </div>
+                                )}
+                                <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
+                                    {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
+                                </button>
+                             </>
                         )}
                         <div className={styles.courseMeta}>
                             <span>Created by: <strong>{course.created_by}</strong></span>
@@ -1394,9 +1451,35 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                         {enrolled ? (
                              <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
                         ) : (
-                             <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
-                                {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
-                            </button>
+                             <>
+                                {course.course_type === 'premium' && (
+                                    <div style={{marginBottom: '12px'}}>
+                                        <div style={{display: 'flex', gap: '6px', marginBottom: '6px'}}>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Promo code (optional)" 
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                className={styles.inputField}
+                                                style={{flex: 1}}
+                                            />
+                                            <button 
+                                                onClick={validatePromoCode} 
+                                                className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}
+                                                disabled={!promoCode.trim()}
+                                                style={{padding: '6px 12px', fontSize: '14px'}}
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {promoValidation?.valid && <small style={{color: 'green', display: 'block'}}>✓ {promoValidation.message}</small>}
+                                        {promoValidation?.valid === false && <small style={{color: 'red', display: 'block'}}>✗ {promoValidation.error}</small>}
+                                    </div>
+                                )}
+                                <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
+                                    {course.is_draft ? "Enrollment Closed" : "Enroll Now"}
+                                </button>
+                             </>
                         )}
                         <div className={styles.courseMeta}>
                             <span>Created by: <strong>{course.created_by}</strong></span>
