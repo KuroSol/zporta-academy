@@ -52,22 +52,44 @@ STRIPE_SECRET_KEY = prod_config('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = prod_config('STRIPE_PUBLISHABLE_KEY')
 
 # Database configuration using MySQL
-print("[DEBUG] DB_HOST:", prod_config('DB_HOST'))
+db_host = prod_config('DB_HOST')
+print("[DEBUG] DB_HOST:", db_host)
 print("[DEBUG] DB_PORT:", prod_config('DB_PORT', default=''))
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': prod_config('DB_NAME'),
-        'USER': prod_config('DB_USER'),
-        'PASSWORD': prod_config('DB_PASSWORD'),
-        'HOST': prod_config('DB_HOST'),  # Socket path from .env
-        'PORT': prod_config('DB_PORT', default=''),  # Blank for socket
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET NAMES utf8mb4",
-        },
+
+# Check if DB_HOST is a socket path (starts with /)
+if db_host.startswith('/'):
+    # Use unix_socket for PyMySQL
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': prod_config('DB_NAME'),
+            'USER': prod_config('DB_USER'),
+            'PASSWORD': prod_config('DB_PASSWORD'),
+            'HOST': '',  # Leave empty when using unix_socket
+            'PORT': '',
+            'OPTIONS': {
+                'unix_socket': db_host,  # PyMySQL needs socket in OPTIONS
+                'charset': 'utf8mb4',
+                'init_command': "SET NAMES utf8mb4",
+            },
+        }
     }
-}
+else:
+    # Use HOST and PORT for TCP connections
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': prod_config('DB_NAME'),
+            'USER': prod_config('DB_USER'),
+            'PASSWORD': prod_config('DB_PASSWORD'),
+            'HOST': db_host,
+            'PORT': prod_config('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET NAMES utf8mb4",
+            },
+        }
+    }
 SECURE_SSL_REDIRECT = True
 # --- STEP 4: Update Security Settings for HTTPS via Proxy (Cloudflare) ---
 # Tell Django to trust the X-Forwarded-Proto header from Cloudflare/Nginx
