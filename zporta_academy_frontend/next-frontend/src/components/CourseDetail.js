@@ -136,6 +136,8 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     const [quizzes, setQuizzes] = useState(initialQuizzes);
     /** @state {boolean} enrolled - The enrollment status of the current user. */
     const [enrolled, setEnrolled] = useState(false);
+    /** @state {number|null} enrollmentId - The enrollment ID if user is enrolled */
+    const [enrollmentId, setEnrollmentId] = useState(null);
     /** @state {string} promoCode - Promo code input for course enrollment */
     const [promoCode, setPromoCode] = useState('');
     /** @state {object|null} promoValidation - Result of promo code validation */
@@ -354,6 +356,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                     const res = await apiClient.get("/enrollments/user/");
                     const enrollment = res.data?.find(e => e.enrollment_type === "course" && e.object_id === course.id);
                     if (enrollment?.id) {
+                        setEnrollmentId(enrollment.id);
                         router.push(`/courses/enrolled/${enrollment.id}`);
                     }
                 } catch (err) {
@@ -1406,7 +1409,13 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                     <div className={`${styles.sidebarCard} ${styles.mobileOnly}`}>
                         <h3>{course.course_type === 'premium' ? `$${course.price}` : 'Free'}</h3>
                         {enrolled ? (
-                             <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
+                             <button 
+                                onClick={() => enrollmentId && router.push(`/courses/enrolled/${enrollmentId}`)}
+                                className={`${styles.zportaBtn} ${styles.btnSuccess}`}
+                                disabled={!enrollmentId}
+                            >
+                                <FaCheckCircle /> Already Enrolled - Go to Course
+                            </button>
                         ) : (
                              <>
                                 {course.course_type === 'premium' && (
@@ -1449,7 +1458,13 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                     <div className={styles.sidebarCard}>
                         <h3>{course.course_type === 'premium' ? `$${course.price}` : 'Free'}</h3>
                         {enrolled ? (
-                             <button className={`${styles.zportaBtn} ${styles.btnSuccess}`} disabled><FaCheckCircle /> You are enrolled</button>
+                             <button 
+                                onClick={() => enrollmentId && router.push(`/courses/enrolled/${enrollmentId}`)}
+                                className={`${styles.zportaBtn} ${styles.btnSuccess}`}
+                                disabled={!enrollmentId}
+                            >
+                                <FaCheckCircle /> Already Enrolled - Go to Course
+                            </button>
                         ) : (
                              <>
                                 {course.course_type === 'premium' && (

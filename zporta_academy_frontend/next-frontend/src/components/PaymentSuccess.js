@@ -78,12 +78,14 @@ export default function PaymentSuccess() {
   useEffect(() => {
     if (loading || !enrollmentRecord) return;
 
-    const permalink = enrollmentRecord?.course?.permalink;
-    if (permalink) {
-      router.replace(`/courses/${permalink}`);
-    } else if (enrollmentRecord?.id) {
+    // Redirect to enrolled course page - highest priority
+    if (enrollmentRecord?.id) {
       router.replace(`/courses/enrolled/${enrollmentRecord.id}`);
+    } else if (enrollmentRecord?.course?.permalink) {
+      // Fallback to course detail page
+      router.replace(`/courses/${enrollmentRecord.course.permalink}`);
     } else {
+      // Last resort: enrolled courses list
       router.replace('/enrolled-courses');
     }
   }, [loading, enrollmentRecord, router]);
