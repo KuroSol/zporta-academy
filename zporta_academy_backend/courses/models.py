@@ -69,6 +69,10 @@ class Course(models.Model):
     # Stored as a JSON list of strings for flexibility and i18n friendliness.
     selling_points = models.JSONField(default=list, blank=True)
     
+    # Stripe Product ID for premium courses (created when course is published)
+    stripe_product_id = models.CharField(max_length=100, blank=True, null=True)
+    stripe_price_id = models.CharField(max_length=100, blank=True, null=True)
+    
     # Default manager returns only published courses.
     objects = PublishedCourseManager()
     # Use all_objects when you need access to every course (drafts and published).

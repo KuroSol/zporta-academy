@@ -21,9 +21,12 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 def create_checkout_session(request):
     """Create a Stripe Checkout Session for a premium course.
     Requires authentication so we can persist the user_id in metadata reliably.
+    Optionally accepts a promo_code that has been pre-validated for this course.
     """
     try:
         course_id = request.data.get('course_id')
+        promo_code = request.data.get('promo_code', '').strip().upper()
+        
         if not course_id:
             return Response({'error': 'course_id required'}, status=400)
         try:
@@ -37,10 +40,36 @@ def create_checkout_session(request):
         price_in_cents = int(float(course.price) * 100)
         domain_url = getattr(settings, 'FRONTEND_URL_BASE', 'https://zportaacademy.com').rstrip('/') + '/'
 
-        # Store course_id in metadata so we can validate promo codes in webhook
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
+        # Validate and apply promo code if provided
+        discounts = []
+        if promo_code:
+            try:
+                promo_list = stripe.PromotionCode.list(code=promo_code, active=True, limit=1)
+                if not promo_list.data:
+                    return Response({'error': 'Invalid or inactive promo code'}, status=400)
+                
+                promo = promo_list.data[0]
+                promo_course_id = promo.get('metadata', {}).get('course_id')
+                
+                # If promo has course_id metadata, it must match this course
+                if promo_course_id and promo_course_id != str(course_id):
+                    return Response({'error': 'This promo code is not valid for this course'}, status=400)
+                
+                # Valid code - apply it
+                discounts = [{'promotion_code': promo.id}]
+            except Exception as e:
+                return Response({'error': f'Promo code error: {str(e)}'}, status=400)
+
+        # Use Stripe Price ID if available (allows product-restricted promo codes)
+        # Otherwise fall back to creating one-time product
+        if course.stripe_price_id:
+            line_items = [{
+                'price': course.stripe_price_id,
+                'quantity': 1,
+            }]
+        else:
+            # Fallback: create one-time product (promo codes won't be restricted)
+            line_items = [{
                 'price_data': {
                     'currency': 'usd',
                     'product_data': {
@@ -52,16 +81,28 @@ def create_checkout_session(request):
                     'unit_amount': price_in_cents,
                 },
                 'quantity': 1,
-            }],
-            mode='payment',
-            allow_promotion_codes=True,
-            success_url=f"{domain_url}payment-success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{domain_url}payment-cancel",
-            metadata={
+            }]
+        
+        # Store course_id in metadata so we can validate promo codes in webhook
+        session_params = {
+            'payment_method_types': ['card'],
+            'line_items': line_items,
+            'mode': 'payment',
+            'success_url': f"{domain_url}payment-success?session_id={{CHECKOUT_SESSION_ID}}",
+            'cancel_url': f"{domain_url}payment-cancel",
+            'metadata': {
                 'course_id': str(course.id),
                 'user_id': str(request.user.id),
             }
-        )
+        }
+        
+        # Apply discount if validated, otherwise allow any promotion codes
+        if discounts:
+            session_params['discounts'] = discounts
+        else:
+            session_params['allow_promotion_codes'] = True
+        
+        checkout_session = stripe.checkout.Session.create(**session_params)
         # Return both the session id and the hosted Checkout URL. Redirecting
         # directly to the hosted URL avoids any mismatch with publishable keys
         # on the frontend and works without Stripe.js.
@@ -203,10 +244,17 @@ def create_promo_code(request):
         except Exception:
             return Response({'error': 'Invalid expires_at format'}, status=400)
 
-    # Create coupon
+    # Ensure course has a Stripe product ID
+    if not course.stripe_product_id:
+        return Response({
+            'error': 'This course does not have a Stripe product. Please republish the course to create one.'
+        }, status=400)
+    
+    # Create coupon restricted to this course's Stripe product
     coupon = stripe.Coupon.create(
         percent_off=percent_off,
         duration='once',
+        applies_to={'products': [course.stripe_product_id]},
         metadata={
             'course_id': str(course.id),
             'creator_id': str(request.user.id),
