@@ -169,17 +169,17 @@ useEffect(() => {
       </div>
 
       <div className={styles.coursesGrid}>
-        {paginatedEnrollments.map(enrollment => (
+        {paginatedEnrollments.filter(enrollment => enrollment.course).map(enrollment => (
           <Link 
             href={`/courses/enrolled/${enrollment.id}`} 
             key={enrollment.id} 
             className={styles.courseCard}
           >
             <div className={styles.courseImageWrapper}>
-              {enrollment.course.cover_image ? (
+              {enrollment.course?.cover_image ? (
                 <Image
-                  src={enrollment.course.cover_image}
-                  alt={`${enrollment.course.title} cover`}
+                  src={enrollment.course?.cover_image}
+                  alt={`${enrollment.course?.title || 'Course'} cover`}
                   className={styles.courseImage}
                   width={400}
                   height={225}
@@ -198,7 +198,7 @@ useEffect(() => {
             </div>
             
             <div className={styles.courseContent}>
-              <h3 className={styles.courseTitle}>{enrollment.course.title}</h3>
+              <h3 className={styles.courseTitle}>{enrollment.course?.title || 'Untitled Course'}</h3>
               
               <div className={styles.courseMeta}>
                 <div className={styles.metaItem}>
