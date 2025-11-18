@@ -1405,7 +1405,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                 className={`${styles.zportaBtn} ${styles.btnSuccess}`}
                                 disabled={!enrollmentId}
                             >
-                                <FaCheckCircle /> Already Enrolled - Go to Course
+                                <FaCheckCircle /> Go to Course
                             </button>
                         ) : (
                              <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>
@@ -1428,7 +1428,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                 className={`${styles.zportaBtn} ${styles.btnSuccess}`}
                                 disabled={!enrollmentId}
                             >
-                                <FaCheckCircle /> Already Enrolled - Go to Course
+                                <FaCheckCircle /> Go to Course
                             </button>
                         ) : (
                              <button onClick={handleEnroll} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`} disabled={course.is_draft}>

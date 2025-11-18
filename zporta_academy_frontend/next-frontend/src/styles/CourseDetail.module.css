@@ -104,13 +104,16 @@
     border-color: #cbd5e1; /* slate-300 */
 }
 .btnSuccess {
-    background-color: #22c55e; /* green-500 */
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
     color: white;
     border-color: #22c55e;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+    font-weight: 700;
 }
 .btnSuccess:hover:not(:disabled) {
-    background-color: #16a34a; /* green-600 */
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     border-color: #16a34a;
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
 }
 .btnDanger {
     background-color: #ef4444; /* red-500 */
@@ -746,9 +749,19 @@
 }
 .sidebarCard .zportaBtn {
     width: 100%;
+    padding: 14px 24px;
+    font-size: 16px;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 1.4;
+}
+.sidebarCard .btnSuccess {
+    padding: 16px 24px;
 }
 .courseMeta {
     margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     gap: 1rem;
