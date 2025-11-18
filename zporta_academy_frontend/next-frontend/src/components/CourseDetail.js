@@ -294,11 +294,18 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         }
         try {
             const res = await apiClient.get("/enrollments/user/");
-            const isEnrolled = res.data?.some(e => e.enrollment_type === "course" && e.object_id === courseId);
-            setEnrolled(isEnrolled);
+            const enrollment = res.data?.find(e => e.enrollment_type === "course" && e.object_id === courseId);
+            if (enrollment) {
+                setEnrolled(true);
+                setEnrollmentId(enrollment.id);
+            } else {
+                setEnrolled(false);
+                setEnrollmentId(null);
+            }
         } catch (err) {
             console.error("Could not fetch enrollment status:", err);
             setEnrolled(false);
+            setEnrollmentId(null);
         }
     }, [viewAsPublic]);
 
@@ -336,36 +343,20 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     useEffect(() => {
         if (permalink && !initialCourse) {
             fetchCourseData();
-        } else if (course && token && !initialCourse) {
-            // This handles the case where the course was from SSR but we still need to check enrollment on client.
-            fetchEnrollmentStatus(course.id);
         }
         // keep dropdowns fresh
         // ignore errors silently when course not ready yet
         refreshContentLists();
-    }, [permalink, initialCourse, token, course, fetchCourseData, refreshContentLists, fetchEnrollmentStatus]);
+    }, [permalink, initialCourse, fetchCourseData, refreshContentLists]);
 
     /**
-     * `useEffect` to redirect enrolled users (non-creators) to the study page
+     * `useEffect` to check enrollment status whenever user/token/course changes
      */
     useEffect(() => {
-        if (enrolled && course && !isCreator && !viewAsPublic && !isEditRoute) {
-            // Find the enrollment ID for this course
-            const checkEnrollment = async () => {
-                try {
-                    const res = await apiClient.get("/enrollments/user/");
-                    const enrollment = res.data?.find(e => e.enrollment_type === "course" && e.object_id === course.id);
-                    if (enrollment?.id) {
-                        setEnrollmentId(enrollment.id);
-                        router.push(`/courses/enrolled/${enrollment.id}`);
-                    }
-                } catch (err) {
-                    console.error("Could not fetch enrollment ID:", err);
-                }
-            };
-            checkEnrollment();
+        if (course?.id && token && !viewAsPublic) {
+            fetchEnrollmentStatus(course.id);
         }
-    }, [enrolled, course, isCreator, viewAsPublic, isEditRoute, router]);
+    }, [course?.id, token, viewAsPublic, fetchEnrollmentStatus]);
 
     /**
      * @callback initializeEditMode
