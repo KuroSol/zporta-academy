@@ -189,18 +189,27 @@
 
 /* ===== SEARCH BAR ===== */
 .searchBar {
+  margin: 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.searchBox {
   position: relative;
-  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 680px;
 }
 .searchInput {
   width: 100%;
-  padding: 1rem 1.25rem 1rem 3rem;
+  height: 44px;
+  padding: 0 1.25rem 0 2.75rem;
   border: 2px solid #e2e8f0;
-  border-radius: 14px;
+  border-radius: 9999px;
   background: #ffffff;
   color: #0f172a;
   font-size: 0.95rem;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 .searchInput::placeholder {
   color: #94a3b8;
@@ -208,21 +217,22 @@
 .searchInput:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
 }
 .dark .searchInput {
   background: #1e293b;
   border-color: #334155;
   color: #f1f5f9;
+  box-shadow: 0 2px 10px rgba(2, 6, 23, 0.35);
 }
 .dark .searchInput:focus {
   border-color: #60a5fa;
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
 }
 
 .searchIcon {
   position: absolute;
-  left: 1rem;
+  left: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
@@ -230,18 +240,22 @@
 }
 
 .searchResults {
+  width: 100%;
+  max-width: 680px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
   font-size: 0.875rem;
   color: #64748b;
   font-weight: 500;
 }
+.searchSummary { opacity: 0.85; }
+.searchNavButtons { display: flex; gap: 0.35rem; }
 .searchResults button {
   padding: 0.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #475569;
@@ -310,6 +324,16 @@
   }
 }
 
+.indexPanel {
+  width: 100%;
+}
+
+.indexList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .indexTitle {
   font-size: 0.8rem;
   font-weight: 700;
@@ -368,6 +392,21 @@
   gap: 2rem;
 }
 
+/* ===== LESSON SECTION ===== */
+.lessonSection {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+.dark .lessonSection {
+  background: #1e293b;
+  border-color: #334155;
+}
+
 /* ===== LESSON CARD ===== */
 .lessonCard {
   background: #ffffff;
@@ -405,6 +444,11 @@
   border-bottom-color: #334155;
 }
 
+/* Header actions: completed badge + chevron */
+.lessonHeaderActions { display: flex; align-items: center; gap: .75rem; }
+.completedOn { font-size: .85rem; color: #64748b; }
+.dark .completedOn { color: #94a3b8; }
+
 .lessonTitle {
   font-size: 1.35rem;
   font-weight: 700;
@@ -440,6 +484,10 @@
 .dark .lessonContent {
   color: #cbd5e1;
 }
+
+/* Collapsible body wrapper */
+.lessonBody { display: block; }
+.lessonBodyCollapsed { display: none; }
 
 .lessonFooter {
   padding: 1.5rem 2rem;
@@ -495,6 +543,92 @@
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
 }
 
+/* Specific button variants */
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+.downloadButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.markCompleteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.markCompleteButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.startQuizButton,
+.startQuizButtonSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+}
+.startQuizButton:hover,
+.startQuizButtonSmall:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+.quizTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dark .quizTitle {
+  color: #f1f5f9;
+}
+
+.quizDescription {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+.dark .quizDescription {
+  color: #94a3b8;
+}
+
 .btnSecondary {
   background: #f8fafc;
   border: 2px solid #e2e8f0;
@@ -522,7 +656,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
-  display: flex;
+  display: flex; /* make toolbar visible */
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
@@ -551,16 +685,20 @@
 
 .toolbarContent {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-  max-height: 80px;
-  overflow: visible;
+  gap: 0.375rem;
+  padding: 0.625rem 0.875rem;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s ease;
+  align-items: center;
+}
+.dark .toolbarContent {
+  background: rgba(30, 41, 59, 0.97);
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 .annotationToolbar.collapsed .toolbarContent {
   max-height: 0;
@@ -570,137 +708,371 @@
   pointer-events: none;
 }
 
-.toolBtn {
-  width: 42px;
-  height: 42px;
+.highlightGroup {
+  position: relative;
+  display: flex;
+  gap: 2px;
+}
+
+.colorPickerBtn {
+  width: 20px;
+  height: 36px;
   background: transparent;
   border: none;
-  border-radius: 10px;
-  color: #e2e8f0;
+  border-radius: 6px;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+}
+.colorPickerBtn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.colorPicker {
+  position: absolute;
+  top: -52px;
+  left: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  z-index: 10;
+}
+.dark .colorPicker {
+  background: rgba(30, 41, 59, 0.98);
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.colorSwatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.colorSwatch.activeColor {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.clearGroup {
+  position: relative;
+}
+
+.clearMenu {
+  position: absolute;
+  bottom: 50px;
+  right: 0;
+  min-width: 180px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  z-index: 10;
+}
+.dark .clearMenu {
+  background: rgba(30, 41, 59, 0.98);
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.clearMenuItem {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.dark .clearMenuItem {
+  color: #cbd5e1;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+.clearMenuItem:last-child {
+  border-bottom: none;
+}
+.clearMenuItem:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+.dark .clearMenuItem:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.resetItem {
+  font-weight: 600;
+  border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+.dark .resetItem {
+  border-top-color: rgba(148, 163, 184, 0.2) !important;
+}
+.resetItem:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #b91c1c !important;
+}
+.dark .resetItem:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+.toolBtn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dark .toolBtn {
+  color: #94a3b8;
 }
 .toolBtn:hover {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+.dark .toolBtn:hover {
   background: rgba(59, 130, 246, 0.2);
-  color: #ffffff;
+  color: #60a5fa;
 }
 .toolBtn.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #3b82f6;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .separator {
   width: 1px;
-  height: 28px;
-  background: rgba(148, 163, 184, 0.3);
-  margin: auto 0.5rem;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0 0.25rem;
+}
+.dark .separator {
+  background: rgba(148, 163, 184, 0.2);
 }
 
 /* Annotation Styles */
 .stylerWrapper {
-  border: 2px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   overflow: hidden;
 }
 .dark .stylerWrapper {
-  border-color: #334155;
+  border-color: #374151;
 }
 
 .stylerEditor {
   padding: 2rem;
   min-height: 240px;
   outline: none;
-  color: #334155;
-  line-height: 1.8;
-  font-size: 1.05rem;
+  color: #1f2937;
+  line-height: 1.75;
+  font-size: 1.0625rem;
 }
 .dark .stylerEditor {
-  color: #cbd5e1;
+  color: #e5e7eb;
 }
 
 .stylerHighlight {
-  background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
-  border-radius: 4px;
-  padding: 2px 4px;
-  box-shadow: 0 1px 3px rgba(234, 179, 8, 0.2);
+  background: currentColor;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: opacity 0.15s ease;
 }
-.stylerBox {
-  border: 3px solid #f87171;
-  border-radius: 6px;
-  padding: 4px 6px;
-  background-color: rgba(248, 113, 113, 0.05);
-}
-.stylerCircle {
-  border: 3px solid #818cf8;
-  border-radius: 9999px;
-  padding: 4px 8px;
-  background-color: rgba(129, 140, 248, 0.05);
-  display: inline-block;
+.stylerHighlight:hover {
+  opacity: 0.85;
 }
 .stylerNoteAnchor {
   position: relative;
-  background: linear-gradient(to bottom, #e0e7ff 0%, #c7d2fe 100%);
-  border-radius: 4px;
-  padding: 2px 6px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 3px;
+  padding: 0 2px;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
-.stylerNoteIcon {
+.stylerNoteAnchor:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.stylerNoteBadge {
   display: inline-block;
-  width: 18px;
-  height: 18px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border-radius: 50%;
-  text-align: center;
-  font-size: 11px;
-  line-height: 18px;
-  margin-left: 4px;
+  font-size: 12px;
+  margin-left: 2px;
   vertical-align: super;
-  font-weight: 700;
-  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
 }
-.stylerNotePopup {
-  display: none;
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 280px;
-  background: linear-gradient(to bottom, #fffbeb 0%, #fef3c7 100%);
-  border: 2px solid #f59e0b;
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+.stylerNoteBadge:hover {
+  transform: scale(1.2);
+}
+
+.stylerNoteEditor {
+  position: fixed;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: notePopIn 0.2s ease;
+  overflow: hidden;
+}
+.dark .stylerNoteEditor {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.stylerNoteHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.dark .stylerNoteHeader {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+.stylerNoteTitle {
   font-size: 14px;
-  color: #78350f;
-  z-index: 10;
-  padding-top: 40px;
+  font-weight: 600;
+  color: #374151;
 }
-.dark .stylerNotePopup {
-  background: linear-gradient(to bottom, #422006 0%, #451a03 100%);
-  color: #fef3c7;
+.dark .stylerNoteTitle {
+  color: #e5e7eb;
 }
-.stylerNoteDeleteBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+
+.stylerNoteCloseBtn {
   width: 28px;
   height: 28px;
   border: none;
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  font-size: 20px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 24px;
+  line-height: 1;
   cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.stylerNoteDeleteBtn:hover {
+.stylerNoteCloseBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+.dark .stylerNoteCloseBtn:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+@keyframes notePopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stylerNoteTextarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #374151;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+.dark .stylerNoteTextarea {
+  background: #1f2937;
+  border-bottom-color: #374151;
+  color: #e5e7eb;
+}
+
+.stylerNoteActions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  justify-content: flex-end;
+}
+
+.stylerNoteSaveBtn,
+.stylerNoteDeleteBtn,
+.stylerNoteCancelBtn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stylerNoteSaveBtn {
+  background: #3b82f6;
+  color: #ffffff;
+}
+.stylerNoteSaveBtn:hover {
+  background: #2563eb;
+}
+
+.stylerNoteDeleteBtn {
   background: #ef4444;
   color: #ffffff;
+}
+.stylerNoteDeleteBtn:hover {
+  background: #dc2626;
+}
+
+.stylerNoteCancelBtn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.dark .stylerNoteCancelBtn {
+  background: #374151;
+  color: #9ca3af;
+}
+.stylerNoteCancelBtn:hover {
+  background: #e5e7eb;
+}
+.dark .stylerNoteCancelBtn:hover {
+  background: #4b5563;
 }
 
 /* ===== FLOATING ACTION BUTTONS (Right Side) ===== */
@@ -742,69 +1114,129 @@
   background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
 }
 
-/* ===== MOBILE SIDEBAR (Slide-in) ===== */
-@media (max-width: 1023px) {
-  .mobileSidebar {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 320px;
-    max-width: 85vw;
-    height: 100vh;
-    background: #ffffff;
-    border-left: 2px solid #e2e8f0;
-    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
-    z-index: 300;
-    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
+/* ===== SIDEBAR (Slide-in from right - ALL SCREENS) ===== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 320px;
+  max-width: 85vw;
+  height: 100vh;
+  background: #ffffff;
+  border-left: 2px solid #e2e8f0;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+  z-index: 300;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarOpen .sidebar {
+  right: 0;
+}
+
+.dark .sidebar {
+  background: #1e293b;
+  border-left-color: #334155;
+}
+
+.sidebarHeader {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dark .sidebarHeader {
+  border-bottom-color: #334155;
+}
+
+.sidebarCloseButton {
+  padding: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sidebarCloseButton:hover {
+  background: #f1f5f9;
+  color: #dc2626;
+}
+.dark .sidebarCloseButton {
+  background: #334155;
+  border-color: #475569;
+  color: #94a3b8;
+}
+.dark .sidebarCloseButton:hover {
+  background: #475569;
+  color: #f87171;
+}
+
+.sidebarContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.sidebarOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 299;
+  backdrop-filter: blur(4px);
+}
+
+/* Floating Menu Toggle Button */
+.floatingMenuToggle {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+  z-index: 150;
+}
+.floatingMenuToggle:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.5);
+}
+.dark .floatingMenuToggle {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+@media (max-width: 768px) {
+  .floatingMenuToggle {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
   }
-  .mobileSidebar.open {
-    right: 0;
-  }
-  .dark .mobileSidebar {
-    background: #1e293b;
-    border-left-color: #334155;
-  }
-  
-  .sidebarHeader {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 2px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .dark .sidebarHeader {
-    border-bottom-color: #334155;
-  }
-  
-  .sidebarClose {
-    padding: 0.5rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    color: #64748b;
-    cursor: pointer;
-  }
-  .dark .sidebarClose {
-    background: #334155;
-    border-color: #475569;
-    color: #94a3b8;
-  }
-  
-  .sidebarContent {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
-  }
-  
-  .sidebarOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 299;
-    backdrop-filter: blur(4px);
-  }
+}
+
+/* ===== QUIZ SECTION ===== */
+.quizSection {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border: 2px solid #d8b4fe;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+.dark .quizSection {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-color: #6366f1;
 }
 
 /* ===== SCROLL PROGRESS BAR ===== */
@@ -828,6 +1260,24 @@
 }
 
 /* ===== VIDEO & MEDIA ===== */
+.videoContainer {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  background: #000000;
+}
+.videoContainer iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .videoWrapper {
   position: relative;
   padding-bottom: 56.25%;

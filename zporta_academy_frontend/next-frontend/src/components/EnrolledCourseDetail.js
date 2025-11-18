@@ -13,8 +13,8 @@ import styles from '@/styles/EnrolledCourseDetail.module.css';
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
 // import { useCollaboration } from '@/hooks/useCollaboration';
 // import CollaborationZoneSection from '@/components/collab/CollaborationZoneSection';
-// import { ref, onValue, get, set } from 'firebase/database';
-// import { db } from '@/firebase/firebase';
+import { ref, onValue, get, set } from 'firebase/database';
+import { db } from '@/firebase/firebase';
 import StudyNoteSection from '@/components/study/StudyNoteSection';
 
 import rangy from 'rangy';
@@ -28,18 +28,106 @@ let _isToolbarMounted = false;
 // ==================================================================
 // --- TextStyler Component (Annotation & Highlighting Tool) ---
 // ==================================================================
-const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick }) => {
+const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady }) => {
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
     const isUpdatingFromFirebase = useRef(false);
+    const saveTimeoutRef = useRef(null);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [history, setHistory] = useState([]);
     const redoStack = useRef([]);
     const [confirmation, setConfirmation] = useState(null); // { message, onConfirm, onCancel }
 
+    const clearAllHighlights = useCallback(() => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        
+        setConfirmation({
+            message: "Remove all highlights? This cannot be undone.",
+            onConfirm: () => {
+                Array.from(editor.querySelectorAll(`span.${styles.stylerHighlight}`)).forEach(el => {
+                    const parent = el.parentNode;
+                    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                    parent.removeChild(el);
+                });
+                editor.normalize();
+                // Clear localStorage cache
+                if (enrollmentId) {
+                    localStorage.removeItem(`annotations:v1:enrollment:${enrollmentId}`);
+                }
+                saveState();
+                setConfirmation(null);
+            },
+            onCancel: () => setConfirmation(null)
+        });
+    }, [saveState, enrollmentId]);
+    
+    const clearAllNotes = useCallback(() => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        
+        setConfirmation({
+            message: "Remove all notes? This cannot be undone.",
+            onConfirm: () => {
+                Array.from(editor.querySelectorAll(`span.${styles.stylerNoteAnchor}`)).forEach(el => {
+                    const parent = el.parentNode;
+                    Array.from(el.childNodes).forEach(child => {
+                        if (child.nodeType === Node.TEXT_NODE || 
+                            (child.nodeType === Node.ELEMENT_NODE && !child.className?.includes('stylerNote'))) {
+                            parent.insertBefore(child.cloneNode(true), el);
+                        }
+                    });
+                    parent.removeChild(el);
+                });
+                editor.normalize();
+                // Clear localStorage cache
+                if (enrollmentId) {
+                    localStorage.removeItem(`annotations:v1:enrollment:${enrollmentId}`);
+                }
+                saveState();
+                setConfirmation(null);
+            },
+            onCancel: () => setConfirmation(null)
+        });
+    }, [saveState, enrollmentId]);
+    
+    const resetToOriginal = useCallback(() => {
+        if (!htmlContent || !enrollmentId) return;
+        
+        setConfirmation({
+            message: "Reset lesson to original content? This will remove ALL annotations and cannot be undone.",
+            onConfirm: async () => {
+                const editor = editorRef.current;
+                if (editor) {
+                    // Reset editor to original clean HTML
+                    editor.innerHTML = htmlContent;
+                    editor.normalize();
+                    
+                    // Clear localStorage
+                    localStorage.removeItem(`annotations:v1:enrollment:${enrollmentId}`);
+                    
+                    // Clear database by sending empty highlight_data
+                    try {
+                        await apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
+                            highlight_data: htmlContent
+                        });
+                    } catch (error) {
+                        console.error('Failed to reset annotations in database:', error);
+                    }
+                    
+                    setConfirmation(null);
+                }
+            },
+            onCancel: () => setConfirmation(null)
+        });
+    }, [htmlContent, enrollmentId]);
+
     useEffect(() => {
         rangy.init();
-    }, []);
+        if (onClearHighlightsReady) onClearHighlightsReady(clearAllHighlights);
+        if (onClearNotesReady) onClearNotesReady(clearAllNotes);
+        if (onResetReady) onResetReady(resetToOriginal);
+    }, [onClearHighlightsReady, onClearNotesReady, onResetReady, clearAllHighlights, clearAllNotes, resetToOriginal]);
 
     const saveState = useCallback(() => {
         if (!editorRef.current) return;
@@ -47,17 +135,27 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
         redoStack.current = [];
         
-        // Firebase collaboration disabled
-        // if (isCollaborative && roomId) {
-        //     if (isUpdatingFromFirebase.current) return;
-        //     set(ref(db, `sessions/${roomId}/content`), currentState);
-        // } else 
-        if (!isCollaborative && enrollmentId) {
-            apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
-                highlight_data: currentState 
-            }).catch(err => console.error("Failed to save annotations via API:", err));
+      if (isCollaborative && roomId) {
+        if (isUpdatingFromFirebase.current) return;
+        set(ref(db, `sessions/${roomId}/content`), currentState);
+      } else if (!isCollaborative && enrollmentId) {
+        try {
+          // Immediate local persistence for resilience
+          const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
+          localStorage.setItem(lsKey, currentState);
+        } catch {}
+
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
+            highlight_data: currentState 
+          }).catch(err => {
+            console.error("Failed to save annotations via API:", err);
+            // Fallback is localStorage already written above
+          });
+        }, 600);
         }
-    }, [isCollaborative, enrollmentId]);
+    }, [isCollaborative, enrollmentId, roomId]);
 
     useEffect(() => {
         if (!htmlContent) return;
@@ -65,15 +163,25 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         const loadAnnotations = async () => {
             let initialHtml = htmlContent;
             try {
-                // Firebase collaboration disabled
-                // if (isCollaborative && roomId) {
-                //     const contentRef = ref(db, `sessions/${roomId}/content`);
-                //     const snapshot = await get(contentRef);
-                //     if (snapshot.exists()) initialHtml = snapshot.val();
-                // } else 
-                if (!isCollaborative && enrollmentId) {
-                    const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
-                    if (response.data && response.data.highlight_data) initialHtml = response.data.highlight_data;
+              if (isCollaborative && roomId) {
+                  const contentRef = ref(db, `sessions/${roomId}/content`);
+                  const snapshot = await get(contentRef);
+                  if (snapshot.exists()) initialHtml = snapshot.val();
+              } else if (!isCollaborative && enrollmentId) {
+                try {
+                  const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
+                  if (response.data && response.data.highlight_data) {
+                    initialHtml = response.data.highlight_data;
+                  } else {
+                    const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
+                    const cached = typeof window !== 'undefined' ? localStorage.getItem(lsKey) : null;
+                    if (cached) initialHtml = cached;
+                  }
+                } catch (e) {
+                  const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
+                  const cached = typeof window !== 'undefined' ? localStorage.getItem(lsKey) : null;
+                  if (cached) initialHtml = cached;
+                }
                 }
             } catch (error) {
                 console.error("Failed to load annotations:", error);
@@ -87,21 +195,28 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
 
         loadAnnotations();
         
-        // Firebase real-time sync disabled
-        // if (isCollaborative && roomId) {
-        //     const contentRef = ref(db, `sessions/${roomId}/content`);
-        //     const unsubscribe = onValue(contentRef, (snapshot) => {
-        //         const remoteHtml = snapshot.val();
-        //         if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
-        //             isUpdatingFromFirebase.current = true;
-        //             editorRef.current.innerHTML = remoteHtml;
-        //             setHistory(prev => [...prev.slice(-29), remoteHtml]);
-        //             setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
-        //         }
-        //     });
-        //     return () => unsubscribe();
-        // }
-    }, [htmlContent, isCollaborative, enrollmentId]);
+        if (isCollaborative && roomId) {
+          const contentRef = ref(db, `sessions/${roomId}/content`);
+          const unsubscribe = onValue(contentRef, (snapshot) => {
+            const remoteHtml = snapshot.val();
+            if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
+              isUpdatingFromFirebase.current = true;
+              editorRef.current.innerHTML = remoteHtml;
+              setHistory(prev => [...prev.slice(-29), remoteHtml]);
+              setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
+            }
+          });
+          return () => unsubscribe();
+        }
+    }, [htmlContent, isCollaborative, enrollmentId, roomId]);
+
+    useEffect(() => {
+      if (activeTool === 'undo') {
+        undo();
+      } else if (activeTool === 'redo') {
+        redo();
+      }
+    }, [activeTool, undo, redo]);
 
     const undo = useCallback(() => {
         if (history.length > 1) {
@@ -145,104 +260,166 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
     }, []);
 
     const applyNote = useCallback((range) => {
+        const selectedText = range.cloneContents();
+        const textContent = selectedText.textContent.trim();
+        
+        if (!textContent) return; // Don't create empty notes
+        
         const noteAnchor = document.createElement('span');
         noteAnchor.className = styles.stylerNoteAnchor;
+        noteAnchor.setAttribute('data-note-text', '');
         noteAnchor.appendChild(range.extractContents());
         
-        const icon = document.createElement('span');
-        icon.className = styles.stylerNoteIcon;
-        icon.textContent = 'i';
-        noteAnchor.appendChild(icon);
+        const badge = document.createElement('sup');
+        badge.className = styles.stylerNoteBadge;
+        badge.textContent = '📝';
+        noteAnchor.appendChild(badge);
         
-        const notePopup = document.createElement('div');
-        notePopup.className = styles.stylerNotePopup;
-        notePopup.setAttribute('contenteditable', 'true');
-        notePopup.innerText = 'Type your note...';
+        range.insertNode(noteAnchor);
+        
+        // Auto-open edit popup after creation
+        setTimeout(() => {
+            openNoteEditor(noteAnchor);
+        }, 50);
+    }, [openNoteEditor]);
+    
+    const openNoteEditor = useCallback((noteAnchor) => {
+        closeOpenNote();
+        
+        const existingNote = noteAnchor.getAttribute('data-note-text') || '';
+        const popup = document.createElement('div');
+        popup.className = styles.stylerNoteEditor;
+        
+        const header = document.createElement('div');
+        header.className = styles.stylerNoteHeader;
+        
+        const title = document.createElement('span');
+        title.textContent = 'Edit Note';
+        title.className = styles.stylerNoteTitle;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = styles.stylerNoteCloseBtn;
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('type', 'button');
+        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.onmousedown = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        closeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            document.body.removeChild(popup);
+            if (overlayRef.current) overlayRef.current.style.display = 'none';
+            setIsNoteOpen(false);
+        };
+        
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        popup.appendChild(header);
+        
+        const textarea = document.createElement('textarea');
+        textarea.className = styles.stylerNoteTextarea;
+        textarea.placeholder = 'Type your note here...';
+        textarea.value = existingNote;
+        popup.appendChild(textarea);
+        
+        const actions = document.createElement('div');
+        actions.className = styles.stylerNoteActions;
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.className = styles.stylerNoteSaveBtn;
+        saveBtn.textContent = 'Save';
+        saveBtn.onclick = (e) => {
+            e.stopPropagation();
+            const noteText = textarea.value.trim();
+            if (noteText) {
+                noteAnchor.setAttribute('data-note-text', noteText);
+                noteAnchor.setAttribute('title', noteText);
+            }
+            document.body.removeChild(popup);
+            if (overlayRef.current) overlayRef.current.style.display = 'none';
+            setIsNoteOpen(false);
+            saveState();
+        };
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = styles.stylerNoteDeleteBtn;
-        deleteBtn.innerHTML = '&times;';
+        deleteBtn.textContent = 'Delete';
         deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          setConfirmation({
-            message: "Are you sure you want to delete this note?",
-            onConfirm: () => {
-              const parent = noteAnchor.parentNode;
-              while (noteAnchor.firstChild) {
-                  if(noteAnchor.firstChild.nodeName !== "SPAN" && noteAnchor.firstChild.nodeName !== "DIV") {
-                    parent.insertBefore(noteAnchor.firstChild, noteAnchor);
-                  } else {
-                      break;
-                  }
-              }
-              parent.removeChild(noteAnchor);
-              parent.normalize();
-              saveState();
-              setConfirmation(null);
-            },
-            onCancel: () => setConfirmation(null)
-          });
+            e.stopPropagation();
+            const parent = noteAnchor.parentNode;
+            Array.from(noteAnchor.childNodes).forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE || 
+                    (child.nodeType === Node.ELEMENT_NODE && !child.className.includes('stylerNote'))) {
+                    parent.insertBefore(child.cloneNode(true), noteAnchor);
+                }
+            });
+            parent.removeChild(noteAnchor);
+            parent.normalize();
+            document.body.removeChild(popup);
+            if (overlayRef.current) overlayRef.current.style.display = 'none';
+            setIsNoteOpen(false);
+            saveState();
         };
-        notePopup.appendChild(deleteBtn);
-        noteAnchor.appendChild(notePopup);
-        range.insertNode(noteAnchor);
-    }, [saveState]);
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = styles.stylerNoteCancelBtn;
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.onclick = (e) => {
+            e.stopPropagation();
+            document.body.removeChild(popup);
+            if (overlayRef.current) overlayRef.current.style.display = 'none';
+            setIsNoteOpen(false);
+        };
+        
+        actions.appendChild(saveBtn);
+        actions.appendChild(deleteBtn);
+        actions.appendChild(cancelBtn);
+        popup.appendChild(actions);
+        
+        document.body.appendChild(popup);
+        
+        // Position popup near the note anchor
+        const rect = noteAnchor.getBoundingClientRect();
+        popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - 310))}px`;
+        popup.style.top = `${rect.bottom + 10}px`;
+        
+        if (overlayRef.current) overlayRef.current.style.display = 'block';
+        setIsNoteOpen(true);
+        setTimeout(() => textarea.focus(), 50);
+    }, [saveState, closeOpenNote]);
 
     const applyStyle = useCallback((style, range) => {
         if (style === 'note') {
             applyNote(range);
             return;
         }
-        const classMap = { highlight: styles.stylerHighlight, box: styles.stylerBox, circle: styles.stylerCircle };
-        if (classMap[style]) {
-            const classApplier = rangy.createClassApplier(classMap[style], { elementTagName: 'span', normalize: true });
-            classApplier.applyToRange(range);
+        if (style === 'highlight') {
+            const span = document.createElement('span');
+            span.className = styles.stylerHighlight;
+            span.style.backgroundColor = highlightColor || '#fef08a';
+            span.appendChild(range.extractContents());
+            range.insertNode(span);
         }
-    }, [applyNote]);
+    }, [applyNote, highlightColor]);
 
     const eraseStyle = useCallback((range) => {
         const editor = editorRef.current;
         if (!editor) return;
-        const workingRange = range.cloneRange();
         
-        const spansToProcess = [];
-        [styles.stylerHighlight, styles.stylerBox, styles.stylerCircle].forEach(cls => {
-            Array.from(editor.querySelectorAll(`span.${cls}`)).forEach(el => {
-                if (workingRange.intersectsNode(el)) spansToProcess.push({ el, cls });
-            });
-        });
-
-        spansToProcess.forEach(({ el, cls }) => {
-            const spanRange = rangy.createRange();
-            spanRange.selectNodeContents(el);
-
-            const intersection = spanRange.intersection(workingRange);
-            if (intersection) {
-                const before = spanRange.cloneRange();
-                before.setEnd(intersection.startContainer, intersection.startOffset);
-                const after = spanRange.cloneRange();
-                after.setStart(intersection.endContainer, intersection.endOffset);
-                
-                const frag = document.createDocumentFragment();
-                if (!before.collapsed) {
-                    const b = document.createElement('span');
-                    b.className = cls;
-                    b.appendChild(before.cloneContents());
-                    frag.appendChild(b);
-                }
-                frag.appendChild(intersection.cloneContents());
-                if (!after.collapsed) {
-                    const a = document.createElement('span');
-                    a.className = cls;
-                    a.appendChild(after.cloneContents());
-                    frag.appendChild(a);
-                }
-                el.parentNode.replaceChild(frag, el);
+        // Remove highlights within selection
+        Array.from(editor.querySelectorAll(`span.${styles.stylerHighlight}`)).forEach(el => {
+            if (range.intersectsNode(el)) {
+                const parent = el.parentNode;
+                while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                parent.removeChild(el);
             }
         });
 
+        // Remove notes within selection
         Array.from(editor.querySelectorAll(`span.${styles.stylerNoteAnchor}`)).forEach(el => {
-            if (workingRange.intersectsNode(el)) {
+            if (range.intersectsNode(el)) {
                 const parent = el.parentNode;
                 while (el.firstChild) parent.insertBefore(el.firstChild, el);
                 parent.removeChild(el);
@@ -259,7 +436,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         if (!editor) return;
 
         const handleMouseUp = () => {
-            if (isNoteOpen || !activeTool || activeTool === 'laser') return;
+            if (isNoteOpen || !activeTool) return;
             const selection = rangy.getSelection();
             if (selection && !selection.isCollapsed) {
                 const range = selection.getRangeAt(0);
@@ -271,10 +448,11 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         };
 
         const handleClick = (event) => {
-            const icon = event.target.closest(`.${styles.stylerNoteIcon}`);
-            if (icon) {
-                const popup = icon.parentElement.querySelector(`.${styles.stylerNotePopup}`);
-                if (popup) popup.style.display === 'block' ? closeOpenNote() : openNote(popup);
+            const noteAnchor = event.target.closest(`.${styles.stylerNoteAnchor}`);
+            if (noteAnchor && event.target.classList.contains(styles.stylerNoteBadge)) {
+                event.preventDefault();
+                event.stopPropagation();
+                openNoteEditor(noteAnchor);
             }
         };
         
@@ -289,7 +467,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
             editor.removeEventListener('click', handleClick);
             if (overlay) overlay.removeEventListener('click', closeOpenNote);
         };
-    }, [activeTool, isNoteOpen, saveState, applyStyle, eraseStyle, openNote, closeOpenNote]);
+    }, [activeTool, isNoteOpen, saveState, applyStyle, eraseStyle, openNoteEditor, closeOpenNote]);
     
     return (
         <div className={styles.stylerWrapper}>
@@ -322,8 +500,18 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
 // ==================================================================
 // --- Shared Annotation Toolbar Component ---
 // ==================================================================
-const AnnotationToolbar = ({ activeTool, onToolClick }) => {
-    const [isToolbarOpen, setIsToolbarOpen] = useState(false);
+const AnnotationToolbar = ({ activeTool, onToolClick, highlightColor, onColorChange, onClearHighlights, onClearNotes, onReset }) => {
+    const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showClearMenu, setShowClearMenu] = useState(false);
+    
+    const highlightColors = [
+        { name: 'Yellow', value: '#fef08a' },
+        { name: 'Green', value: '#bbf7d0' },
+        { name: 'Blue', value: '#bfdbfe' },
+        { name: 'Pink', value: '#fbcfe8' },
+        { name: 'Orange', value: '#fed7aa' },
+    ];
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -334,14 +522,64 @@ const AnnotationToolbar = ({ activeTool, onToolClick }) => {
     return createPortal(
         <div className={`${styles.annotationToolbar} ${!isToolbarOpen ? styles.collapsed : ''}`}>
             <div className={styles.toolbarContent}>
-                <button onClick={() => onToolClick('highlight')} className={`${styles.toolBtn} ${activeTool === 'highlight' ? styles.active : ''}`} title="Highlight"><Home size={20} /></button>
-                <button onClick={() => onToolClick('box')} className={`${styles.toolBtn} ${activeTool === 'box' ? styles.active : ''}`} title="Box"><Square size={20} /></button>
-                <button onClick={() => onToolClick('circle')} className={`${styles.toolBtn} ${activeTool === 'circle' ? styles.active : ''}`} title="Circle"><CircleIcon size={20} /></button>
+                <div className={styles.highlightGroup}>
+                    <button 
+                        onClick={() => onToolClick('highlight')} 
+                        className={`${styles.toolBtn} ${activeTool === 'highlight' ? styles.active : ''}`} 
+                        title="Highlight"
+                        style={activeTool === 'highlight' ? { background: highlightColor } : {}}
+                    >
+                        <Home size={20} />
+                    </button>
+                    <button 
+                        onClick={() => setShowColorPicker(!showColorPicker)} 
+                        className={styles.colorPickerBtn}
+                        title="Change highlight color"
+                    >
+                        <ChevronDown size={14} />
+                    </button>
+                    {showColorPicker && (
+                        <div className={styles.colorPicker}>
+                            {highlightColors.map(c => (
+                                <button
+                                    key={c.value}
+                                    className={`${styles.colorSwatch} ${highlightColor === c.value ? styles.activeColor : ''}`}
+                                    style={{ background: c.value }}
+                                    onClick={() => { onColorChange(c.value); setShowColorPicker(false); }}
+                                    title={c.name}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <button onClick={() => onToolClick('note')} className={`${styles.toolBtn} ${activeTool === 'note' ? styles.active : ''}`} title="Add Note"><MessageSquare size={20} /></button>
                 <div className={styles.separator}></div>
                 <button onClick={() => onToolClick('eraser')} className={`${styles.toolBtn} ${activeTool === 'eraser' ? styles.active : ''}`} title="Eraser"><Eraser size={20} /></button>
                 <button onClick={() => onToolClick('undo')} className={styles.toolBtn} title="Undo"><Undo size={20} /></button>
                 <button onClick={() => onToolClick('redo')} className={styles.toolBtn} title="Redo"><Redo size={20} /></button>
+                <div className={styles.separator}></div>
+                <div className={styles.clearGroup}>
+                    <button 
+                        onClick={() => setShowClearMenu(!showClearMenu)} 
+                        className={styles.toolBtn}
+                        title="Clear annotations"
+                    >
+                        <X size={20} />
+                    </button>
+                    {showClearMenu && (
+                        <div className={styles.clearMenu}>
+                            <button onClick={() => { onClearHighlights(); setShowClearMenu(false); }} className={styles.clearMenuItem}>
+                                Clear All Highlights
+                            </button>
+                            <button onClick={() => { onClearNotes(); setShowClearMenu(false); }} className={styles.clearMenuItem}>
+                                Clear All Notes
+                            </button>
+                            <button onClick={() => { onReset(); setShowClearMenu(false); }} className={`${styles.clearMenuItem} ${styles.resetItem}`}>
+                                Reset to Original
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
             <button onClick={() => setIsToolbarOpen(!isToolbarOpen)} className={styles.toolbarToggle} title={isToolbarOpen ? "Hide toolbar" : "Show toolbar"}>
                 {isToolbarOpen ? <ChevronDown size={20} /> : <BookOpen size={20} />}
@@ -472,12 +710,12 @@ CourseIndexPanel.displayName = 'CourseIndexPanel';
 const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, currentResultIndex, onNextResult, onPrevResult }) => {
   const hasResults = resultCount > 0;
   return (
-    <div className="mb-6">
-      <div className="relative">
-        <Search className={styles.searchInputIcon} />
+    <div className={styles.searchBar}>
+      <div className={styles.searchBox}>
+        <Search className={styles.searchIcon} aria-hidden="true" />
         <input
           type="search"
-          placeholder="Search course content..."
+          placeholder="Search course content"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className={styles.searchInput}
@@ -485,17 +723,17 @@ const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, current
         />
       </div>
       {searchTerm && (
-        <div className={styles.searchResultNavigator}>
+        <div className={styles.searchResults}>
           {hasResults ? (
             <>
-              <span>{currentResultIndex + 1} of {resultCount}</span>
-              <div className="flex items-center">
+              <span className={styles.searchSummary}>{currentResultIndex + 1} of {resultCount}</span>
+              <div className={styles.searchNavButtons}>
                 <button onClick={onPrevResult} disabled={currentResultIndex <= 0} aria-label="Previous result"><ArrowUp size={16} /></button>
                 <button onClick={onNextResult} disabled={currentResultIndex >= resultCount - 1} aria-label="Next result"><ArrowDown size={16} /></button>
               </div>
             </>
           ) : (
-            <span>No results found for &quot;{searchTerm}&quot;</span>
+            <span className={styles.searchSummary}>No results for “{searchTerm}”</span>
           )}
         </div>
       )}
@@ -504,7 +742,7 @@ const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, current
 });
 SearchBar.displayName = 'SearchBar';
 
-const LessonSection = ({ lesson, isCompleted, onMarkComplete, onOpenQuiz, searchTerm, ...stylerProps }) => {
+const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onMarkComplete, onOpenQuiz, searchTerm, onClearHighlightsReady, onClearNotesReady, onResetReady, ...stylerProps }) => {
   const highlightSearchTerm = useCallback((text) => {
     if (!searchTerm || !text) return text;
     const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -515,45 +753,67 @@ const LessonSection = ({ lesson, isCompleted, onMarkComplete, onOpenQuiz, search
   const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, highlightSearchTerm]);
   const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, highlightSearchTerm]);
   const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
+  const formatCompletedDate = useCallback((iso) => {
+    if (!iso) return '';
+    try {
+      return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(iso));
+    } catch { return ''; }
+  }, []);
 
   return (
     <section id={`lesson-${lesson.id}`} className={styles.lessonSection} aria-labelledby={`lesson-title-${lesson.id}`}>
-      <header className={styles.lessonHeader}>
+      <header className={styles.lessonHeader} role="button" onClick={onToggle} aria-expanded={isOpen}>
         <h3 id={`lesson-title-${lesson.id}`} className={styles.lessonTitle}>
           {lesson.content_type === 'video' ? <Video size={20} /> : <FileText size={20} />}
           <span dangerouslySetInnerHTML={{ __html: highlightedTitle }} />
         </h3>
-        {isCompleted && <span className={styles.completedBadge}><CheckCircle size={14} /> Completed</span>}
+        <div className={styles.lessonHeaderActions}>
+          {isCompleted && (
+            <>
+              <span className={styles.completedBadge}><CheckCircle size={14} /> Completed</span>
+              {completedAt && <span className={styles.completedOn}>on {formatCompletedDate(completedAt)}</span>}
+            </>
+          )}
+          {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </div>
       </header>
 
-      <div className={styles.lessonContent}>
+      <div className={`${styles.lessonBody} ${!isOpen ? styles.lessonBodyCollapsed : ''}`}>
+        <div className={styles.lessonContent}>
         {lesson.content_type === 'video' && embedUrl && (
           <div className={styles.videoContainer}>
             <iframe src={embedUrl} title={`${lesson.title || 'Lesson'} Video`} allowFullScreen loading="lazy" />
           </div>
         )}
         {lesson.content_type === 'text' && lesson.content && (
-           <TextStyler htmlContent={highlightedContent} {...stylerProps} />
+           <TextStyler 
+             htmlContent={highlightedContent} 
+             onClearHighlightsReady={onClearHighlightsReady}
+             onClearNotesReady={onClearNotesReady}
+             onResetReady={onResetReady}
+             {...stylerProps} 
+           />
         )}
         {lesson.file_url && (
             <a href={lesson.file_url} target="_blank" rel="noopener noreferrer" download className={styles.downloadButton}>
                 <Download size={16} /> Download File {lesson.file_name ? `(${lesson.file_name})` : ''}
             </a>
         )}
-      </div>
+        </div>
 
-      <footer className={styles.lessonFooter}>
-        {lesson.associatedQuiz && (
-            <button onClick={() => onOpenQuiz(lesson.associatedQuiz)} className={styles.startQuizButtonSmall}>
-                <HelpCircle size={16}/> Start Quiz
+        <footer className={styles.lessonFooter}>
+          {lesson.associatedQuiz && (
+              <button onClick={() => onOpenQuiz(lesson.associatedQuiz)} className={styles.startQuizButtonSmall}>
+                  <HelpCircle size={16}/> Start Quiz
+              </button>
+          )}
+          {!isCompleted && (
+            <button onClick={(e) => { e.stopPropagation(); onMarkComplete(lesson.id); }} className={styles.markCompleteButton}>
+              <CheckCircle size={16} /> Mark as Complete
             </button>
-        )}
-        {!isCompleted && (
-          <button onClick={() => onMarkComplete(lesson.id)} className={styles.markCompleteButton}>
-            <CheckCircle size={16} /> Mark as Complete
-          </button>
-        )}
-      </footer>
+          )}
+        </footer>
+      </div>
     </section>
   );
 };
@@ -651,6 +911,8 @@ function EnrolledCourseStudyPage() {
   const [error, setError] = useState("");
   const [theme, setTheme] = useState('light');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [openLessonId, setOpenLessonId] = useState(null); // accordion: which lesson is open
+  const [completedAtByLesson, setCompletedAtByLesson] = useState({}); // lessonId -> ISO string
   const mainContentRef = useRef(null);
 
   // Interaction State
@@ -671,6 +933,10 @@ function EnrolledCourseStudyPage() {
   // const { peerCursors, updateCursor } = useCollaboration(collabRoomId, myId, user?.username);
   const peerCursors = {}; // Empty object for disabled collaboration
   const [activeTool, setActiveTool] = useState(null);
+  const [highlightColor, setHighlightColor] = useState('#fef08a');
+  const clearHighlightsRef = useRef(null);
+  const clearNotesRef = useRef(null);
+  const resetRef = useRef(null);
 
   // --- Effects ---
 
@@ -726,10 +992,26 @@ function EnrolledCourseStudyPage() {
             
             const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/`);
             if (!isMounted) return;
-            setCompletedLessons(new Set(completions.map(c => c.lesson.id)));
-            
-            if (lessonsData.length > 0) setActiveContentId(`lesson-${lessonsData[0].id}`);
-            else if (course.quizzes?.length > 0) setActiveContentId(`quiz-${course.quizzes[0].id}`);
+            const completedIds = completions.map(c => (c.lesson?.id ?? c.lesson_id ?? c.lesson));
+            const completedSet = new Set(completedIds);
+            setCompletedLessons(completedSet);
+            const byLesson = {};
+            completions.forEach(c => {
+              const lid = c.lesson?.id ?? c.lesson_id ?? c.lesson;
+              const ts = c.completed_at || c.created_at || null;
+              if (lid && ts) byLesson[lid] = ts;
+            });
+            setCompletedAtByLesson(byLesson);
+
+            if (lessonsData.length > 0) {
+              let lastCompletedIndex = -1;
+              lessonsData.forEach((l, i) => { if (completedSet.has(l.id)) lastCompletedIndex = i; });
+              const nextIndex = Math.min(lastCompletedIndex + 1, lessonsData.length - 1);
+              setOpenLessonId(lessonsData[nextIndex].id);
+              setActiveContentId(`lesson-${lessonsData[nextIndex].id}`);
+            } else if (course.quizzes?.length > 0) {
+              setActiveContentId(`quiz-${course.quizzes[0].id}`);
+            }
         }
       } catch (err) {
         console.error("Error fetching course data:", err);
@@ -838,9 +1120,29 @@ function EnrolledCourseStudyPage() {
     
     setCompletedLessons(prev => new Set(prev).add(lessonId));
     setConfirmComplete(null);
+    // After completing, close this lesson and open the next one (if any)
+    const idx = lessons.findIndex(l => l.id === lessonId);
+    const nextIdx = Math.min(idx + 1, lessons.length - 1);
+    const nextLessonId = lessons[nextIdx]?.id ?? lessonId;
+    setOpenLessonId(nextLessonId);
     
     try {
-      await apiClient.post(`/lessons/${lessonIdentifier}/complete/`, {});
+      const res = await apiClient.post(`/lessons/${lessonIdentifier}/complete/`, {});
+      const serverLessonId = res?.data?.lesson_id ?? lessonId;
+      const serverTs = res?.data?.completed_at ?? null;
+      if (serverTs) setCompletedAtByLesson(prev => ({ ...prev, [serverLessonId]: serverTs }));
+      else {
+        try {
+          const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/`);
+          const byLesson = {};
+          completions.forEach(c => {
+            const lid = c.lesson?.id ?? c.lesson_id ?? c.lesson;
+            const ts = c.completed_at || c.created_at || null;
+            if (lid && ts) byLesson[lid] = ts;
+          });
+          setCompletedAtByLesson(byLesson);
+        } catch {}
+      }
     } catch (err) {
       console.error("Failed to mark complete:", err);
       alert(`Failed to mark lesson complete: ${err.response?.data?.detail || err.message}`);
@@ -849,14 +1151,20 @@ function EnrolledCourseStudyPage() {
         newSet.delete(lessonId);
         return newSet;
       });
+      // Revert open state if API fails
+      setOpenLessonId(lessonId);
     }
-  }, [confirmComplete, lessons]);
+  }, [confirmComplete, lessons, enrollmentId]);
 
   const handleNavigate = useCallback((targetId) => {
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setIsSidebarOpen(false);
+      if (targetId.startsWith('lesson-')) {
+        const idNum = Number(targetId.replace('lesson-', ''));
+        if (!Number.isNaN(idNum)) setOpenLessonId(idNum);
+      }
     }
   }, []);
 
@@ -921,17 +1229,31 @@ function EnrolledCourseStudyPage() {
     <>
       <Head>
         <title>{`Study: ${courseData.title || 'Course'} | Zporta Academy`}</title>
-        <style dangerouslySetInnerHTML={{ __html: `:root { --accent-color: ${defaultAccent}; }` }} />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              :root { --accent-color: ${defaultAccent}; }
+              /* Tighten the global sidebar only on this page (desktop) */
+              @media (min-width: 768px) {
+                :root { --sidebar-width-desktop-collapsed: 0px; }
+                /* Avoid a thin shadow line from the hidden sidebar */
+                .sidebarMenu:not(.expanded) { box-shadow: none !important; }
+              }
+            `
+          }}
+        />
       </Head>
 
-      <ScrollProgress />
-      
-      {/* Collaboration features disabled */}
-      {/* <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} /> */}
-      
-      <StudyNoteSection enrollmentId={enrollmentId} />
+      {/* Local dark-mode scope wrapper so CSS Modules `.dark …` selectors apply */}
+      <div className={theme === 'dark' ? styles.dark : ''}>
+        <ScrollProgress />
+        
+        {/* Collaboration features disabled */}
+        {/* <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} /> */}
+        
+        <StudyNoteSection enrollmentId={enrollmentId} />
 
-      <div className={`${styles.pageWrapper} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+        <div className={`${styles.pageWrapper} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
         
         {isSidebarOpen && <div className={styles.sidebarOverlay} onClick={() => setIsSidebarOpen(false)} />}
 
@@ -977,20 +1299,27 @@ function EnrolledCourseStudyPage() {
                 />
 
                 {lessonsWithQuizzes.map(lesson => (
-                    <LessonSection
-                        key={lesson.id}
-                        lesson={lesson}
-                        isCompleted={completedLessons.has(lesson.id)}
-                        onMarkComplete={handleMarkComplete}
-                        onOpenQuiz={setModalQuiz}
-                        searchTerm={searchTerm}
-                        isCollaborative={isCollaborative}
-                        roomId={collabRoomId}
-                        enrollmentId={enrollmentId}
-                        userId={myId}
-                        activeTool={activeTool}
-                        onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)}
-                    />
+                  <LessonSection
+                    key={lesson.id}
+                    lesson={lesson}
+                    isCompleted={completedLessons.has(lesson.id)}
+                    completedAt={completedAtByLesson[lesson.id]}
+                    isOpen={openLessonId === lesson.id}
+                    onToggle={() => setOpenLessonId(prev => prev === lesson.id ? null : lesson.id)}
+                    onMarkComplete={handleMarkComplete}
+                    onOpenQuiz={setModalQuiz}
+                    searchTerm={searchTerm}
+                    isCollaborative={isCollaborative}
+                    roomId={collabRoomId}
+                    enrollmentId={enrollmentId}
+                    userId={myId}
+                    activeTool={activeTool}
+                    onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)}
+                    highlightColor={highlightColor}
+                    onClearHighlightsReady={(fn) => { clearHighlightsRef.current = fn; }}
+                    onClearNotesReady={(fn) => { clearNotesRef.current = fn; }}
+                    onResetReady={(fn) => { resetRef.current = fn; }}
+                  />
                 ))}
                 
                 {quizzes.filter(q => !q.lesson).map(quiz => (
@@ -1003,6 +1332,7 @@ function EnrolledCourseStudyPage() {
                 ))}
             </main>
         </div>
+        </div>
       </div>
       
       <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={styles.floatingMenuToggle} aria-label={isSidebarOpen ? "Close course menu" : "Open course menu"}>
@@ -1013,7 +1343,12 @@ function EnrolledCourseStudyPage() {
       
       <AnnotationToolbar 
         activeTool={activeTool} 
-        onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)} 
+        onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)}
+        highlightColor={highlightColor}
+        onColorChange={setHighlightColor}
+        onClearHighlights={() => clearHighlightsRef.current?.()}
+        onClearNotes={() => clearNotesRef.current?.()}
+        onReset={() => resetRef.current?.()}
       />
       
       {confirmComplete && createPortal(
