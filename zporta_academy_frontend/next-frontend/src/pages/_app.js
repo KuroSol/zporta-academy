@@ -24,6 +24,7 @@ function Chrome({ children, enabled }) {
   const showBottomMenu =
     isLoggedIn &&
     !startsWith(['/lessons/']) &&
+    !startsWith(['/courses/enrolled/']) &&
     !noHeaderPaths.includes(path) &&
     !startsWith(['/reset-password-confirm/']);
 

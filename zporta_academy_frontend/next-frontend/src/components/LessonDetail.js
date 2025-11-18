@@ -5,7 +5,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from "react-icons/fa";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Download } from "lucide-react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 import QuizCard from "@/components/QuizCard";
@@ -536,6 +536,31 @@ ${sanitizeLessonCss(customCSS || "")}
           </div>
         )}
       </div>
+
+      {/* Download section */}
+      {(isEnrolled || !lesson.is_premium) && (
+        <div className={styles.downloadSection}>
+          <h3 className={styles.downloadTitle}>Download this lesson</h3>
+          <div className={styles.downloadButtons}>
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL}/api/lessons/${permalink}/export/?format=pdf`}
+              download
+              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+              title="Download as PDF"
+            >
+              <Download size={16} /> PDF
+            </a>
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL}/api/lessons/${permalink}/export/?format=docx`}
+              download
+              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+              title="Download as Word Document"
+            >
+              <Download size={16} /> Word
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* completion */}
       {isEnrolled && !isCompleted && (

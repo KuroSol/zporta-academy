@@ -579,3 +579,71 @@ class DetachCourseFromLessonView(APIView):
 class LessonTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = LessonTemplate.objects.all()
     serializer_class = LessonTemplateSerializer
+
+
+class LessonExportView(APIView):
+    """
+    Export lesson content as PDF or DOCX
+    GET /api/lessons/<permalink>/export/?format=pdf or format=docx
+    """
+    permission_classes = [AllowAny]  # Can be restricted based on your needs
+    
+    def get(self, request, permalink):
+        from django.http import HttpResponse
+        from .export_utils import generate_lesson_pdf, generate_lesson_docx
+        
+        # Get lesson
+        lesson = get_object_or_404(Lesson, permalink=permalink)
+        
+        # Check if user has access (if premium)
+        if lesson.is_premium:
+            if not request.user.is_authenticated:
+                return Response(
+                    {"detail": "Authentication required for premium content"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Check enrollment if lesson is part of a course
+            if lesson.course:
+                has_access = Enrollment.objects.filter(
+                    user=request.user,
+                    course=lesson.course
+                ).exists()
+                
+                if not has_access and lesson.created_by != request.user:
+                    return Response(
+                        {"detail": "Enrollment required to download this lesson"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+        
+        # Get format
+        export_format = request.query_params.get('format', 'pdf').lower()
+        
+        if export_format == 'pdf':
+            data, error = generate_lesson_pdf(lesson)
+            if error:
+                return Response({"detail": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            response = HttpResponse(data, content_type='application/pdf')
+            filename = f"{lesson.permalink}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+            
+        elif export_format == 'docx':
+            data, error = generate_lesson_docx(lesson)
+            if error:
+                return Response({"detail": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            response = HttpResponse(
+                data,
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            filename = f"{lesson.permalink}.docx"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        
+        else:
+            return Response(
+                {"detail": "Invalid format. Use 'pdf' or 'docx'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
