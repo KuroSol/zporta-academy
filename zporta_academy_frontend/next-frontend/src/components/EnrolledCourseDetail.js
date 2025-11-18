@@ -8,6 +8,7 @@ import {
   CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, HelpCircle, ArrowUp, ArrowDown, Users, Share2, Menu, X, BookOpen, Eraser, Undo, Redo, Radio, Home, Square, Circle as CircleIcon, MessageSquare,
 } from 'lucide-react';
 import QuizCard from '@/components/QuizCard';
+import ShadowRootContainer from '@/components/common/ShadowRootContainer';
 import styles from '@/styles/EnrolledCourseDetail.module.css';
 // Collaboration features commented out - not in use
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
@@ -26,9 +27,33 @@ import 'rangy/lib/rangy-serializer';
 let _isToolbarMounted = false;
 
 // ==================================================================
+// --- Helper Functions (same as LessonDetail) ---
+// ==================================================================
+const sanitizeContentViewerHTML = (htmlString) => {
+  if (!htmlString) return "";
+  if (typeof window === "undefined") return htmlString;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, "text/html");
+    doc.querySelectorAll('[contenteditable="true"]').forEach((el) => el.removeAttribute("contenteditable"));
+    return doc.body.innerHTML;
+  } catch {
+    return htmlString;
+  }
+};
+
+const sanitizeLessonCss = (css) => {
+  if (!css) return "";
+  let out = css;
+  out = out.replace(/:root\b/g, ":host");
+  out = out.replace(/\b(html|body)\b(?![^]*?<\/style>)/g, ".lesson-content");
+  return out;
+};
+
+// ==================================================================
 // --- TextStyler Component (Annotation & Highlighting Tool) ---
 // ==================================================================
-const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady }) => {
+const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady, accentColor, customCSS }) => {
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
     const isUpdatingFromFirebase = useRef(false);
@@ -461,6 +486,8 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         };
     }, [activeTool, isNoteOpen, saveState, applyStyle, eraseStyle, openNoteEditor, closeOpenNote]);
     
+    const accent = accentColor || '#222E3B';
+    
     return (
         <div className={styles.stylerWrapper}>
             <div ref={overlayRef} className={styles.stylerOverlay}></div>
@@ -477,11 +504,79 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
               </div>, document.body
             )}
 
-            <div
-                ref={editorRef}
-                className={`${styles.stylerEditor} prose dark:prose-invert max-w-none ${activeTool === 'laser' ? styles.laserActive : ''}`}
-                contentEditable={false} 
-            />
+            <ShadowRootContainer as="div" className={styles.lessonShadowRoot} data-lesson-root="true" style={{ "--accent-color": accent }}>
+              <style>{`:host { --accent-color: ${accent}; }
+${sanitizeLessonCss(customCSS || "")}
+
+/* grid/columns */
+.lesson-content .zporta-columns{display:grid;gap:1.5rem;grid-template-columns:var(--cols-base, 1fr);align-items:start;margin-block:1rem;}
+.lesson-content .zporta-column{min-width:0;}
+.lesson-content .zporta-column > *{word-break:break-word;max-width:100%;margin-bottom:1rem;}
+.lesson-content .zporta-column > *:last-child{margin-bottom:0;}
+.lesson-content .zporta-column img,.lesson-content .zporta-column video,.lesson-content .zporta-column iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem;}
+@media (min-width:640px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-sm, var(--cols-base, 1fr));}}
+@media (min-width:768px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)));}}
+@media (min-width:1024px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr))));}}
+
+/* buttons */
+.lesson-content .zporta-button{display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-decoration:none;border:1px solid transparent;padding:.6rem 1.1rem;border-radius:var(--r-md);transition:filter .15s}
+.lesson-content .zporta-button:hover{filter:brightness(.95)}
+.lesson-content .zporta-btn--block{display:flex;width:100%;text-align:center}
+.lesson-content .zporta-btnSize--sm{padding:.4rem .85rem;font-size:.9rem}
+.lesson-content .zporta-btnSize--md{padding:.6rem 1.1rem;font-size:1rem}
+.lesson-content .zporta-btnSize--lg{padding:.8rem 1.3rem;font-size:1.1rem}
+.lesson-content .zporta-btn--primary{background:var(--zporta-dark-blue,#0A2342);color:#fff;border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--secondary{background:#fff;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--ghost{background:transparent;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-border-color,#e2e8f0)}
+.lesson-content .zporta-btn--link{background:transparent;color:var(--zporta-dark-blue,#0A2342);border:0;padding:0;text-decoration:underline}
+
+/* accordion */
+.lesson-content .zporta-accordion{width:100%}
+.lesson-content .zporta-acc-item{border:1px solid var(--zporta-border-color,#e2e8f0);border-radius:var(--acc-radius,8px);margin:0 0 12px 0;overflow:hidden;background:var(--zporta-background-light,#fff)}
+.lesson-content .zporta-acc-title{cursor:pointer;display:block;padding:.75rem 1rem;background:var(--zporta-background-medium,#f8fafc);font-weight:600;position:relative;padding-right:3rem;list-style:none}
+.lesson-content .zporta-acc-title::-webkit-details-marker{display:none}
+.lesson-content .zporta-acc-title[data-align="center"]{text-align:center}
+.lesson-content .zporta-acc-title[data-align="right"]{text-align:right}
+.lesson-content .zporta-acc-title[data-size="sm"]{font-size:.9rem}
+.lesson-content .zporta-acc-title[data-size="md"]{font-size:1rem}
+.lesson-content .zporta-acc-title[data-size="lg"]{font-size:1.1rem}
+.lesson-content .zporta-acc-title::after{content:'';position:absolute;right:1rem;top:50%;width:.6em;height:.6em;transform:translateY(-50%) rotate(45deg);border-right:2px solid currentColor;border-bottom:2px solid currentColor;transition:transform .2s ease}
+.lesson-content details[open]>.zporta-acc-title::after{transform:translateY(-50%) rotate(225deg)}
+.lesson-content .zporta-acc-title[data-icon="plus"]::after{content:'+';border:0;font-weight:700;font-size:1.5em;transform:translateY(-50%);transition:transform .2s ease}
+.lesson-content details[open]>.zporta-acc-title[data-icon="plus"]::after{transform:translateY(-50%) rotate(45deg)}
+.lesson-content .zporta-acc-title[data-icon="none"]::after{display:none}
+.lesson-content .zporta-acc--outline .zporta-acc-item{border-style:dashed}
+.lesson-content .zporta-acc--dark .zporta-acc-item{background:#0f172a;border-color:#1f2a44}
+.lesson-content .zporta-acc--dark .zporta-acc-title{background:#0b1220;color:#e2e8f0}
+.lesson-content .zporta-acc--dark .zporta-acc-panel{background:#0f172a;color:#cbd5e1}
+.lesson-content .zporta-acc-panel{padding:1rem;border-top:1px solid var(--zporta-border-color,#e2e8f0)}
+
+/* gated content placeholder (modern card) */
+.lesson-content .gated-content{position:relative;border-radius:12px;background:linear-gradient(180deg,#f8fafc,#f1f5f9);border:1px solid var(--zporta-border-color,#e2e8f0);padding:14px;overflow:hidden}
+.lesson-content .gated-content::before{content:"";position:absolute;inset:0;background-image:radial-gradient(120px 50px at top left,rgba(10,35,66,.08),transparent),radial-gradient(150px 80px at bottom right,rgba(10,35,66,.06),transparent);pointer-events:none}
+.lesson-content .gated-content .gc-card{display:flex;gap:14px;align-items:center}
+.lesson-content .gated-content .gc-icon{flex:0 0 40px;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#0A2342;color:#fff;box-shadow:0 6px 14px rgba(10,35,66,.2);filter:saturate(1.1)}
+.lesson-content .gated-content .gc-body{display:flex;flex-direction:column;gap:6px;color:#0f172a}
+.lesson-content .gated-content .gc-title{font-weight:800;letter-spacing:0.2px}
+.lesson-content .gated-content .gc-text{color:#334155}
+.lesson-content .gated-content .gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:.5rem .9rem;border-radius:10px;border:1px solid #0A2342;background:#0A2342;color:#fff;text-decoration:none;font-weight:700;box-shadow:0 6px 14px rgba(10,35,66,.2);transition:transform .12s ease,box-shadow .12s ease}
+.lesson-content .gated-content .gc-btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(10,35,66,.25)}
+
+/* compact variant: blurred line + small link */
+.lesson-content .gated-content.gc-compact{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:linear-gradient(180deg,#f8fafc,#f1f5f9);border:1px solid var(--zporta-border-color,#e2e8f0);margin:.5rem 0}
+.lesson-content .gated-content.gc-compact::before{display:none}
+.lesson-content .gated-content.gc-compact .gc-blur-line{flex:1 1 auto;height:.9em;max-width:220px;border-radius:6px;background:linear-gradient(90deg,#e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);background-size:200px 100%;filter:blur(1.2px);opacity:.7;animation:gc-shimmer 1.6s linear infinite}
+@keyframes gc-shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.lesson-content .gated-content.gc-compact .gc-link{flex:0 0 auto;font-weight:700;font-size:.85rem;color:#0A2342;text-decoration:none;padding:4px 10px;border:1px solid #0A2342;border-radius:9999px;background:#fff}
+.lesson-content .gated-content.gc-compact .gc-link:hover{background:#0A2342;color:#fff}
+`}</style>
+
+              <div
+                  ref={editorRef}
+                  className={`lesson-content ${styles.stylerEditor} prose dark:prose-invert max-w-none ${activeTool === 'laser' ? styles.laserActive : ''}`}
+                  contentEditable={false} 
+              />
+            </ShadowRootContainer>
         </div>
     );
 };
@@ -1308,6 +1403,8 @@ function EnrolledCourseStudyPage() {
                     activeTool={activeTool}
                     onToolClick={(tool) => setActiveTool(prev => prev === tool ? null : tool)}
                     highlightColor={highlightColor}
+                    accentColor={lesson.accent_color || courseData?.accent_color || '#222E3B'}
+                    customCSS={lesson.custom_css || ''}
                     onClearHighlightsReady={(fn) => { clearHighlightsRef.current = fn; }}
                     onClearNotesReady={(fn) => { clearNotesRef.current = fn; }}
                     onResetReady={(fn) => { resetRef.current = fn; }}
