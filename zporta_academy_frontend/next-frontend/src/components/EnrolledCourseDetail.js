@@ -38,6 +38,34 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
     const redoStack = useRef([]);
     const [confirmation, setConfirmation] = useState(null); // { message, onConfirm, onCancel }
 
+    const saveState = useCallback(() => {
+        if (!editorRef.current) return;
+        const currentState = editorRef.current.innerHTML;
+        setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
+        redoStack.current = [];
+        
+      if (isCollaborative && roomId) {
+        if (isUpdatingFromFirebase.current) return;
+        set(ref(db, `sessions/${roomId}/content`), currentState);
+      } else if (!isCollaborative && enrollmentId) {
+        try {
+          // Immediate local persistence for resilience
+          const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
+          localStorage.setItem(lsKey, currentState);
+        } catch {}
+
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
+            highlight_data: currentState 
+          }).catch(err => {
+            console.error("Failed to save annotations via API:", err);
+            // Fallback is localStorage already written above
+          });
+        }, 600);
+        }
+    }, [isCollaborative, enrollmentId, roomId]);
+
     const clearAllHighlights = useCallback(() => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -120,7 +148,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
             },
             onCancel: () => setConfirmation(null)
         });
-    }, [htmlContent, enrollmentId]);
+    }, [htmlContent, enrollmentId, saveState]);
 
     useEffect(() => {
         rangy.init();
@@ -129,33 +157,32 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         if (onResetReady) onResetReady(resetToOriginal);
     }, [onClearHighlightsReady, onClearNotesReady, onResetReady, clearAllHighlights, clearAllNotes, resetToOriginal]);
 
-    const saveState = useCallback(() => {
-        if (!editorRef.current) return;
-        const currentState = editorRef.current.innerHTML;
-        setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
-        redoStack.current = [];
-        
-      if (isCollaborative && roomId) {
-        if (isUpdatingFromFirebase.current) return;
-        set(ref(db, `sessions/${roomId}/content`), currentState);
-      } else if (!isCollaborative && enrollmentId) {
-        try {
-          // Immediate local persistence for resilience
-          const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
-          localStorage.setItem(lsKey, currentState);
-        } catch {}
-
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = setTimeout(() => {
-          apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
-            highlight_data: currentState 
-          }).catch(err => {
-            console.error("Failed to save annotations via API:", err);
-            // Fallback is localStorage already written above
-          });
-        }, 600);
+    const undo = useCallback(() => {
+        if (history.length > 1) {
+            const lastState = history[history.length - 1];
+            redoStack.current.push(lastState);
+            const newHistory = history.slice(0, -1);
+            const prevState = newHistory[newHistory.length - 1];
+            setHistory(newHistory);
+            if (editorRef.current) {
+                editorRef.current.innerHTML = prevState;
+                saveState();
+            }
         }
-    }, [isCollaborative, enrollmentId, roomId]);
+        onToolClick(null);
+    }, [history, saveState, onToolClick]);
+
+    const redo = useCallback(() => {
+      if (redoStack.current.length) {
+        const nextState = redoStack.current.pop();
+        setHistory(h => [...h, nextState]);
+        if(editorRef.current) {
+            editorRef.current.innerHTML = nextState;
+            saveState();
+        }
+      }
+      onToolClick(null);
+    }, [saveState, onToolClick]);
 
     useEffect(() => {
         if (!htmlContent) return;
@@ -210,41 +237,6 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         }
     }, [htmlContent, isCollaborative, enrollmentId, roomId]);
 
-    useEffect(() => {
-      if (activeTool === 'undo') {
-        undo();
-      } else if (activeTool === 'redo') {
-        redo();
-      }
-    }, [activeTool, undo, redo]);
-
-    const undo = useCallback(() => {
-        if (history.length > 1) {
-            const lastState = history[history.length - 1];
-            redoStack.current.push(lastState);
-            const newHistory = history.slice(0, -1);
-            const prevState = newHistory[newHistory.length - 1];
-            setHistory(newHistory);
-            if (editorRef.current) {
-                editorRef.current.innerHTML = prevState;
-                saveState();
-            }
-        }
-        onToolClick(null);
-    }, [history, saveState, onToolClick]);
-
-    const redo = useCallback(() => {
-      if (redoStack.current.length) {
-        const nextState = redoStack.current.pop();
-        setHistory(h => [...h, nextState]);
-        if(editorRef.current) {
-            editorRef.current.innerHTML = nextState;
-            saveState();
-        }
-      }
-      onToolClick(null);
-    }, [saveState, onToolClick]);
-    
     const openNote = useCallback((popup) => {
         if (overlayRef.current) overlayRef.current.style.display = 'block';
         popup.style.display = 'block';
@@ -259,30 +251,6 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         setIsNoteOpen(false);
     }, []);
 
-    const applyNote = useCallback((range) => {
-        const selectedText = range.cloneContents();
-        const textContent = selectedText.textContent.trim();
-        
-        if (!textContent) return; // Don't create empty notes
-        
-        const noteAnchor = document.createElement('span');
-        noteAnchor.className = styles.stylerNoteAnchor;
-        noteAnchor.setAttribute('data-note-text', '');
-        noteAnchor.appendChild(range.extractContents());
-        
-        const badge = document.createElement('sup');
-        badge.className = styles.stylerNoteBadge;
-        badge.textContent = '📝';
-        noteAnchor.appendChild(badge);
-        
-        range.insertNode(noteAnchor);
-        
-        // Auto-open edit popup after creation
-        setTimeout(() => {
-            openNoteEditor(noteAnchor);
-        }, 50);
-    }, [openNoteEditor]);
-    
     const openNoteEditor = useCallback((noteAnchor) => {
         closeOpenNote();
         
@@ -389,6 +357,30 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         setIsNoteOpen(true);
         setTimeout(() => textarea.focus(), 50);
     }, [saveState, closeOpenNote]);
+
+    const applyNote = useCallback((range) => {
+        const selectedText = range.cloneContents();
+        const textContent = selectedText.textContent.trim();
+        
+        if (!textContent) return; // Don't create empty notes
+        
+        const noteAnchor = document.createElement('span');
+        noteAnchor.className = styles.stylerNoteAnchor;
+        noteAnchor.setAttribute('data-note-text', '');
+        noteAnchor.appendChild(range.extractContents());
+        
+        const badge = document.createElement('sup');
+        badge.className = styles.stylerNoteBadge;
+        badge.textContent = '📝';
+        noteAnchor.appendChild(badge);
+        
+        range.insertNode(noteAnchor);
+        
+        // Auto-open edit popup after creation
+        setTimeout(() => {
+            openNoteEditor(noteAnchor);
+        }, 50);
+    }, [openNoteEditor]);
 
     const applyStyle = useCallback((style, range) => {
         if (style === 'note') {
