@@ -12,6 +12,7 @@ import QuizCard from '@/components/QuizCard';
 import ShadowRootContainer from '@/components/common/ShadowRootContainer';
 import styles from '@/styles/EnrolledCourseDetail.module.css';
 import lessonStyles from '@/styles/LessonDetail.module.css';
+import '@/styles/Editor/ViewerAccordion.module.css';
 // Collaboration features commented out - not in use
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
 // import { useCollaboration } from '@/hooks/useCollaboration';
@@ -31,6 +32,25 @@ let _isToolbarMounted = false;
 // ==================================================================
 // --- Helper Functions (same as LessonDetail) ---
 // ==================================================================
+function initializeAccordions(containerElement) {
+  if (!containerElement) return;
+  const accordions = containerElement.querySelectorAll(".accordion-item");
+  accordions.forEach((accordion) => {
+    const header = accordion.querySelector(".accordion-header");
+    const contents = accordion.querySelectorAll(".accordion-content");
+    const defaultState = accordion.getAttribute("data-default-state") || "closed";
+    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") return;
+    accordion.dataset.accordionInitialized = "true";
+    if (defaultState === "open") accordion.classList.add("is-open");
+    else accordion.classList.remove("is-open");
+    const clickHandler = () => accordion.classList.toggle("is-open");
+    if (header.__accordionClickHandler__) header.removeEventListener("click", header.__accordionClickHandler__);
+    header.addEventListener("click", clickHandler);
+    header.__accordionClickHandler__ = clickHandler;
+    contents.forEach((content) => requestAnimationFrame(() => initializeAccordions(content)));
+  });
+}
+
 const sanitizeContentViewerHTML = (htmlString) => {
   if (!htmlString) return "";
   if (typeof window === "undefined") return htmlString;
@@ -855,22 +875,71 @@ const SearchBar = React.memo(({ searchTerm, onSearchChange, resultCount, current
 SearchBar.displayName = 'SearchBar';
 
 const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onMarkComplete, onOpenQuiz, searchTerm, onClearHighlightsReady, onClearNotesReady, onResetReady, ...stylerProps }) => {
+  const contentDisplayRef = useRef(null);
+  
   const highlightSearchTerm = useCallback((text) => {
     if (!searchTerm || !text) return text;
     const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     return text.replace(regex, `<mark class="search-match-highlight">$1</mark>`);
   }, [searchTerm]);
 
-  const sanitizedContent = useMemo(() => sanitizeHtml(lesson.content), [lesson.content]);
-  const highlightedContent = useMemo(() => highlightSearchTerm(sanitizedContent), [sanitizedContent, highlightSearchTerm]);
+  const sanitizedContent = useMemo(() => sanitizeContentViewerHTML(lesson.content), [lesson.content]);
   const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, highlightSearchTerm]);
   const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
+  const accent = lesson.accent_color || '#222E3B';
+  const customCSS = sanitizeLessonCss(lesson.custom_css || '');
+  const customJS = lesson.custom_js || '';
+  
   const formatCompletedDate = useCallback((iso) => {
     if (!iso) return '';
     try {
       return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(iso));
     } catch { return ''; }
   }, []);
+
+  // Initialize accordions when content loads (same as LessonDetail)
+  useEffect(() => {
+    if (!isOpen || !sanitizedContent || typeof window === 'undefined') return;
+    const timeoutId = setTimeout(() => {
+      const container = contentDisplayRef.current?.shadowRoot?.querySelector('[data-lesson-root="true"]');
+      if (container) {
+        initializeAccordions(container);
+        container.querySelectorAll('.accordion-item').forEach(item => delete item.dataset.accordionInitialized);
+      }
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [sanitizedContent, isOpen]);
+
+  // Execute custom JS when lesson opens (same as LessonDetail)
+  useEffect(() => {
+    if (!isOpen || !customJS.trim() || typeof window === 'undefined') return;
+    const timeoutId = setTimeout(() => {
+      const hostEl = contentDisplayRef.current;
+      const shadowRoot = hostEl?.shadowRoot;
+      if (!shadowRoot) return;
+      try {
+        new Function('document', 'root', customJS)(shadowRoot, hostEl);
+      } catch (e) {
+        console.error('Custom JS error in enrolled lesson:', e);
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [customJS, isOpen]);
+
+  // Apply lazy audio loading (preload=none) when lesson opens
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+    const timeoutId = setTimeout(() => {
+      const shadowRoot = contentDisplayRef.current?.shadowRoot;
+      if (!shadowRoot) return;
+      shadowRoot.querySelectorAll('audio').forEach(audio => {
+        if (!audio.hasAttribute('preload')) {
+          audio.setAttribute('preload', 'none');
+        }
+      });
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [isOpen, sanitizedContent]);
 
   return (
     <section id={`lesson-${lesson.id}`} className={styles.lessonSection} aria-labelledby={`lesson-title-${lesson.id}`}>
@@ -892,8 +961,9 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
       <div className={`${styles.lessonBody} ${!isOpen ? styles.lessonBodyCollapsed : ''}`}>
         {isOpen && (
           <div className={lessonStyles.lessonDetailContainer}>
-            <style>{`.${lessonStyles.lessonDetailContainer}{--accent-color:${lesson.accent_color || '#222E3B'};}`}</style>
-            {/* Video (match LessonDetail video embed style) */}
+            <style>{`.${lessonStyles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
+            
+            {/* Video embed (match LessonDetail exactly) */}
             {lesson.content_type === 'video' && embedUrl && (
               <div className={lessonStyles.lessonVideoEmbed}>
                 <iframe
@@ -906,17 +976,52 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
                 />
               </div>
             )}
-            {/* Text content using existing TextStyler inside shadow root for consistency */}
-            {lesson.content_type === 'text' && lesson.content && (
-              <TextStyler
-                htmlContent={highlightedContent}
-                onClearHighlightsReady={onClearHighlightsReady}
-                onClearNotesReady={onClearNotesReady}
-                onResetReady={onResetReady}
-                {...stylerProps}
-              />
+            
+            {/* Lesson content in shadow DOM (same structure as LessonDetail preview) */}
+            {lesson.content_type === 'text' && sanitizedContent && (
+              <ShadowRootContainer
+                ref={contentDisplayRef}
+                as="div"
+                className={lessonStyles.lessonShadowRoot}
+                data-lesson-root="true"
+                style={{ '--accent-color': accent }}
+              >
+                <style>{`:host { --accent-color: ${accent}; }
+${customCSS}
+
+/* grid/columns */
+.lesson-content .zporta-columns{display:grid;gap:1.5rem;grid-template-columns:var(--cols-base, 1fr);align-items:start;margin-block:1rem;}
+.lesson-content .zporta-column{min-width:0;}
+.lesson-content .zporta-column > *{word-break:break-word;max-width:100%;margin-bottom:1rem;}
+.lesson-content .zporta-column > *:last-child{margin-bottom:0;}
+.lesson-content .zporta-column img,.lesson-content .zporta-column video,.lesson-content .zporta-column iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem;}
+@media (min-width:640px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-sm, var(--cols-base, 1fr));}}
+@media (min-width:768px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)));}}
+@media (min-width:1024px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr))));}}
+
+/* buttons */
+.lesson-content .zporta-button{display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-decoration:none;border:1px solid transparent;padding:.6rem 1.1rem;border-radius:var(--r-md);transition:filter .15s}
+.lesson-content .zporta-button:hover{filter:brightness(.95)}
+.lesson-content .zporta-btn--block{display:flex;width:100%;text-align:center}
+.lesson-content .zporta-btnSize--sm{padding:.4rem .85rem;font-size:.9rem}
+.lesson-content .zporta-btnSize--md{padding:.6rem 1.1rem;font-size:1rem}
+.lesson-content .zporta-btnSize--lg{padding:.8rem 1.3rem;font-size:1.1rem}
+.lesson-content .zporta-btn--primary{background:var(--zporta-dark-blue,#0A2342);color:#fff;border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--secondary{background:#fff;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-dark-blue,#0A2342)}
+.lesson-content .zporta-btn--ghost{background:transparent;color:var(--zporta-dark-blue,#0A2342);border-color:var(--zporta-border-color,#e2e8f0)}
+.lesson-content .zporta-btn--link{background:transparent;color:var(--zporta-dark-blue,#0A2342);border:0;padding:0;text-decoration:underline}
+
+/* accordion */
+.lesson-content .zporta-accordion{width:100%}
+
+/* General media sizing for content */
+.lesson-content img,.lesson-content video,.lesson-content iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem;}
+`}</style>
+                <div className="lesson-content" dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
+              </ShadowRootContainer>
             )}
-            {/* File download if present */}
+            
+            {/* File download section */}
             {lesson.file_url && (
               <div className={lessonStyles.downloadSection}>
                 <h3 className={lessonStyles.downloadTitle}>Download this lesson file</h3>
@@ -928,11 +1033,12 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
                     download
                     className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
                   >
-                    <Download size={16} /> {lesson.file_name ? lesson.file_name : 'Download File'}
+                    <Download size={16} /> {lesson.file_name || 'Download File'}
                   </a>
                 </div>
               </div>
             )}
+            
             {/* Meta info (creator + date + tags) */}
             <div className={lessonStyles.metaContainer}>
               <p className={lessonStyles.postMeta}>
@@ -955,7 +1061,8 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
                 </div>
               )}
             </div>
-            {/* Completion / quiz actions (styled similarly but confined) */}
+            
+            {/* Completion / quiz actions */}
             <div className={styles.lessonFooter}> 
               {lesson.associatedQuiz && (
                 <button onClick={() => onOpenQuiz(lesson.associatedQuiz)} className={styles.startQuizButtonSmall}>
