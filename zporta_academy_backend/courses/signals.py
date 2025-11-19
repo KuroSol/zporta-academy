@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import Course
+from django.core.cache import cache
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -105,3 +106,9 @@ def create_or_update_stripe_product(sender, instance, created, **kwargs):
     except Exception as e:
         # Log error but don't fail the save operation
         print(f"Error creating/updating Stripe product for course {instance.id}: {str(e)}")
+
+    # Invalidate cached serialization after any save
+    try:
+        cache.delete(f"course_lessons_quizzes_{instance.id}")
+    except Exception:
+        pass

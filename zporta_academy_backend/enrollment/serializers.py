@@ -7,7 +7,8 @@ from courses.models import Course
 from lessons.serializers import LessonSerializer # Ensure these exist and work
 from lessons.content_filters import mask_restricted_sections
 from quizzes.serializers import QuizSerializer # Ensure these exist and work
-from lessons.models import LessonCompletion 
+from lessons.models import LessonCompletion, Lesson
+from django.core.cache import cache
 import logging # Import logging
 
 from .models import CollaborationSession, SessionStroke, SessionNote
@@ -26,17 +27,19 @@ logger = logging.getLogger(__name__) # Setup logger
 class EnrollmentSerializer(serializers.ModelSerializer):
     course = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
-    # New: include any one-time share invite details when accessed via shared_token
+    # One-time share invite details when accessed via shared_token
     share_invite = serializers.SerializerMethodField()
+    # Inline lesson completions to avoid an extra request
+    lesson_completions = serializers.SerializerMethodField()
 
     class Meta:
         model = Enrollment
         fields = [
             'id', 'user', 'content_type', 'object_id',
             'enrollment_date', 'status', 'enrollment_type',
-            'course', 'progress', 'share_invite',  # include new field
+            'course', 'progress', 'share_invite', 'lesson_completions'
         ]
-        read_only_fields = ['enrollment_date', 'user', 'content_type', 'course', 'progress', 'share_invite']
+        read_only_fields = ['enrollment_date', 'user', 'content_type', 'course', 'progress', 'share_invite', 'lesson_completions']
 
     def get_share_invite(self, obj):
         request = self.context.get('request')
@@ -93,41 +96,39 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                     'name': course_obj.subject.name
                 }
 
-            # Safely get related lessons/quizzes
-            serialized_lessons = []
-            if hasattr(course_obj, 'lessons'):
+            # --- Cached raw lessons/quizzes (unmasked) ---
+            cache_key = f"course_lessons_quizzes_{course_obj.id}"
+            cached = cache.get(cache_key)
+            if not cached:
+                serialized_lessons_raw = []
+                serialized_quizzes_raw = []
                 try:
-                    from lessons.models import Lesson
-                    # Only expose published lessons to enrolled users
-                    lessons = course_obj.lessons.filter(status=Lesson.PUBLISHED)
-                    serialized_lessons = LessonSerializer(lessons, many=True, context={'request': request}).data
-                    # Mask any inline-restricted sections for the current user
-                    # (e.g., blocks that point to other premium courses)
-                    if request and serialized_lessons:
-                        user = getattr(request, 'user', None)
-                        if not (getattr(user, 'is_authenticated', False) and getattr(user, 'is_staff', False)):
-                            for l in serialized_lessons:
-                                if 'content' in l and l['content']:
-                                    # Enforce course-bound gating to the current course context
-                                    l['content'] = mask_restricted_sections(l['content'], user, bound_course=course_obj)
+                    lessons_qs = course_obj.lessons.filter(status=Lesson.PUBLISHED).order_by('position').select_related('course')
+                    serialized_lessons_raw = LessonSerializer(lessons_qs, many=True, context={'request': request}).data
                 except Exception as e:
                     logger.error(f"Error serializing lessons for course {course_obj.id}: {e}")
-
-
-       
-            serialized_quizzes = []             
-            if hasattr(course_obj, 'quizzes'):  
-                try:                            
-                    quizzes_qs = course_obj.quizzes.all()  
-                    serialized_quizzes = QuizSerializer(
-                        quizzes_qs, many=True,
-                        context={'request': request}
-                    ).data
-                except Exception as e:         
+                try:
+                    quizzes_qs = course_obj.quizzes.all()
+                    serialized_quizzes_raw = QuizSerializer(quizzes_qs, many=True, context={'request': request}).data
+                except Exception as e:
                     logger.error(f"Error serializing quizzes for course {course_obj.id}: {e}")
-            
+                cache.set(cache_key, {
+                    'lessons': serialized_lessons_raw,
+                    'quizzes': serialized_quizzes_raw
+                }, 300)  # 5 minutes
+                cached = {'lessons': serialized_lessons_raw, 'quizzes': serialized_quizzes_raw}
 
+            # Apply gating masks per request/user (do not cache masked content)
+            serialized_lessons = []
+            user = getattr(request, 'user', None) if request else None
+            if cached['lessons']:
+                for l in cached['lessons']:
+                    l_copy = dict(l)
+                    if request and l_copy.get('content') and not (getattr(user, 'is_authenticated', False) and getattr(user, 'is_staff', False)):
+                        l_copy['content'] = mask_restricted_sections(l_copy['content'], user, bound_course=course_obj)
+                    serialized_lessons.append(l_copy)
 
+            serialized_quizzes = cached['quizzes'] or []
 
             return {
                 # Use getattr for safety in case fields don't exist on the model instance
@@ -175,6 +176,26 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                 logger.error(f"Error calculating progress for enrollment {obj.id}: {e}")
                 return 0 # Return 0 on error
         return None # Return None if not applicable
+
+    def get_lesson_completions(self, obj):
+        if obj.enrollment_type != 'course' or not obj.content_object:
+            return []
+        course = obj.content_object
+        try:
+            qs = LessonCompletion.objects.filter(
+                user=obj.user,
+                lesson__course=course
+            ).select_related('lesson')
+            return [
+                {
+                    'lesson_id': c.lesson_id,
+                    'completed_at': c.completed_at.isoformat()
+                }
+                for c in qs
+            ]
+        except Exception as e:
+            logger.error(f"Error fetching completions for enrollment {obj.id}: {e}")
+            return []
     
 class CollaborationSessionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import Quiz, Tag
+from django.core.cache import cache
 
 from langdetect import detect_langs, LangDetectException
 
@@ -96,3 +97,17 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
     # 4) Apply language updates
     if update_kwargs:
         Quiz.objects.filter(pk=instance.pk).update(**update_kwargs)
+
+    # Invalidate related course cache if quiz belongs to a course
+    if getattr(instance, 'course_id', None):
+        cache.delete(f"course_lessons_quizzes_{instance.course_id}")
+
+@receiver(post_save, sender=Quiz)
+def invalidate_quiz_course_cache_on_save(sender, instance, **kwargs):
+    if getattr(instance, 'course_id', None):
+        cache.delete(f"course_lessons_quizzes_{instance.course_id}")
+
+@receiver(post_save, sender=Tag)
+def invalidate_quiz_course_cache_on_tag_change(sender, instance, **kwargs):
+    # Tag changes don't directly map to a single course; skip heavy invalidation.
+    pass

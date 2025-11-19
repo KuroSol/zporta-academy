@@ -1056,58 +1056,81 @@ function EnrolledCourseStudyPage() {
     const fetchCourseData = async () => {
       setLoading(true);
       setError("");
-      try {
-        const url = `/enrollments/${enrollmentId}/${sharedToken ? `?shared_token=${sharedToken}` : ''}`;
-        const enrollmentRes = await apiClient.get(url);
-        if (!isMounted) return;
+      const url = `/enrollments/${enrollmentId}/${sharedToken ? `?shared_token=${sharedToken}` : ''}`;
 
-        const enrollment = enrollmentRes.data;
-        const course = enrollment.course_snapshot || enrollment.course;
-        if (!course) throw new Error("Course data not found in enrollment.");
-        
-        // Use lessons from the course payload; avoid per-lesson fetch (draft lessons can 404)
-        const lessonsData = Array.isArray(course.lessons)
-          ? course.lessons.filter(l => l.status === 'published' || !l.status)
-          : [];
-        // Quizzes are already nested per lesson by the serializer
-        const allQuizzes = lessonsData.flatMap(l => Array.isArray(l.quizzes) ? l.quizzes : []);
-
-        if (isMounted) {
-            setCourseData(course);
-            setLessons(lessonsData);
-            setQuizzes(allQuizzes);setQuizzes(allQuizzes); // Use quizzes extracted from lessons
-            
-            const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/`);
-            if (!isMounted) return;
-            const completedIds = completions.map(c => (c.lesson?.id ?? c.lesson_id ?? c.lesson));
-            const completedSet = new Set(completedIds);
-            setCompletedLessons(completedSet);
-            const byLesson = {};
-            completions.forEach(c => {
-              const lid = c.lesson?.id ?? c.lesson_id ?? c.lesson;
-              const ts = c.completed_at || c.created_at || null;
-              if (lid && ts) byLesson[lid] = ts;
-            });
-            setCompletedAtByLesson(byLesson);
-
-            if (lessonsData.length > 0) {
-              let lastCompletedIndex = -1;
-              lessonsData.forEach((l, i) => { if (completedSet.has(l.id)) lastCompletedIndex = i; });
-              const nextIndex = Math.min(lastCompletedIndex + 1, lessonsData.length - 1);
-              setOpenLessonId(lessonsData[nextIndex].id);
-              setActiveContentId(`lesson-${lessonsData[nextIndex].id}`);
-            } else if (course.quizzes?.length > 0) {
-              setActiveContentId(`quiz-${course.quizzes[0].id}`);
-            }
+      const attemptFetch = async () => {
+        try {
+          return await apiClient.get(url);
+        } catch (err) {
+          const status = err?.response?.status;
+          // Retry only on network errors or 5xx
+          if (!status || (status >= 500 && status <= 599)) {
+            throw err; // signal for retry
+          }
+          // Non-retryable error: set message and stop
+          if (isMounted) {
+            if (status === 404) setError("Course or enrollment not found (404).");
+            else if (status === 403) setError("Permission denied (403).");
+            else if (status === 401) setError("Session expired. Please log in (401).");
+            else setError("Unexpected error loading course.");
+          }
+          return null;
         }
+      };
+
+      let enrollmentRes = null;
+      try {
+        enrollmentRes = await attemptFetch();
+        if (!enrollmentRes) return; // non-retryable error handled
       } catch (err) {
-        console.error("Error fetching course data:", err);
-        if (isMounted) setError("Failed to load course data. You may not have permission or the course does not exist.");
-      } finally {
-        if (isMounted) setLoading(false);
+        // Single retry after brief delay
+        await new Promise(r => setTimeout(r, 500));
+        try {
+          enrollmentRes = await attemptFetch();
+          if (!enrollmentRes) return;
+        } catch (finalErr) {
+          if (isMounted) setError("Network/server issue. Please refresh.");
+          return;
+        }
+      }
+
+      if (!isMounted) return;
+      const enrollment = enrollmentRes.data;
+      const course = enrollment.course_snapshot || enrollment.course;
+      if (!course) {
+        if (isMounted) setError("Course data missing in enrollment payload.");
+        return;
+      }
+
+      const lessonsData = Array.isArray(course.lessons)
+        ? course.lessons.filter(l => l.status === 'published' || !l.status)
+        : [];
+      const allQuizzes = lessonsData.flatMap(l => Array.isArray(l.quizzes) ? l.quizzes : []);
+      if (isMounted) {
+        setCourseData(course);
+        setLessons(lessonsData);
+        setQuizzes(allQuizzes);
+      }
+
+      // Use embedded completions
+      const completions = Array.isArray(enrollment.lesson_completions) ? enrollment.lesson_completions : [];
+      const completedSet = new Set(completions.map(c => c.lesson_id));
+      setCompletedLessons(completedSet);
+      const byLesson = {};
+      completions.forEach(c => { if (c.lesson_id && c.completed_at) byLesson[c.lesson_id] = c.completed_at; });
+      setCompletedAtByLesson(byLesson);
+
+      if (lessonsData.length > 0) {
+        let lastCompletedIndex = -1;
+        lessonsData.forEach((l, i) => { if (completedSet.has(l.id)) lastCompletedIndex = i; });
+        const nextIndex = Math.min(lastCompletedIndex + 1, lessonsData.length - 1);
+        setOpenLessonId(lessonsData[nextIndex].id);
+        setActiveContentId(`lesson-${lessonsData[nextIndex].id}`);
+      } else if (course.quizzes?.length > 0) {
+        setActiveContentId(`quiz-${course.quizzes[0].id}`);
       }
     };
-
+    // Initial fetch (fire and forget; internal retry covers transient errors)
     fetchCourseData();
     return () => { isMounted = false; };
   }, [enrollmentId, token, router.query.shared_token, router]);
