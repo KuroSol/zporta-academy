@@ -1170,15 +1170,16 @@ function EnrolledCourseStudyPage() {
       let enrollmentRes = null;
       try {
         enrollmentRes = await attemptFetch();
-        if (!enrollmentRes) return; // non-retryable error handled
+        if (!enrollmentRes) { if (isMounted) setLoading(false); return; } // non-retryable error handled
       } catch (err) {
         // Single retry after brief delay
         await new Promise(r => setTimeout(r, 500));
         try {
           enrollmentRes = await attemptFetch();
-          if (!enrollmentRes) return;
+          if (!enrollmentRes) { if (isMounted) setLoading(false); return; }
         } catch (finalErr) {
           if (isMounted) setError("Network/server issue. Please refresh.");
+          if (isMounted) setLoading(false);
           return;
         }
       }
@@ -1188,6 +1189,7 @@ function EnrolledCourseStudyPage() {
       const course = enrollment.course_snapshot || enrollment.course;
       if (!course) {
         if (isMounted) setError("Course data missing in enrollment payload.");
+        if (isMounted) setLoading(false);
         return;
       }
 
@@ -1218,6 +1220,9 @@ function EnrolledCourseStudyPage() {
       } else if (course.quizzes?.length > 0) {
         setActiveContentId(`quiz-${course.quizzes[0].id}`);
       }
+
+      // Success path complete; clear loading
+      if (isMounted) setLoading(false);
     };
     // Initial fetch (fire and forget; internal retry covers transient errors)
     fetchCourseData();
