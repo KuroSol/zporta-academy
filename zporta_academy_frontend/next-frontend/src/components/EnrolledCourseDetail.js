@@ -537,6 +537,8 @@ ${sanitizeLessonCss(customCSS || "")}
 .lesson-content .zporta-column > *{word-break:break-word;max-width:100%;margin-bottom:1rem;}
 .lesson-content .zporta-column > *:last-child{margin-bottom:0;}
 .lesson-content .zporta-column img,.lesson-content .zporta-column video,.lesson-content .zporta-column iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem;}
+/* general media fallback */
+.lesson-content img,.lesson-content video,.lesson-content iframe{max-width:100%;height:auto;display:block;border-radius:0.5rem}
 @media (min-width:640px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-sm, var(--cols-base, 1fr));}}
 @media (min-width:768px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-md, var(--cols-sm, var(--cols-base, 1fr)));}}
 @media (min-width:1024px){.lesson-content .zporta-columns{grid-template-columns:var(--cols-lg, var(--cols-md, var(--cols-sm, var(--cols-base, 1fr))));}}

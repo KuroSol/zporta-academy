@@ -394,18 +394,15 @@
 
 /* ===== LESSON SECTION ===== */
 .lessonSection {
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: transparent; /* Match standalone look */
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
   transition: all 0.3s ease;
   margin-bottom: 2rem;
 }
-.dark .lessonSection {
-  background: #1e293b;
-  border-color: #334155;
-}
+.dark .lessonSection { background: transparent; border: none; }
 
 /* ===== LESSON CARD ===== */
 .lessonCard {
@@ -873,14 +870,8 @@
 }
 
 /* Annotation Styles */
-.stylerWrapper {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.dark .stylerWrapper {
-  border-color: #374151;
-}
+.stylerWrapper { border: none; border-radius: 0; overflow: visible; }
+.dark .stylerWrapper { border: none; }
 
 .stylerEditor {
   padding: 2rem;

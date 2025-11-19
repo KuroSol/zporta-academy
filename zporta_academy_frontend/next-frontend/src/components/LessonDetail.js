@@ -206,21 +206,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     };
   }, [lessonHTML]);
 
-  /* Lazy audio loading: defer src assignment until play */
-  useEffect(() => {
-    if (!lessonHTML) return;
-    const hostEl = document.querySelector(`.${styles.lessonShadowRoot}`);
-    if (!hostEl) return;
-    const shadowRoot = hostEl.shadowRoot || hostEl;
-    const processAudio = (audio) => {
-      if (audio.dataset.lazyProcessed === '1') return;
-      audio.dataset.lazyProcessed = '1';
-      // Improved strategy: keep src so native controls work; just set preload="none".
-      // Browsers will defer fetching until play (or minimal metadata fetch). Avoid removing src to prevent broken controls.
-      try { audio.preload = 'none'; } catch {}
-    };
-    shadowRoot.querySelectorAll('audio').forEach(processAudio);
-  }, [lessonHTML]);
+  // Intentionally no lazy-audio logic here; keep LessonDetail behavior unchanged
 
   /* Per-lesson Custom JS in shadow DOM */
   useEffect(() => {
