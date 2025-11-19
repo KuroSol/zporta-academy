@@ -975,7 +975,7 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
             )}
             
             {/* Lesson content in shadow DOM (same structure as LessonDetail preview) */}
-            {lesson.content_type === 'text' && sanitizedContent && (
+            {sanitizedContent && (
               <ShadowRootContainer
                 ref={contentDisplayRef}
                 as="div"
