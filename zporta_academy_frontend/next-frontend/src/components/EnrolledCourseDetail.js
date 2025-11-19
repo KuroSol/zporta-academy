@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useMemo, useCallback } from 'react';
+import { FaUser, FaRegClock } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -10,6 +11,7 @@ import {
 import QuizCard from '@/components/QuizCard';
 import ShadowRootContainer from '@/components/common/ShadowRootContainer';
 import styles from '@/styles/EnrolledCourseDetail.module.css';
+import lessonStyles from '@/styles/LessonDetail.module.css';
 // Collaboration features commented out - not in use
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
 // import { useCollaboration } from '@/hooks/useCollaboration';
@@ -241,6 +243,26 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
                 if (editorRef.current) {
                     editorRef.current.innerHTML = initialHtml;
                     setHistory([initialHtml]);
+                    // Lazy audio: defer loading until user plays
+                    try {
+                      const processAudio = (audio) => {
+                        if (audio.dataset.lazyProcessed === '1') return;
+                        audio.dataset.lazyProcessed = '1';
+                        if (audio.getAttribute('src')) {
+                          audio.dataset.src = audio.getAttribute('src');
+                          audio.removeAttribute('src');
+                        }
+                        audio.preload = 'none';
+                        const onPlay = () => {
+                          if (!audio.getAttribute('src') && audio.dataset.src) {
+                            audio.setAttribute('src', audio.dataset.src);
+                            try { audio.load(); } catch {}
+                          }
+                        };
+                        audio.addEventListener('play', onPlay, { once: true });
+                      };
+                      editorRef.current.querySelectorAll('audio').forEach(processAudio);
+                    } catch {}
                 }
             }
         };
@@ -261,6 +283,28 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
           return () => unsubscribe();
         }
     }, [htmlContent, isCollaborative, enrollmentId, roomId]);
+
+    // Re-run lazy audio setup if highlight operations introduce new audio elements
+    useEffect(() => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const audios = editor.querySelectorAll('audio:not([data-lazy-processed])');
+      audios.forEach(a => {
+        a.dataset.lazyProcessed = '1';
+        if (a.getAttribute('src')) {
+          a.dataset.src = a.getAttribute('src');
+          a.removeAttribute('src');
+        }
+        a.preload = 'none';
+        const onPlay = () => {
+          if (!a.getAttribute('src') && a.dataset.src) {
+            a.setAttribute('src', a.dataset.src);
+            try { a.load(); } catch {}
+          }
+        };
+        a.addEventListener('play', onPlay, { once: true });
+      });
+    }, [history]);
 
     const openNote = useCallback((popup) => {
         if (overlayRef.current) overlayRef.current.style.display = 'block';
@@ -864,42 +908,87 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
           {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </div>
       </header>
-
       <div className={`${styles.lessonBody} ${!isOpen ? styles.lessonBodyCollapsed : ''}`}>
-        <div className={styles.lessonContent}>
-        {lesson.content_type === 'video' && embedUrl && (
-          <div className={styles.videoContainer}>
-            <iframe src={embedUrl} title={`${lesson.title || 'Lesson'} Video`} allowFullScreen loading="lazy" />
+        {isOpen && (
+          <div className={lessonStyles.lessonDetailContainer}>
+            <style>{`.${lessonStyles.lessonDetailContainer}{--accent-color:${lesson.accent_color || '#222E3B'};}`}</style>
+            {/* Video (match LessonDetail video embed style) */}
+            {lesson.content_type === 'video' && embedUrl && (
+              <div className={lessonStyles.lessonVideoEmbed}>
+                <iframe
+                  src={embedUrl}
+                  title={`${lesson.title || 'Lesson'} Video`}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            )}
+            {/* Text content using existing TextStyler inside shadow root for consistency */}
+            {lesson.content_type === 'text' && lesson.content && (
+              <TextStyler
+                htmlContent={highlightedContent}
+                onClearHighlightsReady={onClearHighlightsReady}
+                onClearNotesReady={onClearNotesReady}
+                onResetReady={onResetReady}
+                {...stylerProps}
+              />
+            )}
+            {/* File download if present */}
+            {lesson.file_url && (
+              <div className={lessonStyles.downloadSection}>
+                <h3 className={lessonStyles.downloadTitle}>Download this lesson file</h3>
+                <div className={lessonStyles.downloadButtons}>
+                  <a
+                    href={lesson.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
+                  >
+                    <Download size={16} /> {lesson.file_name ? lesson.file_name : 'Download File'}
+                  </a>
+                </div>
+              </div>
+            )}
+            {/* Meta info (creator + date + tags) */}
+            <div className={lessonStyles.metaContainer}>
+              <p className={lessonStyles.postMeta}>
+                <span className={lessonStyles.metaItem}>
+                  <FaUser className={lessonStyles.metaIcon} /> {lesson.created_by || 'Unknown'}
+                </span>
+                <span className={lessonStyles.metaSeparator}>|</span>
+                <span className={lessonStyles.metaItem}>
+                  <FaRegClock className={lessonStyles.metaIcon} /> {lesson.created_at ? new Date(lesson.created_at).toLocaleDateString() : 'Unknown'}
+                </span>
+              </p>
+              {lesson.tags_output?.length > 0 && (
+                <div className={lessonStyles.lessonTags}>
+                  <strong>Tags:</strong>
+                  {lesson.tags_output.map((tag) => (
+                    <span key={tag} className={lessonStyles.tagItem}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Completion / quiz actions (styled similarly but confined) */}
+            <div className={styles.lessonFooter}> 
+              {lesson.associatedQuiz && (
+                <button onClick={() => onOpenQuiz(lesson.associatedQuiz)} className={styles.startQuizButtonSmall}>
+                  <HelpCircle size={16}/> Start Quiz
+                </button>
+              )}
+              {!isCompleted && (
+                <button onClick={(e) => { e.stopPropagation(); onMarkComplete(lesson.id); }} className={styles.markCompleteButton}>
+                  <CheckCircle size={16} /> Mark as Complete
+                </button>
+              )}
+            </div>
           </div>
         )}
-        {lesson.content_type === 'text' && lesson.content && (
-           <TextStyler 
-             htmlContent={highlightedContent} 
-             onClearHighlightsReady={onClearHighlightsReady}
-             onClearNotesReady={onClearNotesReady}
-             onResetReady={onResetReady}
-             {...stylerProps} 
-           />
-        )}
-        {lesson.file_url && (
-            <a href={lesson.file_url} target="_blank" rel="noopener noreferrer" download className={styles.downloadButton}>
-                <Download size={16} /> Download File {lesson.file_name ? `(${lesson.file_name})` : ''}
-            </a>
-        )}
-        </div>
-
-        <footer className={styles.lessonFooter}>
-          {lesson.associatedQuiz && (
-              <button onClick={() => onOpenQuiz(lesson.associatedQuiz)} className={styles.startQuizButtonSmall}>
-                  <HelpCircle size={16}/> Start Quiz
-              </button>
-          )}
-          {!isCompleted && (
-            <button onClick={(e) => { e.stopPropagation(); onMarkComplete(lesson.id); }} className={styles.markCompleteButton}>
-              <CheckCircle size={16} /> Mark as Complete
-            </button>
-          )}
-        </footer>
       </div>
     </section>
   );

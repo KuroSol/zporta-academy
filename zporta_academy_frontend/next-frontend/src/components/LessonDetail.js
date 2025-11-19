@@ -206,6 +206,32 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     };
   }, [lessonHTML]);
 
+  /* Lazy audio loading: defer src assignment until play */
+  useEffect(() => {
+    if (!lessonHTML) return;
+    const hostEl = document.querySelector(`.${styles.lessonShadowRoot}`);
+    if (!hostEl) return;
+    const shadowRoot = hostEl.shadowRoot || hostEl;
+    const processAudio = (audio) => {
+      if (audio.dataset.lazyProcessed === '1') return;
+      audio.dataset.lazyProcessed = '1';
+      // Preserve original src
+      if (audio.getAttribute('src')) {
+        audio.dataset.src = audio.getAttribute('src');
+        audio.removeAttribute('src');
+      }
+      audio.preload = 'none';
+      const onPlay = () => {
+        if (!audio.getAttribute('src') && audio.dataset.src) {
+          audio.setAttribute('src', audio.dataset.src);
+          try { audio.load(); } catch {}
+        }
+      };
+      audio.addEventListener('play', onPlay, { once: true });
+    };
+    shadowRoot.querySelectorAll('audio').forEach(processAudio);
+  }, [lessonHTML]);
+
   /* Per-lesson Custom JS in shadow DOM */
   useEffect(() => {
     if (loading || typeof window === "undefined") return;
