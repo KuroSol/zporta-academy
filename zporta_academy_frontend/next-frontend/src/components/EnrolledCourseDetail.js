@@ -880,7 +880,11 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
     return text.replace(regex, `<mark class="search-match-highlight">$1</mark>`);
   }, [searchTerm]);
 
-  const sanitizedContent = useMemo(() => sanitizeContentViewerHTML(lesson.content), [lesson.content]);
+  const sanitizedContent = useMemo(() => {
+    const content = sanitizeContentViewerHTML(lesson.content);
+    console.log('Lesson content sanitized:', { lessonId: lesson.id, hasContent: !!content, contentLength: content?.length });
+    return content;
+  }, [lesson.content, lesson.id]);
   const highlightedTitle = useMemo(() => highlightSearchTerm(lesson.title || 'Untitled Lesson'), [lesson.title, highlightSearchTerm]);
   const embedUrl = useMemo(() => getYoutubeEmbedUrl(lesson.video_url), [lesson.video_url]);
   const accent = lesson.accent_color || '#222E3B';
@@ -975,7 +979,7 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
             )}
             
             {/* Lesson content in shadow DOM (same structure as LessonDetail preview) */}
-            {sanitizedContent && (
+            {sanitizedContent ? (
               <ShadowRootContainer
                 ref={contentDisplayRef}
                 as="div"
@@ -1016,6 +1020,13 @@ ${customCSS}
 `}</style>
                 <div className="lesson-content" dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
               </ShadowRootContainer>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+                <p>No content available for this lesson yet.</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                  Debug: lesson.id = {lesson.id}, lesson.content = {lesson.content ? `${lesson.content.substring(0, 50)}...` : 'null/empty'}
+                </p>
+              </div>
             )}
             
             {/* File download section */}
