@@ -17,14 +17,16 @@ import '@/styles/Editor/ViewerAccordion.module.css';
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
 // import { useCollaboration } from '@/hooks/useCollaboration';
 // import CollaborationZoneSection from '@/components/collab/CollaborationZoneSection';
-import { ref, onValue, get, set } from 'firebase/database';
-import { db } from '@/firebase/firebase';
-import StudyNoteSection from '@/components/study/StudyNoteSection';
+// Firebase and notes features commented out for performance
+// import { ref, onValue, get, set } from 'firebase/database';
+// import { db } from '@/firebase/firebase';
+// import StudyNoteSection from '@/components/study/StudyNoteSection';
 
-import rangy from 'rangy';
-import 'rangy/lib/rangy-textrange';
-import 'rangy/lib/rangy-classapplier';
-import 'rangy/lib/rangy-serializer';
+// Rangy library commented out - was used by TextStyler annotation feature (now disabled)
+// import rangy from 'rangy';
+// import 'rangy/lib/rangy-textrange';
+// import 'rangy/lib/rangy-classapplier';
+// import 'rangy/lib/rangy-serializer';
 
 // A flag to ensure the toolbar animation only runs once on initial mount
 let _isToolbarMounted = false;
@@ -74,7 +76,9 @@ const sanitizeLessonCss = (css) => {
 
 // ==================================================================
 // --- TextStyler Component (Annotation & Highlighting Tool) ---
+// COMMENTED OUT - Firebase annotation features disabled for performance
 // ==================================================================
+/* 
 const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady, accentColor, customCSS }) => {
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
@@ -625,13 +629,15 @@ ${sanitizeLessonCss(customCSS || "")}
         </div>
     );
 };
+*/
 // ==================================================================
-// --- End of TextStyler Component ---
+// --- End of TextStyler Component (COMMENTED OUT) ---
 // ==================================================================
 
 // ==================================================================
-// --- Shared Annotation Toolbar Component ---
+// --- Shared Annotation Toolbar Component (COMMENTED OUT) ---
 // ==================================================================
+/*
 const AnnotationToolbar = ({ activeTool, onToolClick, highlightColor, onColorChange, onClearHighlights, onClearNotes, onReset }) => {
     const [isToolbarOpen, setIsToolbarOpen] = useState(true);
     const [showColorPicker, setShowColorPicker] = useState(false);
@@ -720,8 +726,9 @@ const AnnotationToolbar = ({ activeTool, onToolClick, highlightColor, onColorCha
         document.body
     );
 };
+*/
 // ==================================================================
-// --- End of Annotation Toolbar ---
+// --- End of Annotation Toolbar (COMMENTED OUT) ---
 // ==================================================================
 
 
@@ -1543,7 +1550,8 @@ function EnrolledCourseStudyPage() {
         {/* Collaboration features disabled */}
         {/* <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} /> */}
         
-        <StudyNoteSection enrollmentId={enrollmentId} />
+        {/* Study Notes feature disabled for performance - Firebase dependency removed */}
+        {/* <StudyNoteSection enrollmentId={enrollmentId} /> */
 
         <div className={`${styles.pageWrapper} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
         
