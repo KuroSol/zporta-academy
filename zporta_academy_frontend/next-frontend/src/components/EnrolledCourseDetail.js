@@ -17,16 +17,15 @@ import '@/styles/Editor/ViewerAccordion.module.css';
 // import CollaborationInviteModal from '@/components/collab/CollaborationInviteModal';
 // import { useCollaboration } from '@/hooks/useCollaboration';
 // import CollaborationZoneSection from '@/components/collab/CollaborationZoneSection';
-// Firebase and notes features commented out for performance
+// Firebase features disabled for performance:
 // import { ref, onValue, get, set } from 'firebase/database';
 // import { db } from '@/firebase/firebase';
 // import StudyNoteSection from '@/components/study/StudyNoteSection';
-
-// Rangy library commented out - was used by TextStyler annotation feature (now disabled)
-// import rangy from 'rangy';
-// import 'rangy/lib/rangy-textrange';
-// import 'rangy/lib/rangy-classapplier';
-// import 'rangy/lib/rangy-serializer';
+// Rangy library - needed for text selection/annotations (not Firebase-dependent):
+import rangy from 'rangy';
+import 'rangy/lib/rangy-textrange';
+import 'rangy/lib/rangy-classapplier';
+import 'rangy/lib/rangy-serializer';
 
 // A flag to ensure the toolbar animation only runs once on initial mount
 let _isToolbarMounted = false;
@@ -76,13 +75,10 @@ const sanitizeLessonCss = (css) => {
 
 // ==================================================================
 // --- TextStyler Component (Annotation & Highlighting Tool) ---
-// COMMENTED OUT - Firebase annotation features disabled for performance
 // ==================================================================
-/* 
-const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady, accentColor, customCSS }) => {
+const TextStyler = ({ htmlContent, enrollmentId, activeTool, onToolClick, highlightColor, onClearHighlightsReady, onClearNotesReady, onResetReady, accentColor, customCSS }) => {
     const editorRef = useRef(null);
     const overlayRef = useRef(null);
-    const isUpdatingFromFirebase = useRef(false);
     const saveTimeoutRef = useRef(null);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [history, setHistory] = useState([]);
@@ -90,15 +86,12 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
     const [confirmation, setConfirmation] = useState(null); // { message, onConfirm, onCancel }
 
     const saveState = useCallback(() => {
-        if (!editorRef.current) return;
+        if (!editorRef.current || !enrollmentId) return;
         const currentState = editorRef.current.innerHTML;
         setHistory(prev => (prev.length === 0 || prev[prev.length - 1] !== currentState ? [...prev.slice(-29), currentState] : prev));
         redoStack.current = [];
         
-      if (isCollaborative && roomId) {
-        if (isUpdatingFromFirebase.current) return;
-        set(ref(db, `sessions/${roomId}/content`), currentState);
-      } else if (!isCollaborative && enrollmentId) {
+        // Save annotations via API (Firebase collaboration disabled)
         try {
           // Immediate local persistence for resilience
           const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
@@ -114,8 +107,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
             // Fallback is localStorage already written above
           });
         }, 600);
-        }
-    }, [isCollaborative, enrollmentId, roomId]);
+    }, [enrollmentId]);
 
     const clearAllHighlights = useCallback(() => {
         const editor = editorRef.current;
@@ -236,31 +228,26 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
     }, [saveState, onToolClick]);
 
     useEffect(() => {
-        if (!htmlContent) return;
+        if (!htmlContent || !enrollmentId) return;
 
         const loadAnnotations = async () => {
             let initialHtml = htmlContent;
             try {
-              if (isCollaborative && roomId) {
-                  const contentRef = ref(db, `sessions/${roomId}/content`);
-                  const snapshot = await get(contentRef);
-                  if (snapshot.exists()) initialHtml = snapshot.val();
-              } else if (!isCollaborative && enrollmentId) {
-                try {
-                  const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
-                  if (response.data && response.data.highlight_data) {
-                    initialHtml = response.data.highlight_data;
-                  } else {
-                    const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
-                    const cached = typeof window !== 'undefined' ? localStorage.getItem(lsKey) : null;
-                    if (cached) initialHtml = cached;
-                  }
-                } catch (e) {
+              // Load annotations from API (Firebase collaboration disabled)
+              try {
+                const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
+                if (response.data && response.data.highlight_data) {
+                  initialHtml = response.data.highlight_data;
+                } else {
                   const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
                   const cached = typeof window !== 'undefined' ? localStorage.getItem(lsKey) : null;
                   if (cached) initialHtml = cached;
                 }
-                }
+              } catch (e) {
+                const lsKey = `annotations:v1:enrollment:${enrollmentId}`;
+                const cached = typeof window !== 'undefined' ? localStorage.getItem(lsKey) : null;
+                if (cached) initialHtml = cached;
+              }
             } catch (error) {
                 console.error("Failed to load annotations:", error);
             } finally {
@@ -282,21 +269,8 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         };
 
         loadAnnotations();
-        
-        if (isCollaborative && roomId) {
-          const contentRef = ref(db, `sessions/${roomId}/content`);
-          const unsubscribe = onValue(contentRef, (snapshot) => {
-            const remoteHtml = snapshot.val();
-            if (editorRef.current && remoteHtml && editorRef.current.innerHTML !== remoteHtml) {
-              isUpdatingFromFirebase.current = true;
-              editorRef.current.innerHTML = remoteHtml;
-              setHistory(prev => [...prev.slice(-29), remoteHtml]);
-              setTimeout(() => { isUpdatingFromFirebase.current = false; }, 100);
-            }
-          });
-          return () => unsubscribe();
-        }
-    }, [htmlContent, isCollaborative, enrollmentId, roomId]);
+        // Firebase real-time listener removed - annotations now API-only
+    }, [htmlContent, enrollmentId]);
 
     // Re-run lazy audio setup if highlight operations introduce new audio elements
     useEffect(() => {
@@ -511,6 +485,23 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
             }
         };
 
+        // Mobile touch support for annotations
+        const handleTouchEnd = () => {
+            if (isNoteOpen || !activeTool) return;
+            // Small delay to allow selection to register on mobile
+            setTimeout(() => {
+                const selection = rangy.getSelection();
+                if (selection && !selection.isCollapsed) {
+                    const range = selection.getRangeAt(0);
+                    if (activeTool === 'eraser') eraseStyle(range);
+                    else applyStyle(activeTool, range);
+                    saveState();
+                    // Don't clear selection immediately on mobile - let user see what was highlighted
+                    setTimeout(() => window.getSelection().removeAllRanges(), 500);
+                }
+            }, 100);
+        };
+
         const handleClick = (event) => {
             const noteAnchor = event.target.closest(`.${styles.stylerNoteAnchor}`);
             if (noteAnchor && event.target.classList.contains(styles.stylerNoteBadge)) {
@@ -522,12 +513,14 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
         
         editor.addEventListener('input', saveState);
         editor.addEventListener('mouseup', handleMouseUp);
+        editor.addEventListener('touchend', handleTouchEnd); // Mobile support
         editor.addEventListener('click', handleClick);
         if (overlay) overlay.addEventListener('click', closeOpenNote);
 
         return () => {
             editor.removeEventListener('input', saveState);
             editor.removeEventListener('mouseup', handleMouseUp);
+            editor.removeEventListener('touchend', handleTouchEnd);
             editor.removeEventListener('click', handleClick);
             if (overlay) overlay.removeEventListener('click', closeOpenNote);
         };
@@ -629,15 +622,13 @@ ${sanitizeLessonCss(customCSS || "")}
         </div>
     );
 };
-*/
 // ==================================================================
-// --- End of TextStyler Component (COMMENTED OUT) ---
+// --- End of TextStyler Component ---
 // ==================================================================
 
 // ==================================================================
-// --- Shared Annotation Toolbar Component (COMMENTED OUT) ---
+// --- Shared Annotation Toolbar Component ---
 // ==================================================================
-/*
 const AnnotationToolbar = ({ activeTool, onToolClick, highlightColor, onColorChange, onClearHighlights, onClearNotes, onReset }) => {
     const [isToolbarOpen, setIsToolbarOpen] = useState(true);
     const [showColorPicker, setShowColorPicker] = useState(false);
@@ -726,9 +717,8 @@ const AnnotationToolbar = ({ activeTool, onToolClick, highlightColor, onColorCha
         document.body
     );
 };
-*/
 // ==================================================================
-// --- End of Annotation Toolbar (COMMENTED OUT) ---
+// --- End of Annotation Toolbar ---
 // ==================================================================
 
 
@@ -1550,8 +1540,8 @@ function EnrolledCourseStudyPage() {
         {/* Collaboration features disabled */}
         {/* <CollaborationInviteModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} onInviteUser={handleInviteUser} courseTitle={courseData?.title} enrollmentId={enrollmentId} /> */}
         
-        {/* Study Notes feature disabled for performance - Firebase dependency removed */}
-        {/* <StudyNoteSection enrollmentId={enrollmentId} /> */
+        {/* StudyNoteSection disabled for performance */}
+        {/* <StudyNoteSection enrollmentId={enrollmentId} /> */}
 
         <div className={`${styles.pageWrapper} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
         
