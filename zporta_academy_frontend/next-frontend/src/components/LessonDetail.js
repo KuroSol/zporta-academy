@@ -215,19 +215,9 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     const processAudio = (audio) => {
       if (audio.dataset.lazyProcessed === '1') return;
       audio.dataset.lazyProcessed = '1';
-      // Preserve original src
-      if (audio.getAttribute('src')) {
-        audio.dataset.src = audio.getAttribute('src');
-        audio.removeAttribute('src');
-      }
-      audio.preload = 'none';
-      const onPlay = () => {
-        if (!audio.getAttribute('src') && audio.dataset.src) {
-          audio.setAttribute('src', audio.dataset.src);
-          try { audio.load(); } catch {}
-        }
-      };
-      audio.addEventListener('play', onPlay, { once: true });
+      // Improved strategy: keep src so native controls work; just set preload="none".
+      // Browsers will defer fetching until play (or minimal metadata fetch). Avoid removing src to prevent broken controls.
+      try { audio.preload = 'none'; } catch {}
     };
     shadowRoot.querySelectorAll('audio').forEach(processAudio);
   }, [lessonHTML]);

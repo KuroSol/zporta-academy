@@ -248,18 +248,8 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
                       const processAudio = (audio) => {
                         if (audio.dataset.lazyProcessed === '1') return;
                         audio.dataset.lazyProcessed = '1';
-                        if (audio.getAttribute('src')) {
-                          audio.dataset.src = audio.getAttribute('src');
-                          audio.removeAttribute('src');
-                        }
-                        audio.preload = 'none';
-                        const onPlay = () => {
-                          if (!audio.getAttribute('src') && audio.dataset.src) {
-                            audio.setAttribute('src', audio.dataset.src);
-                            try { audio.load(); } catch {}
-                          }
-                        };
-                        audio.addEventListener('play', onPlay, { once: true });
+                        // Keep src so native controls remain functional; just set preload to 'none'.
+                        try { audio.preload = 'none'; } catch {}
                       };
                       editorRef.current.querySelectorAll('audio').forEach(processAudio);
                     } catch {}
@@ -291,18 +281,7 @@ const TextStyler = ({ htmlContent, isCollaborative, roomId, enrollmentId, active
       const audios = editor.querySelectorAll('audio:not([data-lazy-processed])');
       audios.forEach(a => {
         a.dataset.lazyProcessed = '1';
-        if (a.getAttribute('src')) {
-          a.dataset.src = a.getAttribute('src');
-          a.removeAttribute('src');
-        }
-        a.preload = 'none';
-        const onPlay = () => {
-          if (!a.getAttribute('src') && a.dataset.src) {
-            a.setAttribute('src', a.dataset.src);
-            try { a.load(); } catch {}
-          }
-        };
-        a.addEventListener('play', onPlay, { once: true });
+        try { a.preload = 'none'; } catch {}
       });
     }, [history]);
 
