@@ -1,3 +1,98 @@
+"""Production settings for Zporta Academy.
+Loads sensitive values from environment variables. Do NOT commit secrets.
+Set DJANGO_ENV=production in your process manager to activate.
+"""
+
+from .base import *  # noqa
+from decouple import config
+
+# Core security
+DEBUG = False
+ALLOWED_HOSTS = [
+    'zportaacademy.com',
+    'www.zportaacademy.com',
+    '18.176.206.74',  # optional: remove if using only domain
+]
+
+CURRENT_DOMAIN = 'https://zportaacademy.com'
+FRONTEND_URL_BASE = 'https://zportaacademy.com'
+
+# Required secret key (no default in prod)
+SECRET_KEY = config('SECRET_KEY')  # must be set; will raise if missing
+
+# Stripe (can remain empty if not used yet)
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+
+# Email / SMTP
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', cast=int, default=587)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'info@zportaacademy.com')
+
+# Database (environment-driven; adjust variables in systemd or export before start)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('DB_NAME', default='zporta_academy'),
+        'USER': config('DB_USER', default='root'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='127.0.0.1'),
+        'PORT': config('DB_PORT', default='3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES utf8mb4",
+        },
+    }
+}
+
+# CORS (tighten to your domains)
+CORS_ALLOWED_ORIGINS = [
+    'https://zportaacademy.com',
+    'https://www.zportaacademy.com',
+]
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://zportaacademy.com',
+    'https://www.zportaacademy.com',
+]
+
+# Security headers / cookies
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Static / media paths inherited from base.py
+
+# Logging (basic example - expand if needed)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 # zporta/settings/production.py
 # Based on server version, adding MEDIA_ROOT
 

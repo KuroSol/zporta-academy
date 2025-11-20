@@ -13,7 +13,15 @@ env_path = os.path.join(BASE_DIR, '.env')
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 from decouple import Config, RepositoryEnv
-config = Config(RepositoryEnv(env_path))
+
+# Graceful .env loading: fallback to environment variables if file missing
+if os.path.exists(env_path):
+    config = Config(RepositoryEnv(env_path))
+else:
+    # Use default decouple config which reads real environment variables; provide notice.
+    from decouple import config as decouple_config
+    config = decouple_config  # alias for uniform usage below
+    print(f"\u26a0 .env not found at {env_path}; using OS environment variables and defaults.")
 
 # DEV: Use SQLite locally for simplicity
 DATABASES = {
