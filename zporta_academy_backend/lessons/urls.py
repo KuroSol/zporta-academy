@@ -1,6 +1,6 @@
 # lessons/urls.py
 
-from django.urls import path
+from django.urls import path, re_path
 from rest_framework.routers import SimpleRouter
 from .views import (
     LessonListCreateView,
@@ -28,9 +28,16 @@ router.register(r'templates', LessonTemplateViewSet, basename='lesson-templates'
 urlpatterns = [
     path('my/', UserLessonsView.as_view(), name='user-lessons'),
     path('', LessonListCreateView.as_view(), name='lesson-list-create'),
+    path('completed/recent/',
+         RecentLessonCompletionsView.as_view(),
+         name='recent-lesson-completions'),
     path('enrollments/<int:enrollment_id>/completions/',
          EnrollmentLessonCompletionsView.as_view(),
          name='enrollment-lesson-completions'),
+    # Export endpoint using regex to ensure it matches
+    re_path(r'^(?P<permalink>.+)/export/$',
+         LessonExportView.as_view(),
+         name='lesson-export'),
     path('<path:permalink>/update/',
          LessonRetrieveUpdateDestroyView.as_view(),
          name='lesson-update'),
@@ -58,12 +65,6 @@ urlpatterns = [
     path('<path:permalink>/detach-course/',
          DetachCourseFromLessonView.as_view(),
          name='lesson-detach-course'),
-    path('<path:permalink>/export/',
-         LessonExportView.as_view(),
-         name='lesson-export'),
-    path('completed/recent/',
-         RecentLessonCompletionsView.as_view(),
-         name='recent-lesson-completions'),
 ]
 
 # 3) Insert the routered "templates/" URLs here

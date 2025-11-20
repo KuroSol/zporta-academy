@@ -59,4 +59,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Lock files (do not commit)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
 /src/legacy/

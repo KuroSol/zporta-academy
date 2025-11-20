@@ -545,20 +545,13 @@ ${sanitizeLessonCss(customCSS || "")}
           <h3 className={styles.downloadTitle}>Download this lesson</h3>
           <div className={styles.downloadButtons}>
             <a
-              href={`${process.env.NEXT_PUBLIC_API_URL}/api/lessons/${permalink}/export/?format=pdf`}
-              download
+              href={`/api/lessons/export?permalink=${permalink}&format=pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
               title="Download as PDF"
             >
               <Download size={16} /> PDF
-            </a>
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL}/api/lessons/${permalink}/export/?format=docx`}
-              download
-              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
-              title="Download as Word Document"
-            >
-              <Download size={16} /> Word
             </a>
           </div>
         </div>

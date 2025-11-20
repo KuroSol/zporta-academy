@@ -589,6 +589,7 @@ class LessonExportView(APIView):
     permission_classes = [AllowAny]  # Can be restricted based on your needs
     
     def get(self, request, permalink):
+        print(f"===== LessonExportView.get() called with permalink: {permalink} =====")
         from django.http import HttpResponse
         from .export_utils import generate_lesson_pdf, generate_lesson_docx
         

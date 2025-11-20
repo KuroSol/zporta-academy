@@ -1,0 +1,25 @@
+# Additional packages for PDF and Word export functionality
+# Install these in your production environment
+
+# For high-quality PDF generation with HTML/CSS support (RECOMMENDED)
+weasyprint>=60.0
+
+# For fallback PDF generation (simpler, plain text)
+reportlab>=4.0.0
+
+# For Word document generation
+python-docx>=1.0.0
+
+# For better HTML to Word conversion (OPTIONAL but recommended)
+htmldocx>=0.0.6
+
+# Already in requirements.txt (should be installed):
+# beautifulsoup4
+# lxml
+
+# Installation commands:
+# pip install weasyprint reportlab python-docx htmldocx
+
+# Note: WeasyPrint may require additional system libraries on Linux:
+# Ubuntu/Debian: sudo apt-get install python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+# CentOS/RHEL: sudo yum install python3-devel python3-pip python3-setuptools python3-wheel python3-cffi cairo pango gdk-pixbuf2 libffi-devel
