@@ -1,12 +1,18 @@
 # zporta/settings/base.py
 from pathlib import Path
 from decouple import config # Assuming you use python-decouple for config management
-import firebase_admin
-from firebase_admin import credentials
 import os # Good for path joining if preferred, though Pathlib is used here
 
+# Firebase is optional; guard import to avoid hard dependency during migrations or minimal installs
+try:
+    import firebase_admin
+    from firebase_admin import credentials
+except ImportError:  # Provide graceful fallback
+    firebase_admin = None
+    credentials = None
+
 # --- Existing BASE_DIR Definition ---
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # --- Firebase Admin SDK Initialization ---
 # Path to your service account key file, relative to BASE_DIR from this file
@@ -15,19 +21,18 @@ SERVICE_ACCOUNT_KEY_PATH = BASE_DIR / SERVICE_ACCOUNT_KEY_FILENAME
 
 # Initialize Firebase Admin SDK (only if not already initialized)
 # Firebase is OPTIONAL for local development
-if not firebase_admin._apps:
+if firebase_admin and not firebase_admin._apps:
     try:
-        if SERVICE_ACCOUNT_KEY_PATH.exists(): # Check if the file exists
-            cred = credentials.Certificate(str(SERVICE_ACCOUNT_KEY_PATH)) # Path object needs to be string
+        if SERVICE_ACCOUNT_KEY_PATH.exists():
+            cred = credentials.Certificate(str(SERVICE_ACCOUNT_KEY_PATH))
             firebase_admin.initialize_app(cred)
             print("✅ Firebase Admin SDK initialized successfully.")
         else:
             print(f"⚠️  Firebase Admin SDK: Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
-            print(f"⚠️  Firebase features will be disabled. This is OK for local development.")
-            # Firebase is optional - continue without it for local dev
+            print("⚠️  Firebase features disabled (optional).")
     except Exception as e:
         print(f"⚠️  Error initializing Firebase Admin SDK: {e}")
-        print(f"⚠️  Continuing without Firebase. This is OK for local development.")
+        print("⚠️  Continuing without Firebase (optional).")
 # --- End of Firebase Admin SDK Initialization ---
 
 # --- Your Existing INSTALLED_APPS ---
@@ -90,6 +95,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'seo.middleware.SEOMiddleware',
     'media_manager.middleware.UpdateDomainMiddleware',
+    # Performance / observability middleware (added for slow request logging)
+    'zporta.middleware.SlowRequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'zporta.urls'

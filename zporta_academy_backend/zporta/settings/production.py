@@ -128,7 +128,7 @@ else:
     }
 
 # ==============================================
-# REDIS CACHE CONFIGURATION
+# REDIS CACHE + CHANNEL LAYERS CONFIGURATION
 # ==============================================
 
 CACHES = {
@@ -141,7 +141,7 @@ CACHES = {
             'SOCKET_TIMEOUT': 5,
             'RETRY_ON_TIMEOUT': True,
             'CONNECTION_POOL_KWARGS': {
-                'max_connections': 50,
+                'max_connections': 100,
                 'retry_on_timeout': True,
             },
         },
@@ -153,6 +153,16 @@ CACHES = {
 # Use Redis for session storage (better performance)
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
+
+# Channels (WebSockets) – use Redis instead of in-memory for production
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # ==============================================
 # STATIC & MEDIA FILES
@@ -246,9 +256,20 @@ LOGGING = {
 # ==============================================
 
 # Enable template caching in production
+TEMPLATES[0]['APP_DIRS'] = False
 TEMPLATES[0]['OPTIONS']['loaders'] = [
     ('django.template.loaders.cached.Loader', [
         'django.template.loaders.filesystem.Loader',
         'django.template.loaders.app_directories.Loader',
     ]),
 ]
+
+# ==============================================
+# CELERY CONFIGURATION
+# ==============================================
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE

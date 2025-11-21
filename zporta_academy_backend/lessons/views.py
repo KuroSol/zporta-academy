@@ -592,6 +592,8 @@ class LessonExportView(APIView):
         print(f"===== LessonExportView.get() called with permalink: {permalink} =====")
         from django.http import HttpResponse
         from .export_utils import generate_lesson_pdf, generate_lesson_docx
+        import time
+        from django.core.cache import cache
         
         # Get lesson
         lesson = get_object_or_404(Lesson, permalink=permalink)
@@ -620,28 +622,42 @@ class LessonExportView(APIView):
         # Get format
         export_format = request.query_params.get('format', 'pdf').lower()
         
+        # STATUS CHECK ONLY (client polls until artifacts exist)
+        if request.query_params.get('status') == '1':
+            return Response({
+                'pdf_ready': bool(lesson.export_pdf),
+                'docx_ready': bool(lesson.export_docx),
+                'generated_at': lesson.export_generated_at,
+            })
+
         if export_format == 'pdf':
-            data, error = generate_lesson_pdf(lesson)
-            if error:
-                return Response({"detail": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            response = HttpResponse(data, content_type='application/pdf')
-            filename = f"{lesson.permalink}.pdf"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
+            # Serve existing artifact if present
+            if lesson.export_pdf:
+                with lesson.export_pdf.open('rb') as f:
+                    data = f.read()
+                resp = HttpResponse(data, content_type='application/pdf')
+                resp['Content-Disposition'] = f'attachment; filename="{lesson.permalink}.pdf"'
+                resp['X-Artifact'] = 'stored'
+                return resp
+            # No artifact: trigger async generation and respond 202
+            from .tasks import generate_lesson_exports
+            generate_lesson_exports.delay(lesson.id)
+            return Response({'detail': 'Export queued. Poll with ?status=1 until ready.', 'format': 'pdf'}, status=status.HTTP_202_ACCEPTED)
             
         elif export_format == 'docx':
-            data, error = generate_lesson_docx(lesson)
-            if error:
-                return Response({"detail": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            response = HttpResponse(
-                data,
-                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            )
-            filename = f"{lesson.permalink}.docx"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
+            if lesson.export_docx:
+                with lesson.export_docx.open('rb') as f:
+                    data = f.read()
+                resp = HttpResponse(
+                    data,
+                    content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                )
+                resp['Content-Disposition'] = f'attachment; filename="{lesson.permalink}.docx"'
+                resp['X-Artifact'] = 'stored'
+                return resp
+            from .tasks import generate_lesson_exports
+            generate_lesson_exports.delay(lesson.id)
+            return Response({'detail': 'Export queued. Poll with ?status=1 until ready.', 'format': 'docx'}, status=status.HTTP_202_ACCEPTED)
         
         else:
             return Response(

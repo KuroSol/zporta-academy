@@ -120,6 +120,11 @@ class Lesson(models.Model):
         null=True,
         help_text="Optional user-defined custom CSS for this lesson."
     )
+    # Export artifact fields (populated asynchronously)
+    export_pdf = models.FileField(upload_to="lesson_exports/pdf/", blank=True, null=True)
+    export_docx = models.FileField(upload_to="lesson_exports/docx/", blank=True, null=True)
+    export_generated_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         # --- Generate permalink only on initial save ---
@@ -176,6 +181,9 @@ class Lesson(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["course", "position"]),
+            models.Index(fields=["permalink"]),
+            models.Index(fields=["created_by", "status", "is_premium"]),
+            models.Index(fields=["updated_at"]),
         ]
 
     
@@ -194,6 +202,10 @@ class LessonCompletion(models.Model):
 
     class Meta:
         unique_together = ('user', 'lesson')
+        indexes = [
+            models.Index(fields=['user', 'completed_at']),
+            models.Index(fields=['lesson', 'completed_at']),
+        ]
     
     def __str__(self):
         return f"{self.user.username} completed {self.lesson.title}"

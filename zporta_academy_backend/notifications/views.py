@@ -32,8 +32,52 @@ class NotificationViewSet(
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        # Users should only see their own notifications
-        return AppNotification.objects.filter(user=self.request.user).order_by('-created_at')
+        # Users should only see their own notifications; defer heavy fields if any added later
+        qs = AppNotification.objects.filter(user=self.request.user).order_by('-created_at')
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        """Optimized list with lightweight polling support.
+
+        Query params:
+        - limit (int): max notifications to return (default 50, max 200)
+        - since (ISO timestamp or epoch seconds): return only notifications newer than this
+        - unread_only (bool): if true, return only unread notifications
+        Returns X-Total header for client-side pagination; encourages less aggressive polling.
+        """
+        limit_param = request.query_params.get('limit') or 50
+        try:
+            limit = min(max(int(limit_param), 1), 200)
+        except ValueError:
+            limit = 50
+
+        qs = self.get_queryset()
+
+        since_val = request.query_params.get('since')
+        if since_val:
+            from django.utils.dateparse import parse_datetime
+            from datetime import datetime
+            dt = parse_datetime(since_val)
+            if dt is None:
+                # Try epoch seconds fallback
+                try:
+                    dt = datetime.utcfromtimestamp(float(since_val))
+                except Exception:
+                    dt = None
+            if dt is not None:
+                qs = qs.filter(created_at__gt=dt)
+
+        unread_only = request.query_params.get('unread_only')
+        if unread_only in ['1', 'true', 'True']:
+            qs = qs.filter(is_read=False)
+
+        total_count = qs.count()
+        qs = qs[:limit]
+        serializer = self.get_serializer(qs, many=True)
+        resp = Response(serializer.data)
+        resp['X-Total'] = str(total_count)
+        resp['Cache-Control'] = 'no-store'
+        return resp
 
     # ======================= ADD THIS NEW ACTION INSIDE THE CLASS =======================
     @action(detail=False, methods=['post'], url_path='create-collab-invite')

@@ -14,10 +14,13 @@ staticfiles/
 *.log
 
 # Secrets / Configs within backend
-.env # For a .env file directly inside zporta_academy_backend/
+.env
 zporta/settings/local.py
 zporta/settings/dev.py   # If it contains secrets
 zporta/firebase_credentials.json # This is correct for your backend credentials
+
+# Celery
+celery.pid
 
 # Build files (if your backend has specific build outputs, e.g. compiled binaries)
 # If your backend also generates a 'build/' or 'dist/' folder, you can list them here:

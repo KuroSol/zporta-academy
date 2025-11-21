@@ -29,6 +29,9 @@ class Notification(models.Model):
 
     class Meta: # Added from my suggestion
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+        ]
 
 # Merged FCMToken Model (based on my more detailed suggestion)
 class FCMToken(models.Model):
@@ -46,6 +49,9 @@ class FCMToken(models.Model):
     class Meta:
         unique_together = ('user', 'device_id') # Crucial for multiple devices per user
         ordering = ['user', '-last_seen']
+        indexes = [
+            models.Index(fields=['user', 'last_seen']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} on device {self.device_id} (Active: {self.is_active})"
@@ -82,3 +88,6 @@ class FCMLog(models.Model):
 
     class Meta: 
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['action', 'timestamp']),
+        ]

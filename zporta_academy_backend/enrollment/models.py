@@ -39,6 +39,9 @@ class Enrollment(models.Model):
     class Meta:
         ordering = ['-enrollment_date']
         unique_together = ('user', 'content_type', 'object_id')
+        indexes = [
+            models.Index(fields=['user', 'content_type', 'object_id', 'enrollment_type']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} enrolled in {self.content_object}"
@@ -105,6 +108,8 @@ class CollaborationSession(models.Model):
 
     def __str__(self):
         return f"Session {self.session_id} for {self.enrollment}"
+    class Meta:
+        indexes = [models.Index(fields=['enrollment', 'created_at'])]
 
 class SessionStroke(models.Model):
     """
@@ -125,6 +130,8 @@ class SessionStroke(models.Model):
 
     def __str__(self):
         return f"Stroke by {self.user.username} in {self.session.session_id} at {self.created_at}"
+    class Meta:
+        indexes = [models.Index(fields=['session', 'created_at'])]
 
 class SessionNote(models.Model):
     """
@@ -146,6 +153,8 @@ class SessionNote(models.Model):
 
     def __str__(self):
         return f"Note by {self.user.username} in {self.session.session_id} at {self.created_at}"
+    class Meta:
+        indexes = [models.Index(fields=['session', 'created_at'])]
 
 class CourseCompletion(models.Model):
     user         = models.ForeignKey(
