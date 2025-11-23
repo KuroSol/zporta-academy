@@ -17,7 +17,7 @@ from .views import (
     PublishLessonView,
     AttachCourseToLessonView,
     DetachCourseFromLessonView,
-    LessonExportView,
+    LessonExportPDFView,
 )
 
 # 1) Register the "templates" endpoint with a router
@@ -34,10 +34,10 @@ urlpatterns = [
     path('enrollments/<int:enrollment_id>/completions/',
          EnrollmentLessonCompletionsView.as_view(),
          name='enrollment-lesson-completions'),
-    # Export endpoint using regex to ensure it matches
-    re_path(r'^(?P<permalink>.+)/export/$',
-         LessonExportView.as_view(),
-         name='lesson-export'),
+    # New PDF export endpoint (by lesson ID)
+    path('<int:pk>/export-pdf/',
+         LessonExportPDFView.as_view(),
+         name='lesson-export-pdf'),
     path('<path:permalink>/update/',
          LessonRetrieveUpdateDestroyView.as_view(),
          name='lesson-update'),

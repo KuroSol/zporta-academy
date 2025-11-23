@@ -67,3 +67,5 @@ langdetect==1.0.9
 geoip2==4.8.0
 django-redis==5.4.0
 pymysql==1.1.1
+weasyprint==62.3
+reportlab==4.2.5

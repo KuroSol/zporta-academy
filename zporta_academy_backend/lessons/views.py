@@ -581,86 +581,81 @@ class LessonTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LessonTemplateSerializer
 
 
-class LessonExportView(APIView):
+class LessonExportPDFView(APIView):
     """
-    Export lesson content as PDF or DOCX
-    GET /api/lessons/<permalink>/export/?format=pdf or format=docx
-    """
-    permission_classes = [AllowAny]  # Can be restricted based on your needs
+    Export lesson content as PDF (text-first, no media).
+    GET /api/lessons/<lesson_id>/export-pdf/
     
-    def get(self, request, permalink):
-        print(f"===== LessonExportView.get() called with permalink: {permalink} =====")
+    Returns PDF file for download. Caches generated PDFs.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = 'lesson_export'
+    
+    def get(self, request, pk):
         from django.http import HttpResponse
-        from .export_utils import generate_lesson_pdf, generate_lesson_docx
-        import time
-        from django.core.cache import cache
+        from .pdf_utils import get_or_generate_lesson_pdf
+        import logging
+        
+        logger = logging.getLogger(__name__)
         
         # Get lesson
-        lesson = get_object_or_404(Lesson, permalink=permalink)
+        lesson = get_object_or_404(Lesson, pk=pk)
         
-        # Check if user has access (if premium)
+        # Authorization checks
+        # 1. If premium lesson, check enrollment
         if lesson.is_premium:
-            if not request.user.is_authenticated:
-                return Response(
-                    {"detail": "Authentication required for premium content"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-            
-            # Check enrollment if lesson is part of a course
-            if lesson.course:
-                has_access = Enrollment.objects.filter(
+            # Allow creator and staff
+            if lesson.created_by == request.user or request.user.is_staff:
+                pass  # Allowed
+            # Otherwise check enrollment
+            elif lesson.course:
+                course_ct = ContentType.objects.get_for_model(Course)
+                has_enrollment = Enrollment.objects.filter(
                     user=request.user,
-                    course=lesson.course
+                    content_type=course_ct,
+                    object_id=lesson.course.id,
+                    enrollment_type="course"
                 ).exists()
                 
-                if not has_access and lesson.created_by != request.user:
+                if not has_enrollment:
                     return Response(
-                        {"detail": "Enrollment required to download this lesson"},
+                        {"detail": "Enrollment required to export this lesson."},
                         status=status.HTTP_403_FORBIDDEN
                     )
-        
-        # Get format
-        export_format = request.query_params.get('format', 'pdf').lower()
-        
-        # STATUS CHECK ONLY (client polls until artifacts exist)
-        if request.query_params.get('status') == '1':
-            return Response({
-                'pdf_ready': bool(lesson.export_pdf),
-                'docx_ready': bool(lesson.export_docx),
-                'generated_at': lesson.export_generated_at,
-            })
-
-        if export_format == 'pdf':
-            # Serve existing artifact if present
-            if lesson.export_pdf:
-                with lesson.export_pdf.open('rb') as f:
-                    data = f.read()
-                resp = HttpResponse(data, content_type='application/pdf')
-                resp['Content-Disposition'] = f'attachment; filename="{lesson.permalink}.pdf"'
-                resp['X-Artifact'] = 'stored'
-                return resp
-            # No artifact: trigger async generation and respond 202
-            from .tasks import generate_lesson_exports
-            generate_lesson_exports.delay(lesson.id)
-            return Response({'detail': 'Export queued. Poll with ?status=1 until ready.', 'format': 'pdf'}, status=status.HTTP_202_ACCEPTED)
-            
-        elif export_format == 'docx':
-            if lesson.export_docx:
-                with lesson.export_docx.open('rb') as f:
-                    data = f.read()
-                resp = HttpResponse(
-                    data,
-                    content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            else:
+                # Premium lesson without course - only creator/staff can access
+                return Response(
+                    {"detail": "You do not have access to this lesson."},
+                    status=status.HTTP_403_FORBIDDEN
                 )
-                resp['Content-Disposition'] = f'attachment; filename="{lesson.permalink}.docx"'
-                resp['X-Artifact'] = 'stored'
-                return resp
-            from .tasks import generate_lesson_exports
-            generate_lesson_exports.delay(lesson.id)
-            return Response({'detail': 'Export queued. Poll with ?status=1 until ready.', 'format': 'docx'}, status=status.HTTP_202_ACCEPTED)
         
-        else:
+        # 2. If draft, only creator and staff can export
+        if lesson.status == Lesson.DRAFT:
+            if lesson.created_by != request.user and not request.user.is_staff:
+                return Response(
+                    {"detail": "Not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Generate or retrieve cached PDF
+        try:
+            pdf_bytes = get_or_generate_lesson_pdf(lesson)
+            
+            # Return PDF response
+            filename = f"lesson-{lesson.id}.pdf"
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Content-Length'] = len(pdf_bytes)
+            
+            return response
+            
+        except Exception as e:
+            logger.error(
+                f"PDF generation failed for lesson {lesson.id} "
+                f"(user: {request.user.id}): {str(e)}",
+                exc_info=True
+            )
             return Response(
-                {"detail": "Invalid format. Use 'pdf' or 'docx'"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "PDF generation failed."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

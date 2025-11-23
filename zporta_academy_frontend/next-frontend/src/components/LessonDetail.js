@@ -294,6 +294,45 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!lessonData?.lesson?.id || isSubmitting) return;
+    setError("");
+    setIsSubmitting(true);
+    try {
+      // Call the backend PDF export endpoint
+      const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-pdf/`, {
+        responseType: 'blob', // Important: receive as binary blob
+      });
+      
+      // Create a blob from the PDF data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lesson-${lessonData.lesson.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccessMessage("PDF downloaded successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to download PDF. Please try again.");
+      if (err.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getYoutubeEmbedUrl = (url) => {
     if (!url) return null;
     let videoId = null;
@@ -544,15 +583,14 @@ ${sanitizeLessonCss(customCSS || "")}
         <div className={styles.downloadSection}>
           <h3 className={styles.downloadTitle}>Download this lesson</h3>
           <div className={styles.downloadButtons}>
-            <a
-              href={`/api/lessons/export?permalink=${permalink}&format=pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={handleDownloadPDF}
               className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
               title="Download as PDF"
+              disabled={isSubmitting}
             >
               <Download size={16} /> PDF
-            </a>
+            </button>
           </div>
         </div>
       )}
