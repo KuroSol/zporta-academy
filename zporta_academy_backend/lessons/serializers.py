@@ -165,13 +165,18 @@ class LessonSerializer(serializers.ModelSerializer):
                         filename = os.path.basename(src.split('?')[0])
                         if not filename: continue # Skip if no filename
 
-                        # Find UserMedia matching filename, category, user, and NOT already linked
-                        media = UserMedia.objects.filter(
+                        # Find UserMedia matching filename and NOT already linked
+                        # We relax the category check to ensure we catch all relevant files
+                        media_qs = UserMedia.objects.filter(
                             file__icontains=filename,
-                            user=user,
-                            media_category='lesson', # Match category used in CustomEditor
                             lesson__isnull=True # Only link unlinked media
-                        ).first()
+                        )
+                        
+                        # If user is known, prefer their media, but allow admins to link any unlinked media
+                        if user and not user.is_staff:
+                            media_qs = media_qs.filter(user=user)
+                            
+                        media = media_qs.first()
 
                         if media:
                             media.lesson = lesson_instance
