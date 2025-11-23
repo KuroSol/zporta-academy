@@ -501,7 +501,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       )}
 
       {/* Download section - moved to top for visibility */}
-      {(isEnrolled || !lesson.is_premium) && (
+      {user && (isEnrolled || !lesson.is_premium || lesson.created_by === user.username) && (
         <div className={styles.downloadSectionTop}>
           <h3 className={styles.downloadTitle}>Download this lesson</h3>
           <div className={styles.downloadButtons}>
