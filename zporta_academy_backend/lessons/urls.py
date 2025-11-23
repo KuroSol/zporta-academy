@@ -18,6 +18,7 @@ from .views import (
     AttachCourseToLessonView,
     DetachCourseFromLessonView,
     LessonExportPDFView,
+    LessonExportAudioView,
 )
 
 # 1) Register the "templates" endpoint with a router
@@ -38,6 +39,9 @@ urlpatterns = [
     path('<int:pk>/export-pdf/',
          LessonExportPDFView.as_view(),
          name='lesson-export-pdf'),
+    path('<int:pk>/export-audio/',
+         LessonExportAudioView.as_view(),
+         name='lesson-export-audio'),
     path('<path:permalink>/update/',
          LessonRetrieveUpdateDestroyView.as_view(),
          name='lesson-update'),

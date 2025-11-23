@@ -5,7 +5,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from "react-icons/fa";
-import { Pencil, Trash2, Download } from "lucide-react";
+import { Pencil, Trash2, Download, Music } from "lucide-react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 import QuizCard from "@/components/QuizCard";
@@ -333,6 +333,42 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     }
   };
 
+  const handleDownloadAudio = async () => {
+    if (!lessonData?.lesson?.id || isSubmitting) return;
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-audio/`, {
+        responseType: 'blob',
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lesson-${lessonData.lesson.id}-audio.zip`;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccessMessage("Audio downloaded successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      if (err.response?.status === 404) {
+          setError("No audio files found for this lesson.");
+      } else {
+          setError(err.response?.data?.detail || "Failed to download audio.");
+      }
+      if (err.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getYoutubeEmbedUrl = (url) => {
     if (!url) return null;
     let videoId = null;
@@ -590,6 +626,15 @@ ${sanitizeLessonCss(customCSS || "")}
               disabled={isSubmitting}
             >
               <Download size={16} /> PDF
+            </button>
+            <button
+              onClick={handleDownloadAudio}
+              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+              title="Download Audio (ZIP)"
+              disabled={isSubmitting}
+              style={{ marginLeft: '10px' }}
+            >
+              <Music size={16} /> Audio
             </button>
           </div>
         </div>

@@ -26,6 +26,12 @@ from django.utils.decorators import method_decorator
 from django.core.cache import cache
 import hashlib
 from .content_filters import mask_restricted_sections as _mask_restricted_sections
+import zipfile
+import io
+from django.http import FileResponse
+from user_media.models import UserMedia
+import os
+from bs4 import BeautifulSoup
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
@@ -659,3 +665,114 @@ class LessonExportPDFView(APIView):
                 {"detail": "PDF generation failed."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class LessonExportAudioView(APIView):
+    """
+    Export all audio files in a lesson as a ZIP archive.
+    GET /api/lessons/<lesson_id>/export-audio/
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = 'lesson_export'
+
+    def get(self, request, pk):
+        # Get lesson
+        lesson = get_object_or_404(Lesson, pk=pk)
+
+        # Authorization checks (same as PDF)
+        if lesson.is_premium:
+            # Allow creator and staff
+            if lesson.created_by == request.user or request.user.is_staff:
+                pass
+            # Otherwise check enrollment
+            elif lesson.course:
+                course_ct = ContentType.objects.get_for_model(Course)
+                has_enrollment = Enrollment.objects.filter(
+                    user=request.user,
+                    content_type=course_ct,
+                    object_id=lesson.course.id,
+                    enrollment_type="course"
+                ).exists()
+                
+                if not has_enrollment:
+                    return Response(
+                        {"detail": "Enrollment required to export audio."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            else:
+                # Premium lesson without course - only creator/staff can access
+                return Response(
+                    {"detail": "You do not have access to this lesson."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        # If draft, only creator and staff can export
+        if lesson.status == Lesson.DRAFT:
+            if lesson.created_by != request.user and not request.user.is_staff:
+                return Response(
+                    {"detail": "Not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # Fetch audio files
+        # Strategy 1: Explicitly linked media
+        audio_files = list(UserMedia.objects.filter(lesson=lesson, media_type='audio'))
+        
+        # Strategy 2: Scan content for audio tags (fallback for unlinked media)
+        if lesson.content:
+            try:
+                soup = BeautifulSoup(lesson.content, "html.parser")
+                for audio_tag in soup.find_all("audio"):
+                    src = audio_tag.get("src")
+                    if src:
+                        # Extract filename from URL (e.g. "file.wav" from "http://.../file.wav?foo=bar")
+                        filename = os.path.basename(src.split('?')[0])
+                        
+                        # Avoid duplicates if already found in Strategy 1
+                        if any(os.path.basename(af.file.name) == filename for af in audio_files):
+                            continue
+                        
+                        # Find in DB by filename (using icontains to match partial path)
+                        # This handles cases where media exists but isn't linked to the lesson
+                        media_match = UserMedia.objects.filter(
+                            file__icontains=filename, 
+                            media_type='audio'
+                        ).first()
+                        
+                        if media_match:
+                            audio_files.append(media_match)
+            except Exception as e:
+                print(f"Error parsing lesson content for audio: {e}")
+        
+        if not audio_files:
+             return Response(
+                {"detail": "No audio files found for this lesson."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Create ZIP in memory
+        buffer = io.BytesIO()
+        try:
+            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for audio in audio_files:
+                    try:
+                        # Use the file name from the field
+                        file_name = os.path.basename(audio.file.name)
+                        
+                        # Read file content safely (works for local and S3)
+                        with audio.file.open('rb') as f:
+                            file_content = f.read()
+                            zip_file.writestr(file_name, file_content)
+                    except Exception as e:
+                        print(f"Error adding file {audio.id} to zip: {e}")
+                        # Continue with other files
+        except Exception as e:
+             return Response(
+                {"detail": f"Failed to create audio archive: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        buffer.seek(0)
+        filename = f"lesson-{lesson.id}-audio.zip"
+        response = FileResponse(buffer, as_attachment=True, filename=filename)
+        return response
