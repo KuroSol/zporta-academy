@@ -32,6 +32,9 @@ from django.http import FileResponse
 from user_media.models import UserMedia
 import os
 from bs4 import BeautifulSoup
+from django.conf import settings
+from urllib.parse import unquote, urlparse
+import requests
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
@@ -717,35 +720,69 @@ class LessonExportAudioView(APIView):
         # Fetch audio files
         # Strategy 1: Explicitly linked media
         audio_files = list(UserMedia.objects.filter(lesson=lesson, media_type='audio'))
-        
-        # Strategy 2: Scan content for audio tags (fallback for unlinked media)
+        # Will store (filename, bytes) for direct URL-fetched audio
+        remote_entries = []
+
+        # Strategy 2/3: Scan content for audio tags
         if lesson.content:
             try:
                 soup = BeautifulSoup(lesson.content, "html.parser")
                 for audio_tag in soup.find_all("audio"):
                     src = audio_tag.get("src")
-                    if src:
-                        # Extract filename from URL (e.g. "file.wav" from "http://.../file.wav?foo=bar")
-                        filename = os.path.basename(src.split('?')[0])
-                        
-                        # Avoid duplicates if already found in Strategy 1
-                        if any(os.path.basename(af.file.name) == filename for af in audio_files):
-                            continue
-                        
-                        # Find in DB by filename (using icontains to match partial path)
-                        # This handles cases where media exists but isn't linked to the lesson
-                        media_match = UserMedia.objects.filter(
-                            file__icontains=filename, 
-                            media_type='audio'
-                        ).first()
-                        
-                        if media_match:
-                            audio_files.append(media_match)
+                    if not src:
+                        continue
+
+                    decoded_src = unquote(src)
+                    filename = os.path.basename(decoded_src.split('?')[0])
+                    if not filename:
+                        continue
+
+                    # Avoid duplicates if already found
+                    if any(os.path.basename(af.file.name) == filename for af in audio_files):
+                        continue
+                    if any(name == filename for name, _ in remote_entries):
+                        continue
+
+                    # Strategy 2: Find in DB by filename (handles unlinked media)
+                    media_match = UserMedia.objects.filter(
+                        file__icontains=filename,
+                        media_type='audio'
+                    ).first()
+                    if media_match:
+                        audio_files.append(media_match)
+                        continue
+
+                    # Strategy 3: Directly fetch from same-domain MEDIA URLs as a last resort
+                    try:
+                        # Build absolute URL
+                        if decoded_src.startswith('http://') or decoded_src.startswith('https://'):
+                            abs_url = decoded_src
+                        else:
+                            abs_url = request.build_absolute_uri(decoded_src)
+
+                        parsed = urlparse(abs_url)
+                        current_host = request.get_host().split(':')[0].lower()
+                        allowed_hosts = {
+                            current_host, '127.0.0.1', 'localhost',
+                            'zportaacademy.com', 'www.zportaacademy.com'
+                        }
+                        media_url_prefix = (settings.MEDIA_URL or '/media/').rstrip('/')
+
+                        # Only fetch if URL is same-domain and under MEDIA_URL path
+                        if parsed.netloc.lower() in allowed_hosts and parsed.path.startswith(media_url_prefix):
+                            try:
+                                resp = requests.get(abs_url, timeout=10)
+                                if resp.status_code == 200 and resp.content:
+                                    remote_entries.append((filename, resp.content))
+                            except Exception as fetch_err:
+                                print(f"Error fetching audio from URL {abs_url}: {fetch_err}")
+                    except Exception as e:
+                        print(f"Error processing audio src {src}: {e}")
             except Exception as e:
                 print(f"Error parsing lesson content for audio: {e}")
-        
-        if not audio_files:
-             return Response(
+
+        if not audio_files and not remote_entries:
+            return Response(
                 {"detail": "No audio files found for this lesson."},
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -754,18 +791,38 @@ class LessonExportAudioView(APIView):
         buffer = io.BytesIO()
         try:
             with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                used_names = set()
+
+                def unique_name(name: str) -> str:
+                    if name not in used_names:
+                        used_names.add(name)
+                        return name
+                    base, ext = os.path.splitext(name)
+                    i = 2
+                    while True:
+                        candidate = f"{base}_{i}{ext}"
+                        if candidate not in used_names:
+                            used_names.add(candidate)
+                            return candidate
+                        i += 1
+
+                # Add DB-backed files
                 for audio in audio_files:
                     try:
-                        # Use the file name from the field
-                        file_name = os.path.basename(audio.file.name)
-                        
-                        # Read file content safely (works for local and S3)
+                        file_name = unique_name(os.path.basename(audio.file.name))
                         with audio.file.open('rb') as f:
                             file_content = f.read()
                             zip_file.writestr(file_name, file_content)
                     except Exception as e:
                         print(f"Error adding file {audio.id} to zip: {e}")
-                        # Continue with other files
+
+                # Add URL-fetched files
+                for name, content in remote_entries:
+                    try:
+                        file_name = unique_name(name)
+                        zip_file.writestr(file_name, content)
+                    except Exception as e:
+                        print(f"Error adding remote file {name} to zip: {e}")
         except Exception as e:
              return Response(
                 {"detail": f"Failed to create audio archive: {str(e)}"},
