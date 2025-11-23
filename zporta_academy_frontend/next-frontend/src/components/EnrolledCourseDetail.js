@@ -6,7 +6,7 @@ import Head from 'next/head';
 import { AuthContext } from '@/context/AuthContext';
 import apiClient from '@/api';
 import {
-  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, HelpCircle, ArrowUp, ArrowDown, Users, Share2, Menu, X, BookOpen, Eraser, Undo, Redo, Radio, Home, Square, Circle as CircleIcon, MessageSquare,
+  CheckCircle, ChevronDown, ChevronUp, Search, Sun, Moon, ArrowLeft, Loader2, AlertTriangle, Video, FileText, Download, HelpCircle, ArrowUp, ArrowDown, Users, Share2, Menu, X, BookOpen, Eraser, Undo, Redo, Radio, Home, Square, Circle as CircleIcon, MessageSquare, Music,
 } from 'lucide-react';
 import QuizCard from '@/components/QuizCard';
 import ShadowRootContainer from '@/components/common/ShadowRootContainer';
@@ -960,6 +960,53 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
               </div>
             )}
             
+            {/* PDF and Audio Download Section */}
+            <div className={lessonStyles.downloadSectionTop}>
+              <h3 className={lessonStyles.downloadTitle}>Export Lesson</h3>
+              <div className={lessonStyles.downloadButtons}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    stylerProps.onDownloadPDF?.(lesson.id);
+                  }}
+                  disabled={stylerProps.downloadingLessons?.[lesson.id]}
+                  className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
+                  aria-label="Download lesson as PDF"
+                >
+                  {stylerProps.downloadingLessons?.[lesson.id] === 'pdf' ? (
+                    <>
+                      <div className={lessonStyles.spinner} aria-hidden="true"></div>
+                      <span>Generating PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} /> PDF
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    stylerProps.onDownloadAudio?.(lesson.id);
+                  }}
+                  disabled={stylerProps.downloadingLessons?.[lesson.id]}
+                  className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
+                  aria-label="Download lesson audio files"
+                >
+                  {stylerProps.downloadingLessons?.[lesson.id] === 'audio' ? (
+                    <>
+                      <div className={lessonStyles.spinner} aria-hidden="true"></div>
+                      <span>Preparing Audio...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Music size={16} /> Audio
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {/* Meta info (creator + date + tags) */}
             <div className={lessonStyles.metaContainer}>
               <p className={lessonStyles.postMeta}>
@@ -1122,6 +1169,9 @@ function EnrolledCourseStudyPage() {
   const clearHighlightsRef = useRef(null);
   const clearNotesRef = useRef(null);
   const resetRef = useRef(null);
+  
+  // Download State
+  const [downloadingLessons, setDownloadingLessons] = useState({}); // { lessonId: 'pdf' | 'audio' }
 
   // --- Effects ---
 
@@ -1380,6 +1430,69 @@ function EnrolledCourseStudyPage() {
       }
     }
   }, []);
+  
+  // Download Handlers
+  const handleDownloadPDF = useCallback(async (lessonId) => {
+    if (downloadingLessons[lessonId]) return; // Already downloading
+    
+    setDownloadingLessons(prev => ({ ...prev, [lessonId]: 'pdf' }));
+    
+    try {
+      const response = await apiClient.get(`/lessons/${lessonId}/export-pdf/`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lesson-${lessonId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      alert('Failed to download PDF. Please try again.');
+    } finally {
+      setDownloadingLessons(prev => {
+        const updated = { ...prev };
+        delete updated[lessonId];
+        return updated;
+      });
+    }
+  }, [downloadingLessons]);
+
+  const handleDownloadAudio = useCallback(async (lessonId) => {
+    if (downloadingLessons[lessonId]) return; // Already downloading
+    
+    setDownloadingLessons(prev => ({ ...prev, [lessonId]: 'audio' }));
+    
+    try {
+      const response = await apiClient.get(`/lessons/${lessonId}/export-audio/`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lesson-${lessonId}-audio.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Audio download failed:', error);
+      alert('Failed to download audio files. Please try again.');
+    } finally {
+      setDownloadingLessons(prev => {
+        const updated = { ...prev };
+        delete updated[lessonId];
+        return updated;
+      });
+    }
+  }, [downloadingLessons]);
 
   const navigateSearchResults = useCallback((direction) => {
     if (searchMatches.length === 0) return;
@@ -1535,6 +1648,9 @@ function EnrolledCourseStudyPage() {
                     onClearHighlightsReady={(fn) => { clearHighlightsRef.current = fn; }}
                     onClearNotesReady={(fn) => { clearNotesRef.current = fn; }}
                     onResetReady={(fn) => { resetRef.current = fn; }}
+                    downloadingLessons={downloadingLessons}
+                    onDownloadPDF={handleDownloadPDF}
+                    onDownloadAudio={handleDownloadAudio}
                   />
                 ))}
                 
