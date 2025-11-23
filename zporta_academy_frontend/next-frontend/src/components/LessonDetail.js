@@ -69,6 +69,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [downloadingType, setDownloadingType] = useState(null); // Track which download is in progress
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [gateInfo, setGateInfo] = useState(null);
   const [accentColor, setAccentColor] = useState("#222E3B");
@@ -298,6 +299,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     if (!lessonData?.lesson?.id || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
+    setDownloadingType('pdf');
     try {
       // Call the backend PDF export endpoint
       const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-pdf/`, {
@@ -330,6 +332,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       }
     } finally {
       setIsSubmitting(false);
+      setDownloadingType(null);
     }
   };
 
@@ -337,6 +340,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     if (!lessonData?.lesson?.id || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
+    setDownloadingType('audio');
     try {
       const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-audio/`, {
         responseType: 'blob',
@@ -366,6 +370,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       }
     } finally {
       setIsSubmitting(false);
+      setDownloadingType(null);
     }
   };
 
@@ -477,6 +482,64 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       {/* messages */}
       {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
       {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
+
+      {/* owner actions: Edit & Download - moved to top */}
+      {isOwner && (
+        <div className={styles.lessonActionsTop}>
+          <Link
+            href={`/admin/lessons/${encodeURIComponent(lesson.permalink)}/edit`}
+            className={`${styles.btn} ${styles.btnSecondary} ${styles.editBtnTop}`}
+            title={isLocked ? "Locked" : "Edit Lesson"}
+            aria-disabled={isLocked ? "true" : "false"}
+            onClick={(e) => {
+              if (isLocked) e.preventDefault();
+            }}
+          >
+            <Pencil size={16} /> Edit
+          </Link>
+        </div>
+      )}
+
+      {/* Download section - moved to top for visibility */}
+      {(isEnrolled || !lesson.is_premium) && (
+        <div className={styles.downloadSectionTop}>
+          <h3 className={styles.downloadTitle}>Download this lesson</h3>
+          <div className={styles.downloadButtons}>
+            <button
+              onClick={handleDownloadPDF}
+              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+              title="Download as PDF"
+              disabled={isSubmitting}
+            >
+              {downloadingType === 'pdf' ? (
+                <>
+                  <span className={styles.spinner}></span> Preparing PDF...
+                </>
+              ) : (
+                <>
+                  <Download size={16} /> PDF
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleDownloadAudio}
+              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+              title="Download Audio (ZIP)"
+              disabled={isSubmitting}
+            >
+              {downloadingType === 'audio' ? (
+                <>
+                  <span className={styles.spinner}></span> Preparing Audio...
+                </>
+              ) : (
+                <>
+                  <Music size={16} /> Audio
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* video */}
       {lesson.video_url &&
@@ -614,31 +677,7 @@ ${sanitizeLessonCss(customCSS || "")}
         )}
       </div>
 
-      {/* Download section */}
-      {(isEnrolled || !lesson.is_premium) && (
-        <div className={styles.downloadSection}>
-          <h3 className={styles.downloadTitle}>Download this lesson</h3>
-          <div className={styles.downloadButtons}>
-            <button
-              onClick={handleDownloadPDF}
-              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
-              title="Download as PDF"
-              disabled={isSubmitting}
-            >
-              <Download size={16} /> PDF
-            </button>
-            <button
-              onClick={handleDownloadAudio}
-              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
-              title="Download Audio (ZIP)"
-              disabled={isSubmitting}
-              style={{ marginLeft: '10px' }}
-            >
-              <Music size={16} /> Audio
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Download section - REMOVED from here, now at top */}
 
       {/* completion */}
       {isEnrolled && !isCompleted && (
@@ -653,17 +692,6 @@ ${sanitizeLessonCss(customCSS || "")}
       {/* owner actions: Edit -> route to admin editor; Delete stays */}
       {isOwner && (
         <div className={styles.lessonActions}>
-          <Link
-            href={`/admin/lessons/${encodeURIComponent(lesson.permalink)}/edit`}
-            className={styles.editBtn}
-            title={isLocked ? "Locked" : "Edit"}
-            aria-disabled={isLocked ? "true" : "false"}
-            onClick={(e) => {
-              if (isLocked) e.preventDefault();
-            }}
-          >
-            <Pencil size={18} /> <span>Edit</span>
-          </Link>
           <button className={styles.deleteBtn} onClick={handleDeleteLesson} disabled={isLocked || isSubmitting} title={isLocked ? "Locked" : "Delete"}>
             <Trash2 size={18} /> <span>{confirmingDelete ? "Confirm!" : "Delete"}</span>
           </button>

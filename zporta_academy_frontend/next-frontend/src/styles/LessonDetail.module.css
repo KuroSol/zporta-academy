@@ -459,17 +459,66 @@
   border: 1px solid var(--zporta-border-light, #dee2e6);
 }
 
+/* New top sections for owner actions and downloads */
+.lessonActionsTop {
+  margin: 20px 0;
+  padding: 15px;
+  background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+  border: 1px solid var(--zporta-warning-border, #ffecb5);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.editBtnTop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--zporta-warning-btn-bg, #ffc107);
+  color: #000;
+  border: 1px solid var(--zporta-warning-btn-bg, #ffc107);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.editBtnTop:hover {
+  background: #ffca2c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.editBtnTop[aria-disabled="true"] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.downloadSectionTop {
+  margin: 20px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #e7f3fe 0%, #d4e9ff 100%);
+  border: 1px solid var(--zporta-info-border, #bde0fe);
+  border-radius: 8px;
+}
+
 .downloadTitle {
   margin: 0 0 15px 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--zporta-text-main, #333);
+  text-align: center;
 }
 
 .downloadButtons {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .downloadBtn {
@@ -481,11 +530,33 @@
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
+  min-width: 140px;
+  justify-content: center;
 }
 
-.downloadBtn:hover {
+.downloadBtn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.downloadBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* Spinner animation for download progress */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* -----------------------------------------
