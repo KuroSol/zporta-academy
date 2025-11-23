@@ -891,6 +891,18 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
       return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(iso));
     } catch { return ''; }
   }, []);
+  
+  // Capture lesson.id at render time to avoid stale closures
+  const currentLessonId = lesson.id;
+  const handlePDFClick = useCallback((e) => {
+    e.stopPropagation();
+    stylerProps.onDownloadPDF?.(currentLessonId);
+  }, [currentLessonId, stylerProps.onDownloadPDF]);
+  
+  const handleAudioClick = useCallback((e) => {
+    e.stopPropagation();
+    stylerProps.onDownloadAudio?.(currentLessonId);
+  }, [currentLessonId, stylerProps.onDownloadAudio]);
 
   return (
     <section id={`lesson-${lesson.id}`} className={styles.lessonSection} aria-labelledby={`lesson-title-${lesson.id}`}>
@@ -965,15 +977,12 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
               <h3 className={lessonStyles.downloadTitle}>Export Lesson</h3>
               <div className={lessonStyles.downloadButtons}>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    stylerProps.onDownloadPDF?.(lesson.id);
-                  }}
-                  disabled={stylerProps.downloadingLessons?.[lesson.id]}
+                  onClick={handlePDFClick}
+                  disabled={stylerProps.downloadingLessons?.[currentLessonId]}
                   className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
                   aria-label="Download lesson as PDF"
                 >
-                  {stylerProps.downloadingLessons?.[lesson.id] === 'pdf' ? (
+                  {stylerProps.downloadingLessons?.[currentLessonId] === 'pdf' ? (
                     <>
                       <div className={lessonStyles.spinner} aria-hidden="true"></div>
                       <span>Generating PDF...</span>
@@ -985,15 +994,12 @@ const LessonSection = ({ lesson, isCompleted, completedAt, isOpen, onToggle, onM
                   )}
                 </button>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    stylerProps.onDownloadAudio?.(lesson.id);
-                  }}
-                  disabled={stylerProps.downloadingLessons?.[lesson.id]}
+                  onClick={handleAudioClick}
+                  disabled={stylerProps.downloadingLessons?.[currentLessonId]}
                   className={`${lessonStyles.btn} ${lessonStyles.btnSecondary} ${lessonStyles.downloadBtn}`}
                   aria-label="Download lesson audio files"
                 >
-                  {stylerProps.downloadingLessons?.[lesson.id] === 'audio' ? (
+                  {stylerProps.downloadingLessons?.[currentLessonId] === 'audio' ? (
                     <>
                       <div className={lessonStyles.spinner} aria-hidden="true"></div>
                       <span>Preparing Audio...</span>
