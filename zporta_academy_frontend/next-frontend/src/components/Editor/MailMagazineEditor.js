@@ -32,19 +32,59 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       html.style.height = '100%';
       body.style.overflowY = 'hidden';
       body.style.height = '100%';
+      const scrollBarWidth = window.innerWidth - html.clientWidth;
+      if (scrollBarWidth > 0) body.style.paddingRight = scrollBarWidth + 'px';
     } else {
       html.style.overflowY = '';
       html.style.height = '';
       body.style.overflowY = '';
       body.style.height = '';
+      body.style.paddingRight = '';
     }
     return () => {
       html.style.overflowY = '';
       html.style.height = '';
       body.style.overflowY = '';
       body.style.height = '';
+      body.style.paddingRight = '';
     };
   }, [showLinkModal, showPlatformLinkModal]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showPlatformLinkModal) setShowPlatformLinkModal(false);
+        if (showLinkModal) setShowLinkModal(false);
+      }
+      if (e.key === 'Tab' && (showPlatformLinkModal || showLinkModal)) {
+        const modal = document.querySelector(`.${styles.modalContent}`);
+        if (!modal) return;
+        const focusables = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    if (showPlatformLinkModal || showLinkModal) {
+      setTimeout(() => {
+        const modal = document.querySelector(`.${styles.modalContent}`);
+        if (modal) {
+          const firstInput = modal.querySelector('input, button, select, textarea');
+          if (firstInput) firstInput.focus();
+        }
+      }, 10);
+    }
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showPlatformLinkModal, showLinkModal]);
 
   useEffect(() => {
     if (initialContent && editorRef.current) {
