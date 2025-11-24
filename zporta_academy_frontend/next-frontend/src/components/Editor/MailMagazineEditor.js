@@ -168,7 +168,13 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     if (showPlatformLinkModal) {
       setSearchQuery('');
       setPlatformItems([]);
+      setSelectedItem(null);
       loadUserOwnItems();
+    } else {
+      // Clear all items when modal closes
+      setUserOwnItems([]);
+      setPlatformItems([]);
+      setSelectedItem(null);
     }
   }, [showPlatformLinkModal, platformLinkType, loadUserOwnItems]);
 
@@ -176,6 +182,9 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     if (searchQuery.length >= 2) {
       const timer = setTimeout(() => searchPlatformItems(searchQuery), 300);
       return () => clearTimeout(timer);
+    } else if (searchQuery.length === 0) {
+      // Clear search results when search is cleared
+      setPlatformItems([]);
     }
   }, [searchQuery, searchPlatformItems]);
 
@@ -444,7 +453,8 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
                 <p className={styles.emptyText}>Loading...</p>
               ) : (
                 <>
-                  {userOwnItems.length > 0 && (
+                  {/* Show user's own items only when NOT searching */}
+                  {searchQuery.length < 2 && userOwnItems.length > 0 && (
                     <>
                       <h4 className={styles.sectionHeader}>Your {platformLinkType}s</h4>
                       {userOwnItems.map((item) => (
@@ -461,6 +471,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
                     </>
                   )}
                   
+                  {/* Show search results only when searching */}
                   {searchQuery.length >= 2 && platformItems.length > 0 && (
                     <>
                       <h4 className={styles.sectionHeader}>Search Results</h4>
