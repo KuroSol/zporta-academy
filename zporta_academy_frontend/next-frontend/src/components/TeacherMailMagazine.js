@@ -55,6 +55,31 @@ const TeacherMailMagazine = () => {
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [analyticsData, setAnalyticsData] = useState(null);
 
+  // Lock background scroll when any overlay modal is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const html = document.documentElement;
+    const body = document.body;
+    const modalActive = showDetailModal || showRecipientsModal || showAnalyticsModal;
+    if (modalActive) {
+      html.style.overflowY = 'hidden';
+      html.style.height = '100%';
+      body.style.overflowY = 'hidden';
+      body.style.height = '100%';
+    } else {
+      html.style.overflowY = '';
+      html.style.height = '';
+      body.style.overflowY = '';
+      body.style.height = '';
+    }
+    return () => {
+      html.style.overflowY = '';
+      html.style.height = '';
+      body.style.overflowY = '';
+      body.style.height = '';
+    };
+  }, [showDetailModal, showRecipientsModal, showAnalyticsModal]);
+
   const loadMagazines = useCallback(async () => {
     setListLoading(true);
     setFeedback((prev) => (prev.type === 'error' ? prev : { type: '', message: '' }));

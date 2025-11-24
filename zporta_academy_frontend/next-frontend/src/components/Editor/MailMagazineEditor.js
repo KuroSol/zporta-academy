@@ -21,6 +21,31 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingItems, setLoadingItems] = useState(false);
 
+  // Lock background scroll when any editor modal is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const html = document.documentElement;
+    const body = document.body;
+    const modalActive = showLinkModal || showPlatformLinkModal;
+    if (modalActive) {
+      html.style.overflowY = 'hidden';
+      html.style.height = '100%';
+      body.style.overflowY = 'hidden';
+      body.style.height = '100%';
+    } else {
+      html.style.overflowY = '';
+      html.style.height = '';
+      body.style.overflowY = '';
+      body.style.height = '';
+    }
+    return () => {
+      html.style.overflowY = '';
+      html.style.height = '';
+      body.style.overflowY = '';
+      body.style.height = '';
+    };
+  }, [showLinkModal, showPlatformLinkModal]);
+
   useEffect(() => {
     if (initialContent && editorRef.current) {
       editorRef.current.innerHTML = initialContent;
