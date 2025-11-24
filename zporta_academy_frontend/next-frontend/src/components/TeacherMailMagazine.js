@@ -49,11 +49,13 @@ const TeacherMailMagazine = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRecipientsModal, setShowRecipientsModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [recipientGroups, setRecipientGroups] = useState([]);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [previewHtml, setPreviewHtml] = useState('');
 
   // Lock background scroll when any overlay modal is open
   useEffect(() => {
@@ -82,7 +84,7 @@ const TeacherMailMagazine = () => {
       body.style.height = '';
       body.style.paddingRight = '';
     };
-  }, [showDetailModal, showRecipientsModal, showAnalyticsModal]);
+  }, [showDetailModal, showRecipientsModal, showAnalyticsModal, showPreviewModal]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -92,7 +94,7 @@ const TeacherMailMagazine = () => {
         if (showRecipientsModal) setShowRecipientsModal(false);
         if (showAnalyticsModal) setShowAnalyticsModal(false);
       }
-      if (e.key === 'Tab' && (showDetailModal || showRecipientsModal || showAnalyticsModal)) {
+      if (e.key === 'Tab' && (showDetailModal || showRecipientsModal || showAnalyticsModal || showPreviewModal)) {
         const modal = document.querySelector('.'+styles.modalContent);
         if (!modal) return;
         const focusables = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -109,7 +111,7 @@ const TeacherMailMagazine = () => {
       }
     };
     document.addEventListener('keydown', handleKey);
-    if (showDetailModal || showRecipientsModal || showAnalyticsModal) {
+    if (showDetailModal || showRecipientsModal || showAnalyticsModal || showPreviewModal) {
       setTimeout(() => {
         const modal = document.querySelector('.'+styles.modalContent);
         if (modal) {
@@ -119,7 +121,7 @@ const TeacherMailMagazine = () => {
       }, 10);
     }
     return () => document.removeEventListener('keydown', handleKey);
-  }, [showDetailModal, showRecipientsModal, showAnalyticsModal]);
+  }, [showDetailModal, showRecipientsModal, showAnalyticsModal, showPreviewModal]);
 
   const loadMagazines = useCallback(async () => {
     setListLoading(true);
@@ -137,6 +139,30 @@ const TeacherMailMagazine = () => {
       setListLoading(false);
     }
   }, []);
+
+  // Build full email preview wrapper
+  const buildPreviewHtml = (bodyHtml, subject) => {
+    const safeBody = bodyHtml || '<p>(No content yet)</p>';
+    const safeSubject = subject || 'Untitled Mail Magazine';
+    return `
+    <table role="presentation" width="100%" style="background:#0b1523;padding:24px 0;">
+      <tr><td align="center">
+        <table role="presentation" width="600" style="width:600px;max-width:600px;background:#142233;color:#ffffff;font-family:Segoe UI,Arial,sans-serif;border-radius:8px;overflow:hidden;">
+          <tr><td style="padding:24px 32px;background:#0b1523;border-bottom:1px solid #1f2e40;">
+            <h1 style="margin:0;font-size:24px;color:#ffb703;">${safeSubject}</h1>
+            <p style="margin:8px 0 0;font-size:14px;color:#94a3b8;">Preview of your mail magazine</p>
+          </td></tr>
+          <tr><td style="padding:32px;line-height:1.6;font-size:16px;">
+            ${safeBody}
+          </td></tr>
+          <tr><td style="padding:24px 32px;background:#0b1523;border-top:1px solid #1f2e40;font-size:12px;color:#94a3b8;">
+            <p style="margin:0 0 8px;">You are receiving this because you subscribed to ${user?.username || 'your guide'}'s mail magazine.</p>
+            <p style="margin:0;">Manage preferences or unsubscribe: <a href="https://zportaacademy.com/preferences/mail-magazines" style="color:#ffb703;">Click here</a></p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>`;
+  };
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -680,6 +706,18 @@ const TeacherMailMagazine = () => {
                   type="button"
                   className={styles.secondaryButton}
                   onClick={() => {
+                    // Generate preview content from current editor state
+                    const currentHtml = editorRef.current?.getContent?.() || '';
+                    setPreviewHtml(buildPreviewHtml(currentHtml, formState.subject));
+                    setShowPreviewModal(true);
+                  }}
+                >
+                  <FaEye /> Preview
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => {
                     setActiveView('list');
                     setEditingId(null);
                     setFormState(initialForm);
@@ -950,6 +988,38 @@ const TeacherMailMagazine = () => {
                     To enable full analytics, integrate an Email Service Provider with webhook support.
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPreviewModal && (
+          <div className={styles.modal} onClick={() => setShowPreviewModal(false)}>
+            <div 
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="preview-modal-title"
+            >
+              <div className={styles.modalHeader}>
+                <h2 id="preview-modal-title">Email Preview</h2>
+                <button className={styles.closeButton} onClick={() => setShowPreviewModal(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.previewContainer}>
+                  <iframe
+                    title="email-preview"
+                    style={{width:'100%',minHeight:'400px',border:'1px solid #1f2e40',borderRadius:'6px',background:'#ffffff'}}
+                    sandbox="allow-same-origin"
+                    srcDoc={previewHtml}
+                  />
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                <button className={styles.secondaryButton} onClick={() => setShowPreviewModal(false)}>Close</button>
               </div>
             </div>
           </div>
