@@ -49,12 +49,15 @@ class ProfileSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True, format="%Y-%m-%d")
     profile_image_url = serializers.SerializerMethodField()
     display_name = serializers.CharField(required=False, allow_blank=True, max_length=60)
+    is_staff = serializers.BooleanField(source="user.is_staff", read_only=True)
+    is_superuser = serializers.BooleanField(source="user.is_superuser", read_only=True)
 
     class Meta:
         model = Profile
         fields = [
             "user_id", "username", "email", "first_name", "last_name", "date_joined",
-            "display_name", "role", "bio", "active_guide", "profile_image", "profile_image_url"
+            "display_name", "role", "bio", "active_guide", "profile_image", "profile_image_url",
+            "is_staff", "is_superuser"
         ]
         extra_kwargs = {
             "profile_image": {"required": False, "allow_null": True},

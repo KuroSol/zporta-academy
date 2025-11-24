@@ -256,7 +256,17 @@
   color: var(--text-light);
 }
 .publicProfileBtn:hover {
-   background-color: lighten(var(--primary-dark), 10%);
+   background-color: #2a3f5f; /* Slightly lighter than primary-dark */
+}
+.mailMagazineBtn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mailMagazineBtn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 .changePasswordBtn {
   background-color: var(--primary-accent);
