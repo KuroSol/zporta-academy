@@ -2,7 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, BasePermission
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
 from .models import TeacherMailMagazine
@@ -77,14 +78,31 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        try:
-            send_mail(
-                subject=magazine.subject,
-                message=magazine.body,
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=recipient_emails,
-                fail_silently=False,
-            )
+                try:
+                        raw_html = magazine.body or ''
+                        # Build minimal wrapper to ensure proper HTML rendering
+                        html_wrapper = f"""
+                        <html>
+                            <body style='background:#0b1523;margin:0;padding:24px;font-family:Segoe UI,Arial,sans-serif;color:#ffffff;'>
+                                <div style='max-width:600px;margin:0 auto;background:#142233;padding:32px;border-radius:8px;'>
+                                    {raw_html}
+                                    <hr style='border:none;border-top:1px solid #1f2e40;margin:32px 0;' />
+                                    <p style='font-size:12px;color:#94a3b8;margin:0;'>You are receiving this because you subscribed to this teacher's mail magazine.</p>
+                                    <p style='font-size:12px;color:#94a3b8;margin:8px 0 0;'>Manage preferences: <a href='https://zportaacademy.com/preferences/mail-magazines' style='color:#ffb703;'>Click here</a></p>
+                                </div>
+                            </body>
+                        </html>
+                        """.strip()
+                        plain_text = BeautifulSoup(raw_html, 'html.parser').get_text(separator='\n', strip=True)
+                        email = EmailMultiAlternatives(
+                                subject=magazine.subject,
+                                body=plain_text,
+                                from_email=settings.EMAIL_HOST_USER,
+                                to=[],
+                                bcc=recipient_emails,
+                        )
+                        email.attach_alternative(html_wrapper, "text/html")
+                        email.send(fail_silently=False)
             
             # Update last sent timestamp and increment counter
             magazine.last_sent_at = timezone.now()
