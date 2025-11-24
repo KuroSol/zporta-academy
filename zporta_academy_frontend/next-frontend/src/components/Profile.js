@@ -5,7 +5,7 @@ import { quizPermalinkToUrl } from "@/utils/urls";
 import { 
   FaEdit, FaChevronDown, FaSpinner, FaBookOpen, 
   FaQuestionCircle, FaChalkboardTeacher, FaCamera,
-  FaBookReader, FaAward 
+  FaBookReader, FaAward, FaEnvelope
 } from "react-icons/fa";
 import { AuthContext } from "@/context/AuthContext";
 import apiClient from "@/api";
@@ -479,6 +479,15 @@ const Profile = () => {
               </div>
 
               <Link href={`/guide/${profile.username}`} className={`${styles.sidebarButton} ${styles.publicProfileBtn}`}> View Public Profile </Link>
+              
+              {/* Mail Magazine Button - Only for teachers/admins */}
+              {(profile.role === 'guide' || profile.role === 'both' || profile.is_staff || profile.is_superuser) && (
+                <Link href="/mail-magazine" className={`${styles.sidebarButton} ${styles.mailMagazineBtn}`}>
+                  <FaEnvelope size={16} style={{ marginRight: '0.5rem' }} />
+                  Mail Magazine
+                </Link>
+              )}
+              
               <button onClick={toggleChangePasswordForm} className={`${styles.sidebarButton} ${styles.changePasswordBtn}`}>
                 {showChangePassword ? 'Cancel Password Change' : 'Change Password'}
               </button>
