@@ -70,6 +70,7 @@ const MailMagazine = () => {
     }
 
     fetchMailMagazines();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user]);
 
   const handleInputChange = (e) => {
