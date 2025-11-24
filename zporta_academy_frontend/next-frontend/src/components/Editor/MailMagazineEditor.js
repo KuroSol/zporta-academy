@@ -269,7 +269,9 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
         icon = '📚';
         break;
       case 'course':
-        url = `/courses/${selectedItem.user_username}/${selectedItem.date}/${selectedItem.subject}/${selectedItem.permalink}`;
+        // Course permalink already encodes username/date/subject/title.
+        // Use it directly to avoid undefined segments and duplication.
+        url = `/courses/${selectedItem.permalink}`;
         icon = '🎓';
         break;
       case 'quiz':
