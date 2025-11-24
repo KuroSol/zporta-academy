@@ -72,7 +72,8 @@ INSTALLED_APPS = [
     'channels',
     'feed',
     'explorer',
-    'django.contrib.sitemaps', 
+    'django.contrib.sitemaps',
+    'mailmagazine',
 ]
 
 ASGI_APPLICATION = 'zporta.asgi.application'
@@ -155,6 +156,15 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None) # Your full Google Workspace email (e.g., user@yourdomain.com)
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None) # The 16-character App Password you generated
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.com') # Should be the same as EMAIL_HOST_USER for best results
+
+# Fallback: if credentials are missing in local dev, switch to console backend to avoid SMTP errors.
+if (not EMAIL_HOST_USER) or (not EMAIL_HOST_PASSWORD) or EMAIL_HOST_PASSWORD == '':
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print('⚠️  Email credentials missing; using console backend (emails will print to terminal).')
+else:
+    # Ensure app password format (no spaces) to reduce common mistakes; warn if spaces present.
+    if ' ' in EMAIL_HOST_PASSWORD:
+        print('⚠️  EMAIL_HOST_PASSWORD contains spaces. Remove spaces from your 16-character Gmail App Password.')
 
 
 AUTH_PASSWORD_VALIDATORS = [
