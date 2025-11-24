@@ -1,9 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { AuthContext } from '@/context/AuthContext';
 import apiClient from '@/api';
 import styles from '@/styles/TeacherMailMagazine.module.css';
+import MailMagazineEditor from './Editor/MailMagazineEditor';
 import { 
   FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
   FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt
@@ -34,6 +35,7 @@ const initialForm = {
 const TeacherMailMagazine = () => {
   const { user, loading } = useContext(AuthContext);
   const router = useRouter();
+  const editorRef = useRef(null);
 
   const [magazines, setMagazines] = useState([]);
   const [listLoading, setListLoading] = useState(true);
@@ -165,7 +167,11 @@ const TeacherMailMagazine = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!formState.title.trim() || !formState.subject.trim() || !formState.body.trim()) {
+    
+    // Get content from rich text editor
+    const editorContent = editorRef.current?.getContent() || '';
+    
+    if (!formState.title.trim() || !formState.subject.trim() || !editorContent.trim()) {
       setFeedback({ type: 'error', message: 'Title, subject, and body are required.' });
       return;
     }
@@ -175,7 +181,7 @@ const TeacherMailMagazine = () => {
       const payload = {
         title: formState.title.trim(),
         subject: formState.subject.trim(),
-        body: formState.body.trim(),
+        body: editorContent.trim(),
         frequency: formState.frequency,
         is_active: formState.is_active,
       };
@@ -194,6 +200,7 @@ const TeacherMailMagazine = () => {
       }
       
       setFormState(initialForm);
+      editorRef.current?.clear();
       setActiveView('list');
       await loadMagazines();
       await loadTemplates();
@@ -214,6 +221,10 @@ const TeacherMailMagazine = () => {
       send_at: magazine.send_at ? new Date(magazine.send_at).toISOString().slice(0, 16) : '',
       is_active: magazine.is_active,
     });
+    // Load content into editor
+    setTimeout(() => {
+      editorRef.current?.setContent(magazine.body || '');
+    }, 100);
     setEditingId(magazine.id);
     setActiveView('compose');
   };
@@ -239,6 +250,10 @@ const TeacherMailMagazine = () => {
       send_at: '',
       is_active: true,
     });
+    // Load template content into editor
+    setTimeout(() => {
+      editorRef.current?.setContent(template.body || '');
+    }, 100);
     setEditingId(null);
     setActiveView('compose');
     setFeedback({ type: 'success', message: 'Template loaded! Customize and save.' });
@@ -450,7 +465,7 @@ const TeacherMailMagazine = () => {
                     </div>
 
                     <p className={styles.cardBodyPreview}>
-                      {magazine.body?.slice(0, 120)}
+                      {magazine.body?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}
                       {magazine.body?.length > 120 ? '...' : ''}
                     </p>
 
@@ -553,15 +568,7 @@ const TeacherMailMagazine = () => {
 
               <label className={styles.formLabel}>
                 Message Body *
-                <textarea
-                  name="body"
-                  value={formState.body}
-                  onChange={handleChange}
-                  rows={12}
-                  placeholder="Write your message here. You can include announcements, lesson updates, encouragement, or resources."
-                  className={styles.textarea}
-                  required
-                />
+                <MailMagazineEditor ref={editorRef} />
               </label>
 
               <div className={styles.inlineFields}>
@@ -610,6 +617,7 @@ const TeacherMailMagazine = () => {
                     setActiveView('list');
                     setEditingId(null);
                     setFormState(initialForm);
+                    editorRef.current?.clear();
                   }}
                 >
                   Cancel
@@ -646,7 +654,7 @@ const TeacherMailMagazine = () => {
                     </div>
                     <p className={styles.templateSubject}>{template.subject}</p>
                     <p className={styles.templateBody}>
-                      {template.body?.slice(0, 100)}
+                      {template.body?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)}
                       {template.body?.length > 100 ? '...' : ''}
                     </p>
                     <button
@@ -710,7 +718,10 @@ const TeacherMailMagazine = () => {
                 </div>
                 <div className={styles.detailSection}>
                   <strong>Message Body:</strong>
-                  <div className={styles.bodyPreview}>{selectedMagazine.body}</div>
+                  <div 
+                    className={styles.bodyPreview}
+                    dangerouslySetInnerHTML={{ __html: selectedMagazine.body }}
+                  />
                 </div>
               </div>
             </div>
