@@ -204,7 +204,8 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       let endpoint = '';
       switch (platformLinkType) {
         case 'lesson':
-          endpoint = '/lessons/?my_lessons=true';
+          // Use dedicated user lessons endpoint which includes permalink
+          endpoint = '/lessons/my/';
           break;
         case 'course':
           endpoint = '/courses/my/';
@@ -265,13 +266,11 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     
     switch (platformLinkType) {
       case 'lesson':
-        // Use permalink provided by API; it encodes username/subject/date/slug
-        if (selectedItem.permalink) {
-          url = `/lessons/${selectedItem.permalink}`;
-        } else {
-          // Fallback legacy construction only if fields exist
-          url = `/lessons/${selectedItem.user_username || ''}/${selectedItem.subject || ''}/${selectedItem.date || ''}/${selectedItem.slug || ''}`;
+        if (!selectedItem.permalink) {
+          alert('This lesson item is missing a permalink and cannot be linked. Please refresh the list.');
+          return;
         }
+        url = `/lessons/${selectedItem.permalink}`;
         icon = '📚';
         break;
       case 'course':
