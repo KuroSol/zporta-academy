@@ -280,7 +280,11 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
         icon = '🎓';
         break;
       case 'quiz':
-        url = `/quizzes/${selectedItem.user_username}/${selectedItem.subject}/${selectedItem.date}/${selectedItem.slug}`;
+        if (!selectedItem.permalink) {
+          alert('This quiz item is missing a permalink and cannot be linked. Please refresh the list.');
+          return;
+        }
+        url = `/quizzes/${selectedItem.permalink}`;
         icon = '📋';
         break;
       case 'post':
