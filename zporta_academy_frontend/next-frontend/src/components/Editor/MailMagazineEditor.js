@@ -265,7 +265,13 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     
     switch (platformLinkType) {
       case 'lesson':
-        url = `/lessons/${selectedItem.user_username}/${selectedItem.subject}/${selectedItem.date}/${selectedItem.slug}`;
+        // Use permalink provided by API; it encodes username/subject/date/slug
+        if (selectedItem.permalink) {
+          url = `/lessons/${selectedItem.permalink}`;
+        } else {
+          // Fallback legacy construction only if fields exist
+          url = `/lessons/${selectedItem.user_username || ''}/${selectedItem.subject || ''}/${selectedItem.date || ''}/${selectedItem.slug || ''}`;
+        }
         icon = '📚';
         break;
       case 'course':

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.contrib import messages
 from django.utils.html import format_html
@@ -152,13 +153,17 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
                 continue
             
             try:
-                email = EmailMessage(
+                # Prepare HTML + plain text alternative for better deliverability
+                html_body = magazine.body or ''
+                plain_body = BeautifulSoup(html_body, 'html.parser').get_text(separator='\n', strip=True)
+                email = EmailMultiAlternatives(
                     subject=magazine.subject,
-                    body=magazine.body,
+                    body=plain_body,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     to=[settings.DEFAULT_FROM_EMAIL],
                     bcc=recipient_emails,
                 )
+                email.attach_alternative(html_body, "text/html")
                 email.send(fail_silently=False)
                 magazine.last_sent_at = timezone.now()
                 magazine.save(update_fields=['last_sent_at'])
