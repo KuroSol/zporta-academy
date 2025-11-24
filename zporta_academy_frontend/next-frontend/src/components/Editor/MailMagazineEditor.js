@@ -497,8 +497,14 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       {/* Platform Link Modal */}
       {showPlatformLinkModal && (
         <div className={styles.modal} onClick={() => setShowPlatformLinkModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>
+          <div 
+            className={styles.modalContent} 
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="platform-link-modal-title"
+          >
+            <h3 id="platform-link-modal-title">
               {platformLinkType === 'lesson' && <><FaBook /> Link to Lesson</>}
               {platformLinkType === 'course' && <><FaGraduationCap /> Link to Course</>}
               {platformLinkType === 'quiz' && <><FaClipboardCheck /> Link to Quiz</>}

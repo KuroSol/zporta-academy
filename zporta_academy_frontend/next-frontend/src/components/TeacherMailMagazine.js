@@ -738,9 +738,15 @@ const TeacherMailMagazine = () => {
 
         {showDetailModal && selectedMagazine && (
           <div className={styles.modal} onClick={closeModals}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div 
+              className={styles.modalContent} 
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="detail-modal-title"
+            >
               <div className={styles.modalHeader}>
-                <h2>Magazine Details</h2>
+                <h2 id="detail-modal-title">Magazine Details</h2>
                 <button className={styles.closeButton} onClick={closeModals}>
                   <FaTimes />
                 </button>
@@ -796,9 +802,15 @@ const TeacherMailMagazine = () => {
 
         {showRecipientsModal && selectedMagazine && (
           <div className={styles.modal} onClick={closeModals}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div 
+              className={styles.modalContent} 
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="recipients-modal-title"
+            >
               <div className={styles.modalHeader}>
-                <h2>
+                <h2 id="recipients-modal-title">
                   <FaUsers /> Recipient Management
                 </h2>
                 <button className={styles.closeButton} onClick={closeModals}>
@@ -885,9 +897,15 @@ const TeacherMailMagazine = () => {
 
         {showAnalyticsModal && selectedMagazine && analyticsData && (
           <div className={styles.modal} onClick={closeModals}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div 
+              className={styles.modalContent} 
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="analytics-modal-title"
+            >
               <div className={styles.modalHeader}>
-                <h2>
+                <h2 id="analytics-modal-title">
                   <FaChartLine /> Analytics & Statistics
                 </h2>
                 <button className={styles.closeButton} onClick={closeModals}>
