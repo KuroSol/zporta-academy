@@ -36,7 +36,7 @@ const EnrolledCourses = () => {
 
       try {
         // Use apiClient.get - Auth handled automatically
-        const response = await apiClient.get('/enrollments/user/');
+        const response = await apiClient.get('/enrollment/user/');
 
         // Axios data is in response.data
         if (response.data && Array.isArray(response.data)) {

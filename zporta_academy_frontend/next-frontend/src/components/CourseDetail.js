@@ -293,7 +293,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             return; 
         }
         try {
-            const res = await apiClient.get("/enrollments/user/");
+            const res = await apiClient.get("/enrollment/user/");
             const enrollment = res.data?.find(e => e.enrollment_type === "course" && e.object_id === courseId);
             if (enrollment) {
                 setEnrolled(true);
@@ -488,7 +488,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             }
         } else { // Free course
             try {
-                await apiClient.post("/enrollments/", { object_id: course.id, enrollment_type: "course" });
+                await apiClient.post("/enrollment/", { object_id: course.id, enrollment_type: "course" });
                 setEnrolled(true);
                 showMessage("Successfully enrolled!", "success");
             } catch (err) {

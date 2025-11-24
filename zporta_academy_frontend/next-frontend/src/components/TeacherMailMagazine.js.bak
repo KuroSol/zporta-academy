@@ -1,0 +1,418 @@
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { AuthContext } from '@/context/AuthContext';
+import apiClient from '@/api';
+import styles from '@/styles/TeacherMailMagazine.module.css';
+import { 
+  FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
+  FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt
+} from 'react-icons/fa';
+
+const FREQUENCY_OPTIONS = [
+  { value: 'one_time', label: 'One time' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+const hasTeacherAccess = (profile) => {
+  if (!profile) return false;
+  const role = profile.role || profile.profile?.role;
+  return role === 'guide' || role === 'both' || Boolean(profile.is_staff);
+};
+
+const initialForm = {
+  title: '',
+  subject: '',
+  body: '',
+  frequency: 'one_time',
+  send_at: '',
+  is_active: true,
+};
+
+const TeacherMailMagazine = () => {
+  const { user, loading } = useContext(AuthContext);
+  const router = useRouter();
+
+  const [magazines, setMagazines] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [formState, setFormState] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  // New state for modals and features
+  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'templates'
+  const [selectedMagazine, setSelectedMagazine] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showRecipientsModal, setShowRecipientsModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [recipientGroups, setRecipientGroups] = useState([]);
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
+
+  const loadMagazines = useCallback(async () => {
+    setListLoading(true);
+    setFeedback((prev) => (prev.type === 'error' ? prev : { type: '', message: '' }));
+    try {
+      const { data } = await apiClient.get('/teacher-mail-magazines/');
+      const ordered = (data || []).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setMagazines(ordered);
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Unable to load your mail magazines.';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get('/teacher-mail-magazines/');
+      const templateList = data.filter(mag => mag.is_active && mag.frequency !== 'one_time');
+      setTemplates(templateList);
+    } catch (error) {
+      console.error('Failed to load templates:', error);
+    }
+  }, []);
+
+  const loadRecipientGroups = useCallback(async () => {
+    try {
+      // Fetch enrolled students for the teacher's courses
+      const { data } = await apiClient.get('/users/profile/');
+      setRecipientGroups([
+        { id: 'all', name: 'All Students', count: 0 },
+        { id: 'enrolled', name: 'Enrolled in My Courses', count: 0 },
+      ]);
+    } catch (error) {
+      console.error('Failed to load recipient groups:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    if (!hasTeacherAccess(user)) {
+      router.replace('/profile');
+      return;
+    }
+    loadMagazines();
+    loadTemplates();
+    loadRecipientGroups();
+  }, [loading, user, router, loadMagazines, loadTemplates, loadRecipientGroups]);
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormState((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!formState.title.trim() || !formState.subject.trim() || !formState.body.trim()) {
+      setFeedback({ type: 'error', message: 'Title, subject, and body are required.' });
+      return;
+    }
+    setSubmitting(true);
+    setFeedback({ type: '', message: '' });
+    try {
+      const payload = {
+        title: formState.title.trim(),
+        subject: formState.subject.trim(),
+        body: formState.body.trim(),
+        frequency: formState.frequency,
+        is_active: formState.is_active,
+      };
+      if (formState.send_at) {
+        const date = new Date(formState.send_at);
+        if (!Number.isNaN(date.getTime())) payload.send_at = date.toISOString();
+      }
+      
+      if (editingId) {
+        await apiClient.put(`/teacher-mail-magazines/${editingId}/`, payload);
+        setFeedback({ type: 'success', message: 'Mail magazine updated successfully!' });
+        setEditingId(null);
+      } else {
+        await apiClient.post('/teacher-mail-magazines/', payload);
+        setFeedback({ type: 'success', message: 'Mail magazine saved. You can send it from the admin when ready.' });
+      }
+      
+      setFormState(initialForm);
+      setActiveView('list');
+      await loadMagazines();
+      await loadTemplates();
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Unable to save mail magazine. Please try again.';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (magazine) => {
+    setFormState({
+      title: magazine.title,
+      subject: magazine.subject,
+      body: magazine.body,
+      frequency: magazine.frequency,
+      send_at: magazine.send_at ? new Date(magazine.send_at).toISOString().slice(0, 16) : '',
+      is_active: magazine.is_active,
+    });
+    setEditingId(magazine.id);
+    setActiveView('compose');
+  };
+
+  const handleDelete = async (magazineId) => {
+    if (!confirm('Are you sure you want to delete this mail magazine?')) return;
+    try {
+      await apiClient.delete(`/teacher-mail-magazines/${magazineId}/`);
+      setFeedback({ type: 'success', message: 'Mail magazine deleted successfully.' });
+      await loadMagazines();
+      await loadTemplates();
+    } catch (error) {
+      setFeedback({ type: 'error', message: 'Failed to delete mail magazine.' });
+    }
+  };
+
+  const handleUseTemplate = (template) => {
+    setFormState({
+      title: `${template.title} (Copy)`,
+      subject: template.subject,
+      body: template.body,
+      frequency: template.frequency,
+      send_at: '',
+      is_active: true,
+    });
+    setEditingId(null);
+    setActiveView('compose');
+    setFeedback({ type: 'success', message: 'Template loaded! Customize and save.' });
+  };
+
+  const handleViewDetails = (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowDetailModal(true);
+  };
+
+  const handleViewRecipients = async (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowRecipientsModal(true);
+    // Load recipients for this magazine
+    try {
+      const { data } = await apiClient.get(`/teacher-mail-magazines/${magazine.id}/`);
+      setSelectedRecipients(data.selected_recipients || []);
+    } catch (error) {
+      console.error('Failed to load recipients:', error);
+    }
+  };
+
+  const handleViewAnalytics = async (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowAnalyticsModal(true);
+    // Mock analytics data (replace with actual API call when available)
+    setAnalyticsData({
+      sent: magazine.last_sent_at ? 1 : 0,
+      delivered: 0,
+      opened: 0,
+      clicked: 0,
+    });
+  };
+
+  const closeModals = () => {
+    setShowDetailModal(false);
+    setShowRecipientsModal(false);
+    setShowAnalyticsModal(false);
+    setSelectedMagazine(null);
+    setAnalyticsData(null);
+  };
+
+  const activeCount = useMemo(() => magazines.filter((mag) => mag.is_active).length, [magazines]);
+
+  if (loading || !user) {
+    return (
+      <div className={styles.pageShell}>
+        <div className={styles.centerState}>Loading your profile…</div>
+      </div>
+    );
+  }
+
+  if (!hasTeacherAccess(user)) {
+    return (
+      <div className={styles.pageShell}>
+        <div className={styles.centerState}>This area is only for teachers and admins.</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Teacher Mail Magazine | Zporta Academy</title>
+      </Head>
+      <div className={styles.pageShell}>
+        <section className={styles.heroCard}>
+          <div>
+            <p className={styles.sectionEyebrow}>Teacher tools</p>
+            <h1 className={styles.heading}>Mail Magazine</h1>
+            <p className={styles.subheading}>
+              Draft updates for your attendees. Sending happens from the admin for now, but this editor lets you
+              prepare polished content with your preferred schedule.
+            </p>
+          </div>
+          <div className={styles.heroStats}>
+            <div>
+              <span>Saved drafts</span>
+              <strong>{magazines.length}</strong>
+            </div>
+            <div>
+              <span>Active</span>
+              <strong>{activeCount}</strong>
+            </div>
+          </div>
+        </section>
+
+        <div className={styles.contentGrid}>
+          <form className={styles.composer} onSubmit={handleSubmit}>
+            <div className={styles.formHeader}>
+              <h2>Compose a new mail magazine</h2>
+              <button type="button" className={styles.refreshButton} onClick={loadMagazines} disabled={listLoading}>
+                <FaSyncAlt /> Refresh list
+              </button>
+            </div>
+
+            {feedback.message && (
+              <div className={`${styles.feedback} ${styles[feedback.type]}`}>
+                {feedback.message}
+              </div>
+            )}
+
+            <label className={styles.formLabel}>
+              Title
+              <input
+                name="title"
+                type="text"
+                value={formState.title}
+                onChange={handleChange}
+                placeholder="Weekly check-in"
+                className={styles.input}
+              />
+            </label>
+
+            <label className={styles.formLabel}>
+              Subject line
+              <input
+                name="subject"
+                type="text"
+                value={formState.subject}
+                onChange={handleChange}
+                placeholder="Upcoming lessons & resources"
+                className={styles.input}
+              />
+            </label>
+
+            <label className={styles.formLabel}>
+              Body
+              <textarea
+                name="body"
+                value={formState.body}
+                onChange={handleChange}
+                rows={8}
+                placeholder="Share announcements, lesson links, or encouragement. Plain text for now."
+                className={styles.textarea}
+              />
+            </label>
+
+            <div className={styles.inlineFields}>
+              <label className={styles.formLabel}>
+                Frequency
+                <select name="frequency" value={formState.frequency} onChange={handleChange} className={styles.select}>
+                  {FREQUENCY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.formLabel}>
+                Send at (optional)
+                <input
+                  type="datetime-local"
+                  name="send_at"
+                  value={formState.send_at}
+                  onChange={handleChange}
+                  className={styles.input}
+                />
+              </label>
+            </div>
+
+            <label className={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                name="is_active"
+                checked={formState.is_active}
+                onChange={handleChange}
+              />
+              Keep this mail magazine active
+            </label>
+
+            <button type="submit" className={styles.submitButton} disabled={submitting}>
+              <FaPaperPlane />
+              {submitting ? 'Saving…' : 'Save draft'}
+            </button>
+          </form>
+
+          <section className={styles.listPanel}>
+            <h2>Saved mail magazines</h2>
+            {listLoading ? (
+              <p className={styles.muted}>Loading entries…</p>
+            ) : magazines.length === 0 ? (
+              <p className={styles.muted}>You haven’t created any mail magazines yet.</p>
+            ) : (
+              <ul className={styles.magazineList}>
+                {magazines.map((magazine) => (
+                  <li key={magazine.id} className={styles.magazineCard}>
+                    <div className={styles.cardHeader}>
+                      <div>
+                        <p className={styles.cardTitle}>{magazine.title}</p>
+                        <p className={styles.cardSubject}>{magazine.subject}</p>
+                      </div>
+                      <span className={`${styles.statusBadge} ${magazine.is_active ? styles.active : styles.inactive}`}>
+                        {magazine.is_active ? 'Active' : 'Paused'}
+                      </span>
+                    </div>
+                    <p className={styles.cardBodyPreview}>{magazine.body?.slice(0, 160) || 'No body yet.'}</p>
+                    <div className={styles.cardMeta}>
+                      <div>
+                        <span>Frequency</span>
+                        <strong>{FREQUENCY_OPTIONS.find((f) => f.value === magazine.frequency)?.label || magazine.frequency}</strong>
+                      </div>
+                      <div>
+                        <span>Send at</span>
+                        <strong>{magazine.send_at ? new Date(magazine.send_at).toLocaleString() : 'Not scheduled'}</strong>
+                      </div>
+                      <div>
+                        <span>Last sent</span>
+                        <strong>{magazine.last_sent_at ? new Date(magazine.last_sent_at).toLocaleString() : '—'}</strong>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default TeacherMailMagazine;

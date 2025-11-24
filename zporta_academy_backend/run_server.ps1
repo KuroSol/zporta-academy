@@ -10,11 +10,11 @@ python manage.py check
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n========================================" -ForegroundColor Green
     Write-Host "Starting Django Development Server..." -ForegroundColor Green
-    Write-Host "Server will be available at: http://127.0.0.1:8000" -ForegroundColor Yellow
+    Write-Host "Server will be available at: http://127.0.0.1:8001" -ForegroundColor Yellow
     Write-Host "Press CTRL+C to stop the server" -ForegroundColor Yellow
     Write-Host "========================================`n" -ForegroundColor Green
     
-    python manage.py runserver
+    python manage.py runserver 8001
 } else {
     Write-Host "`nERROR: Django check failed!" -ForegroundColor Red
     Write-Host "Please fix the errors above before starting the server." -ForegroundColor Red

@@ -1,7 +1,9 @@
-/** @type {import('next').NextConfig} */
+﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   trailingSlash: true,
+  // Specify the pages directory location
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   images: {
     // Modern remotePatterns config (replaces deprecated domains)
     remotePatterns: [

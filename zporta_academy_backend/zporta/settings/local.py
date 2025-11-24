@@ -46,7 +46,7 @@ DATABASES = {
 QUIZ_ORIGIN = os.environ.get('QUIZ_ORIGIN', 'http://localhost:3000')
 DEBUG = True
 ALLOWED_HOSTS = ['*']
-CURRENT_DOMAIN = 'http://localhost:8000'
+CURRENT_DOMAIN = 'http://localhost:8001'
 FRONTEND_URL_BASE = 'http://localhost:3000'
 SECRET_KEY = config('SECRET_KEY', default='your-default-dev-secret-key')
 

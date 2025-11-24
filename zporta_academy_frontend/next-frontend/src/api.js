@@ -1,8 +1,10 @@
 // src/api.js
 import axios from "axios";
 
+// Replace localhost with 127.0.0.1 for Windows SSR compatibility
 const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "/api")
-  .replace(/\/+$/, ""); // strip trailing slash
+  .replace(/\/+$/, "") // strip trailing slash
+  .replace('localhost', '127.0.0.1'); // fix Windows SSR issues
 
 const getToken = () => {
   if (typeof window === "undefined") return null; // SSR guard

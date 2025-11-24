@@ -18,7 +18,7 @@ if %ERRORLEVEL% EQU 0 (
     echo Press CTRL+C to stop the server
     echo ========================================
     echo.
-    python manage.py runserver
+    python manage.py runserver 8001
 ) else (
     echo.
     echo ERROR: Django check failed!

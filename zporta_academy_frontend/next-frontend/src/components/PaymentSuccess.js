@@ -45,7 +45,7 @@ export default function PaymentSuccess() {
         
         if (confirmResp.data?.ok) {
           // Now fetch the enrollment record
-          const enrollResp = await apiClient.get('/enrollments/');
+          const enrollResp = await apiClient.get('/enrollment/');
           if (Array.isArray(enrollResp.data)) {
             const courseId = confirmResp.data.course_id;
             const found = enrollResp.data.find(

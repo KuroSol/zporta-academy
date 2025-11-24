@@ -26,6 +26,7 @@ class TeacherMailMagazine(models.Model):
     send_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     last_sent_at = models.DateTimeField(null=True, blank=True)
+    times_sent = models.IntegerField(default=0, help_text='Number of times this magazine has been sent')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     selected_recipients = models.ManyToManyField(

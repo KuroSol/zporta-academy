@@ -1,0 +1,22 @@
+{
+  "remote.SSH.defaultForwardedPorts": [
+    {
+      "localPort": 8000,
+      "remotePort": 8000,
+      "name": "Django Production Server"
+    }
+  ],
+  "remote.SSH.showLoginTerminal": true,
+  "remote.autoForwardPorts": false,
+  "terminal.integrated.env.windows": {
+    "DJANGO_ENV": "local"
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/zporta_academy_backend/env/Scripts/python.exe",
+  "files.watcherExclude": {
+    "**/zporta_academy_backend/env/**": true,
+    "**/zporta_academy_backend/media/**": true,
+    "**/zporta_academy_backend/staticfiles/**": true,
+    "**/zporta_academy_frontend/next-frontend/node_modules/**": true,
+    "**/zporta_academy_frontend/next-frontend/.next/**": true
+  }
+}

@@ -189,7 +189,7 @@ const HomePage = () => {
             setLoadingEnrolled(true);
             setErrorEnrolled('');
             try {
-                const response = await apiClient.get('/enrollments/user/?ordering=-enrollment_date&limit=3');
+                const response = await apiClient.get('/enrollment/user/?ordering=-enrollment_date&limit=3');
                 if (Array.isArray(response.data)) {
                     setEnrolledCourses(response.data);
                 } else {

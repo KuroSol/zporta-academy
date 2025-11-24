@@ -13,6 +13,10 @@ export function AuthProvider({ children }) {
 
   // Only read from localStorage on the client
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      setLoading(false)
+      return
+    }
     const t = window.localStorage.getItem('token')
     if (t) {
       setToken(t)
@@ -31,7 +35,9 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = (userData, authToken) => {
-    window.localStorage.setItem('token', authToken)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('token', authToken)
+    }
     setToken(authToken)
     setUser(userData)
     apiClient.defaults.headers.common['Authorization'] = `Token ${authToken}`
@@ -39,7 +45,9 @@ export function AuthProvider({ children }) {
   }
 
   const logout = useCallback(() => {
-    window.localStorage.removeItem('token')
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('token')
+    }
     setToken(null); setUser(null)
     delete apiClient.defaults.headers.common['Authorization']
     router.push('/login')

@@ -100,7 +100,7 @@ const TextStyler = ({ htmlContent, enrollmentId, activeTool, onToolClick, highli
 
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
-          apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
+          apiClient.post(`/enrollment/${enrollmentId}/notes/`, {
             highlight_data: currentState 
           }).catch(err => {
             console.error("Failed to save annotations via API:", err);
@@ -179,7 +179,7 @@ const TextStyler = ({ htmlContent, enrollmentId, activeTool, onToolClick, highli
                     
                     // Clear database by sending empty highlight_data
                     try {
-                        await apiClient.post(`/enrollments/${enrollmentId}/notes/`, {
+                        await apiClient.post(`/enrollment/${enrollmentId}/notes/`, {
                             highlight_data: htmlContent
                         });
                     } catch (error) {
@@ -235,7 +235,7 @@ const TextStyler = ({ htmlContent, enrollmentId, activeTool, onToolClick, highli
             try {
               // Load annotations from API (Firebase collaboration disabled)
               try {
-                const response = await apiClient.get(`/enrollments/${enrollmentId}/notes/`);
+                const response = await apiClient.get(`/enrollment/${enrollmentId}/notes/`);
                 if (response.data && response.data.highlight_data) {
                   initialHtml = response.data.highlight_data;
                 } else {
@@ -1210,7 +1210,7 @@ function EnrolledCourseStudyPage() {
     const fetchCourseData = async () => {
       setLoading(true);
       setError("");
-      const url = `/enrollments/${enrollmentId}/${sharedToken ? `?shared_token=${sharedToken}` : ''}`;
+      const url = `/enrollment/${enrollmentId}/${sharedToken ? `?shared_token=${sharedToken}` : ''}`;
 
       const attemptFetch = async () => {
         try {
@@ -1402,7 +1402,7 @@ function EnrolledCourseStudyPage() {
       if (serverTs) setCompletedAtByLesson(prev => ({ ...prev, [serverLessonId]: serverTs }));
       else {
         try {
-          const { data: completions } = await apiClient.get(`/enrollments/${enrollmentId}/completions/`);
+          const { data: completions } = await apiClient.get(`/enrollment/${enrollmentId}/completions/`);
           const byLesson = {};
           completions.forEach(c => {
             const lid = c.lesson?.id ?? c.lesson_id ?? c.lesson;
@@ -1516,7 +1516,7 @@ function EnrolledCourseStudyPage() {
   const handleInviteUser = async (invitedUser) => {
     if (!user || !invitedUser || !courseData) return;
     try {
-      const res = await apiClient.post(`/enrollments/share-invites/`, {
+      const res = await apiClient.post(`/enrollment/share-invites/`, {
         enrollment: enrollmentId,
         invited_user: invitedUser.id,
       });

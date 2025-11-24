@@ -1,0 +1,867 @@
+import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { AuthContext } from '@/context/AuthContext';
+import apiClient from '@/api';
+import styles from '@/styles/TeacherMailMagazine.module.css';
+import { 
+  FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
+  FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt
+} from 'react-icons/fa';
+
+const FREQUENCY_OPTIONS = [
+  { value: 'one_time', label: 'One time' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+const hasTeacherAccess = (profile) => {
+  if (!profile) return false;
+  const role = profile.role || profile.profile?.role;
+  return role === 'guide' || role === 'both' || Boolean(profile.is_staff);
+};
+
+const initialForm = {
+  title: '',
+  subject: '',
+  body: '',
+  frequency: 'one_time',
+  send_at: '',
+  is_active: true,
+};
+
+const TeacherMailMagazine = () => {
+  const { user, loading } = useContext(AuthContext);
+  const router = useRouter();
+
+  const [magazines, setMagazines] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [formState, setFormState] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  // New state for modals and features
+  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'templates'
+  const [selectedMagazine, setSelectedMagazine] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showRecipientsModal, setShowRecipientsModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [recipientGroups, setRecipientGroups] = useState([]);
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
+
+  const loadMagazines = useCallback(async () => {
+    setListLoading(true);
+    setFeedback((prev) => (prev.type === 'error' ? prev : { type: '', message: '' }));
+    try {
+      const { data } = await apiClient.get('/teacher-mail-magazines/');
+      const ordered = (data || []).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setMagazines(ordered);
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Unable to load your mail magazines.';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get('/teacher-mail-magazines/');
+      const templateList = data.filter(mag => mag.is_active && mag.frequency !== 'one_time');
+      setTemplates(templateList);
+    } catch (error) {
+      console.error('Failed to load templates:', error);
+    }
+  }, []);
+
+  const loadRecipientGroups = useCallback(async () => {
+    try {
+      // Fetch teacher's courses to get enrolled students
+      const coursesResponse = await apiClient.get('/courses/my/');
+      const myCourses = coursesResponse.data || [];
+      
+      // Collect all unique enrolled students
+      let allStudents = [];
+      const courseGroups = [];
+
+      for (const course of myCourses) {
+        try {
+          // Fetch enrollments for this course
+          const enrollResponse = await apiClient.get(`/enrollment/course/${course.id}/`);
+          const enrollments = enrollResponse.data || [];
+          const courseStudents = enrollments.map(e => ({
+            id: e.user_details?.id || e.user,
+            username: e.user_details?.username || `User ${e.user}`,
+            email: e.user_details?.email || '',
+            display_name: e.user_details?.username || `Student ID: ${e.user}`,
+          }));
+          
+          if (courseStudents.length > 0) {
+            courseGroups.push({
+              id: `course_${course.id}`,
+              name: `${course.title}`,
+              count: courseStudents.length,
+              students: courseStudents,
+              type: 'course'
+            });
+            allStudents = [...allStudents, ...courseStudents];
+          }
+        } catch (err) {
+          console.error(`Failed to load enrollments for course ${course.id}:`, err);
+        }
+      }
+
+      // Remove duplicate students
+      const uniqueStudents = Array.from(
+        new Map(allStudents.map(s => [s.id, s])).values()
+      );
+
+      setRecipientGroups([
+        { 
+          id: 'all', 
+          name: 'All My Students', 
+          count: uniqueStudents.length,
+          students: uniqueStudents,
+          type: 'all'
+        },
+        ...courseGroups
+      ]);
+    } catch (error) {
+      console.error('Failed to load recipient groups:', error);
+      setRecipientGroups([
+        { id: 'all', name: 'All Students', count: 0, students: [], type: 'all' },
+      ]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    if (!hasTeacherAccess(user)) {
+      router.replace('/profile');
+      return;
+    }
+    loadMagazines();
+    loadTemplates();
+    loadRecipientGroups();
+  }, [loading, user, router, loadMagazines, loadTemplates, loadRecipientGroups]);
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormState((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!formState.title.trim() || !formState.subject.trim() || !formState.body.trim()) {
+      setFeedback({ type: 'error', message: 'Title, subject, and body are required.' });
+      return;
+    }
+    setSubmitting(true);
+    setFeedback({ type: '', message: '' });
+    try {
+      const payload = {
+        title: formState.title.trim(),
+        subject: formState.subject.trim(),
+        body: formState.body.trim(),
+        frequency: formState.frequency,
+        is_active: formState.is_active,
+      };
+      if (formState.send_at) {
+        const date = new Date(formState.send_at);
+        if (!Number.isNaN(date.getTime())) payload.send_at = date.toISOString();
+      }
+      
+      if (editingId) {
+        await apiClient.put(`/teacher-mail-magazines/${editingId}/`, payload);
+        setFeedback({ type: 'success', message: 'Mail magazine updated successfully!' });
+        setEditingId(null);
+      } else {
+        await apiClient.post('/teacher-mail-magazines/', payload);
+        setFeedback({ type: 'success', message: 'Mail magazine saved successfully!' });
+      }
+      
+      setFormState(initialForm);
+      setActiveView('list');
+      await loadMagazines();
+      await loadTemplates();
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Unable to save mail magazine. Please try again.';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (magazine) => {
+    setFormState({
+      title: magazine.title,
+      subject: magazine.subject,
+      body: magazine.body,
+      frequency: magazine.frequency,
+      send_at: magazine.send_at ? new Date(magazine.send_at).toISOString().slice(0, 16) : '',
+      is_active: magazine.is_active,
+    });
+    setEditingId(magazine.id);
+    setActiveView('compose');
+  };
+
+  const handleDelete = async (magazineId) => {
+    if (!confirm('Are you sure you want to delete this mail magazine?')) return;
+    try {
+      await apiClient.delete(`/teacher-mail-magazines/${magazineId}/`);
+      setFeedback({ type: 'success', message: 'Mail magazine deleted successfully.' });
+      await loadMagazines();
+      await loadTemplates();
+    } catch (error) {
+      setFeedback({ type: 'error', message: 'Failed to delete mail magazine.' });
+    }
+  };
+
+  const handleUseTemplate = (template) => {
+    setFormState({
+      title: `${template.title} (Copy)`,
+      subject: template.subject,
+      body: template.body,
+      frequency: template.frequency,
+      send_at: '',
+      is_active: true,
+    });
+    setEditingId(null);
+    setActiveView('compose');
+    setFeedback({ type: 'success', message: 'Template loaded! Customize and save.' });
+  };
+
+  const handleViewDetails = (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowDetailModal(true);
+  };
+
+  const handleViewRecipients = async (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowRecipientsModal(true);
+    try {
+      const { data } = await apiClient.get(`/teacher-mail-magazines/${magazine.id}/`);
+      const recipients = data.selected_recipients_details || [];
+      // Format recipients to match our student format
+      const formattedRecipients = recipients.map(r => ({
+        id: r.id,
+        username: r.username || 'Unknown',
+        email: r.email || '',
+        display_name: r.username || `User ${r.id}`,
+      }));
+      setSelectedRecipients(formattedRecipients);
+    } catch (error) {
+      console.error('Failed to load recipients:', error);
+      setSelectedRecipients([]);
+    }
+  };
+
+  const handleSelectGroup = (group) => {
+    if (group.students && group.students.length > 0) {
+      setSelectedRecipients(group.students);
+    }
+  };
+
+  const handleRemoveRecipient = (recipientId) => {
+    setSelectedRecipients(prev => prev.filter(r => r.id !== recipientId));
+  };
+
+  const handleSaveRecipients = async () => {
+    if (!selectedMagazine) return;
+    try {
+      const recipientIds = selectedRecipients.map(r => r.id);
+      await apiClient.patch(`/teacher-mail-magazines/${selectedMagazine.id}/`, {
+        selected_recipients: recipientIds
+      });
+      setFeedback({ type: 'success', message: 'Recipients updated successfully!' });
+      closeModals();
+      await loadMagazines();
+    } catch (error) {
+      setFeedback({ type: 'error', message: 'Failed to update recipients.' });
+    }
+  };
+
+  const handleSendEmail = async (magazineId) => {
+    if (!window.confirm('Are you sure you want to send this email to all selected recipients?')) {
+      return;
+    }
+    
+    try {
+      const { data } = await apiClient.post(`/teacher-mail-magazines/${magazineId}/send_email/`);
+      setFeedback({ 
+        type: 'success', 
+        message: data.message || `Email sent successfully to ${data.recipients_count} recipients!` 
+      });
+      await loadMagazines();
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Failed to send email.';
+      setFeedback({ type: 'error', message: errorMsg });
+    }
+  };
+
+  const handleViewAnalytics = async (magazine) => {
+    setSelectedMagazine(magazine);
+    setShowAnalyticsModal(true);
+    setAnalyticsData({
+      sent: magazine.times_sent || 0,
+      delivered: 'N/A',
+      opened: 'N/A',
+      clicked: 'N/A',
+    });
+  };
+
+  const closeModals = () => {
+    setShowDetailModal(false);
+    setShowRecipientsModal(false);
+    setShowAnalyticsModal(false);
+    setSelectedMagazine(null);
+    setAnalyticsData(null);
+  };
+
+  const activeCount = useMemo(() => magazines.filter((mag) => mag.is_active).length, [magazines]);
+  const weeklyCount = useMemo(() => magazines.filter((mag) => mag.frequency === 'weekly').length, [magazines]);
+  const monthlyCount = useMemo(() => magazines.filter((mag) => mag.frequency === 'monthly').length, [magazines]);
+
+  if (loading || !user) {
+    return (
+      <div className={styles.pageShell}>
+        <div className={styles.centerState}>Loading your profile…</div>
+      </div>
+    );
+  }
+
+  if (!hasTeacherAccess(user)) {
+    return (
+      <div className={styles.pageShell}>
+        <div className={styles.centerState}>This area is only for teachers and admins.</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Mail Magazine Manager | Zporta Academy</title>
+      </Head>
+      <div className={styles.pageShell}>
+        <section className={styles.heroCard}>
+          <div>
+            <p className={styles.sectionEyebrow}>Professional Mail System</p>
+            <h1 className={styles.heading}>Mail Magazine Manager</h1>
+            <p className={styles.subheading}>
+              Create, manage, and schedule professional newsletters. Use templates, manage recipient groups, 
+              and track your communication with students.
+            </p>
+          </div>
+          <div className={styles.heroStats}>
+            <div>
+              <span>Total</span>
+              <strong>{magazines.length}</strong>
+            </div>
+            <div>
+              <span>Active</span>
+              <strong>{activeCount}</strong>
+            </div>
+            <div>
+              <span>Weekly</span>
+              <strong>{weeklyCount}</strong>
+            </div>
+            <div>
+              <span>Monthly</span>
+              <strong>{monthlyCount}</strong>
+            </div>
+          </div>
+        </section>
+
+        <nav className={styles.tabNav}>
+          <button
+            className={`${styles.tabButton} ${activeView === 'list' ? styles.tabActive : ''}`}
+            onClick={() => { setActiveView('list'); setEditingId(null); setFormState(initialForm); }}
+          >
+            <FaPaperPlane /> My Magazines
+          </button>
+          <button
+            className={`${styles.tabButton} ${activeView === 'compose' ? styles.tabActive : ''}`}
+            onClick={() => { setActiveView('compose'); setEditingId(null); setFormState(initialForm); }}
+          >
+            <FaEdit /> Compose New
+          </button>
+          <button
+            className={`${styles.tabButton} ${activeView === 'templates' ? styles.tabActive : ''}`}
+            onClick={() => setActiveView('templates')}
+          >
+            <FaCopy /> Templates
+          </button>
+        </nav>
+
+        {feedback.message && (
+          <div className={`${styles.feedback} ${styles[feedback.type]}`}>
+            {feedback.message}
+            <button onClick={() => setFeedback({ type: '', message: '' })} className={styles.feedbackClose}>
+              <FaTimes />
+            </button>
+          </div>
+        )}
+
+        {activeView === 'list' && (
+          <div className={styles.mainContent}>
+            <div className={styles.contentHeader}>
+              <h2>Your Mail Magazines</h2>
+              <button className={styles.refreshButton} onClick={loadMagazines} disabled={listLoading}>
+                <FaSyncAlt /> Refresh
+              </button>
+            </div>
+
+            {listLoading ? (
+              <p className={styles.centerState}>Loading entries…</p>
+            ) : magazines.length === 0 ? (
+              <div className={styles.emptyState}>
+                <FaPaperPlane size={48} />
+                <p>You haven&apos;t created any mail magazines yet.</p>
+                <button className={styles.primaryButton} onClick={() => setActiveView('compose')}>
+                  Create Your First Magazine
+                </button>
+              </div>
+            ) : (
+              <div className={styles.magazineGrid}>
+                {magazines.map((magazine) => (
+                  <div key={magazine.id} className={styles.magazineCard}>
+                    <div className={styles.cardHeader}>
+                      <div className={styles.cardTitleSection}>
+                        <h3 className={styles.cardTitle}>{magazine.title}</h3>
+                        <p className={styles.cardSubject}>{magazine.subject}</p>
+                      </div>
+                      <span className={`${styles.statusBadge} ${magazine.is_active ? styles.active : styles.inactive}`}>
+                        {magazine.is_active ? 'Active' : 'Paused'}
+                      </span>
+                    </div>
+
+                    <p className={styles.cardBodyPreview}>
+                      {magazine.body?.slice(0, 120)}
+                      {magazine.body?.length > 120 ? '...' : ''}
+                    </p>
+
+                    <div className={styles.cardMeta}>
+                      <div className={styles.metaItem}>
+                        <FaCalendarAlt />
+                        <span>
+                          {FREQUENCY_OPTIONS.find((f) => f.value === magazine.frequency)?.label || magazine.frequency}
+                        </span>
+                      </div>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Recipients:</span>
+                        <span className={styles.metaValue}>
+                          {magazine.selected_recipients?.length || 0}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles.cardActions}>
+                      <button
+                        className={styles.actionButton}
+                        onClick={() => handleViewDetails(magazine)}
+                        title="View Details"
+                      >
+                        <FaEye /> View
+                      </button>
+                      <button
+                        className={`${styles.actionButton} ${styles.primaryActionButton}`}
+                        onClick={() => handleSendEmail(magazine.id)}
+                        title="Send Email Now"
+                      >
+                        <FaPaperPlane /> Send
+                      </button>
+                      <button
+                        className={styles.actionButton}
+                        onClick={() => handleViewRecipients(magazine)}
+                        title="Manage Recipients"
+                      >
+                        <FaUsers /> Recipients
+                      </button>
+                      <button
+                        className={styles.actionButton}
+                        onClick={() => handleViewAnalytics(magazine)}
+                        title="View Analytics"
+                      >
+                        <FaChartLine /> Stats
+                      </button>
+                      <button
+                        className={styles.actionButton}
+                        onClick={() => handleEdit(magazine)}
+                        title="Edit"
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        className={`${styles.actionButton} ${styles.dangerButton}`}
+                        onClick={() => handleDelete(magazine.id)}
+                        title="Delete"
+                      >
+                        <FaTrash /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeView === 'compose' && (
+          <div className={styles.mainContent}>
+            <form className={styles.composeForm} onSubmit={handleSubmit}>
+              <h2>{editingId ? 'Edit Mail Magazine' : 'Compose New Mail Magazine'}</h2>
+
+              <label className={styles.formLabel}>
+                Title *
+                <input
+                  name="title"
+                  type="text"
+                  value={formState.title}
+                  onChange={handleChange}
+                  placeholder="e.g., Weekly Newsletter, Monthly Update"
+                  className={styles.input}
+                  required
+                />
+              </label>
+
+              <label className={styles.formLabel}>
+                Email Subject *
+                <input
+                  name="subject"
+                  type="text"
+                  value={formState.subject}
+                  onChange={handleChange}
+                  placeholder="e.g., This Week in Your Course"
+                  className={styles.input}
+                  required
+                />
+              </label>
+
+              <label className={styles.formLabel}>
+                Message Body *
+                <textarea
+                  name="body"
+                  value={formState.body}
+                  onChange={handleChange}
+                  rows={12}
+                  placeholder="Write your message here. You can include announcements, lesson updates, encouragement, or resources."
+                  className={styles.textarea}
+                  required
+                />
+              </label>
+
+              <div className={styles.inlineFields}>
+                <label className={styles.formLabel}>
+                  Frequency
+                  <select name="frequency" value={formState.frequency} onChange={handleChange} className={styles.select}>
+                    {FREQUENCY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formLabel}>
+                  Scheduled Send Time
+                  <input
+                    type="datetime-local"
+                    name="send_at"
+                    value={formState.send_at}
+                    onChange={handleChange}
+                    className={styles.input}
+                  />
+                </label>
+              </div>
+
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  checked={formState.is_active}
+                  onChange={handleChange}
+                />
+                <span>Keep this mail magazine active</span>
+              </label>
+
+              <div className={styles.formActions}>
+                <button type="submit" className={styles.primaryButton} disabled={submitting}>
+                  <FaSave />
+                  {submitting ? 'Saving…' : editingId ? 'Update Magazine' : 'Save Magazine'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => {
+                    setActiveView('list');
+                    setEditingId(null);
+                    setFormState(initialForm);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeView === 'templates' && (
+          <div className={styles.mainContent}>
+            <div className={styles.contentHeader}>
+              <h2>Your Templates</h2>
+              <p className={styles.subText}>Recurring magazines can be used as templates</p>
+            </div>
+
+            {templates.length === 0 ? (
+              <div className={styles.emptyState}>
+                <FaCopy size={48} />
+                <p>No templates available yet.</p>
+                <p className={styles.subText}>
+                  Create a recurring mail magazine (weekly/monthly) and it will appear here as a template.
+                </p>
+              </div>
+            ) : (
+              <div className={styles.templateGrid}>
+                {templates.map((template) => (
+                  <div key={template.id} className={styles.templateCard}>
+                    <div className={styles.templateHeader}>
+                      <h3>{template.title}</h3>
+                      <span className={styles.frequencyBadge}>
+                        {FREQUENCY_OPTIONS.find((f) => f.value === template.frequency)?.label}
+                      </span>
+                    </div>
+                    <p className={styles.templateSubject}>{template.subject}</p>
+                    <p className={styles.templateBody}>
+                      {template.body?.slice(0, 100)}
+                      {template.body?.length > 100 ? '...' : ''}
+                    </p>
+                    <button
+                      className={styles.useTemplateButton}
+                      onClick={() => handleUseTemplate(template)}
+                    >
+                      <FaCopy /> Use This Template
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {showDetailModal && selectedMagazine && (
+          <div className={styles.modal} onClick={closeModals}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>Magazine Details</h2>
+                <button className={styles.closeButton} onClick={closeModals}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.detailRow}>
+                  <strong>Title:</strong>
+                  <span>{selectedMagazine.title}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Subject:</strong>
+                  <span>{selectedMagazine.subject}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Frequency:</strong>
+                  <span>
+                    {FREQUENCY_OPTIONS.find((f) => f.value === selectedMagazine.frequency)?.label}
+                  </span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Status:</strong>
+                  <span className={selectedMagazine.is_active ? styles.activeText : styles.inactiveText}>
+                    {selectedMagazine.is_active ? 'Active' : 'Paused'}
+                  </span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Scheduled:</strong>
+                  <span>
+                    {selectedMagazine.send_at
+                      ? new Date(selectedMagazine.send_at).toLocaleString()
+                      : 'Not scheduled'}
+                  </span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Last Sent:</strong>
+                  <span>
+                    {selectedMagazine.last_sent_at
+                      ? new Date(selectedMagazine.last_sent_at).toLocaleString()
+                      : 'Never'}
+                  </span>
+                </div>
+                <div className={styles.detailSection}>
+                  <strong>Message Body:</strong>
+                  <div className={styles.bodyPreview}>{selectedMagazine.body}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showRecipientsModal && selectedMagazine && (
+          <div className={styles.modal} onClick={closeModals}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>
+                  <FaUsers /> Recipient Management
+                </h2>
+                <button className={styles.closeButton} onClick={closeModals}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <p className={styles.modalSubtext}>
+                  Managing recipients for: <strong>{selectedMagazine.title}</strong>
+                </p>
+
+                <div className={styles.recipientGroups}>
+                  <h3>Recipient Groups</h3>
+                  {recipientGroups.length === 0 ? (
+                    <p className={styles.emptyText}>
+                      No student groups found. Students will appear here once they enroll in your courses.
+                    </p>
+                  ) : (
+                    recipientGroups.map((group) => (
+                      <div key={group.id} className={styles.groupCard}>
+                        <div className={styles.groupInfo}>
+                          <strong>{group.name}</strong>
+                          <span className={styles.groupCount}>
+                            {group.count} {group.count === 1 ? 'student' : 'students'}
+                          </span>
+                        </div>
+                        <button 
+                          className={styles.selectGroupButton}
+                          onClick={() => handleSelectGroup(group)}
+                          disabled={group.count === 0}
+                        >
+                          <FaUserPlus /> Select All
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.selectedRecipients}>
+                  <h3>Selected Recipients ({selectedRecipients.length})</h3>
+                  {selectedRecipients.length === 0 ? (
+                    <p className={styles.emptyText}>
+                      No recipients selected yet. Select a group above or the mail will be sent to all enrolled students.
+                    </p>
+                  ) : (
+                    <ul className={styles.recipientList}>
+                      {selectedRecipients.map((recipient) => (
+                        <li key={recipient.id} className={styles.recipientItem}>
+                          <div className={styles.recipientInfo}>
+                            <strong>ID: {recipient.id} - {recipient.username}</strong>
+                            {recipient.email && <span className={styles.recipientEmail}>{recipient.email}</span>}
+                          </div>
+                          <button
+                            className={styles.removeRecipientButton}
+                            onClick={() => handleRemoveRecipient(recipient.id)}
+                            title="Remove"
+                          >
+                            <FaTimes />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button 
+                    className={styles.primaryButton}
+                    onClick={handleSaveRecipients}
+                  >
+                    <FaSave /> Save Recipients
+                  </button>
+                  <button 
+                    className={styles.secondaryButton}
+                    onClick={() => setSelectedRecipients([])}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAnalyticsModal && selectedMagazine && analyticsData && (
+          <div className={styles.modal} onClick={closeModals}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>
+                  <FaChartLine /> Analytics & Statistics
+                </h2>
+                <button className={styles.closeButton} onClick={closeModals}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <p className={styles.modalSubtext}>
+                  Performance data for: <strong>{selectedMagazine.title}</strong>
+                </p>
+
+                <div className={styles.analyticsGrid}>
+                  <div className={styles.statCard}>
+                    <div className={styles.statValue}>{analyticsData.sent}</div>
+                    <div className={styles.statLabel}>Times Sent</div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statValue}>{analyticsData.delivered}</div>
+                    <div className={styles.statLabel}>Delivered</div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statValue}>{analyticsData.opened}</div>
+                    <div className={styles.statLabel}>Opened</div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statValue}>{analyticsData.clicked}</div>
+                    <div className={styles.statLabel}>Clicked</div>
+                  </div>
+                </div>
+
+                <div className={styles.analyticsNote}>
+                  <p>
+                    📊 <strong>Email Tracking Information:</strong>
+                  </p>
+                  <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', lineHeight: '1.8' }}>
+                    <li><strong>Times Sent:</strong> Tracked from database (accurate)</li>
+                    <li><strong>Delivered:</strong> Requires ESP webhook integration (SendGrid, Mailgun, etc.)</li>
+                    <li><strong>Opened:</strong> Requires tracking pixel embedded in email HTML</li>
+                    <li><strong>Clicked:</strong> Requires special tracking links in email content</li>
+                  </ul>
+                  <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: '0.8' }}>
+                    To enable full analytics, integrate an Email Service Provider with webhook support.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default TeacherMailMagazine;

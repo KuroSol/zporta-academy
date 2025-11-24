@@ -205,6 +205,40 @@ class UserEnrollmentList(ListAPIView):
     def get_queryset(self):
         return Enrollment.objects.filter(user=self.request.user)
 
+class CourseEnrollmentList(ListAPIView):
+    """
+    List all enrollments for a specific course.
+    Only accessible by teachers/admins.
+    """
+    serializer_class = EnrollmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Check if user is teacher or admin
+        user = self.request.user
+        is_teacher_or_admin = (
+            user.is_staff or 
+            (hasattr(user, 'profile') and user.profile.role == 'guide')
+        )
+        
+        if not is_teacher_or_admin:
+            return Enrollment.objects.none()
+        
+        # Get course_id from URL
+        course_id = self.kwargs.get('course_id')
+        if not course_id:
+            return Enrollment.objects.none()
+        
+        # Get ContentType for Course
+        course_ct = ContentType.objects.get_for_model(Course)
+        
+        # Return all enrollments for this course
+        return Enrollment.objects.filter(
+            content_type=course_ct,
+            object_id=course_id,
+            enrollment_type='course'
+        ).select_related('user', 'user__profile')
+
 class CollaborationSessionViewSet(viewsets.ModelViewSet):
     queryset = CollaborationSession.objects.all()
     serializer_class = CollaborationSessionSerializer

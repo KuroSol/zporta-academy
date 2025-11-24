@@ -31,15 +31,17 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     share_invite = serializers.SerializerMethodField()
     # Inline lesson completions to avoid an extra request
     lesson_completions = serializers.SerializerMethodField()
+    # User details for display
+    user_details = SimpleUserSerializer(source='user', read_only=True)
 
     class Meta:
         model = Enrollment
         fields = [
-            'id', 'user', 'content_type', 'object_id',
+            'id', 'user', 'user_details', 'content_type', 'object_id',
             'enrollment_date', 'status', 'enrollment_type',
             'course', 'progress', 'share_invite', 'lesson_completions'
         ]
-        read_only_fields = ['enrollment_date', 'user', 'content_type', 'course', 'progress', 'share_invite', 'lesson_completions']
+        read_only_fields = ['enrollment_date', 'user', 'user_details', 'content_type', 'course', 'progress', 'share_invite', 'lesson_completions']
 
     def get_share_invite(self, obj):
         request = self.context.get('request')

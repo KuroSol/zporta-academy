@@ -56,23 +56,38 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
 export async function getServerSideProps(ctx) {
   const { username, date, subject, slug } = ctx.params;
   const permalink = `${username}/${date}/${subject}/${slug}`;
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/,"") || "http://127.0.0.1:8000/api";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/,"") || "https://zportaacademy.com";
+  
+  // For SSR, ensure we use http://127.0.0.1 explicitly to force IPv4
+  const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api")
+    .replace(/\/$/, "")
+    .replace(/localhost/g, '127.0.0.1');
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://zportaacademy.com";
 
-  // Public fetch only. If draft, this returns 404; do NOT short-circuit to 404 page.
-  const res = await fetch(`${apiBase}/courses/${encodeURIComponent(permalink)}/`, { headers: { Accept: "application/json" } });
-  if (!res.ok) {
+  try {
+    // Public fetch only. If draft, this returns 404; do NOT short-circuit to 404 page.
+    const res = await fetch(`${apiBase}/courses/${encodeURIComponent(permalink)}/`, { 
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(5000), // 5 second timeout
+      // Force IPv4 on Windows by using explicit family option
+      family: 4
+    });
+    if (!res.ok) {
+      return { props: { initialCourse: null, initialLessons: [], initialSeo: null, siteUrl, permalink } };
+    }
+
+    const data = await res.json(); // { course, lessons, seo, ... }
+    return {
+      props: {
+        initialCourse: data.course || null,
+        initialLessons: data.lessons || [],
+        initialSeo: data.seo || null,
+        siteUrl,
+        permalink,
+      },
+    };
+  } catch (error) {
+    // If fetch fails (network error, timeout), return empty props to allow client-side retry
+    console.error('SSR fetch error:', error.message);
     return { props: { initialCourse: null, initialLessons: [], initialSeo: null, siteUrl, permalink } };
   }
-
-  const data = await res.json(); // { course, lessons, seo, ... }
-  return {
-    props: {
-      initialCourse: data.course || null,
-      initialLessons: data.lessons || [],
-      initialSeo: data.seo || null,
-      siteUrl,
-      permalink,
-    },
-  };
 }

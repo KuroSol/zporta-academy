@@ -5,7 +5,7 @@ import { quizPermalinkToUrl } from "@/utils/urls";
 import { 
   FaEdit, FaChevronDown, FaSpinner, FaBookOpen, 
   FaQuestionCircle, FaChalkboardTeacher, FaCamera,
-  FaBookReader, FaAward 
+  FaBookReader, FaAward, FaEnvelope
 } from "react-icons/fa";
 import { AuthContext } from "@/context/AuthContext";
 import apiClient from "@/api";
@@ -59,6 +59,9 @@ const Profile = () => {
 
   // --- Active Tab State ---
   const [activeTab, setActiveTab] = useState("courses");
+
+  // Check if user is teacher or admin
+  const isTeacherOrAdmin = profile?.role === 'guide' || profile?.is_staff === true;
 
   // --- Data & "Load More" State for each tab ---
   const [courses, setCourses] = useState([]);
@@ -513,6 +516,16 @@ const Profile = () => {
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
+              {isTeacherOrAdmin && (
+                <button 
+                  onClick={() => router.push('/profile/mail-magazine')}
+                  className={`${styles.tabButton} flex items-center gap-2`}
+                  title="Manage Mail Magazine"
+                >
+                  <FaEnvelope size={16} />
+                  Mail Magazine
+                </button>
+              )}
             </nav>
 
             <div className="mt-6"> {/* Content for tabs */}

@@ -4,17 +4,22 @@ import PostDetail from '@/components/PostDetail';
 
 export async function getServerSideProps({ params, req }){
   const permalink = `${params.username}/post/${params.year}/${params.month}/${params.day}/${params.slug}`;
-  // fetch full list (newest first)
-  const listRes = await apiClient.get('/posts/?ordering=-created_at&page_size=1000', {
-    headers:{ cookie:req?.headers?.cookie||'' }
-  });
-  const items = Array.isArray(listRes.data) ? listRes.data : (listRes.data?.results || []);
-  const idx = items.findIndex(p => p.permalink === permalink);
-  if (idx < 0) return { notFound: true };
-  const post = items[idx];
-  const previousPost = idx > 0 ? items[idx - 1] : null; // older
-  const nextPost = idx < items.length - 1 ? items[idx + 1] : null; // newer
-  return { props:{ post, previousPost, nextPost } };
+  try {
+    // fetch full list (newest first)
+    const listRes = await apiClient.get('/posts/?ordering=-created_at&page_size=1000', {
+      headers:{ cookie:req?.headers?.cookie||'' }
+    });
+    const items = Array.isArray(listRes.data) ? listRes.data : (listRes.data?.results || []);
+    const idx = items.findIndex(p => p.permalink === permalink);
+    if (idx < 0) return { notFound: true };
+    const post = items[idx];
+    const previousPost = idx > 0 ? items[idx - 1] : null; // older
+    const nextPost = idx < items.length - 1 ? items[idx + 1] : null; // newer
+    return { props:{ post, previousPost, nextPost } };
+  } catch (error) {
+    console.error('SSR post fetch error:', error.message);
+    return { notFound: true };
+  }
 }
 
 export default function Page({ post, previousPost, nextPost }){

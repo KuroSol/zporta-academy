@@ -20,7 +20,7 @@ urlpatterns = [
     path('api/courses/', include('courses.urls')),
     path('api/subjects/', include('subjects.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls')),
-    path('api/enrollments/', include('enrollment.urls')),
+    path('api/enrollment/', include('enrollment.urls')),
     path('api/mentions/', include('mentions.urls')),
     path('posts/<path:permalink>/', DynamicPostView.as_view(),   name='dynamic_post'),
     path('courses/<path:permalink>/', DynamicCourseView.as_view(), name='dynamic_course'),

@@ -8,6 +8,7 @@ from .views import (
     SessionStrokeViewSet,
     SessionNoteViewSet,
     UserEnrollmentList,
+    CourseEnrollmentList,
     SessionNoteView
 )
 
@@ -24,6 +25,9 @@ router.register(r'', EnrollmentViewSet, basename='enrollments')
 urlpatterns = [
     # This path is for listing a user's enrollments and is correct.
     path('user/', UserEnrollmentList.as_view(), name='user-enrollments'),
+    
+    # Course enrollments for teachers/admins
+    path('course/<int:course_id>/', CourseEnrollmentList.as_view(), name='course-enrollments'),
     
     # --- THIS IS THE CORRECTED URL PATTERN ---
     # It now correctly matches the URL coming from your main urls.py.
