@@ -7,6 +7,6 @@ router.register(r'teacher-mail-magazines', TeacherMailMagazineViewSet, basename=
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('issues/<int:pk>/', MailMagazineIssueDetailView.as_view(), name='issue-detail'),
-    path('issues/by-teacher/<str:username>/', TeacherMailMagazineIssuesListView.as_view(), name='teacher-issues'),
+    path('mailmagazine/issues/<int:pk>/', MailMagazineIssueDetailView.as_view(), name='issue-detail'),
+    path('mailmagazine/issues/by-teacher/<str:username>/', TeacherMailMagazineIssuesListView.as_view(), name='teacher-issues'),
 ]
