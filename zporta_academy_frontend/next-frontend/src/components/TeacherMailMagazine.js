@@ -5,7 +5,6 @@ import { AuthContext } from '@/context/AuthContext';
 import apiClient from '@/api';
 import styles from '@/styles/TeacherMailMagazine.module.css';
 import MailMagazineEditor from './Editor/MailMagazineEditor';
-import TemplateManager from './MailMagazine/TemplateManager';
 import AutomationManager from './MailMagazine/AutomationManager';
 import { 
   FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
@@ -34,6 +33,60 @@ const initialForm = {
   is_active: true,
 };
 
+// Built-in stylish templates available directly in compose view
+const BUILT_IN_TEMPLATES = [
+  {
+    key: 'thank_attend',
+    name: 'Thank You for Attending',
+    subject: 'Thank you for attending!',
+    body: `<h2 style="color:#ffb703;">Thank You for Attending!</h2>
+<p>Hello {{student_name}},</p>
+<p>I appreciate you taking time to visit my guide page. Your curiosity means a lot! Feel free to explore more resources and reach out with any questions.</p>
+<p>Warm regards,<br/>{{teacher_name}}</p>`
+  },
+  {
+    key: 'thank_purchase',
+    name: 'Thank You for Purchase',
+    subject: 'Thank you for your purchase!',
+    body: `<h2 style="color:#ffb703;">Thank You for Your Purchase!</h2>
+<p>Hello {{student_name}},</p>
+<p>Thanks for purchasing <strong>{{course_name}}</strong>. Dive into the first lesson when you are ready and let me know if you need onboarding help.</p>
+<ul style="line-height:1.6;">
+  <li>Start with the introduction module</li>
+  <li>Set your learning goals</li>
+  <li>Join community discussions</li>
+</ul>
+<p>Best,<br/>{{teacher_name}}</p>`
+  },
+  {
+    key: 'welcome_enroll',
+    name: 'Welcome Enrollment',
+    subject: 'Welcome to {{course_name}}!',
+    body: `<h2 style="color:#ffb703;">Welcome to {{course_name}}!</h2>
+<p>Hello {{student_name}},</p>
+<p>Thrilled to have you onboard. Start with the intro module and set your learning goals. I'm here if you need support.</p>
+<p>To your success,<br/>{{teacher_name}}</p>`
+  },
+  {
+    key: 'completion',
+    name: 'Course Completion Congratulations',
+    subject: 'Congratulations on completing {{course_name}}!',
+    body: `<h2 style="color:#ffb703;">🎉 Congratulations!</h2>
+<p>Hi {{student_name}},</p>
+<p>You just completed <strong>{{course_name}}</strong> — outstanding work! Consider leaving a review and exploring advanced courses.</p>
+<p>Keep growing,<br/>{{teacher_name}}</p>`
+  },
+  {
+    key: 'custom_blank',
+    name: 'Custom Blank',
+    subject: 'Your custom message',
+    body: `<h2 style="color:#ffb703;">Your Custom Message</h2>
+<p>Hello {{student_name}},</p>
+<p>Write your personalized content here...</p>
+<p>Regards,<br/>{{teacher_name}}</p>`
+  }
+];
+
 const TeacherMailMagazine = () => {
   const { user, loading } = useContext(AuthContext);
   const router = useRouter();
@@ -46,7 +99,7 @@ const TeacherMailMagazine = () => {
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
   // New state for modals and features
-  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'templates', 'automations'
+  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'automations'
   const [selectedMagazine, setSelectedMagazine] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRecipientsModal, setShowRecipientsModal] = useState(false);
@@ -509,12 +562,6 @@ const TeacherMailMagazine = () => {
             <FaEdit /> Compose New
           </button>
           <button
-            className={`${styles.tabButton} ${activeView === 'templates' ? styles.tabActive : ''}`}
-            onClick={() => setActiveView('templates')}
-          >
-            <FaFileAlt /> Email Templates
-          </button>
-          <button
             className={`${styles.tabButton} ${activeView === 'automations' ? styles.tabActive : ''}`}
             onClick={() => setActiveView('automations')}
           >
@@ -640,6 +687,33 @@ const TeacherMailMagazine = () => {
             <form className={styles.composeForm} onSubmit={handleSubmit}>
               <h2>{editingId ? 'Edit Mail Magazine' : 'Compose New Mail Magazine'}</h2>
 
+              <div className={styles.templateGallery}>
+                <h3 className={styles.templateGalleryHeading}>Quick Templates</h3>
+                <p className={styles.subText}>Insert a starting point and customize freely. Variables: {{student_name}}, {{teacher_name}}, {{course_name}}</p>
+                <div className={styles.templateGridInline}>
+                  {BUILT_IN_TEMPLATES.map(t => (
+                    <div key={t.key} className={styles.inlineTemplateCard}>
+                      <div className={styles.inlineTemplateHeader}>
+                        <strong>{t.name}</strong>
+                        <span className={styles.inlineTemplateSubject}>{t.subject}</span>
+                      </div>
+                      <div className={styles.inlineTemplateBodyPreview}>
+                        {t.body.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,90)}...
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.useTemplateInlineButton}
+                        onClick={() => {
+                          setFormState(prev => ({...prev, subject: t.subject, title: t.name + ' Email'}));
+                          setTimeout(()=>{editorRef.current?.setContent(t.body);},50);
+                          setFeedback({ type: 'success', message: 'Template inserted. Customize and save.' });
+                        }}
+                      >Use Template</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <label className={styles.formLabel}>
                 Title *
                 <input
@@ -737,10 +811,6 @@ const TeacherMailMagazine = () => {
               </div>
             </form>
           </div>
-        )}
-
-        {activeView === 'templates' && (
-          <TemplateManager />
         )}
 
         {activeView === 'automations' && (

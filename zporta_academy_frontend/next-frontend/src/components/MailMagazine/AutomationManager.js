@@ -12,31 +12,29 @@ const TRIGGER_TYPES = [
     value: 'enrollment',
     label: 'Course Enrollment',
     icon: FaGraduationCap,
-    description: 'Triggered when a student enrolls in your course',
+    description: 'Send when a student enrolls in a course',
     color: '#10b981'
   },
   {
     value: 'purchase',
-    label: 'Product Purchase',
+    label: 'Course Purchase',
     icon: FaShoppingCart,
-    description: 'Triggered when someone purchases your product (coming soon)',
-    color: '#f59e0b',
-    disabled: true
+    description: 'Send immediately after successful payment',
+    color: '#f59e0b'
   },
   {
     value: 'guide_attend',
     label: 'Guide Page Visit',
     icon: FaEye,
-    description: 'Triggered when someone visits your guide page',
+    description: 'Send when someone attends/visits your guide page',
     color: '#3b82f6'
   },
   {
     value: 'course_complete',
     label: 'Course Completion',
     icon: FaTrophy,
-    description: 'Triggered when a student completes your course (coming soon)',
-    color: '#8b5cf6',
-    disabled: true
+    description: 'Send when a student completes a course',
+    color: '#8b5cf6'
   },
 ];
 
@@ -360,8 +358,8 @@ const AutomationManager = () => {
                   required
                 >
                   {TRIGGER_TYPES.map((trigger) => (
-                    <option key={trigger.value} value={trigger.value} disabled={trigger.disabled}>
-                      {trigger.label} {trigger.disabled ? '(Coming Soon)' : ''}
+                    <option key={trigger.value} value={trigger.value}>
+                      {trigger.label}
                     </option>
                   ))}
                 </select>

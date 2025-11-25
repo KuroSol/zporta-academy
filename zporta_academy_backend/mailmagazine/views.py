@@ -221,6 +221,88 @@ class MailMagazineTemplateViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        """Return user's templates. If none exist, auto-provision default set.
+
+        This avoids empty UI states and gives immediate usable, styled templates.
+        """
+        qs = self.get_queryset()
+        if not qs.exists():
+            # Default starter templates (subjects/bodies include variables)
+            defaults = [
+                {
+                    'name': 'Thank You for Attending',
+                    'template_type': 'thank_attend',
+                    'subject': 'Thank you for attending!',
+                    'body': (
+                        "<h2 style='color:#ffb703;'>Thank You for Attending!</h2>"
+                        "<p>Hello {{student_name}},</p>"
+                        "<p>I appreciate you taking time to visit my guide page. Your interest means a lot!"\
+                        " Feel free to explore more resources and reach out with any questions.</p>"
+                        "<p>Warm regards,<br/>{{teacher_name}}</p>"
+                    ),
+                },
+                {
+                    'name': 'Welcome Enrollment',
+                    'template_type': 'welcome_enroll',
+                    'subject': 'Welcome to {{course_name}}!',
+                    'body': (
+                        "<h2 style='color:#ffb703;'>Welcome to {{course_name}}!</h2>"
+                        "<p>Hello {{student_name}},</p>"
+                        "<p>Thrilled to have you onboard. Start with the intro module and set your learning goals."\
+                        " I'm here if you need support.</p>"
+                        "<p>To your success,<br/>{{teacher_name}}</p>"
+                    ),
+                },
+                {
+                    'name': 'Thank You for Purchase',
+                    'template_type': 'thank_purchase',
+                    'subject': 'Thank you for your purchase!',
+                    'body': (
+                        "<h2 style='color:#ffb703;'>Thank You for Your Purchase!</h2>"
+                        "<p>Hello {{student_name}},</p>"
+                        "<p>Thanks for purchasing {{course_name}}. Dive into the first lesson when ready."\
+                        " Let me know if you need onboarding help.</p>"
+                        "<p>Best,<br/>{{teacher_name}}</p>"
+                    ),
+                },
+                {
+                    'name': 'Course Completion Congratulations',
+                    'template_type': 'completion',
+                    'subject': 'Congratulations on completing {{course_name}}!',
+                    'body': (
+                        "<h2 style='color:#ffb703;'>🎉 Congratulations!</h2>"
+                        "<p>Hi {{student_name}},</p>"
+                        "<p>You just completed {{course_name}} — outstanding work! Consider leaving a review and exploring advanced courses.</p>"
+                        "<p>Keep growing,<br/>{{teacher_name}}</p>"
+                    ),
+                },
+                {
+                    'name': 'Custom Blank Template',
+                    'template_type': 'custom',
+                    'subject': 'Your custom message',
+                    'body': (
+                        "<h2 style='color:#ffb703;'>Your Custom Message</h2>"
+                        "<p>Hello {{student_name}},</p>"
+                        "<p>Write your personalized content here...</p>"
+                        "<p>Regards,<br/>{{teacher_name}}</p>"
+                    ),
+                },
+            ]
+            created = []
+            for item in defaults:
+                created.append(MailMagazineTemplate.objects.create(
+                    created_by=request.user,
+                    **item
+                ))
+            qs = MailMagazineTemplate.objects.filter(id__in=[t.id for t in created])
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
 
 class MailMagazineAutomationViewSet(viewsets.ModelViewSet):
     """

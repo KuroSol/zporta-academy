@@ -1057,3 +1057,15 @@
     padding: 1.5rem;
   }
 }
+
+/* Inline Template Gallery */
+.templateGallery {margin:0 0 2rem 0;padding:1rem 1.25rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:1rem;}
+.templateGalleryHeading {margin:0 0 .5rem 0;color:#ffb703;font-size:1.1rem;}
+.templateGridInline {display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem;}
+.inlineTemplateCard {background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:.75rem;padding:.75rem;display:flex;flex-direction:column;gap:.4rem;transition:.2s;}
+.inlineTemplateCard:hover {background:rgba(255,255,255,0.08);transform:translateY(-2px);}
+.inlineTemplateHeader strong {display:block;color:#fff;font-size:.8rem;}
+.inlineTemplateSubject {display:block;font-size:.65rem;color:rgba(255,255,255,.6);}
+.inlineTemplateBodyPreview {flex:1;font-size:.65rem;line-height:1.3;color:rgba(255,255,255,.7);}
+.useTemplateInlineButton {background:#ffb703;color:#0b1523;border:none;border-radius:.5rem;padding:.4rem .55rem;font-size:.65rem;font-weight:600;cursor:pointer;transition:.2s;}
+.useTemplateInlineButton:hover {background:#fb8500;}

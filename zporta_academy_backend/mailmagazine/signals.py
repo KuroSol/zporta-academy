@@ -61,67 +61,43 @@ def send_automated_email(automation, user, **context):
 
 @receiver(post_save, sender='enrollment.Enrollment')
 def handle_enrollment(sender, instance, created, **kwargs):
-    """
-    Trigger automation when user enrolls in a course
-    """
+    """Trigger automation when user enrolls in a course."""
     if not created:
         return
-    
     if instance.enrollment_type != 'course':
         return
-    
-    # Get the course
     from django.contrib.contenttypes.models import ContentType
     from courses.models import Course
-    
     if instance.content_type != ContentType.objects.get_for_model(Course):
         return
-    
     try:
         course = Course.objects.get(id=instance.object_id)
     except Course.DoesNotExist:
         return
-    
-    # Find matching automation rules
+    teacher = course.created_by
     automations = MailMagazineAutomation.objects.filter(
-        teacher=course.teacher,
+        teacher=teacher,
         trigger_type='enrollment',
         is_active=True
     ).filter(
         models.Q(specific_course=course) | models.Q(specific_course__isnull=True)
     )
-    
     for automation in automations:
-        send_automated_email(
-            automation,
-            instance.user,
-            course=course,
-            teacher=course.teacher
-        )
+        send_automated_email(automation, instance.user, course=course, teacher=teacher)
 
 
 @receiver(post_save, sender='social.GuideRequest')
 def handle_guide_attend(sender, instance, created, **kwargs):
-    """
-    Trigger automation when user's guide request is accepted (attends)
-    """
-    # Only trigger when status changes to 'accepted'
+    """Trigger automation when user's guide request is accepted (visit)."""
     if instance.status != 'accepted':
         return
-    
-    # Find matching automation rules for the guide (teacher)
     automations = MailMagazineAutomation.objects.filter(
         teacher=instance.guide,
         trigger_type='guide_attend',
         is_active=True
     )
-    
     for automation in automations:
-        send_automated_email(
-            automation,
-            instance.explorer,  # The user who attended
-            guide=instance.guide
-        )
+        send_automated_email(automation, instance.explorer, guide=instance.guide)
 
 
 # Note: For payment/purchase triggers, you'll need to add similar handlers
@@ -140,3 +116,41 @@ def handle_guide_attend(sender, instance, created, **kwargs):
 #     
 #     for automation in automations:
 #         send_automated_email(automation, instance.user)
+
+@receiver(post_save, sender='enrollment.CourseCompletion')
+def handle_course_completion(sender, instance, created, **kwargs):
+    """Trigger automations when a user completes a course."""
+    if not created:
+        return
+    course = instance.course
+    teacher = course.created_by
+    automations = MailMagazineAutomation.objects.filter(
+        teacher=teacher,
+        trigger_type='course_complete',
+        is_active=True
+    ).filter(
+        models.Q(specific_course__isnull=True) | models.Q(specific_course=course)
+    )
+    for automation in automations:
+        send_automated_email(automation, instance.user, course=course, teacher=teacher)
+
+@receiver(post_save, sender='payments.Payment')
+def handle_purchase(sender, instance, created, **kwargs):
+    """Trigger automations on successful purchase (Payment)."""
+    status = (getattr(instance, 'status', '') or '').lower()
+    if status not in ('succeeded', 'paid', 'completed'):
+        return
+    from courses.models import Course
+    course = Course.objects.filter(id=getattr(instance, 'course_id', None)).first()
+    if not course:
+        return
+    teacher = course.created_by
+    automations = MailMagazineAutomation.objects.filter(
+        teacher=teacher,
+        trigger_type='purchase',
+        is_active=True
+    ).filter(
+        models.Q(specific_course__isnull=True) | models.Q(specific_course=course)
+    )
+    for automation in automations:
+        send_automated_email(automation, instance.user, course=course, teacher=teacher)
