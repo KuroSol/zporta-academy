@@ -336,6 +336,6 @@ class MailMagazineAutomationAdmin(admin.ModelAdmin):
             )
         if db_field.name == "specific_course":
             from courses.models import Course
-            kwargs["queryset"] = Course.objects.filter(teacher=request.user)
+            kwargs["queryset"] = Course.objects.filter(created_by=request.user)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
