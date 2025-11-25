@@ -93,40 +93,64 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
             issue.recipients.set(recipients)
             
             raw_html = magazine.body or ''
+            raw_subject = magazine.subject or ''
             site_url = getattr(settings, 'SITE_URL', 'https://zportaacademy.com')
             view_in_browser_url = f"{site_url}/mail-magazines/{issue.id}"
             
-            # Build wrapper with "View in browser" link
-            html_wrapper = f"""
-            <html>
-              <body style='background:#0b1523;margin:0;padding:24px;font-family:Segoe UI,Arial,sans-serif;color:#ffffff;'>
-                <div style='max-width:600px;margin:0 auto;background:#142233;padding:32px;border-radius:8px;'>
-                  <div style='background:#0b1523;padding:12px;text-align:center;margin:-32px -32px 24px;border-bottom:1px solid #1e293b;'>
-                    <p style='margin:0;font-size:12px;color:#94a3b8;'>Having trouble viewing this email? <a href='{view_in_browser_url}' style='color:#ffb703;text-decoration:none;'>View in browser</a></p>
-                  </div>
-                  {raw_html}
-                  <hr style='border:none;border-top:1px solid #1f2e40;margin:32px 0;' />
-                  <p style='font-size:12px;color:#94a3b8;margin:0;'>You are receiving this because you subscribed to this teacher's mail magazine.</p>
-                  <p style='font-size:12px;color:#94a3b8;margin:8px 0 0;'>Manage preferences: <a href='https://zportaacademy.com/preferences/mail-magazines' style='color:#ffb703;'>Click here</a></p>
-                </div>
-              </body>
-            </html>
-            """.strip()
+            # Send personalized email to each recipient
+            import re
+            from django.utils.html import escape
             
-            # Update issue with final HTML
-            issue.html_content = html_wrapper
+            for recipient in recipients:
+                # Build variables for placeholder replacement
+                variables = {
+                    'student_name': recipient.get_full_name() or recipient.username,
+                    'student_username': recipient.username,
+                    'teacher_name': request.user.get_full_name() or request.user.username,
+                    'teacher_username': request.user.username,
+                    'course_name': '',  # Not applicable for manual sends
+                    'course_title': '',
+                    'site_url': site_url,
+                }
+                
+                # Replace placeholders in subject and body
+                def render_placeholders(text):
+                    pattern = re.compile(r'{{\s*([a-zA-Z0-9_]+)\s*}}')
+                    return pattern.sub(lambda m: escape(variables.get(m.group(1), '')), text)
+                
+                personalized_subject = render_placeholders(raw_subject)
+                personalized_html = render_placeholders(raw_html)
+                
+                # Build wrapper with "View in browser" link
+                html_wrapper = f"""
+                <html>
+                  <body style='background:#0b1523;margin:0;padding:24px;font-family:Segoe UI,Arial,sans-serif;color:#ffffff;'>
+                    <div style='max-width:600px;margin:0 auto;background:#142233;padding:32px;border-radius:8px;'>
+                      <div style='background:#0b1523;padding:12px;text-align:center;margin:-32px -32px 24px;border-bottom:1px solid #1e293b;'>
+                        <p style='margin:0;font-size:12px;color:#94a3b8;'>Having trouble viewing this email? <a href='{view_in_browser_url}' style='color:#ffb703;text-decoration:none;'>View in browser</a></p>
+                      </div>
+                      {personalized_html}
+                      <hr style='border:none;border-top:1px solid #1f2e40;margin:32px 0;' />
+                      <p style='font-size:12px;color:#94a3b8;margin:0;'>You are receiving this because you subscribed to this teacher's mail magazine.</p>
+                      <p style='font-size:12px;color:#94a3b8;margin:8px 0 0;'>Manage preferences: <a href='https://zportaacademy.com/preferences/mail-magazines' style='color:#ffb703;'>Click here</a></p>
+                    </div>
+                  </body>
+                </html>
+                """.strip()
+                
+                plain_text = BeautifulSoup(personalized_html, 'html.parser').get_text(separator='\n', strip=True)
+                email = EmailMultiAlternatives(
+                    subject=personalized_subject,
+                    body=plain_text,
+                    from_email=settings.EMAIL_HOST_USER,
+                    to=[recipient.email],
+                )
+                email.attach_alternative(html_wrapper, "text/html")
+                email.send(fail_silently=False)
+            
+            # Update issue with final HTML (store template version)
+            issue.html_content = raw_html
             issue.save(update_fields=['html_content'])
-            
-            plain_text = BeautifulSoup(raw_html, 'html.parser').get_text(separator='\n', strip=True)
-            email = EmailMultiAlternatives(
-                subject=magazine.subject,
-                body=plain_text,
-                from_email=settings.EMAIL_HOST_USER,
-                to=[],
-                bcc=recipient_emails,
-            )
-            email.attach_alternative(html_wrapper, "text/html")
-            email.send(fail_silently=False)
 
             # Update last sent timestamp and increment counter
             magazine.last_sent_at = timezone.now()
