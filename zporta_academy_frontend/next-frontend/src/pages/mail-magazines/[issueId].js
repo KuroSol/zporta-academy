@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import apiClient from '@/api';
 import styles from '@/styles/MailMagazineIssue.module.css';
+import { FaArrowLeft } from 'react-icons/fa';
 
 export default function MailMagazineIssuePage() {
   const router = useRouter();
@@ -46,6 +47,17 @@ export default function MailMagazineIssuePage() {
     fetchIssue();
   }, [issueId, token, router, logout]);
 
+  const handleBack = () => {
+    if (issue?.teacher_username) {
+      // Go back to the teacher's profile, specifically the magazines tab if possible
+      // Since we can't easily control the tab state from URL without modifying the profile page,
+      // we'll just go to the profile. The user can click the tab.
+      router.push(`/guides/${issue.teacher_username}`);
+    } else {
+      router.back();
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -84,6 +96,10 @@ export default function MailMagazineIssuePage() {
 
   return (
     <div className={styles.container}>
+      <button onClick={handleBack} className={styles.backButton}>
+        <FaArrowLeft /> Back to List
+      </button>
+
       <div className={styles.meta}>
         <p className={styles.sentDate}>
           Sent on {new Date(issue.sent_at).toLocaleDateString('en-US', {

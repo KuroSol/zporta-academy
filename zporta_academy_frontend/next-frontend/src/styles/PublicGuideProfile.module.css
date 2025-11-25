@@ -249,6 +249,7 @@
 }
 .listItem h3 { font-size: 1.25rem; font-weight: 600; color: var(--text-primary, #222E3A); margin: 0 0 10px 0; }
 .listItem p { font-size: .95rem; color: var(--text-secondary, #667085); line-height: 1.6; margin-bottom: 18px; }
+.issueDate { font-size: 0.85rem !important; color: var(--text-secondary, #667085); margin-bottom: 12px !important; font-style: italic; }
 
 /* CTA link/button */
 .detailsBtn {
