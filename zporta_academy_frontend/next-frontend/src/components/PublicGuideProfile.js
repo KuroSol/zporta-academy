@@ -41,10 +41,12 @@ export default function PublicGuideProfile() {
   const [courses, setCourses] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
+  const [mailIssues, setMailIssues] = useState([]);
 
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [lessonsLoading, setLessonsLoading] = useState(true);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
+  const [mailIssuesLoading, setMailIssuesLoading] = useState(true);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -57,6 +59,7 @@ export default function PublicGuideProfile() {
   const [displayedQuizzesCount, setDisplayedQuizzesCount] = useState(
     SUBSEQUENT_LOAD_BATCH_SIZE.quizzes
   );
+  const [displayedMailIssuesCount, setDisplayedMailIssuesCount] = useState(5);
 
   const [attendances, setAttendances] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -92,6 +95,13 @@ export default function PublicGuideProfile() {
     setTimeout(() => setIsLoadingMore(false), 300);
   }, [isLoadingMore, displayedQuizzesCount, quizzes.length]);
 
+  const handleLoadMoreMailIssues = useCallback(() => {
+    if (isLoadingMore || displayedMailIssuesCount >= mailIssues.length) return;
+    setIsLoadingMore(true);
+    setDisplayedMailIssuesCount((c) => c + 5);
+    setTimeout(() => setIsLoadingMore(false), 300);
+  }, [isLoadingMore, displayedMailIssuesCount, mailIssues.length]);
+
   // Fetch data when username changes
   useEffect(() => {
     if (!username) return;
@@ -101,6 +111,7 @@ export default function PublicGuideProfile() {
       setCoursesLoading(true);
       setLessonsLoading(true);
       setQuizzesLoading(true);
+      setMailIssuesLoading(true);
       setIsLoadingMore(false);
       setError("");
 
@@ -108,6 +119,7 @@ export default function PublicGuideProfile() {
       setCourses([]);
       setLessons([]);
       setQuizzes([]);
+      setMailIssues([]);
       setAttendances(0);
       setGuideRequest(null);
 
@@ -115,6 +127,7 @@ export default function PublicGuideProfile() {
       setDisplayedCoursesCount(INITIAL_DISPLAY_DEFAULT_TAB);
       setDisplayedLessonsCount(SUBSEQUENT_LOAD_BATCH_SIZE.lessons);
       setDisplayedQuizzesCount(SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
+      setDisplayedMailIssuesCount(5);
 
       try {
         const profileRes = await apiClient.get(`/users/guides/${username}/`);
@@ -128,9 +141,10 @@ export default function PublicGuideProfile() {
           apiClient.get(`/lessons/?created_by=${username}`),
           apiClient.get(`/quizzes/?created_by=${username}`),
           token && currentUser ? apiClient.get(`/social/guide-requests/`) : Promise.resolve({ data: null }),
+          token ? apiClient.get(`/mailmagazine/issues/by-teacher/${username}/`) : Promise.resolve({ data: [] }),
         ];
 
-        const [coursesRes, lessonsRes, quizzesRes, guideRequestsRes] = await Promise.all(promises);
+        const [coursesRes, lessonsRes, quizzesRes, guideRequestsRes, mailIssuesRes] = await Promise.all(promises);
 
         try {
           setCourses(Array.isArray(coursesRes?.data) ? coursesRes.data : []);
@@ -148,6 +162,12 @@ export default function PublicGuideProfile() {
           setQuizzes(Array.isArray(quizzesRes?.data) ? quizzesRes.data : []);
         } finally {
           setQuizzesLoading(false);
+        }
+
+        try {
+          setMailIssues(Array.isArray(mailIssuesRes?.data) ? mailIssuesRes.data : []);
+        } finally {
+          setMailIssuesLoading(false);
         }
 
         try {
@@ -282,6 +302,7 @@ export default function PublicGuideProfile() {
     courses: courses.slice(0, displayedCoursesCount),
     lessons: lessons.slice(0, displayedLessonsCount),
     quizzes: quizzes.slice(0, displayedQuizzesCount),
+    mailIssues: mailIssues.slice(0, displayedMailIssuesCount),
   };
 
   if ((loading && !profile) || !username) return <p className={styles.loading}>Loading profile...</p>;
@@ -455,6 +476,46 @@ export default function PublicGuideProfile() {
           )}
         </div>
       );
+    } else if (activeTab === "mailMagazines") {
+      return (
+        <div className={styles.tabPanel}>
+          <h2>Mail Magazine Issues</h2>
+          {mailIssuesLoading && itemsToDisplay.mailIssues.length === 0 ? (
+            <p className={styles.loading}>Loading mail magazines...</p>
+          ) : mailIssues.length > 0 ? (
+            <>
+              <ul className={styles.list}>
+                {itemsToDisplay.mailIssues.map(
+                  (issue) =>
+                    issue && (
+                      <li key={issue.id} className={styles.listItem}>
+                        <h3>{issue.title || issue.subject || "Untitled Issue"}</h3>
+                        <p className={styles.issueDate}>
+                          Sent on {new Date(issue.sent_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <Link
+                          href={`/mail-magazines/${issue.id}`}
+                          className={styles.detailsBtn}
+                        >
+                          View Issue
+                        </Link>
+                      </li>
+                    )
+                )}
+              </ul>
+              {isLoadingMore && displayedMailIssuesCount < mailIssues.length && (
+                <p className={styles.loading}>Loading</p>
+              )}
+            </>
+          ) : (
+            <p>No mail magazine issues available.</p>
+          )}
+        </div>
+      );
     }
     return null;
   };
@@ -550,6 +611,19 @@ export default function PublicGuideProfile() {
           >
             <h3>{quizzes.length}</h3>
             <p>Quizzes</p>
+          </div>
+
+          <div
+            className={`${styles.stat} ${styles.statClickable} ${
+              activeTab === "mailMagazines" ? styles.statActive : ""
+            }`}
+            onClick={() => setActiveTab("mailMagazines")}
+            role="button"
+            tabIndex={0}
+            onKeyPress={(e) => e.key === "Enter" && setActiveTab("mailMagazines")}
+          >
+            <h3>{mailIssues.length}</h3>
+            <p>Magazines</p>
           </div>
 
           <div className={styles.stat}>

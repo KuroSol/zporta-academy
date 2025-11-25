@@ -6,6 +6,7 @@ from django.core.mail import EmailMultiAlternatives
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
+from django.db import models
 from .models import TeacherMailMagazine, MailMagazineIssue
 from .serializers import TeacherMailMagazineSerializer
 
@@ -141,8 +142,10 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
 
 
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from .serializers import MailMagazineIssueSerializer
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 
 
 class MailMagazineIssueDetailView(RetrieveAPIView):
@@ -171,3 +174,31 @@ class MailMagazineIssueDetailView(RetrieveAPIView):
         
         serializer = self.get_serializer(issue)
         return Response(serializer.data)
+
+
+class TeacherMailMagazineIssuesListView(ListAPIView):
+    """
+    List all mail magazine issues by a specific teacher.
+    Access: Only shows issues where logged-in user is a recipient or if is_public=True
+    """
+    serializer_class = MailMagazineIssueSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        teacher = get_object_or_404(User, username=username)
+        user = self.request.user
+        
+        # Get all issues by this teacher
+        issues = MailMagazineIssue.objects.filter(magazine__teacher=teacher)
+        
+        # Filter to only issues the user can access
+        # (where user is recipient OR issue is public OR user is the teacher)
+        if user == teacher:
+            # Teacher sees all their issues
+            return issues
+        else:
+            # Others see only issues they received or public ones
+            return issues.filter(
+                models.Q(recipients=user) | models.Q(is_public=True)
+            ).distinct()
