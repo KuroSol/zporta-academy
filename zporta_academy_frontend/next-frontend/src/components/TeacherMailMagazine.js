@@ -669,7 +669,7 @@ const TeacherMailMagazine = () => {
 
               <div className={styles.templateGallery}>
                 <h3 className={styles.templateGalleryHeading}>Quick Templates</h3>
-                <p className={styles.subText}>Insert a starting point and customize freely. Variables: {'{'}{'{'}}student_name{'}'}{'}'}}, {'{'}{'{'}}teacher_name{'}'}{'}'}}, {'{'}{'{'}}course_name{'}'}{'}'}}</p>
+                <p className={styles.subText}>Insert a starting point and customize freely. Variables: student_name, teacher_name, course_name (use double curly braces)</p>
                 <div className={styles.templateGridInline}>
                   {BUILT_IN_TEMPLATES.map(t => (
                     <div key={t.key} className={styles.inlineTemplateCard}>
