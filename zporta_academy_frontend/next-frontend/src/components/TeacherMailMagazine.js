@@ -5,9 +5,11 @@ import { AuthContext } from '@/context/AuthContext';
 import apiClient from '@/api';
 import styles from '@/styles/TeacherMailMagazine.module.css';
 import MailMagazineEditor from './Editor/MailMagazineEditor';
+import TemplateManager from './MailMagazine/TemplateManager';
+import AutomationManager from './MailMagazine/AutomationManager';
 import { 
   FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
-  FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt
+  FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt, FaBolt, FaFileAlt
 } from 'react-icons/fa';
 
 const FREQUENCY_OPTIONS = [
@@ -44,7 +46,7 @@ const TeacherMailMagazine = () => {
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
   // New state for modals and features
-  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'templates'
+  const [activeView, setActiveView] = useState('list'); // 'list', 'compose', 'templates', 'automations'
   const [selectedMagazine, setSelectedMagazine] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRecipientsModal, setShowRecipientsModal] = useState(false);
@@ -510,7 +512,13 @@ const TeacherMailMagazine = () => {
             className={`${styles.tabButton} ${activeView === 'templates' ? styles.tabActive : ''}`}
             onClick={() => setActiveView('templates')}
           >
-            <FaCopy /> Templates
+            <FaFileAlt /> Email Templates
+          </button>
+          <button
+            className={`${styles.tabButton} ${activeView === 'automations' ? styles.tabActive : ''}`}
+            onClick={() => setActiveView('automations')}
+          >
+            <FaBolt /> Automations
           </button>
         </nav>
 
@@ -732,46 +740,11 @@ const TeacherMailMagazine = () => {
         )}
 
         {activeView === 'templates' && (
-          <div className={styles.mainContent}>
-            <div className={styles.contentHeader}>
-              <h2>Your Templates</h2>
-              <p className={styles.subText}>Recurring magazines can be used as templates</p>
-            </div>
+          <TemplateManager />
+        )}
 
-            {templates.length === 0 ? (
-              <div className={styles.emptyState}>
-                <FaCopy size={48} />
-                <p>No templates available yet.</p>
-                <p className={styles.subText}>
-                  Create a recurring mail magazine (weekly/monthly) and it will appear here as a template.
-                </p>
-              </div>
-            ) : (
-              <div className={styles.templateGrid}>
-                {templates.map((template) => (
-                  <div key={template.id} className={styles.templateCard}>
-                    <div className={styles.templateHeader}>
-                      <h3>{template.title}</h3>
-                      <span className={styles.frequencyBadge}>
-                        {FREQUENCY_OPTIONS.find((f) => f.value === template.frequency)?.label}
-                      </span>
-                    </div>
-                    <p className={styles.templateSubject}>{template.subject}</p>
-                    <p className={styles.templateBody}>
-                      {template.body?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)}
-                      {template.body?.length > 100 ? '...' : ''}
-                    </p>
-                    <button
-                      className={styles.useTemplateButton}
-                      onClick={() => handleUseTemplate(template)}
-                    >
-                      <FaCopy /> Use This Template
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {activeView === 'automations' && (
+          <AutomationManager />
         )}
 
         {showDetailModal && selectedMagazine && (
