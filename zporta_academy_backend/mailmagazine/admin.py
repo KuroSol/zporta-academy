@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.contrib import messages
 from django.utils.html import format_html
-from .models import TeacherMailMagazine, MailMagazineIssue
+from .models import TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, MailMagazineAutomation
 from social.models import GuideRequest
 from django.utils import timezone
 
@@ -74,7 +74,7 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
     recipient_count.short_description = 'Will Send To'
     
     def attendee_list_display(self, obj):
-        """Display formatted list of all attendees"""
+        """Display formatted list of all attendees (privacy-friendly: no emails shown)"""
         all_attendees = self.get_attendee_data(obj)
         
         if not all_attendees:
@@ -96,7 +96,6 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
         for attendee in sorted(all_attendees, key=lambda x: x['full_name'].lower()):
             full_name = attendee['full_name']
             username = attendee['username']
-            email = attendee['email']
             is_selected = attendee['id'] in selected_ids
             
             style = 'margin-bottom: 8px;'
@@ -105,25 +104,26 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
             elif selected_ids and not is_selected:
                 style += ' opacity: 0.5;'
             
+            # Privacy: Only show username and display name, no email addresses
             if full_name != username:
                 html_parts.append(
                     f'<li style="{style}">'
                     f'<strong>{full_name}</strong> '
                     f'<span style="color: #666;">(@{username})</span>'
-                    f'{" ✓ Selected" if selected_ids and is_selected else ""}<br>'
-                    f'<a href="mailto:{email}" style="color: #0066cc;">{email}</a>'
+                    f'{" ✓ Selected" if selected_ids and is_selected else ""}'
                     f'</li>'
                 )
             else:
                 html_parts.append(
                     f'<li style="{style}">'
                     f'<strong>@{username}</strong>'
-                    f'{" ✓ Selected" if selected_ids and is_selected else ""}<br>'
-                    f'<a href="mailto:{email}" style="color: #0066cc;">{email}</a>'
+                    f'{" ✓ Selected" if selected_ids and is_selected else ""}'
                     f'</li>'
                 )
         
-        html_parts.append('</ol></div>')
+        html_parts.append('</ol>')
+        html_parts.append('<p style="margin-top: 10px; color: #666; font-size: 12px; font-style: italic;">🔒 Email addresses are hidden for privacy. Users will receive notifications through the app.</p>')
+        html_parts.append('</div>')
         return format_html(''.join(html_parts))
     
     attendee_list_display.short_description = 'Attendee List (Guide Request Accepted)'
@@ -253,3 +253,89 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
             ).order_by('first_name', 'last_name', 'username')
                 
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+
+@admin.register(MailMagazineTemplate)
+class MailMagazineTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'template_type', 'created_by', 'is_active', 'created_at']
+    list_filter = ['template_type', 'is_active', 'created_at']
+    search_fields = ['name', 'subject', 'body']
+    readonly_fields = ['created_by', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Template Information', {
+            'fields': ('name', 'template_type', 'is_active'),
+        }),
+        ('Email Content', {
+            'fields': ('subject', 'body'),
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Only show templates created by the logged-in user"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(created_by=request.user)
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set created_by to the logged-in user"""
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(MailMagazineAutomation)
+class MailMagazineAutomationAdmin(admin.ModelAdmin):
+    list_display = ['name', 'trigger_type', 'teacher', 'is_active', 'template', 'created_at']
+    list_filter = ['trigger_type', 'is_active', 'created_at']
+    search_fields = ['name', 'subject', 'body']
+    readonly_fields = ['teacher', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Automation Settings', {
+            'fields': ('name', 'trigger_type', 'is_active'),
+        }),
+        ('Email Content', {
+            'fields': ('template', 'subject', 'body'),
+            'description': 'Choose a template OR write custom content. Custom content overrides template.'
+        }),
+        ('Filters (Optional)', {
+            'fields': ('specific_course',),
+            'description': 'Restrict this automation to specific items. Leave empty to apply to all.'
+        }),
+        ('Metadata', {
+            'fields': ('teacher', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Only show automations created by the logged-in user"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(teacher=request.user)
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set teacher to the logged-in user"""
+        if not change:
+            obj.teacher = request.user
+        super().save_model(request, obj, form, change)
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Filter templates to show only those created by the current user"""
+        if db_field.name == "template":
+            kwargs["queryset"] = MailMagazineTemplate.objects.filter(
+                created_by=request.user,
+                is_active=True
+            )
+        if db_field.name == "specific_course":
+            from courses.models import Course
+            kwargs["queryset"] = Course.objects.filter(teacher=request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+

@@ -7,8 +7,12 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
 from django.db import models
-from .models import TeacherMailMagazine, MailMagazineIssue
-from .serializers import TeacherMailMagazineSerializer
+from .models import TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, MailMagazineAutomation
+from .serializers import (
+    TeacherMailMagazineSerializer, 
+    MailMagazineTemplateSerializer,
+    MailMagazineAutomationSerializer
+)
 
 
 class IsTeacherOrAdmin(BasePermission):
@@ -202,3 +206,32 @@ class TeacherMailMagazineIssuesListView(ListAPIView):
             return issues.filter(
                 models.Q(recipients=user) | models.Q(is_public=True)
             ).distinct()
+
+
+class MailMagazineTemplateViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing email templates
+    """
+    serializer_class = MailMagazineTemplateSerializer
+    permission_classes = [IsAuthenticated, IsTeacherOrAdmin]
+    
+    def get_queryset(self):
+        return MailMagazineTemplate.objects.filter(created_by=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class MailMagazineAutomationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing email automation rules
+    """
+    serializer_class = MailMagazineAutomationSerializer
+    permission_classes = [IsAuthenticated, IsTeacherOrAdmin]
+    
+    def get_queryset(self):
+        return MailMagazineAutomation.objects.filter(teacher=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
+

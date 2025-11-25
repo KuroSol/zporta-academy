@@ -2,6 +2,108 @@ from django.db import models
 from django.conf import settings
 
 
+class MailMagazineTemplate(models.Model):
+    """
+    Predefined email templates for common scenarios
+    """
+    TEMPLATE_TYPES = [
+        ('thank_attend', 'Thank You for Attending'),
+        ('thank_purchase', 'Thank You for Purchase'),
+        ('welcome_enroll', 'Welcome - Course Enrollment'),
+        ('completion', 'Course Completion Congratulations'),
+        ('custom', 'Custom Template'),
+    ]
+    
+    name = models.CharField(max_length=200, help_text='Template name for identification')
+    template_type = models.CharField(max_length=50, choices=TEMPLATE_TYPES, default='custom')
+    subject = models.CharField(max_length=200, help_text='Email subject line')
+    body = models.TextField(help_text='Email body content (HTML supported)')
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='created_templates'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['template_type', 'name']
+        indexes = [
+            models.Index(fields=['created_by', 'template_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_template_type_display()})"
+
+
+class MailMagazineAutomation(models.Model):
+    """
+    Automated email sending based on user actions
+    """
+    TRIGGER_TYPES = [
+        ('enrollment', 'When User Enrolls in Course'),
+        ('purchase', 'When User Purchases Product'),
+        ('guide_attend', 'When User Attends as Guide'),
+        ('course_complete', 'When User Completes Course'),
+    ]
+    
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='mail_automations'
+    )
+    name = models.CharField(max_length=200, help_text='Automation rule name')
+    trigger_type = models.CharField(max_length=50, choices=TRIGGER_TYPES)
+    template = models.ForeignKey(
+        MailMagazineTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='automations'
+    )
+    subject = models.CharField(max_length=200, help_text='Email subject (overrides template if set)')
+    body = models.TextField(help_text='Email body (overrides template if set)', blank=True)
+    is_active = models.BooleanField(default=True, help_text='Enable/disable this automation')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Optional filters
+    specific_course = models.ForeignKey(
+        'courses.Course',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text='Only trigger for this specific course (leave empty for all courses)'
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['teacher', 'trigger_type', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.get_trigger_type_display()}"
+    
+    def get_email_content(self):
+        """Get the email content, preferring custom over template"""
+        if self.body:
+            return {
+                'subject': self.subject,
+                'body': self.body
+            }
+        elif self.template:
+            return {
+                'subject': self.subject or self.template.subject,
+                'body': self.template.body
+            }
+        return {
+            'subject': self.subject,
+            'body': ''
+        }
+
+
 class TeacherMailMagazine(models.Model):
     FREQUENCY_CHOICES = [
         ('one_time', 'One Time'),
@@ -18,6 +120,14 @@ class TeacherMailMagazine(models.Model):
     title = models.CharField(max_length=200)
     subject = models.CharField(max_length=200)
     body = models.TextField()
+    template = models.ForeignKey(
+        MailMagazineTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='magazines',
+        help_text='Optional: Use a predefined template'
+    )
     frequency = models.CharField(
         max_length=20,
         choices=FREQUENCY_CHOICES,
