@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.contrib import messages
 from django.utils.html import format_html
-from .models import TeacherMailMagazine
+from .models import TeacherMailMagazine, MailMagazineIssue
 from social.models import GuideRequest
 from django.utils import timezone
 
@@ -137,11 +137,16 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
                     email__isnull=False
                 ).exclude(email='')
                 recipient_emails = [user.email for user in selected_users]
+                recipient_users = list(selected_users)
                 recipient_type = 'selected attendees'
             else:
                 # Otherwise, send to all attendees
                 attendees = self.get_attendee_data(magazine)
                 recipient_emails = [a['email'] for a in attendees]
+                recipient_ids = [a['id'] for a in attendees]
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                recipient_users = User.objects.filter(id__in=recipient_ids)
                 recipient_type = 'all attendees'
             
             if not recipient_emails:
@@ -153,8 +158,54 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
                 continue
             
             try:
-                # Prepare HTML + plain text alternative for better deliverability
+                # Create issue record first to get ID for "View in browser" link
+                issue = MailMagazineIssue.objects.create(
+                    magazine=magazine,
+                    title=magazine.title,
+                    subject=magazine.subject,
+                    html_content='',  # Will update after building wrapper
+                )
+                issue.recipients.set(recipient_users)
+                
+                # Prepare HTML wrapper with "View in browser" link
                 html_body = magazine.body or ''
+                site_url = getattr(settings, 'SITE_URL', 'https://zportaacademy.com')
+                view_in_browser_url = f"{site_url}/mail-magazines/{issue.id}"
+                
+                html_wrapper = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="margin: 0; padding: 0; background-color: #0b1523; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                    <div style="max-width: 600px; margin: 20px auto; background-color: #142233; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+                        <div style="background-color: #0b1523; padding: 12px; text-align: center; border-bottom: 1px solid #1e293b;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                Having trouble viewing this email? <a href="{view_in_browser_url}" style="color: #ffb703; text-decoration: none;">View in browser</a>
+                            </p>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #ffb703 0%, #fb8500 100%); padding: 24px; text-align: center;">
+                            <h1 style="margin: 0; color: #0b1523; font-size: 24px; font-weight: 600;">{magazine.title}</h1>
+                        </div>
+                        <div style="padding: 32px 24px; color: #e2e8f0;">
+                            {html_body}
+                        </div>
+                        <div style="background-color: #0b1523; padding: 20px 24px; text-align: center; border-top: 1px solid #1e293b;">
+                            <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+                                You received this because you're an attendee of {magazine.teacher.username}
+                            </p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Update issue with final HTML content
+                issue.html_content = html_wrapper
+                issue.save(update_fields=['html_content'])
+                
                 plain_body = BeautifulSoup(html_body, 'html.parser').get_text(separator='\n', strip=True)
                 email = EmailMultiAlternatives(
                     subject=magazine.subject,
@@ -163,8 +214,9 @@ class TeacherMailMagazineAdmin(admin.ModelAdmin):
                     to=[settings.DEFAULT_FROM_EMAIL],
                     bcc=recipient_emails,
                 )
-                email.attach_alternative(html_body, "text/html")
+                email.attach_alternative(html_wrapper, "text/html")
                 email.send(fail_silently=False)
+                
                 magazine.last_sent_at = timezone.now()
                 magazine.save(update_fields=['last_sent_at'])
                 

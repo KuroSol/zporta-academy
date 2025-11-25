@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import TeacherMailMagazine
+from .models import TeacherMailMagazine, MailMagazineIssue
 
 User = get_user_model()
 
@@ -45,3 +45,24 @@ class TeacherMailMagazineSerializer(serializers.ModelSerializer):
             'selected_recipients_details',
         ]
         read_only_fields = ['id', 'last_sent_at', 'times_sent', 'created_at', 'updated_at', 'selected_recipients_details']
+
+
+class MailMagazineIssueSerializer(serializers.ModelSerializer):
+    """Serializer for mail magazine issues (sent archive)"""
+    magazine_title = serializers.CharField(source='magazine.title', read_only=True)
+    teacher_username = serializers.CharField(source='magazine.teacher.username', read_only=True)
+    
+    class Meta:
+        model = MailMagazineIssue
+        fields = [
+            'id',
+            'magazine',
+            'magazine_title',
+            'teacher_username',
+            'title',
+            'subject',
+            'html_content',
+            'sent_at',
+            'is_public',
+        ]
+        read_only_fields = ['id', 'sent_at', 'magazine_title', 'teacher_username']

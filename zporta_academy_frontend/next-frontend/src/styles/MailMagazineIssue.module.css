@@ -1,0 +1,104 @@
+.container {
+  min-height: 100vh;
+  background-color: #0b1523;
+  padding: 40px 20px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  color: #e2e8f0;
+  font-size: 18px;
+}
+
+.error {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: #142233;
+  border-radius: 8px;
+  text-align: center;
+  color: #e2e8f0;
+}
+
+.error h2 {
+  color: #ff6b6b;
+  margin-bottom: 16px;
+}
+
+.error p {
+  margin-bottom: 24px;
+  color: #94a3b8;
+}
+
+.homeButton {
+  background: linear-gradient(135deg, #ffb703 0%, #fb8500 100%);
+  color: #0b1523;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.homeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 183, 3, 0.3);
+}
+
+.meta {
+  max-width: 600px;
+  margin: 0 auto 24px;
+  padding: 16px;
+  background-color: #142233;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.sentDate {
+  margin: 0;
+  font-weight: 500;
+}
+
+.teacher {
+  margin: 0;
+  color: #ffb703;
+  font-weight: 600;
+}
+
+.content {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Ensure the embedded email HTML displays correctly */
+.content :global(html),
+.content :global(body) {
+  background-color: transparent !important;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 10px;
+  }
+  
+  .meta {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .error {
+    padding: 24px;
+  }
+}

@@ -81,6 +81,7 @@ CORS_ALLOW_CREDENTIALS = True
 FRONTEND_URL_BASE = 'https://zportaacademy.com'
 QUIZ_ORIGIN = 'https://zportaacademy.com'
 CURRENT_DOMAIN = 'https://zportaacademy.com'
+SITE_URL = 'https://zportaacademy.com'  # For email "View in browser" links
 
 # ==============================================
 # DATABASE CONFIGURATION (MySQL via Unix Socket)

@@ -6,7 +6,7 @@ from django.core.mail import EmailMultiAlternatives
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
-from .models import TeacherMailMagazine
+from .models import TeacherMailMagazine, MailMagazineIssue
 from .serializers import TeacherMailMagazineSerializer
 
 
@@ -78,12 +78,27 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
+            # Create issue record first to get ID for "View in browser" link
+            issue = MailMagazineIssue.objects.create(
+                magazine=magazine,
+                title=magazine.title,
+                subject=magazine.subject,
+                html_content='',  # Will update after building wrapper
+            )
+            issue.recipients.set(recipients)
+            
             raw_html = magazine.body or ''
-            # Build minimal wrapper to ensure proper HTML rendering
+            site_url = getattr(settings, 'SITE_URL', 'https://zportaacademy.com')
+            view_in_browser_url = f"{site_url}/mail-magazines/{issue.id}"
+            
+            # Build wrapper with "View in browser" link
             html_wrapper = f"""
             <html>
               <body style='background:#0b1523;margin:0;padding:24px;font-family:Segoe UI,Arial,sans-serif;color:#ffffff;'>
                 <div style='max-width:600px;margin:0 auto;background:#142233;padding:32px;border-radius:8px;'>
+                  <div style='background:#0b1523;padding:12px;text-align:center;margin:-32px -32px 24px;border-bottom:1px solid #1e293b;'>
+                    <p style='margin:0;font-size:12px;color:#94a3b8;'>Having trouble viewing this email? <a href='{view_in_browser_url}' style='color:#ffb703;text-decoration:none;'>View in browser</a></p>
+                  </div>
                   {raw_html}
                   <hr style='border:none;border-top:1px solid #1f2e40;margin:32px 0;' />
                   <p style='font-size:12px;color:#94a3b8;margin:0;'>You are receiving this because you subscribed to this teacher's mail magazine.</p>
@@ -92,6 +107,11 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
               </body>
             </html>
             """.strip()
+            
+            # Update issue with final HTML
+            issue.html_content = html_wrapper
+            issue.save(update_fields=['html_content'])
+            
             plain_text = BeautifulSoup(raw_html, 'html.parser').get_text(separator='\n', strip=True)
             email = EmailMultiAlternatives(
                 subject=magazine.subject,
@@ -118,3 +138,36 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
                 {'error': f'Failed to send email: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+from rest_framework.views import APIView
+from rest_framework.generics import RetrieveAPIView
+from .serializers import MailMagazineIssueSerializer
+
+
+class MailMagazineIssueDetailView(RetrieveAPIView):
+    """
+    View a sent mail magazine issue.
+    Access: teacher who sent it, recipients, or anyone if is_public=True
+    """
+    queryset = MailMagazineIssue.objects.all()
+    serializer_class = MailMagazineIssueSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def retrieve(self, request, *args, **kwargs):
+        issue = self.get_object()
+        user = request.user
+        
+        # Check access: teacher, recipient, or public
+        is_teacher = issue.magazine.teacher == user
+        is_recipient = issue.recipients.filter(id=user.id).exists()
+        is_public = issue.is_public
+        
+        if not (is_teacher or is_recipient or is_public):
+            return Response(
+                {'error': 'You do not have permission to view this issue.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = self.get_serializer(issue)
+        return Response(serializer.data)

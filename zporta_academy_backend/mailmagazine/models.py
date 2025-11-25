@@ -45,3 +45,35 @@ class TeacherMailMagazine(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.teacher.username}"
+
+
+class MailMagazineIssue(models.Model):
+    """
+    Stores each sent mail magazine issue for gated web viewing.
+    Recipients can view past issues; optionally public if is_public=True.
+    """
+    magazine = models.ForeignKey(
+        TeacherMailMagazine,
+        on_delete=models.CASCADE,
+        related_name='issues'
+    )
+    title = models.CharField(max_length=200)
+    subject = models.CharField(max_length=200)
+    html_content = models.TextField(help_text='Full HTML content including wrapper')
+    sent_at = models.DateTimeField(auto_now_add=True)
+    is_public = models.BooleanField(default=False, help_text='Make visible to non-recipients')
+    recipients = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='received_issues',
+        help_text='Users who received this issue'
+    )
+
+    class Meta:
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['magazine', '-sent_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.subject} - {self.sent_at.strftime('%Y-%m-%d')}"
