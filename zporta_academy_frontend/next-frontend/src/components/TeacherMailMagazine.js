@@ -39,51 +39,31 @@ const BUILT_IN_TEMPLATES = [
     key: 'thank_attend',
     name: 'Thank You for Attending',
     subject: 'Thank you for attending!',
-    body: `<h2 style="color:#ffb703;">Thank You for Attending!</h2>
-<p>Hello {{student_name}},</p>
-<p>I appreciate you taking time to visit my guide page. Your curiosity means a lot! Feel free to explore more resources and reach out with any questions.</p>
-<p>Warm regards,<br/>{{teacher_name}}</p>`
+    body: '<h2 style="color:#ffb703;">Thank You for Attending!</h2>\n<p>Hello {{student_name}},</p>\n<p>I appreciate you taking time to visit my guide page. Your curiosity means a lot! Feel free to explore more resources and reach out with any questions.</p>\n<p>Warm regards,<br/>{{teacher_name}}</p>'
   },
   {
     key: 'thank_purchase',
     name: 'Thank You for Purchase',
     subject: 'Thank you for your purchase!',
-    body: `<h2 style="color:#ffb703;">Thank You for Your Purchase!</h2>
-<p>Hello {{student_name}},</p>
-<p>Thanks for purchasing <strong>{{course_name}}</strong>. Dive into the first lesson when you are ready and let me know if you need onboarding help.</p>
-<ul style="line-height:1.6;">
-  <li>Start with the introduction module</li>
-  <li>Set your learning goals</li>
-  <li>Join community discussions</li>
-</ul>
-<p>Best,<br/>{{teacher_name}}</p>`
+    body: '<h2 style="color:#ffb703;">Thank You for Your Purchase!</h2>\n<p>Hello {{student_name}},</p>\n<p>Thanks for purchasing <strong>{{course_name}}</strong>. Dive into the first lesson when you are ready and let me know if you need onboarding help.</p>\n<ul style="line-height:1.6;">\n  <li>Start with the introduction module</li>\n  <li>Set your learning goals</li>\n  <li>Join community discussions</li>\n</ul>\n<p>Best,<br/>{{teacher_name}}</p>'
   },
   {
     key: 'welcome_enroll',
     name: 'Welcome Enrollment',
     subject: 'Welcome to {{course_name}}!',
-    body: `<h2 style="color:#ffb703;">Welcome to {{course_name}}!</h2>
-<p>Hello {{student_name}},</p>
-<p>Thrilled to have you onboard. Start with the intro module and set your learning goals. I'm here if you need support.</p>
-<p>To your success,<br/>{{teacher_name}}</p>`
+    body: '<h2 style="color:#ffb703;">Welcome to {{course_name}}!</h2>\n<p>Hello {{student_name}},</p>\n<p>Thrilled to have you onboard. Start with the intro module and set your learning goals. I\'m here if you need support.</p>\n<p>To your success,<br/>{{teacher_name}}</p>'
   },
   {
     key: 'completion',
     name: 'Course Completion Congratulations',
     subject: 'Congratulations on completing {{course_name}}!',
-    body: `<h2 style="color:#ffb703;">🎉 Congratulations!</h2>
-<p>Hi {{student_name}},</p>
-<p>You just completed <strong>{{course_name}}</strong> — outstanding work! Consider leaving a review and exploring advanced courses.</p>
-<p>Keep growing,<br/>{{teacher_name}}</p>`
+    body: '<h2 style="color:#ffb703;">🎉 Congratulations!</h2>\n<p>Hi {{student_name}},</p>\n<p>You just completed <strong>{{course_name}}</strong> — outstanding work! Consider leaving a review and exploring advanced courses.</p>\n<p>Keep growing,<br/>{{teacher_name}}</p>'
   },
   {
     key: 'custom_blank',
     name: 'Custom Blank',
     subject: 'Your custom message',
-    body: `<h2 style="color:#ffb703;">Your Custom Message</h2>
-<p>Hello {{student_name}},</p>
-<p>Write your personalized content here...</p>
-<p>Regards,<br/>{{teacher_name}}</p>`
+    body: '<h2 style="color:#ffb703;">Your Custom Message</h2>\n<p>Hello {{student_name}},</p>\n<p>Write your personalized content here...</p>\n<p>Regards,<br/>{{teacher_name}}</p>'
   }
 ];
 
