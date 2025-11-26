@@ -227,8 +227,7 @@ const TeacherMailMagazine = () => {
           const courseStudents = enrollments.map(e => ({
             id: e.user_details?.id || e.user,
             username: e.user_details?.username || `User ${e.user}`,
-            email: e.user_details?.email || '',
-            display_name: e.user_details?.username || `Student ID: ${e.user}`,
+            display_name: e.user_details?.display_name || e.user_details?.username || `Student ID: ${e.user}`,
           }));
           
           if (courseStudents.length > 0) {
@@ -401,8 +400,7 @@ const TeacherMailMagazine = () => {
       const formattedRecipients = recipients.map(r => ({
         id: r.id,
         username: r.username || 'Unknown',
-        email: r.email || '',
-        display_name: r.username || `User ${r.id}`,
+        display_name: r.display_name || r.username || `User ${r.id}`,
       }));
       setSelectedRecipients(formattedRecipients);
     } catch (error) {
@@ -922,7 +920,9 @@ const TeacherMailMagazine = () => {
                         <li key={recipient.id} className={styles.recipientItem}>
                           <div className={styles.recipientInfo}>
                             <strong>ID: {recipient.id} - {recipient.username}</strong>
-                            {recipient.email && <span className={styles.recipientEmail}>{recipient.email}</span>}
+                            {recipient.display_name && recipient.display_name !== recipient.username && (
+                              <span className={styles.recipientEmail}>{recipient.display_name}</span>
+                            )}
                           </div>
                           <button
                             className={styles.removeRecipientButton}

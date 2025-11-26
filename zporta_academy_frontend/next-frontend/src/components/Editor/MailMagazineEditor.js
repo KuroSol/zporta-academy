@@ -10,6 +10,10 @@ import apiClient from '@/api';
 const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) => {
   const editorRef = useRef(null);
   const [content, setContent] = useState(initialContent);
+  const [showCodeView, setShowCodeView] = useState(false);
+  const [rawHtml, setRawHtml] = useState(initialContent);
+  const fileReplaceRef = useRef(null);
+  const [selectedImageEl, setSelectedImageEl] = useState(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showPlatformLinkModal, setShowPlatformLinkModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -90,6 +94,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     if (initialContent && editorRef.current) {
       editorRef.current.innerHTML = initialContent;
       setContent(initialContent);
+      setRawHtml(initialContent);
     }
   }, [initialContent]);
 
@@ -113,7 +118,91 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
   const handleInput = () => {
     const html = editorRef.current?.innerHTML || '';
     setContent(html);
+    setRawHtml(html);
     if (onChange) onChange(html);
+  };
+
+  // Basic HTML sanitizer to prevent script injection / inline JS
+  const sanitizeHtml = (dirty) => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(dirty, 'text/html');
+      // Remove scripts & style tags
+      doc.querySelectorAll('script, style').forEach(el => el.remove());
+      // Remove event handler attributes and javascript: URLs
+      const allowedTags = new Set(['DIV','P','H1','H2','H3','H4','H5','H6','UL','OL','LI','STRONG','EM','B','I','U','BR','SPAN','A','IMG','HR']);
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null);
+      while (walker.nextNode()) {
+        const el = walker.currentNode;
+        if (!allowedTags.has(el.tagName)) {
+          el.replaceWith(...Array.from(el.childNodes));
+          continue;
+        }
+        // Strip event handlers
+        Array.from(el.attributes).forEach(attr => {
+          const name = attr.name.toLowerCase();
+          if (name.startsWith('on')) el.removeAttribute(attr.name);
+          if (name === 'href' && /javascript:/i.test(attr.value)) el.removeAttribute('href');
+          if (name === 'src' && /javascript:/i.test(attr.value)) el.removeAttribute('src');
+        });
+      }
+      return doc.body.innerHTML;
+    } catch (e) {
+      console.warn('Sanitize failed, returning original');
+      return dirty;
+    }
+  };
+
+  const toggleCodeView = () => {
+    if (!showCodeView) {
+      // entering code view – snapshot current sanitized HTML
+      setRawHtml(editorRef.current?.innerHTML || '');
+    } else {
+      // leaving code view – apply sanitized HTML back to editor
+      const safe = sanitizeHtml(rawHtml);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = safe;
+        setContent(safe);
+        if (onChange) onChange(safe);
+      }
+    }
+    setShowCodeView(v => !v);
+  };
+
+  const handleRawChange = (e) => {
+    setRawHtml(e.target.value);
+  };
+
+  // Image replacement logic: click image to select; show mini overlay
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const handler = (e) => {
+      const target = e.target;
+      if (target.tagName === 'IMG') {
+        setSelectedImageEl(target);
+      } else if (!target.closest('.mm-image-overlay')) {
+        setSelectedImageEl(null);
+      }
+    };
+    editorRef.current.addEventListener('click', handler);
+    return () => editorRef.current?.removeEventListener('click', handler);
+  }, []);
+
+  const handleReplaceImageFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedImageEl) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const response = await apiClient.post('/lessons/upload-image/', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+      const newUrl = response.data.url;
+      selectedImageEl.src = newUrl;
+      handleInput();
+    } catch (err) {
+      alert('Failed to replace image');
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const execCommand = (command, value = null) => {
@@ -372,6 +461,9 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
           <button type="button" onClick={() => execCommand('underline')} title="Underline">
             <FaUnderline />
           </button>
+          <button type="button" onClick={toggleCodeView} title={showCodeView ? 'Exit Code View' : 'HTML Code View'}>
+            <FaCode />
+          </button>
         </div>
 
         <div className={styles.toolbarGroup}>
@@ -466,13 +558,55 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       </div>
 
       {/* Editor */}
-      <div
-        ref={editorRef}
-        className={styles.editor}
-        contentEditable
-        onInput={handleInput}
-        data-placeholder="Write your mail magazine content here... Use the toolbar above to format text, add links, images, and templates."
-      />
+      {!showCodeView && (
+        <div
+          ref={editorRef}
+          className={styles.editor}
+          contentEditable
+          onInput={handleInput}
+          data-placeholder="Write your mail magazine content here... Use the toolbar above to format text, add links, images, and templates."
+        />
+      )}
+      {showCodeView && (
+        <textarea
+          className={styles.codeView}
+          value={rawHtml}
+          onChange={handleRawChange}
+          placeholder="Edit raw HTML here. Unsafe tags will be stripped on apply."
+          style={{
+            width: '100%',
+            minHeight: '320px',
+            background: '#0b1523',
+            color: '#ffb703',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            padding: '12px',
+            border: '1px solid #1e293b',
+            borderRadius: '8px'
+          }}
+        />
+      )}
+
+      {selectedImageEl && !showCodeView && (
+        <div className="mm-image-overlay" style={{ position: 'absolute', zIndex: 20 }}>
+          <div style={{
+            position: 'fixed',
+            top: '12px',
+            right: '12px',
+            background: '#142233',
+            padding: '8px 12px',
+            border: '1px solid #1e293b',
+            borderRadius: '6px',
+            display: 'flex',
+            gap: '8px'
+          }}>
+            <button type="button" onClick={() => fileReplaceRef.current?.click()} style={{ background:'#ffb703', color:'#0b1523', border:'none', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Replace Image</button>
+            <button type="button" onClick={() => { selectedImageEl.remove(); setSelectedImageEl(null); handleInput(); }} style={{ background:'#1e293b', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Remove</button>
+            <button type="button" onClick={() => setSelectedImageEl(null)} style={{ background:'transparent', color:'#94a3b8', border:'1px solid #1e293b', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Done</button>
+            <input ref={fileReplaceRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleReplaceImageFile} />
+          </div>
+        </div>
+      )}
 
       {/* Link Modal */}
       {showLinkModal && (

@@ -18,9 +18,21 @@ from .models import ShareInvite
 User = get_user_model()
 
 class SimpleUserSerializer(serializers.ModelSerializer):
+    display_name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        # Exclude email to prevent exposing students' addresses to other users (privacy)
+        fields = ['id', 'username', 'display_name']
+
+    def get_display_name(self, obj):
+        # Prefer profile.display_name if available
+        profile = getattr(obj, 'profile', None)
+        if profile and getattr(profile, 'display_name', None):
+            return profile.display_name
+        if obj.first_name or obj.last_name:
+            return f"{obj.first_name} {obj.last_name}".strip()
+        return obj.username
 
 logger = logging.getLogger(__name__) # Setup logger
 
