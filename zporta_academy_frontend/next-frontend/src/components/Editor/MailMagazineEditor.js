@@ -155,59 +155,195 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
 
   const toggleCodeView = () => {
     if (!showCodeView) {
-      // entering code view – snapshot current sanitized HTML
-      setRawHtml(editorRef.current?.innerHTML || '');
+      // entering code view – snapshot current HTML from editor
+      const currentHtml = editorRef.current?.innerHTML || '';
+      setRawHtml(currentHtml);
+      setShowCodeView(true);
     } else {
-      // leaving code view – apply sanitized HTML back to editor
+      // leaving code view – apply HTML and place caret at end
       const safe = sanitizeHtml(rawHtml);
       if (editorRef.current) {
         editorRef.current.innerHTML = safe;
         setContent(safe);
         if (onChange) onChange(safe);
+        // Only place caret at end when exiting code view
+        placeCaretAtEnd(editorRef.current);
       }
+      setShowCodeView(false);
     }
-    setShowCodeView(v => !v);
   };
+
+  // Helper: place caret at end of contentEditable element
+  const placeCaretAtEnd = (el) => {
+    if (!el) return;
+    el.focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    // Move range to end of the last child or the element itself
+    const lastChild = el.lastChild;
+    if (lastChild) {
+      if (lastChild.nodeType === Node.TEXT_NODE) {
+        range.setStart(lastChild, lastChild.textContent.length);
+      } else {
+        range.selectNodeContents(el);
+        range.collapse(false);
+      }
+    } else {
+      range.selectNodeContents(el);
+      range.collapse(false);
+    }
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
+
+
+  // --- Selection management to prevent cursor jumping --- //
+  const selectionRef = useRef(null);
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      selectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+  const restoreSelection = () => {
+    const range = selectionRef.current;
+    if (!range) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  };
+
+  // Keep selection updated on user interactions
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    const updateSel = () => saveSelection();
+    el.addEventListener('keyup', updateSel);
+    el.addEventListener('mouseup', updateSel);
+    el.addEventListener('input', updateSel);
+    return () => {
+      el.removeEventListener('keyup', updateSel);
+      el.removeEventListener('mouseup', updateSel);
+      el.removeEventListener('input', updateSel);
+    };
+  }, [showCodeView]);
 
   const handleRawChange = (e) => {
     setRawHtml(e.target.value);
   };
 
+  // --- Image Holder Parity with Lesson/Custom Editors --- //
+  const wrapImageWithHolder = (img) => {
+    if (!img || img.closest('.imageWrapper')) return img; // already wrapped
+    const figure = document.createElement('figure');
+    figure.className = 'imageWrapper';
+    const resize = document.createElement('span');
+    resize.className = 'resizeHandle';
+    const caption = document.createElement('figcaption');
+    caption.setAttribute('contenteditable', 'true');
+    caption.setAttribute('data-placeholder', 'Add caption...');
+    img.parentNode.insertBefore(figure, img);
+    figure.appendChild(img);
+    figure.appendChild(resize);
+    figure.appendChild(caption);
+    enableMediaResizing(figure, img, resize);
+    return img;
+  };
+
+  const ensureImagesHaveHolders = (container) => {
+    if (!container) return;
+    container.querySelectorAll('img').forEach((img) => wrapImageWithHolder(img));
+  };
+
+  // Apply HTML from code view after editor div is rendered
+  useEffect(() => {
+    if (!showCodeView && editorRef.current) {
+      // Just ensure images have holders when view changes
+      ensureImagesHaveHolders(editorRef.current);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCodeView]);
+
+  // After any content change, ensure image holders exist
+  useEffect(() => {
+    if (!showCodeView && editorRef.current) {
+      ensureImagesHaveHolders(editorRef.current);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content]);
+
+  // Resizing logic on the holder's handle (parity with Lesson/Custom)
+  const enableMediaResizing = (wrapper, mediaElement, resizeHandle) => {
+    if (!wrapper || !mediaElement || !resizeHandle) return;
+    let startX = 0;
+    let startWidth = 0;
+    const onMouseMove = (e) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.max(150, startWidth + dx);
+      wrapper.style.width = newWidth + 'px';
+      wrapper.classList.add('isResizing');
+    };
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      wrapper.classList.remove('isResizing');
+      handleInput();
+    };
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const rect = wrapper.getBoundingClientRect();
+      startX = e.clientX;
+      startWidth = rect.width;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  };
+
+
+
   // Image replacement logic: click image to select; show mini overlay
   useEffect(() => {
-    if (!editorRef.current) return;
+    const editorEl = editorRef.current;
+    if (!editorEl) return;
     const handler = (e) => {
       const target = e.target;
       if (target.tagName === 'IMG') {
-        setSelectedImageEl(target);
+        // Ensure it has holder and select the image element
+        const ensured = wrapImageWithHolder(target);
+        setSelectedImageEl(ensured);
       } else if (!target.closest('.mm-image-overlay')) {
         setSelectedImageEl(null);
       }
     };
-    editorRef.current.addEventListener('click', handler);
-    return () => editorRef.current?.removeEventListener('click', handler);
+    editorEl.addEventListener('click', handler);
+    return () => editorEl.removeEventListener('click', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleReplaceImageFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !selectedImageEl) return;
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
+    formData.append('media_type', 'image');
+    formData.append('media_category', 'mail_magazine');
     try {
-      const response = await apiClient.post('/lessons/upload-image/', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
-      const newUrl = response.data.url;
+      const response = await apiClient.post('/user_media/upload/', formData);
+      const newUrl = (response.data.url || '').replace('http://', 'https://');
       selectedImageEl.src = newUrl;
       handleInput();
     } catch (err) {
-      alert('Failed to replace image');
+      console.error('Image replace failed:', err);
+      alert('Failed to replace image. Please try again.');
     } finally {
+      setSelectedImageEl(null);
       e.target.value = '';
     }
   };
 
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
-    editorRef.current?.focus();
     handleInput();
   };
 
@@ -216,19 +352,49 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
+    formData.append('media_type', 'image');
+    formData.append('media_category', 'mail_magazine');
 
     try {
-      const response = await apiClient.post('/lessons/upload-image/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await apiClient.post('/user_media/upload/', formData);
+      const imageUrl = (response.data.url || '').replace('http://', 'https://');
       
-      const imageUrl = response.data.url;
-      execCommand('insertHTML', `<img src="${imageUrl}" alt="Magazine image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" />`);
+      // Create image holder like CustomEditor
+      const figure = document.createElement('figure');
+      figure.className = 'imageWrapper';
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'Magazine image';
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      const resize = document.createElement('span');
+      resize.className = 'resizeHandle';
+      const caption = document.createElement('figcaption');
+      caption.setAttribute('contenteditable', 'true');
+      caption.setAttribute('data-placeholder', 'Add caption...');
+      figure.appendChild(img);
+      figure.appendChild(resize);
+      figure.appendChild(caption);
+      
+      // Insert at cursor and enable resizing
+      restoreSelection();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(figure);
+        range.collapse(false);
+      } else {
+        editorRef.current?.appendChild(figure);
+      }
+      enableMediaResizing(figure, img, resize);
+      handleInput();
     } catch (error) {
       console.error('Image upload failed:', error);
       alert('Failed to upload image. Please try again.');
     }
+    e.target.value = null;
   };
 
   const insertLink = () => {
@@ -236,7 +402,8 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       alert('Please enter both URL and link text');
       return;
     }
-    
+    // Restore selection so link inserts at caret
+    restoreSelection();
     execCommand('insertHTML', `<a href="${linkUrl}" style="color: #ffb703; text-decoration: underline;">${linkText}</a>`);
     setShowLinkModal(false);
     setLinkUrl('');
@@ -497,7 +664,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
         </div>
 
         <div className={styles.toolbarGroup}>
-          <button type="button" onClick={() => setShowLinkModal(true)} title="Insert Link">
+          <button type="button" onClick={() => { saveSelection(); setShowLinkModal(true); }} title="Insert Link">
             <FaLink />
           </button>
           <label className={styles.uploadButton} title="Insert Image">
@@ -601,7 +768,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
             gap: '8px'
           }}>
             <button type="button" onClick={() => fileReplaceRef.current?.click()} style={{ background:'#ffb703', color:'#0b1523', border:'none', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Replace Image</button>
-            <button type="button" onClick={() => { selectedImageEl.remove(); setSelectedImageEl(null); handleInput(); }} style={{ background:'#1e293b', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Remove</button>
+            <button type="button" onClick={() => { const wrapper = selectedImageEl.closest('.imageWrapper'); if (wrapper) wrapper.remove(); else selectedImageEl.remove(); setSelectedImageEl(null); handleInput(); }} style={{ background:'#1e293b', color:'#fff', border:'none', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Remove</button>
             <button type="button" onClick={() => setSelectedImageEl(null)} style={{ background:'transparent', color:'#94a3b8', border:'1px solid #1e293b', padding:'6px 10px', borderRadius:'4px', cursor:'pointer' }}>Done</button>
             <input ref={fileReplaceRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleReplaceImageFile} />
           </div>
