@@ -718,10 +718,10 @@ const TeacherMailMagazine = () => {
                 />
               </label>
 
-              <label className={styles.formLabel}>
+              <div className={styles.formLabel}>
                 Message Body *
                 <MailMagazineEditor ref={editorRef} />
-              </label>
+              </div>
 
               <div className={styles.inlineFields}>
                 <label className={styles.formLabel}>

@@ -9,11 +9,11 @@ import apiClient from '@/api';
 
 const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) => {
   const editorRef = useRef(null);
-  const [content, setContent] = useState(initialContent);
+  const [contentHtml, setContentHtml] = useState(initialContent);
   const [showCodeView, setShowCodeView] = useState(false);
-  const [rawHtml, setRawHtml] = useState(initialContent);
   const fileReplaceRef = useRef(null);
   const [selectedImageEl, setSelectedImageEl] = useState(null);
+  const selectedImageElRef = useRef(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showPlatformLinkModal, setShowPlatformLinkModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -24,6 +24,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingItems, setLoadingItems] = useState(false);
+  const justSwitchedFromCode = useRef(false);
 
   // Lock background scroll when any editor modal is open
   useEffect(() => {
@@ -91,34 +92,42 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
   }, [showPlatformLinkModal, showLinkModal]);
 
   useEffect(() => {
-    if (initialContent && editorRef.current) {
+    if (initialContent && editorRef.current && !showCodeView) {
       editorRef.current.innerHTML = initialContent;
-      setContent(initialContent);
-      setRawHtml(initialContent);
+      setContentHtml(initialContent);
     }
   }, [initialContent]);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
-    getContent: () => editorRef.current?.innerHTML || '',
+    getContent: () => contentHtml,
     setContent: (html) => {
-      if (editorRef.current) {
+      setContentHtml(html);
+      if (editorRef.current && !showCodeView) {
         editorRef.current.innerHTML = html;
-        setContent(html);
+        // Ensure images are wrapped
+        ensureImagesHaveHolders(editorRef.current);
+        // Focus editor and place cursor at end after setting content
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.focus();
+            placeCaretAtEnd(editorRef.current);
+          }
+        }, 0);
       }
     },
     clear: () => {
-      if (editorRef.current) {
+      setContentHtml('');
+      if (editorRef.current && !showCodeView) {
         editorRef.current.innerHTML = '';
-        setContent('');
+        editorRef.current.focus();
       }
     }
   }));
 
   const handleInput = () => {
     const html = editorRef.current?.innerHTML || '';
-    setContent(html);
-    setRawHtml(html);
+    setContentHtml(html);
     if (onChange) onChange(html);
   };
 
@@ -155,20 +164,16 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
 
   const toggleCodeView = () => {
     if (!showCodeView) {
-      // entering code view – snapshot current HTML from editor
+      // entering code view – capture current visual content
       const currentHtml = editorRef.current?.innerHTML || '';
-      setRawHtml(currentHtml);
+      setContentHtml(currentHtml);
       setShowCodeView(true);
     } else {
-      // leaving code view – apply HTML and place caret at end
-      const safe = sanitizeHtml(rawHtml);
-      if (editorRef.current) {
-        editorRef.current.innerHTML = safe;
-        setContent(safe);
-        if (onChange) onChange(safe);
-        // Only place caret at end when exiting code view
-        placeCaretAtEnd(editorRef.current);
-      }
+      // leaving code view – sanitize and apply to visual editor
+      const safe = sanitizeHtml(contentHtml);
+      setContentHtml(safe);
+      if (onChange) onChange(safe);
+      justSwitchedFromCode.current = true;
       setShowCodeView(false);
     }
   };
@@ -230,7 +235,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
   }, [showCodeView]);
 
   const handleRawChange = (e) => {
-    setRawHtml(e.target.value);
+    setContentHtml(e.target.value);
   };
 
   // --- Image Holder Parity with Lesson/Custom Editors --- //
@@ -256,22 +261,22 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
     container.querySelectorAll('img').forEach((img) => wrapImageWithHolder(img));
   };
 
-  // Apply HTML from code view after editor div is rendered
+  // Ensure images have holders after content changes (but DON'T reset innerHTML during editing)
   useEffect(() => {
     if (!showCodeView && editorRef.current) {
-      // Just ensure images have holders when view changes
-      ensureImagesHaveHolders(editorRef.current);
+      // When switching back to visual view, restore content explicitly
+      if (justSwitchedFromCode.current) {
+        editorRef.current.innerHTML = contentHtml;
+        ensureImagesHaveHolders(editorRef.current);
+        setTimeout(() => placeCaretAtEnd(editorRef.current), 0);
+        justSwitchedFromCode.current = false;
+      } else {
+        // Normal render (e.g. typing), just ensure holders
+        ensureImagesHaveHolders(editorRef.current);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCodeView]);
-
-  // After any content change, ensure image holders exist
-  useEffect(() => {
-    if (!showCodeView && editorRef.current) {
-      ensureImagesHaveHolders(editorRef.current);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content]);
+  }, [showCodeView, contentHtml]);
 
   // Resizing logic on the holder's handle (parity with Lesson/Custom)
   const enableMediaResizing = (wrapper, mediaElement, resizeHandle) => {
@@ -302,22 +307,69 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
 
 
 
+  // Sync ref with state for event handlers
+  useEffect(() => {
+    selectedImageElRef.current = selectedImageEl;
+  }, [selectedImageEl]);
+
   // Image replacement logic: click image to select; show mini overlay
   useEffect(() => {
     const editorEl = editorRef.current;
     if (!editorEl) return;
     const handler = (e) => {
       const target = e.target;
-      if (target.tagName === 'IMG') {
+      // Handle image selection (account for pointer-events: none on img)
+      let imgTarget = target;
+      if (target.classList.contains('imageWrapper')) {
+        imgTarget = target.querySelector('img');
+      }
+
+      if (imgTarget && imgTarget.tagName === 'IMG') {
+        e.preventDefault();
+        e.stopPropagation();
         // Ensure it has holder and select the image element
-        const ensured = wrapImageWithHolder(target);
+        const ensured = wrapImageWithHolder(imgTarget);
         setSelectedImageEl(ensured);
+        // Automatically trigger file input on click
+        setTimeout(() => {
+          if (fileReplaceRef.current) {
+            fileReplaceRef.current.click();
+          }
+        }, 50);
       } else if (!target.closest('.mm-image-overlay')) {
-        setSelectedImageEl(null);
+        // Only clear if we actually have something selected to avoid unnecessary re-renders
+        if (selectedImageElRef.current) {
+          setSelectedImageEl(null);
+        }
       }
     };
+
+    const dblClickHandler = (e) => {
+      const target = e.target;
+      let imgTarget = target;
+      if (target.classList.contains('imageWrapper')) {
+        imgTarget = target.querySelector('img');
+      }
+
+      if (imgTarget && imgTarget.tagName === 'IMG') {
+        e.preventDefault();
+        e.stopPropagation();
+        // Ensure it has holder and select the image element
+        const ensured = wrapImageWithHolder(imgTarget);
+        setSelectedImageEl(ensured);
+        // Trigger file input click
+        if (fileReplaceRef.current) {
+          fileReplaceRef.current.click();
+        }
+      }
+    };
+
     editorEl.addEventListener('click', handler);
-    return () => editorEl.removeEventListener('click', handler);
+    editorEl.addEventListener('dblclick', dblClickHandler);
+    return () => {
+      editorEl.removeEventListener('click', handler);
+      editorEl.removeEventListener('dblclick', dblClickHandler);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -608,9 +660,17 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       `
     };
 
-    if (editorRef.current) {
-      editorRef.current.innerHTML = templates[template] || '';
-      handleInput();
+    const templateHtml = templates[template] || '';
+    setContentHtml(templateHtml);
+    if (editorRef.current && !showCodeView) {
+      editorRef.current.innerHTML = templateHtml;
+      if (onChange) onChange(templateHtml);
+      // Focus editor after inserting template
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+      }, 0);
     }
   };
 
@@ -737,7 +797,7 @@ const MailMagazineEditor = forwardRef(({ initialContent = '', onChange }, ref) =
       {showCodeView && (
         <textarea
           className={styles.codeView}
-          value={rawHtml}
+          value={contentHtml}
           onChange={handleRawChange}
           placeholder="Edit raw HTML here. Unsafe tags will be stripped on apply."
           style={{
