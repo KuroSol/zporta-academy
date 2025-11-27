@@ -31,6 +31,7 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
   const ogImg = initialSeo?.og_image || course?.og_image_url || course?.cover_image_url;
   const focus = course?.focus_keyword || initialSeo?.focus_keyword;
   const ogUrl = canon;
+  const [pUser, pDate, pSubject] = ((course?.permalink || permalink || "").split('/') || []).slice(0,3);
 
 
   return (
@@ -83,7 +84,7 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
               itemListElement: [
                 { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
                 { '@type': 'ListItem', position: 2, name: 'Courses', item: `${siteUrl}/courses/` },
-                { '@type': 'ListItem', position: 3, name: course?.subject_name || 'Subject', item: `${siteUrl}/courses/${username}/${date}/${subject}/` },
+                { '@type': 'ListItem', position: 3, name: course?.subject_name || 'Subject', item: `${siteUrl}/courses/${pUser || ''}/${pDate || ''}/${pSubject || ''}/` },
                 { '@type': 'ListItem', position: 4, name: course?.title || title, item: ogUrl }
               ]
             })
