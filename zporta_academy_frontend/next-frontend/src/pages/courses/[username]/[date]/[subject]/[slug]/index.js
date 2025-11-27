@@ -108,6 +108,9 @@ export async function getServerSideProps(ctx) {
     .replace(/localhost/g, '127.0.0.1');
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://zportaacademy.com";
 
+  // Conservative cache headers for public SSR responses
+  try { ctx.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=120'); } catch (_) {}
+
   try {
     // Public fetch only. If draft, this returns 404; do NOT short-circuit to 404 page.
     const res = await fetch(`${apiBase}/courses/${encodeURIComponent(permalink)}/`, { 

@@ -9,6 +9,8 @@ export async function getServerSideProps(ctx) {
   const permalink = `${username}/${subject}/${date}/${lessonSlug}`;
   // Replace localhost with 127.0.0.1 for Windows SSR compatibility
   const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000/api').replace(/\/$/, '').replace('localhost', '127.0.0.1');
+  // Conservative cache headers for public SSR responses
+  try { ctx.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=120'); } catch (_) {}
   let initialData = null;
   try {
     const res = await fetch(`${apiBase}/lessons/${encodeURIComponent(permalink)}/`, {
