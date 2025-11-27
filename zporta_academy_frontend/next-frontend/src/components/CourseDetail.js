@@ -256,11 +256,29 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
     const handleApiError = useCallback((err, defaultMessage) => {
         console.error("API Error:", err.response?.data || err.message);
         const status = err.response?.status;
-        const apiMessage = err.response?.data?.detail || JSON.stringify(err.response?.data);
-        setMessage({ text: apiMessage || defaultMessage, type: "error" });
-        if (status === 401 || status === 403) {
-            logout();
-            router.push("/login");
+        const apiMessage = err.response?.data?.detail || err.response?.data?.message || JSON.stringify(err.response?.data);
+        
+        if (status === 401) {
+            // 401 = Not authenticated - logout required
+            setMessage({ text: `Authentication expired: ${apiMessage || defaultMessage}. Logging out...`, type: "error" });
+            setTimeout(() => {
+                logout();
+                router.push("/login");
+            }, 2000);
+        } else if (status === 403) {
+            // 403 = Forbidden - authenticated but not allowed (don't logout!)
+            let friendlyMessage = apiMessage || defaultMessage;
+            
+            // Check for specific locked course error (should only apply to deletion)
+            if (friendlyMessage.includes('locked') && friendlyMessage.includes('delete')) {
+                friendlyMessage = "🔒 This course is locked and cannot be deleted. Unlock it first to delete.";
+            } else if (friendlyMessage.includes('Not allowed to modify')) {
+                friendlyMessage = "You don't have permission to modify this course. Only the course creator can make changes.";
+            }
+            
+            setMessage({ text: friendlyMessage, type: "error" });
+        } else {
+            setMessage({ text: apiMessage || defaultMessage, type: "error" });
         }
     }, [logout, router]);
 
@@ -392,6 +410,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 subject: course.subject || "",
                 description: course.description || "",
                 sellingPoints: Array.isArray(course.selling_points) ? course.selling_points.slice(0,3) : [],
+                    tags: Array.isArray(course.tags) ? course.tags.map(t => t.name).join(', ') : "",
                 coverImageFile: null, // For new file uploads
                 selectedLessons: lessons.map(l => l.id),
                 selectedQuizzes: quizzes.map(q => q.id),
@@ -784,6 +803,16 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
         formData.append('title', editData.title);
         formData.append('subject', editData.subject);
         formData.append('description', editData.description);
+        
+        // Send tags as array
+        if (editData.tags && editData.tags.trim()) {
+            const tagArray = editData.tags.split(',').map(t => t.trim()).filter(Boolean);
+            console.log('Adding tags:', tagArray);
+            tagArray.forEach(tag => formData.append('tag_names', tag));
+        } else {
+            console.log('No tags to add');
+        }
+        
         // send selling points as JSON list
         if (Array.isArray(editData.sellingPoints)) {
             const cleaned = editData.sellingPoints.map(p => (p || '').trim()).filter(Boolean).slice(0,3);
@@ -802,6 +831,14 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
             });
         }
         
+        // Debug logging
+        console.log('=== Course Save Debug ===');
+        console.log('editData.tags:', editData.tags);
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+        }
+        
         // Backend expects a JSON string for list updates via FormData
 
         try {
@@ -809,13 +846,16 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
+            console.log('=== Save Success ===');
+            console.log('Response:', res.data);
+            
             // Refresh after save to reflect server truth
             await fetchCourseData();
             setEditMode(false); // Exit edit mode
+            setCurrentEditStep(1); // Reset to first step
             showMessage("Course updated successfully!", "success");
-            // Clean up URL, removing admin-specific path
-            router.replace(`/courses/${permalink}`, undefined, { shallow: true });
         } catch (err) {
+            console.error('=== Save Error ===', err);
             handleApiError(err, "Failed to save changes. Please check the form and try again.");
         }
     };
@@ -937,6 +977,18 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                         {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
+                                    <div className={styles.formGroup}>
+                                        <label htmlFor="editTags">Tags (separate with commas)</label>
+                                        <input 
+                                            id="editTags" 
+                                            type="text" 
+                                            value={editData.tags || ''} 
+                                            onChange={handleEditInputChange('tags')} 
+                                            className={styles.inputField}
+                                            placeholder="e.g., python, machine-learning, data-science"
+                                        />
+                                        <small className={styles.fieldNote}>Use hyphens instead of spaces (e.g., 'machine-learning')</small>
+                                    </div>
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Key Points (up to 3)</label>
@@ -1156,7 +1208,19 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             <div className={`${styles.formSection} ${styles.dangerZone}`}>
                                 <h3>Danger Zone</h3>
                                 <p>This action is permanent and cannot be undone. All associated user enrollments will be lost.</p>
-                                <button onClick={handleDeleteCourse} className={`${styles.zportaBtn} ${styles.btnDanger}`}><FaTrash /> Delete This Course</button>
+                                <button 
+                                    onClick={handleDeleteCourse} 
+                                    className={`${styles.zportaBtn} ${styles.btnDanger}`}
+                                    disabled={course?.is_locked}
+                                    title={course?.is_locked ? "Course is locked and cannot be deleted" : "Delete this course"}
+                                >
+                                    <FaTrash /> {course?.is_locked ? "🔒 Delete Locked" : "Delete This Course"}
+                                </button>
+                                {course?.is_locked && (
+                                    <small style={{display: 'block', color: '#e74c3c', marginTop: '10px'}}>
+                                        This course is locked to prevent accidental deletion.
+                                    </small>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1211,7 +1275,12 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                         <span><FaCrown /> You are the creator of this course.</span>
                         <div className={styles.adminActions}>
                              <button onClick={() => router.push(`/courses/${permalink}?as_public=true`)} className={`${styles.zportaBtn} ${styles.zportaBtnSecondary}`}><FaEye/> View as Public</button>
-                            <button onClick={initializeEditMode} className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}><FaEdit /> Manage Course</button>
+                            <button 
+                                onClick={initializeEditMode} 
+                                className={`${styles.zportaBtn} ${styles.zportaBtnPrimary}`}
+                            >
+                                <FaEdit /> Manage Course
+                            </button>
                         </div>
                     </div>
                 ) : (

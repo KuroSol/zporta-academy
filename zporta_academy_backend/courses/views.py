@@ -208,10 +208,34 @@ class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         obj = get_object_or_404(Course.all_objects, permalink=self.kwargs.get("permalink"))
         
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            # Debug logging
+            print(f"\n{'='*60}")
+            print(f"=== Course Update Permission Check ===")
+            print(f"Method: {self.request.method}")
+            print(f"User authenticated: {self.request.user.is_authenticated}")
+            print(f"User: {self.request.user}")
+            if self.request.user.is_authenticated:
+                print(f"User ID: {self.request.user.id}")
+                print(f"User username: {self.request.user.username}")
+            print(f"Course: {obj.title}")
+            print(f"Course creator: {obj.created_by}")
+            if obj.created_by:
+                print(f"Creator ID: {obj.created_by.id}")
+                print(f"Creator username: {obj.created_by.username}")
+            print(f"User == Creator: {obj.created_by == self.request.user}")
+            print(f"User ID == Creator ID: {self.request.user.id == obj.created_by.id if self.request.user.is_authenticated and obj.created_by else 'N/A'}")
+            print(f"Is locked: {obj.is_locked}")
+            print('='*60 + '\n')
+            
+            # Check ownership for all modification operations
             if obj.created_by != self.request.user:
+                print(f"PERMISSION DENIED: User {self.request.user} is not the creator {obj.created_by}")
                 self.permission_denied(self.request, message="Not allowed to modify this course")
-            if obj.is_locked:
-                self.permission_denied(self.request, message="This course is locked and cannot be modified.")
+            
+            # Only check lock status for DELETE operations
+            if self.request.method == 'DELETE' and obj.is_locked:
+                print(f"PERMISSION DENIED: Course is locked - cannot delete")
+                self.permission_denied(self.request, message="This course is locked and cannot be deleted.")
         
         return obj
     

@@ -75,6 +75,7 @@ const CreateCourse = () => {
     const [selectedQuizzes, setSelectedQuizzes] = useState([]);
     const [isDraft, setIsDraft] = useState(true);
     const [testers, setTesters] = useState('');
+        const [tags, setTags] = useState('');
     // Selling points (up to 3 short benefit bullets)
     const [sellingPoints, setSellingPoints] = useState(['', '', '']);
 
@@ -347,6 +348,11 @@ const CreateCourse = () => {
         const formData = new FormData();
         formData.append('title', title.trim());
         formData.append('subject', subject);
+            // Send tags as array
+            if (tags && tags.trim()) {
+                const tagArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+                tagArray.forEach(tag => formData.append('tag_names', tag));
+            }
         if (coverImage) formData.append('cover_image', coverImage);
         formData.append('course_type', courseType);
         formData.append('price', courseType === 'premium' ? parseFloat(price).toFixed(2) : '0.00');
@@ -457,6 +463,17 @@ const CreateCourse = () => {
                                         {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
+                                    <div className={styles.formGroup}>
+                                        <label htmlFor="courseTags">Tags (Optional)</label>
+                                        <input 
+                                            id="courseTags" 
+                                            type="text" 
+                                            value={tags} 
+                                            onChange={handleInputChange(setTags)} 
+                                            placeholder="e.g., python, machine-learning, data-science"
+                                        />
+                                        <small className={styles.fieldNote}>Separate tags with commas. Use hyphens instead of spaces.</small>
+                                    </div>
                                 <div className={styles.formGroup}>
                                     <label htmlFor="courseType">Type <span className={styles.required}>*</span></label>
                                     <select id="courseType" value={courseType} onChange={handleInputChange(setCourseType)}>

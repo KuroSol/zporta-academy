@@ -6,6 +6,7 @@ from django.conf import settings
 from .models import Course
 from lessons.models import Lesson
 from django.contrib.auth.models import User
+from tags.serializers import TagSerializer
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,7 +28,10 @@ class CourseSerializer(serializers.ModelSerializer):
     publish = serializers.BooleanField(write_only=True, required=False, default=False)
 
     subject_name = serializers.SerializerMethodField()
-    tag_names    = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
+    tag_names = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
     allowed_testers = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), many=True, required=False
     )
@@ -54,7 +58,11 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Pop many-to-many fields safely
-        tags_data = validated_data.pop('tags', None) or []
+        from tags.models import Tag
+        from django.utils.text import slugify
+        import re
+        
+        tag_names_data = validated_data.pop('tag_names', None) or []
         allowed_testers_data = validated_data.pop('allowed_testers', None) or []
         publish_flag = bool(validated_data.pop('publish', False))
         
@@ -66,8 +74,16 @@ class CourseSerializer(serializers.ModelSerializer):
         # Use all_objects manager to create the course (bypassing published filtering)
         course = Course.all_objects.create(**validated_data)
         
-        if tags_data:
-            course.tags.set(tags_data)
+        if tag_names_data:
+            for tag_name in tag_names_data:
+                # Clean tag name (same as lesson serializer)
+                cleaned = tag_name.strip()
+                cleaned = cleaned.replace(' ', '-')
+                cleaned = re.sub(r'[^a-zA-Z0-9\-]', '', cleaned)
+                cleaned = re.sub(r'-+', '-', cleaned).lower()
+                if cleaned:
+                    tag, _ = Tag.objects.get_or_create(name=cleaned, defaults={'slug': slugify(cleaned)})
+                    course.tags.add(tag)
         
         allowed_testers_users = []
         for tester in allowed_testers_data:
@@ -114,8 +130,15 @@ class CourseSerializer(serializers.ModelSerializer):
         
         return course
     def update(self, instance, validated_data):
+        from tags.models import Tag
+        from django.utils.text import slugify
+        import re
+        
         # allow publish via flag on update
         publish_flag = validated_data.pop('publish', None)
+        
+        # Handle tag_names
+        tag_names_data = validated_data.pop('tag_names', None)
 
         # Normalize allowed_testers: accept IDs or usernames from multipart/form-data
         incoming_allowed = None
@@ -139,6 +162,19 @@ class CourseSerializer(serializers.ModelSerializer):
                 incoming_allowed = users
 
         obj = super().update(instance, validated_data)
+        
+        # Update tags if provided
+        if tag_names_data is not None:
+            obj.tags.clear()
+            for tag_name in tag_names_data:
+                # Clean tag name (same as lesson serializer)
+                cleaned = tag_name.strip()
+                cleaned = cleaned.replace(' ', '-')
+                cleaned = re.sub(r'[^a-zA-Z0-9\-]', '', cleaned)
+                cleaned = re.sub(r'-+', '-', cleaned).lower()
+                if cleaned:
+                    tag, _ = Tag.objects.get_or_create(name=cleaned, defaults={'slug': slugify(cleaned)})
+                    obj.tags.add(tag)
 
         if incoming_allowed is not None and not obj.is_draft:
             obj.allowed_testers.set(incoming_allowed)
@@ -167,9 +203,6 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_subject_name(self, obj):
         return obj.subject.name if obj.subject else None
-
-    def get_tag_names(self, obj):
-        return list(obj.tags.values_list('name', flat=True))
 
     def get_cover_image_url(self, obj):
         request = self.context.get('request')

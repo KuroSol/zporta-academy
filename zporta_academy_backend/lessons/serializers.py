@@ -7,6 +7,7 @@ from tags.serializers import TagSerializer
 from subjects.models import Subject
 from bs4 import BeautifulSoup
 import os
+import re
 from user_media.models import UserMedia
 from django.contrib.auth.models import User
 
@@ -278,11 +279,17 @@ class LessonSerializer(serializers.ModelSerializer):
         # Create the Lesson object
         lesson = Lesson.objects.create(**validated_data)
 
-        # Attach tags
+        # Attach tags with cleaning
         if tag_names_data:
              for tag_name in tag_names_data:
-                 tag_instance, _ = Tag.objects.get_or_create(name=tag_name)
-                 lesson.tags.add(tag_instance)
+                 # Clean tag name: replace spaces with hyphens, remove special chars
+                 cleaned = tag_name.strip().lower().replace(' ', '-')
+                 cleaned = re.sub(r'[^\w-]', '', cleaned)  # Keep only alphanumeric and hyphens
+                 cleaned = re.sub(r'-+', '-', cleaned).strip('-')  # Remove multiple/trailing hyphens
+                 
+                 if cleaned:  # Only create if not empty after cleaning
+                     tag_instance, _ = Tag.objects.get_or_create(name=cleaned)
+                     lesson.tags.add(tag_instance)
 
         # Process inline media after lesson is created
         self._process_lesson_media(lesson, lesson.content, user)
@@ -322,8 +329,14 @@ class LessonSerializer(serializers.ModelSerializer):
         if tag_names_data is not None:
             instance.tags.clear()
             for tag_name in tag_names_data:
-                tag_instance, _ = Tag.objects.get_or_create(name=tag_name)
-                instance.tags.add(tag_instance)
+                # Clean tag name: replace spaces with hyphens, remove special chars
+                cleaned = tag_name.strip().lower().replace(' ', '-')
+                cleaned = re.sub(r'[^\w-]', '', cleaned)  # Keep only alphanumeric and hyphens
+                cleaned = re.sub(r'-+', '-', cleaned).strip('-')  # Remove multiple/trailing hyphens
+                
+                if cleaned:  # Only create if not empty after cleaning
+                    tag_instance, _ = Tag.objects.get_or_create(name=cleaned)
+                    instance.tags.add(tag_instance)
 
         return instance
     

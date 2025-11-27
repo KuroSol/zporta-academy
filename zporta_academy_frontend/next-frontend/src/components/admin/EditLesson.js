@@ -280,7 +280,7 @@ export default function EditLesson() {
       subject,
       editor_content: editorHTML,
       content: editorHTML,
-      tags: tagsArray,
+      tag_names: tagsArray, // Backend expects 'tag_names'
       template: template,
       accent_color: accentColor,
       custom_css: customCSS || appliedEditorCSS || '',
@@ -291,7 +291,7 @@ export default function EditLesson() {
     const trimmedVideo = (videoUrl || '').trim();
     if (trimmedVideo) payload.video_url = trimmedVideo;
 
-    console.log("[EditLesson] Sending PATCH payload:", { title: payload.title, subject: payload.subject, tags: payload.tags }); // Log less
+    console.log("[EditLesson] Sending PATCH payload:", { title: payload.title, subject: payload.subject, tag_names: payload.tag_names }); // Log less
     try {
         const res = await apiClient.patch(`/lessons/${encodeURIComponent(permalink)}/update/`, payload);
         console.log("[EditLesson] PATCH successful.");

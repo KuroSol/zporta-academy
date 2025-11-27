@@ -293,7 +293,7 @@ const CreateLesson = ({ onSuccess, onClose, isModalMode = false, initialSubjectI
             title: title.trim(),
             content: editorContent,
             subject,                 // always required
-            tags: tagsArray,
+            tag_names: tagsArray,    // Backend expects 'tag_names'
             template: template,
             accent_color: accentColor,
             custom_css: customCSS,
