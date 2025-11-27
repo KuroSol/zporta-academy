@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Allow all pages except admin, draft content, and user-specific pages
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://zportaacademy.com/sitemap.xml

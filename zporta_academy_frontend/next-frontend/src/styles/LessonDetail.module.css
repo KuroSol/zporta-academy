@@ -92,6 +92,33 @@
   text-decoration: none;
 }
 
+/* Lesson preview section for gated content */
+.lessonPreview {
+  background: #f8fafc;
+  border-left: 4px solid var(--accent-color, #0A2342);
+  padding: 1.5rem;
+  margin: 2rem 0;
+  border-radius: 8px;
+}
+
+.lessonPreview h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+
+.lessonPreview p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #475569;
+  margin: 0;
+}
+
+.lessonStatusInfo {
+  margin-bottom: 1.5rem;
+}
+
 /* Free preview CTA for free lessons attached to a course */
 .freePreviewBanner{
   margin-top:12px;

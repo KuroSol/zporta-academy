@@ -1,0 +1,153 @@
+.overlayContainer {
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlayBackdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.98) 0%,
+    rgba(241, 245, 249, 0.98) 100%
+  );
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.overlayContent {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+  width: 90%;
+  padding: 2.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(10, 35, 66, 0.12);
+  text-align: center;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lockIcon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0A2342 0%, #1a3a5c 100%);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 8px 20px rgba(10, 35, 66, 0.25);
+}
+
+.overlayTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.crownIcon {
+  color: #f59e0b;
+  font-size: 1.5rem;
+}
+
+.overlayMessage {
+  font-size: 1.1rem;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  white-space: pre-line;
+}
+
+.courseInfo {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.courseText {
+  font-size: 0.95rem;
+  color: #334155;
+  margin: 0;
+}
+
+.courseText strong {
+  color: #0A2342;
+  font-weight: 600;
+}
+
+.overlayActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.btnPrimary {
+  background: #0A2342;
+  color: white;
+  border: 2px solid #0A2342;
+}
+
+.btnPrimary:hover {
+  background: #1a3a5c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(10, 35, 66, 0.2);
+}
+
+.btnSecondary {
+  background: white;
+  color: #0A2342;
+  border: 2px solid #0A2342;
+}
+
+.btnSecondary:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .overlayContent {
+    padding: 2rem 1.5rem;
+  }
+  
+  .overlayTitle {
+    font-size: 1.5rem;
+  }
+  
+  .overlayMessage {
+    font-size: 1rem;
+  }
+}

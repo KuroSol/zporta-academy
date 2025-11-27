@@ -49,6 +49,20 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/',
   },
+  // Proxy sitemap.xml requests to Django backend
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/$/, '') || 'http://localhost:8000';
+    return [
+      {
+        source: '/sitemap.xml',
+        destination: `${backendUrl}/sitemap.xml`,
+      },
+      {
+        source: '/robots.txt',
+        destination: '/robots.txt', // Serve from Next.js public folder
+      },
+    ];
+  },
   ...(process.env.NODE_ENV === 'development' && {
     allowedDevOrigins: [process.env.DEV_HOST || 'http://localhost:3001'],
   }),

@@ -45,6 +45,7 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
         <meta name="twitter:title" content={initialSeo?.og_title || title} />
         <meta name="twitter:description" content={initialSeo?.og_description || desc} />
         {ogImg ? <meta name="twitter:image" content={ABS(siteUrl, ogImg)} /> : null}
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
       </Head>
       {course
         ? <CourseDetail initialCourse={course} initialLessons={lessons} />

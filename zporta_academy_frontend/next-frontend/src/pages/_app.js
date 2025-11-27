@@ -4,6 +4,7 @@ import '@/styles/globals.css';
 import React, { useContext, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 import { AuthProvider, AuthContext } from '@/context/AuthContext';
 import { AuthModalProvider } from '@/context/AuthModalContext';
@@ -56,6 +57,10 @@ export default function MyApp({ Component, pageProps }) {
   return (
     <AuthProvider>
       <AuthModalProvider>
+        <Head>
+          {/* Global sitemap reference */}
+          <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        </Head>
         <Chrome enabled={enabled}>
           {applyLayout(<Component {...pageProps} />)}
         </Chrome>

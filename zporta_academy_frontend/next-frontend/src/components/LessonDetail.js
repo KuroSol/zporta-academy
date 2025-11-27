@@ -11,6 +11,7 @@ import { AuthContext } from "@/context/AuthContext";
 import QuizCard from "@/components/QuizCard";
 import styles from "@/styles/LessonDetail.module.css";
 import "@/styles/Editor/ViewerAccordion.module.css";
+import PremiumLockOverlay from "@/components/PremiumLockOverlay";
 
 /* ---- helpers kept (used by accordion + content render) ---- */
 function initializeAccordions(containerElement) {
@@ -395,28 +396,58 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   if (loading) return <div style={{ padding: "20px", textAlign: "center" }}>Loading lesson details...</div>;
   if (error && !lessonData && !gateInfo) return <p className={`${styles.message} ${styles.error}`} style={{ padding: "20px", textAlign: "center" }}>{error}</p>;
 
+  // Handle gated premium lessons - show SEO-friendly preview with lock overlay
   if (gateInfo && !lessonData?.lesson) {
+    const seo = lessonData?.seo || {};
+    const course = gateInfo.course || {};
+    
     return (
       <div className={styles.lessonDetailContainer}>
         <Head>
-          <title>Premium Lesson</title>
-          <meta name="robots" content="noindex,nofollow" />
+          <title>{seo.title || course.title || "Premium Lesson"}</title>
+          <meta name="description" content={seo.description || `Premium lesson from ${course.title || "Zporta Academy"}`} />
+          <link rel="canonical" href={seo.canonical_url || (typeof window !== 'undefined' ? window.location.href : '')} />
+          <meta property="og:type" content="article" />
+          <meta property="og:title" content={seo.og_title || seo.title || "Premium Lesson"} />
+          <meta property="og:description" content={seo.og_description || seo.description || ""} />
+          {seo.og_image && <meta property="og:image" content={seo.og_image} />}
+          <meta name="twitter:card" content="summary_large_image" />
+          {/* Note: Premium lessons should still allow indexing of preview/metadata */}
+          <meta name="robots" content="index,follow" />
         </Head>
-        <h1 className={styles.lessonTitle}>Premium Lesson</h1>
+        
+        <h1 className={styles.lessonTitle}>
+          {seo.title || course.title || "Premium Lesson"}
+        </h1>
+        
+        {course?.title && (
+          <div className={styles.courseInfo}>
+            <p>
+              Part of course:{" "}
+              <Link href={`/courses/${course.permalink}`} className={styles.courseLink}>
+                {course.title}
+              </Link>
+            </p>
+          </div>
+        )}
+        
         {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
-        <p className={`${styles.message} ${styles.warning}`}>{gateInfo.message || "Enrollment required."}</p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 12 }}>
-          {gateInfo.course?.permalink && (
-            <Link href={`/courses/${gateInfo.course.permalink}`} className={`${styles.btn} ${styles.btnPrimary}`}>
-              Go to Course: {gateInfo.course.title}
-            </Link>
-          )}
-          {!token && (
-            <Link href={`/login?redirect=/lessons/${permalink}`} className={`${styles.btn} ${styles.btnSecondary}`}>
-              Log in to Enroll
-            </Link>
-          )}
-        </div>
+        
+        {/* SEO-friendly description/preview (if available from backend) */}
+        {seo.description && (
+          <div className={styles.lessonPreview}>
+            <h2>About this lesson</h2>
+            <p>{seo.description}</p>
+          </div>
+        )}
+        
+        <PremiumLockOverlay
+          isVisible={true}
+          course={course}
+          message={gateInfo.message || "This is a premium lesson. Enroll in the course to access full content."}
+          isAuthenticated={!!token}
+          redirectPath={`/lessons/${permalink}`}
+        />
       </div>
     );
   }
@@ -439,7 +470,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         <meta name="description" content={seo?.description || stripHTML(lesson.content).substring(0, 160)} />
         <meta
           name="robots"
-          content={lesson.status === "draft" || lesson.is_premium || gateInfo ? "noindex,nofollow" : seo?.robots || "index,follow"}
+          content={lesson.status === "draft" ? "noindex,follow" : seo?.robots || "index,follow"}
         />
         <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
         {(() => {
