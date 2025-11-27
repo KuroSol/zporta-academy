@@ -987,7 +987,7 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                             className={styles.inputField}
                                             placeholder="e.g., python, machine-learning, data-science"
                                         />
-                                        <small className={styles.fieldNote}>Use hyphens instead of spaces (e.g., 'machine-learning')</small>
+                                        <small className={styles.fieldNote}>Use hyphens instead of spaces (e.g., &#39;machine-learning&#39;)</small>
                                     </div>
                             </div>
                             <div className={styles.formGroup}>
