@@ -6,7 +6,7 @@
 
 -- Courses indexes
 ALTER TABLE courses_course ADD INDEX idx_courses_permalink (permalink);
-ALTER TABLE courses_course ADD INDEX idx_courses_status (is_draft, status);
+ALTER TABLE courses_course ADD INDEX idx_courses_status (is_draft);
 ALTER TABLE courses_course ADD INDEX idx_courses_creator (created_by_id);
 
 -- Lessons indexes
