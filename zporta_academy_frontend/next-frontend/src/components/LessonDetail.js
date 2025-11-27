@@ -400,6 +400,8 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   if (gateInfo && !lessonData?.lesson) {
     const seo = lessonData?.seo || {};
     const course = gateInfo.course || {};
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com';
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : (seo.canonical_url || '');
     
     return (
       <div className={styles.lessonDetailContainer}>
@@ -414,6 +416,21 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
           <meta name="twitter:card" content="summary_large_image" />
           {/* Note: Premium lessons should still allow indexing of preview/metadata */}
           <meta name="robots" content="index,follow" />
+          {seo.focus_keyword ? <meta name="keywords" content={seo.focus_keyword} /> : null}
+          {pageUrl ? <meta property="og:url" content={pageUrl} /> : null}
+          {/* JSON-LD Breadcrumb (minimal for gated) */}
+          <script type="application/ld+json" dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context':'https://schema.org',
+              '@type':'BreadcrumbList',
+              itemListElement:[
+                { '@type':'ListItem', position:1, name:'Home', item: siteUrl },
+                { '@type':'ListItem', position:2, name:'Courses', item: `${siteUrl}/courses/` },
+                course?.title ? { '@type':'ListItem', position:3, name: course.title, item: `${siteUrl}/courses/${course.permalink}` } : undefined,
+                pageUrl ? { '@type':'ListItem', position:4, name: seo.title || 'Premium Lesson', item: pageUrl } : undefined
+              ].filter(Boolean)
+            })
+          }} />
         </Head>
         
         <h1 className={styles.lessonTitle}>
@@ -462,6 +479,8 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
   const isLocked = lesson.is_locked;
   const isAttachedToCourse = !!lesson.course_data?.permalink;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com';
+  const pageUrl = typeof window !== 'undefined' ? window.location.href : (seo?.canonical_url || '');
 
   return (
     <div className={styles.lessonDetailContainer}>
@@ -472,6 +491,8 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
           name="robots"
           content={lesson.status === "draft" ? "noindex,follow" : seo?.robots || "index,follow"}
         />
+        {lesson.focus_keyword ? <meta name="keywords" content={lesson.focus_keyword} /> : null}
+        {pageUrl ? <meta property="og:url" content={pageUrl} /> : null}
         <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
         {(() => {
           const base = typeof window !== "undefined" ? window.location.origin : "";
@@ -482,6 +503,31 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         <meta property="og:title" content={lesson.og_title || seo?.title || lesson.title} />
         <meta property="og:description" content={lesson.og_description || seo?.description || stripHTML(lesson.content).substring(0, 160)} />
         {lesson.og_image && <meta property="og:image" content={lesson.og_image} />}
+        {/* JSON-LD: Lesson + Breadcrumb */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context':'https://schema.org',
+            '@type':'LearningResource',
+            name: lesson.title,
+            description: seo?.description || stripHTML(lesson.content).substring(0,160),
+            url: pageUrl || undefined,
+            creator: { '@type':'Person', name: lesson.created_by || 'Instructor' },
+            inLanguage: 'en',
+            isAccessibleForFree: !lesson.is_premium,
+            educationalLevel: lesson.course_data ? lesson.course_data.subject_name : undefined
+          })
+        }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context':'https://schema.org',
+            '@type':'BreadcrumbList',
+            itemListElement:[
+              { '@type':'ListItem', position:1, name:'Home', item: siteUrl },
+              { '@type':'ListItem', position:2, name:'Lessons', item: `${siteUrl}/lessons/` },
+              pageUrl ? { '@type':'ListItem', position:3, name: lesson.title, item: pageUrl } : undefined
+            ].filter(Boolean)
+          })
+        }} />
       </Head>
 
       <h1 className={styles.lessonTitle}>

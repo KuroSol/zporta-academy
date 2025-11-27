@@ -29,6 +29,8 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
   const desc  = (initialSeo?.description || course?.seo_description) ?? "Learn this course on Zporta Academy.";
   const canon = (initialSeo?.canonical_url || (course?.permalink ? `${siteUrl}/courses/${course.permalink}/` : siteUrl));
   const ogImg = initialSeo?.og_image || course?.og_image_url || course?.cover_image_url;
+  const focus = course?.focus_keyword || initialSeo?.focus_keyword;
+  const ogUrl = canon;
 
 
   return (
@@ -40,12 +42,53 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
         <meta property="og:type" content="website" />
         <meta property="og:title" content={initialSeo?.og_title || title} />
         <meta property="og:description" content={initialSeo?.og_description || desc} />
+        <meta property="og:url" content={ogUrl} />
         {ogImg ? <meta property="og:image" content={ABS(siteUrl, ogImg)} /> : null}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={initialSeo?.og_title || title} />
         <meta name="twitter:description" content={initialSeo?.og_description || desc} />
         {ogImg ? <meta name="twitter:image" content={ABS(siteUrl, ogImg)} /> : null}
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        {focus ? <meta name="keywords" content={focus} /> : null}
+        {/* JSON-LD: Course + Breadcrumb */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Course',
+              name: course?.title || title,
+              description: desc,
+              url: ogUrl,
+              provider: {
+                '@type': 'Organization',
+                name: 'Zporta Academy',
+                url: siteUrl,
+              },
+              offers: course?.course_type === 'premium' && course?.price ? {
+                '@type': 'Offer',
+                priceCurrency: 'USD',
+                price: String(course.price),
+                availability: 'https://schema.org/InStock'
+              } : undefined
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+                { '@type': 'ListItem', position: 2, name: 'Courses', item: `${siteUrl}/courses/` },
+                { '@type': 'ListItem', position: 3, name: course?.subject_name || 'Subject', item: `${siteUrl}/courses/${username}/${date}/${subject}/` },
+                { '@type': 'ListItem', position: 4, name: course?.title || title, item: ogUrl }
+              ]
+            })
+          }}
+        />
       </Head>
       {course
         ? <CourseDetail initialCourse={course} initialLessons={lessons} />
