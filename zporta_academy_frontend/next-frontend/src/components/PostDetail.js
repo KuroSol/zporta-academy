@@ -41,6 +41,15 @@ export default function PostDetail({ post, previousPost, nextPost }) {
               <span className={styles.dot}>•</span>
               <time className={styles.date}>{formatDate(post.created_at)}</time>
             </div>
+            {post.tags && post.tags.length > 0 && (
+              <div className={styles.tagsContainer}>
+                {post.tags.map((tag) => (
+                  <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink}>
+                    #{tag.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </header>
 

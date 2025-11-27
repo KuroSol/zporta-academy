@@ -64,6 +64,15 @@ export default function PostsMagazineList() {
               <span className={styles.categoryTag}>{featuredPost.category || 'News'}</span>
               <h2 className={styles.featuredTitle}>{featuredPost.title || 'Untitled'}</h2>
               <p className={styles.featuredExcerpt}>{featuredPost.excerpt || 'Click to read the full story and discover more details about this breaking topic.'}</p>
+              {featuredPost.tags && featuredPost.tags.length > 0 && (
+                <div className={styles.tagsContainer}>
+                  {featuredPost.tags.map((tag) => (
+                    <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink} onClick={(e) => e.stopPropagation()}>
+                      #{tag.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
               <div className={styles.meta}>
                 <span className={styles.author}>{featuredPost.created_by || 'Anonymous'}</span>
                 <span className={styles.dot}>•</span>
@@ -88,6 +97,15 @@ export default function PostsMagazineList() {
               <div className={styles.body}>
                 <span className={styles.categoryTag}>{p.category || 'General'}</span>
                 <h3 className={styles.title}>{p.title || 'Untitled'}</h3>
+                {p.tags && p.tags.length > 0 && (
+                  <div className={styles.tagsContainer}>
+                    {p.tags.map((tag) => (
+                      <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink} onClick={(e) => e.stopPropagation()}>
+                        #{tag.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
                  <div className={styles.meta}>
                     <span className={styles.author}>{p.created_by}</span>
                     <span className={styles.dot}>•</span>

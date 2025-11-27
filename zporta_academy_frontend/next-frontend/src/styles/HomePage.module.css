@@ -36,8 +36,9 @@
     align-items: center;
     justify-content: center;
     padding: 4rem 1rem;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
+    z-index: 1;
     transition: background-position 0.4s ease-out; /* Smooths the mouse effect */
 }
 
@@ -264,15 +265,34 @@
 .searchBlock { margin-bottom: 1rem; }
 .searchBlock:last-child { margin-bottom: 0; }
 
+.searchBlockHeaderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 182, 6, 0.2);
+    margin-bottom: 0.75rem;
+}
+
 .searchBlockHeader {
     color: #fff;
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 0 0 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 182, 6, 0.2);
+    margin: 0;
+}
+
+.seeAllLink {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--zporta-gold);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.seeAllLink:hover {
+    color: #fff;
+    text-decoration: underline;
 }
 
 .searchBlockList {
@@ -286,15 +306,49 @@
 .searchBlockLink {
     color: var(--header-fg-dim);
     text-decoration: none;
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 0.5rem 0.75rem;
     border-radius: var(--border-radius-md);
     transition: color 0.2s ease, background-color 0.2s ease;
 }
 
+.typeBadge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: rgba(255, 182, 6, 0.2);
+    color: var(--zporta-gold);
+    border: 1px solid rgba(255, 182, 6, 0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .searchBlockLink:hover {
     color: #fff;
     background-color: rgba(255, 182, 6, 0.1);
+}
+
+.showMoreButton {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background: rgba(255, 182, 6, 0.1);
+    border: 1px solid rgba(255, 182, 6, 0.3);
+    border-radius: var(--border-radius-md);
+    color: var(--zporta-gold);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.showMoreButton:hover {
+    background: rgba(255, 182, 6, 0.2);
+    border-color: var(--zporta-gold);
+    transform: translateY(-1px);
 }
 
 
@@ -314,7 +368,10 @@
     display: flex; 
     flex-direction: column; 
     align-items: center; 
-    justify-content: center; 
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    margin-bottom: 2rem;
 }
 
 .startPlanButton { 
@@ -364,6 +421,7 @@
     transition: var(--transition-smooth);
     position: relative;
     overflow: hidden;
+    max-height: 500px;
 }
 
 .dashboardCard::after {
@@ -419,6 +477,45 @@
     border: 1px solid rgba(255, 182, 6, 0.15);
     transition: var(--transition-smooth);
 }
+.enrolledPreviewList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+.enrolledPreviewList::-webkit-scrollbar{width:6px}
+.enrolledPreviewList::-webkit-scrollbar-track{background:rgba(100,116,139,0.1);border-radius:3px}
+.enrolledPreviewList::-webkit-scrollbar-thumb{background:rgba(255,182,6,0.3);border-radius:3px}
+.enrolledPreviewList::-webkit-scrollbar-thumb:hover{background:rgba(255,182,6,0.5)}
+
+.lessonHistoryPreview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+.lessonHistoryPreview::-webkit-scrollbar{width:6px}
+.lessonHistoryPreview::-webkit-scrollbar-track{background:rgba(100,116,139,0.1);border-radius:3px}
+.lessonHistoryPreview::-webkit-scrollbar-thumb{background:rgba(255,182,6,0.3);border-radius:3px}
+.lessonHistoryPreview::-webkit-scrollbar-thumb:hover{background:rgba(255,182,6,0.5)}
+
+.quizAttemptsPreview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+.quizAttemptsPreview::-webkit-scrollbar{width:6px}
+.quizAttemptsPreview::-webkit-scrollbar-track{background:rgba(100,116,139,0.1);border-radius:3px}
+.quizAttemptsPreview::-webkit-scrollbar-thumb{background:rgba(255,182,6,0.3);border-radius:3px}
+.quizAttemptsPreview::-webkit-scrollbar-thumb:hover{background:rgba(255,182,6,0.5)}
+
 .enrolledPreviewItem:hover, .lessonHistoryItem:hover {
     background-color: rgba(255, 182, 6, 0.1);
     border-color: var(--zporta-gold);

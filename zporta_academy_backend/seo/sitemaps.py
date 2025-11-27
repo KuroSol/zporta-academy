@@ -9,6 +9,7 @@ from quizzes.models import Quiz
 from courses.models import Course
 from lessons.models import Lesson
 from posts.models import Post
+from tags.models import Tag
 
 def _lastmod(obj):
     """
@@ -104,6 +105,22 @@ class PostSitemap(Sitemap):
 
     def location(self, obj):
         return f"/posts/{obj.permalink}/"
+
+    def lastmod(self, obj):
+        return _lastmod(obj)
+
+
+class TagSitemap(Sitemap):
+    protocol   = "https"
+    changefreq = "weekly"
+    priority   = 0.4
+    cache_timeout = 0
+    
+    def items(self):
+        return Tag.objects.all().order_by("name")
+
+    def location(self, obj):
+        return f"/tags/{obj.slug}/"
 
     def lastmod(self, obj):
         return _lastmod(obj)

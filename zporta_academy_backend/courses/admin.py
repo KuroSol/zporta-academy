@@ -14,8 +14,9 @@ class QuizInline(admin.TabularInline):  # Adding a Quiz inline
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ['title', 'subject', 'created_by', 'course_type', 'is_draft', 'created_at']
-    list_filter = ['is_draft', 'subject', 'course_type', 'created_by']
+    list_filter = ['is_draft', 'subject', 'course_type', 'created_by', 'tags']
     prepopulated_fields = {'permalink': ('title',)}
+    filter_horizontal = ('tags',)
     inlines = [LessonInline, QuizInline]  # Adding QuizInline here
     # show all rows in admin despite filtered default manager
     def get_queryset(self, request):

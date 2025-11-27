@@ -10,6 +10,7 @@ from unidecode import unidecode
 from django.utils import timezone
 from bs4 import BeautifulSoup
 import re
+from tags.models import Tag
 
 # Convert Japanese text to Romaji
 def japanese_to_romaji(text):
@@ -87,6 +88,9 @@ class Post(models.Model):
         null=True,
         help_text="Upload an image for social media previews (Open Graph image)."
     )
+    
+    # Tags
+    tags = models.ManyToManyField(Tag, blank=True, related_name='posts')
 
     def save(self, *args, **kwargs):
         """

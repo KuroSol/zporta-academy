@@ -1416,6 +1416,16 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             <span>Created by: <strong>{course.created_by}</strong></span>
                             <span>Subject: <strong>{course.subject_name}</strong></span>
                             <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
+                            {course.tags && course.tags.length > 0 && (
+                                <div className={styles.courseTags}>
+                                    <strong>Tags:</strong>
+                                    {course.tags.map((tag) => (
+                                        <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink}>
+                                            #{tag.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1439,6 +1449,16 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                             <span>Created by: <strong>{course.created_by}</strong></span>
                             <span>Subject: <strong>{course.subject_name}</strong></span>
                             <span>Last updated: <strong>{(course?.updated_at || course?.created_at) ? new Date(course.updated_at || course.created_at).toLocaleDateString() : '—'}</strong></span>
+                            {course.tags && course.tags.length > 0 && (
+                                <div className={styles.courseTags}>
+                                    <strong>Tags:</strong>
+                                    {course.tags.map((tag) => (
+                                        <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink}>
+                                            #{tag.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                     {Array.isArray(course.selling_points) && course.selling_points.map(p => (p || '').trim()).filter(Boolean).length > 0 && (

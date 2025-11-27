@@ -10,7 +10,7 @@ from django.conf.urls.static import static
 
 # ─── NEW: import sitemap machinery ─────────────────────────────
 from django.contrib.sitemaps.views import index, sitemap
-from seo.sitemaps import QuizSitemap, CourseSitemap, LessonSitemap, PostSitemap
+from seo.sitemaps import QuizSitemap, CourseSitemap, LessonSitemap, PostSitemap, TagSitemap
 
 urlpatterns = [
     path('administration-zporta-repersentiivie/', admin.site.urls),
@@ -49,6 +49,7 @@ SITEMAPS = {
     "courses": CourseSitemap,
     "lessons": LessonSitemap,
     "posts":   PostSitemap,
+    "tags":    TagSitemap,
 }
 urlpatterns += [
     path("sitemap.xml", index, {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap-section"}, name="sitemap-index"),

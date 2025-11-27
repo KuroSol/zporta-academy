@@ -742,13 +742,13 @@ ${sanitizeLessonCss(customCSS || "")}
             <FaRegClock className={styles.metaIcon} /> {lesson.created_at ? new Date(lesson.created_at).toLocaleDateString() : "Unknown"}
           </span>
         </p>
-        {lesson.tags_output?.length > 0 && (
+        {lesson.tags?.length > 0 && (
           <div className={styles.lessonTags}>
             <strong>Tags:</strong>
-            {lesson.tags_output.map((tag) => (
-              <span key={tag} className={styles.tagItem}>
-                {tag}
-              </span>
+            {lesson.tags.map((tag) => (
+              <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink}>
+                #{tag.name}
+              </Link>
             ))}
           </div>
         )}

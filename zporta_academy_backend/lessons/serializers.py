@@ -3,6 +3,7 @@ from django.conf import settings
 from rest_framework import serializers
 from .models import Lesson, LessonTemplate, LessonCompletion
 from tags.models import Tag
+from tags.serializers import TagSerializer
 from subjects.models import Subject
 from bs4 import BeautifulSoup
 import os
@@ -50,13 +51,13 @@ class LessonSerializer(serializers.ModelSerializer):
     help_text="Type of this lesson: text or video."
 
     )
-    # Input field for tags (list of strings)
-    tags = serializers.ListField(
+    # Input field for tags (list of strings) - write only
+    tag_names = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False,
         help_text="List of tag names."
     )
-    # Output field for tags (list of strings)
-    tags_output = serializers.SerializerMethodField(read_only=True)
+    # Output field for tags (full tag objects with slug)
+    tags = TagSerializer(many=True, read_only=True)
     # Input/Output field for subject (handles ID)
     subject = serializers.PrimaryKeyRelatedField(
         queryset=Subject.objects.all(), allow_null=False, required=True
@@ -83,8 +84,8 @@ class LessonSerializer(serializers.ModelSerializer):
             'subject_name',    # Read-only Subject Name
             'course', 'course_data',        # Course ID (read-only by default unless in writable fields)
             'course_title',    # Read-only Course Title
-            'tags',            # <-- write_only input field (MUST be in fields)
-            'tags_output',     # <-- read_only output field
+            'tag_names',       # <-- write_only input field
+            'tags',            # <-- read_only output field (full tag objects)
             'permalink', 'created_by', 'created_at', 'is_locked',
             'is_premium',      # Allow clients to mark lessons as premium or free.
             'status', 'published_at', 'position',  # Include position for proper ordering
@@ -96,7 +97,7 @@ class LessonSerializer(serializers.ModelSerializer):
         # Define fields not settable via API or derived
         read_only_fields = [
             'id', 'permalink', 'created_by', 'created_at', 'is_locked',
-            'subject_name', 'course_title', 'tags_output',
+            'subject_name', 'course_title', 'tags',
             'published_at'
          ]
         
@@ -136,10 +137,6 @@ class LessonSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.username if obj.created_by else None
-
-    def get_tags_output(self, instance):
-        # Returns list of names for the 'tags_output' field
-        return [tag.name for tag in instance.tags.all()]
 
     def get_course_data(self, obj):
         if obj.course:
@@ -271,7 +268,7 @@ class LessonSerializer(serializers.ModelSerializer):
 
     # --- create Method ---
     def create(self, validated_data):
-        tags_data = validated_data.pop('tags', [])
+        tag_names_data = validated_data.pop('tag_names', [])
         # Subject instance is already in validated_data['subject'] from PrimaryKeyRelatedField
 
         # created_by is set in the view's perform_create; do not override here
@@ -282,8 +279,8 @@ class LessonSerializer(serializers.ModelSerializer):
         lesson = Lesson.objects.create(**validated_data)
 
         # Attach tags
-        if tags_data:
-             for tag_name in tags_data:
+        if tag_names_data:
+             for tag_name in tag_names_data:
                  tag_instance, _ = Tag.objects.get_or_create(name=tag_name)
                  lesson.tags.add(tag_instance)
 
@@ -321,9 +318,10 @@ class LessonSerializer(serializers.ModelSerializer):
             instance.published_at = timezone.now()
             instance.save(update_fields=['published_at'])
 
-        if tags_data is not None:
+        tag_names_data = validated_data.get('tag_names')
+        if tag_names_data is not None:
             instance.tags.clear()
-            for tag_name in tags_data:
+            for tag_name in tag_names_data:
                 tag_instance, _ = Tag.objects.get_or_create(name=tag_name)
                 instance.tags.add(tag_instance)
 

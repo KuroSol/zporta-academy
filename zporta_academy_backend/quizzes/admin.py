@@ -51,10 +51,11 @@ class QuestionInline(admin.StackedInline):
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display    = ('title', 'created_by', 'display_subject', 'quiz_type', 'status', 'created_at', 'published_at', 'question_count')
-    list_filter     = ('quiz_type', 'status', 'created_by', 'subject')
+    list_filter     = ('quiz_type', 'status', 'created_by', 'subject', 'tags')
     search_fields   = ('title', 'created_by__username', 'subject__name')
     raw_id_fields   = ('created_by', 'subject')
     readonly_fields = ('permalink',)         # ← make permalink read-only
+    filter_horizontal = ('tags',)
     inlines         = [QuestionInline]
 
     def display_subject(self, obj):

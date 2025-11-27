@@ -106,17 +106,20 @@ const HomePage = () => {
         const delayDebounceFn = setTimeout(async () => {
             setIsSearching(true);
             try {
-                const response = await apiClient.get('/explorer/search/', {
-                    params: { q: searchTerm, limit: 5 }
-                });
-                setSearchResults(response.data);
+                const [explorerRes, tagsRes] = await Promise.all([
+                    apiClient.get('/explorer/search/', { params: { q: searchTerm, limit: 8 } }),
+                    apiClient.get('/tags/', { params: { search: searchTerm, limit: 8 } }).catch(() => null)
+                ]);
+                const explorerData = explorerRes?.data || { courses: [], lessons: [], quizzes: [], guides: [], users: [] };
+                const tagsData = tagsRes ? (Array.isArray(tagsRes.data) ? tagsRes.data : (tagsRes.data?.results || [])) : [];
+                setSearchResults({ ...explorerData, tags: tagsData });
             } catch (error) {
                 console.error("Homepage search error:", error);
-                setSearchResults({ courses: [], lessons: [], quizzes: [], guides: [], users: [] });
+                setSearchResults({ courses: [], lessons: [], quizzes: [], guides: [], users: [], tags: [] });
             } finally {
                 setIsSearching(false);
             }
-        }, 500);
+        }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, token]);
@@ -572,29 +575,60 @@ const HomePage = () => {
 
 // Helper for the dropdown
 const SearchBlock = ({ title, items }) => {
+    const [expanded, setExpanded] = useState(false);
     if (!items || items.length === 0) return null;
+
+    // Sort by newest first (created_at, or fallback to id)
+    const sortedItems = [...items].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB - dateA;
+    });
+
+    const displayLimit = expanded ? sortedItems.length : 4;
+    const displayItems = sortedItems.slice(0, displayLimit);
+    const hasMore = sortedItems.length > 4;
 
     const makeHref = (item) => {
         const type = title.toLowerCase();
         switch (type) {
             case 'quizzes': return item.permalink ? quizPermalinkToUrl(item.permalink) : '#';
-            case 'guides': case 'users': return `/users/${item.username}`;
+            case 'guides': case 'users': return item.username ? `/users/${item.username}` : '#';
+            case 'tags': return item.slug ? `/tags/${item.slug}` : '#';
             default: return `/${type}/${item.permalink || item.id}`;
         }
+    };
+    const seeAllHref = () => {
+        const type = title.toLowerCase();
+        if (type === 'tags') return '/tags';
+        if (type === 'users' || type === 'guides') return '/explorer';
+        return `/learn?tab=${type}`;
     };
   
     return (
       <div className={styles.searchBlock}>
-        <h4 className={styles.searchBlockHeader}>{title}</h4>
+        <div className={styles.searchBlockHeaderRow}>
+          <h4 className={styles.searchBlockHeader}>{title} ({sortedItems.length})</h4>
+          <Link href={seeAllHref()} className={styles.seeAllLink}>See all</Link>
+        </div>
         <ul className={styles.searchBlockList}>
-          {items.slice(0, 5).map(item => (
-            <li key={`${title}-${item.id}`}>
+          {displayItems.map(item => (
+            <li key={`${title}-${item.id || item.slug || item.username}`}>
               <Link href={makeHref(item)} className={styles.searchBlockLink}>
-                {item.title || item.name || item.username || `Item #${item.id}`}
+                <span className={styles.typeBadge}>{title}</span>
+                <span>{item.title || item.name || item.full_name || item.username || `Item #${item.id}`}</span>
               </Link>
             </li>
           ))}
         </ul>
+        {hasMore && (
+          <button
+            className={styles.showMoreButton}
+            onClick={(e) => { e.preventDefault(); setExpanded(!expanded); }}
+          >
+            {expanded ? 'Show less' : `Show ${sortedItems.length - 4} more`}
+          </button>
+        )}
       </div>
     );
 };

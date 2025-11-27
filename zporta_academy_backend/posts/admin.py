@@ -6,11 +6,12 @@ from .models import Post
 class PostAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_by', 'created_at', 'calculate_seo_score')
     search_fields = ('title', 'permalink', 'seo_title', 'focus_keyword')
-    list_filter = ('created_at',)
+    list_filter = ('created_at', 'tags')
+    filter_horizontal = ('tags',)
 
     fieldsets = (
         ('Content', {
-            'fields': ('title', 'permalink', 'content')
+            'fields': ('title', 'permalink', 'content', 'tags')
         }),
         ('SEO Metadata', {
             'fields': (

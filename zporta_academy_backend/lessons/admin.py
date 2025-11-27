@@ -11,8 +11,9 @@ class LessonTemplateAdmin(admin.ModelAdmin):
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
     list_display = ['title', 'video_url', 'permalink', 'subject', 'created_by']
-    list_filter = ['subject', 'created_by']
+    list_filter = ['subject', 'created_by', 'tags']
     search_fields = ['title', 'content']
+    filter_horizontal = ('tags',)
 
     def save_model(self, request, obj, form, change):
         # Ensure the permalink is generated if not already set

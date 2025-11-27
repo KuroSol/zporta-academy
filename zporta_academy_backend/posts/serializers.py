@@ -4,18 +4,20 @@ from .models import Post
 from bs4 import BeautifulSoup
 import os
 from user_media.models import UserMedia
+from tags.serializers import TagSerializer
 
 class PostSerializer(serializers.ModelSerializer):
     post_url = serializers.SerializerMethodField()  # Full post URL
     created_by = serializers.SerializerMethodField()  # Display username
     og_image_url = serializers.SerializerMethodField()  # Absolute URL for the image
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'content', 'permalink', 'post_url', 'created_by', 'created_at',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
-            'og_title', 'og_description', 'og_image', 'og_image_url'
+            'og_title', 'og_description', 'og_image', 'og_image_url', 'tags'
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink']
 
