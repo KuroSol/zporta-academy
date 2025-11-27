@@ -19,7 +19,11 @@ class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
 
     def get_queryset(self):
-        return Course.objects.all().annotate(
+        return Course.objects.select_related(
+            'created_by', 'subject'
+        ).prefetch_related(
+            'allowed_testers'
+        ).annotate(
             enrolled_count=Count('enrollment', distinct=True),
             completed_count=Count(
                 'coursecompletion',
@@ -256,7 +260,10 @@ class DynamicCourseView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, permalink):
-        course = get_object_or_404(Course.all_objects, permalink=permalink)
+        course = get_object_or_404(
+            Course.all_objects.select_related('created_by', 'subject').prefetch_related('allowed_testers'),
+            permalink=permalink
+        )
         
         # If the course is a draft, only allow access to the creator or allowed testers.
         if course.is_draft:
@@ -269,7 +276,7 @@ class DynamicCourseView(APIView):
                 raise Http404("Course not found.")
                 
         # Public dynamic view should also hide drafts for non-owners
-        base_lessons = Lesson.objects.filter(course=course)
+        base_lessons = Lesson.objects.filter(course=course).select_related('created_by', 'course', 'subject')
         is_privileged = request.user.is_authenticated and (
             request.user == course.created_by or request.user.is_staff or request.user.is_superuser
         )
@@ -286,7 +293,7 @@ class DynamicCourseView(APIView):
             if total_lessons > 0:
                 progress_percentage = int((completed_count / total_lessons) * 100)
                 
-        return Response({
+        response_data = {
             "course": CourseSerializer(course, context={"request": request}).data,
             "lessons": LessonSerializer(lessons, many=True).data,
             "seo": {
@@ -299,7 +306,13 @@ class DynamicCourseView(APIView):
             },
             "is_owner": is_owner,
             "progress": progress_percentage,
-        })
+        }
+        resp = Response(response_data)
+        # Cache public course views for anonymous users only
+        if not request.user.is_authenticated and not course.is_draft:
+            from django.utils.cache import patch_cache_control
+            patch_cache_control(resp, public=True, max_age=300, s_maxage=300)
+        return resp
     
 class AddQuizToCourseView(APIView):
     permission_classes = [IsAuthenticated]

@@ -349,7 +349,11 @@ class DynamicLessonView(APIView):
         if not (request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff)):
             cache.set(cache_key, response_data, timeout=300)
         
-        return Response(response_data)
+        resp = Response(response_data)
+        # Add conservative cache headers for anonymous/public access
+        if not request.user.is_authenticated and lesson.status == Lesson.PUBLISHED and not lesson.is_premium:
+            patch_cache_control(resp, public=True, max_age=300, s_maxage=300)
+        return resp
 
     def _is_owner(self, request, lesson_data):
         """Helper to check if user is the lesson owner"""
