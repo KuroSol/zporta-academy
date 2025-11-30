@@ -2,11 +2,11 @@ import React, { useEffect, useState, useContext, useCallback } from "react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/router";
-import styles from "@/styles/QuizAttempts.module.css";
+import styles from "@/styles/Analytics.module.css";
 import { Award, Activity, Brain, HelpCircle, BookOpenCheck, BarChartHorizontalBig, ExternalLink } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, RadialBarChart, RadialBar } from 'recharts';
 
-const ActivityJourneyDashboard = () => {
+const AnalyticsAndStatistics = () => {
   const { token, logout } = useContext(AuthContext);
   const router = useRouter();
   const [data, setData] = useState(null);
@@ -1605,4 +1605,4 @@ const ActivityJourneyDashboard = () => {
   );
 };
 
-export default ActivityJourneyDashboard;
+export default AnalyticsAndStatistics;

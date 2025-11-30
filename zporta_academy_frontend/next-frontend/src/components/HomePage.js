@@ -370,7 +370,7 @@ const HomePage = () => {
                 <header className={styles.homeHeader}>
                     <button
                         className={styles.startPlanButton}
-                        onClick={() => router.push('/quiz-attempts')}
+                        onClick={() => router.push('/analytics')}
                     >
                         <span className={styles.startPlanIcon}><FaRocket /></span>
                         {showTeacherSections && !showStudentSections ? 'Go to Teacher Dashboard' : 'Review Your Study Plan'}
@@ -477,8 +477,8 @@ const HomePage = () => {
                                         ))}
                                     </div>
                                 ) : ( <EmptyState message="No recent quiz attempts found." /> )}
-                                <button className={styles.cardActionButton} onClick={() => router.push('/quiz-attempts')}>
-                                    See All Quiz Attempts
+                                <button className={styles.cardActionButton} onClick={() => router.push('/analytics')}>
+                                    See All Analytics & Statistics
                                 </button>
                             </div>
                         </>
