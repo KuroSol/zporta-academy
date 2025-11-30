@@ -10,7 +10,19 @@ from .activity_models import UserActivity
 from users.models import UserLoginEvent
 from lessons.models import LessonCompletion
 from enrollment.models import CourseCompletion
-from gamification.models import UserScore, Activity
+try:
+    from gamification.models import UserScore, Activity
+    GAMIFICATION_AVAILABLE = True
+except Exception:
+    # Fallback to internal activity tracking when gamification app is not installed
+    from users.activity_models import UserActivity as Activity
+    GAMIFICATION_AVAILABLE = False
+    # Lightweight placeholder to avoid import errors where UserScore is referenced
+    class _UserScorePlaceholder:
+        def __init__(self, user=None):
+            self.learning_score = 0
+            self.impact_score = 0
+    UserScore = _UserScorePlaceholder
 from analytics.models import QuizAttempt
 from enrollment.models import Enrollment
 
@@ -239,8 +251,8 @@ class ScoringService:
         
         # Get UserScore data from gamification app
         try:
-            user_score = UserScore.objects.get(user=user)
-        except UserScore.DoesNotExist:
+            user_score = UserScore.objects.get(user=user) if GAMIFICATION_AVAILABLE else None
+        except Exception:
             user_score = None
         
         if is_student:
