@@ -42,6 +42,11 @@ const ActivityJourneyDashboard = () => {
   const [impactAnalytics, setImpactAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  // Sorting/Filtering for tables
+  const [studentEnrollSort, setStudentEnrollSort] = useState('newest');
+  const [studentEnrollFilter, setStudentEnrollFilter] = useState('all'); // all | free | premium
+  const [teacherEnrollSort, setTeacherEnrollSort] = useState('newest');
+  const [teacherEnrollFilter, setTeacherEnrollFilter] = useState('all'); // all | free | premium
   
   // Score detail modal state
   const [showScoreDetail, setShowScoreDetail] = useState(false);
@@ -485,23 +490,57 @@ const ActivityJourneyDashboard = () => {
                 {data.courses_enrolled_detail?.length > 0 && (
                   <div>
                     <h4 className={styles.subhead}>Courses Enrolled ({data.courses_enrolled_detail.length}) — Total: +{data.courses_enrolled_detail.reduce((sum, c) => sum + c.points, 0)} pts</h4>
-                    <ul className={styles.list}>
-                      {data.courses_enrolled_detail.map(c => (
-                        <li key={c.id}>
-                          <button 
-                            onClick={() => c.link && router.push(c.link)} 
-                            className={styles.linkBtn}
-                            disabled={!c.link}
-                          >
-                            <span>{c.course_title}</span>
-                            {c.link && <ExternalLink size={12} />}
-                          </button>
-                          <em>{new Date(c.enrolled_at).toLocaleDateString()}</em>
-                          <b className={styles.pointsBadge}>+{c.points}</b>
-                          <i> · {c.enrollment_type}</i>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className={styles.filterBar}>
+                      <div className={styles.filterGroup}>
+                        <label className={styles.filterLabel}>Sort</label>
+                        <select className={styles.filterSelect} value={studentEnrollSort} onChange={(e)=>setStudentEnrollSort(e.target.value)}>
+                          <option value="newest">Newest</option>
+                          <option value="oldest">Oldest</option>
+                          <option value="az">A → Z</option>
+                          <option value="za">Z → A</option>
+                        </select>
+                      </div>
+                      <div className={styles.filterGroup}>
+                        <label className={styles.filterLabel}>Category</label>
+                        <div className={styles.segmented}>
+                          <button className={`${styles.segmentBtn} ${studentEnrollFilter==='all'?styles.segmentActive:''}`} onClick={()=>setStudentEnrollFilter('all')}>All</button>
+                          <button className={`${styles.segmentBtn} ${studentEnrollFilter==='free'?styles.segmentActive:''}`} onClick={()=>setStudentEnrollFilter('free')}>Free</button>
+                          <button className={`${styles.segmentBtn} ${studentEnrollFilter==='premium'?styles.segmentActive:''}`} onClick={()=>setStudentEnrollFilter('premium')}>Premium</button>
+                        </div>
+                      </div>
+                    </div>
+                    {(() => {
+                      let list = [...data.courses_enrolled_detail];
+                      if (studentEnrollFilter !== 'all') {
+                        list = list.filter(i => {
+                          const t = (i.enrollment_type || '').toLowerCase();
+                          return studentEnrollFilter === 'free' ? t.includes('free') : t.includes('premium');
+                        });
+                      }
+                      if (studentEnrollSort === 'newest') list.sort((a,b)=> new Date(b.enrolled_at) - new Date(a.enrolled_at));
+                      else if (studentEnrollSort === 'oldest') list.sort((a,b)=> new Date(a.enrolled_at) - new Date(b.enrolled_at));
+                      else if (studentEnrollSort === 'az') list.sort((a,b)=> (a.course_title||'').localeCompare(b.course_title||''));
+                      else if (studentEnrollSort === 'za') list.sort((a,b)=> (b.course_title||'').localeCompare(a.course_title||''));
+                      return (
+                        <ul className={styles.list}>
+                          {list.map(c => (
+                            <li key={c.id}>
+                              <button 
+                                onClick={() => c.link && router.push(c.link)} 
+                                className={styles.linkBtn}
+                                disabled={!c.link}
+                              >
+                                <span>{c.course_title}</span>
+                                {c.link && <ExternalLink size={12} />}
+                              </button>
+                              <em>{new Date(c.enrolled_at).toLocaleDateString()}</em>
+                              <b className={styles.pointsBadge}>+{c.points}</b>
+                              <i> · {c.enrollment_type}</i>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
                   </div>
                 )}
                 {data.course_completions_detail?.length > 0 && (
@@ -529,28 +568,54 @@ const ActivityJourneyDashboard = () => {
                 {data.enrollments_detail?.length > 0 && (
                   <div>
                     <h4 className={styles.subhead}>Student Enrollments ({data.enrollments_detail.length}) — Total: +{data.enrollments_detail.reduce((sum, e) => sum + e.points, 0)} pts</h4>
-                    <ul className={styles.list}>
-                      {data.enrollments_detail.slice(0, 10).map(e => (
-                        <li key={e.id}>
-                          <button 
-                            onClick={() => e.link && router.push(e.link)} 
-                            className={styles.linkBtn}
-                            disabled={!e.link}
-                          >
-                            <span>{e.course_title}</span>
-                            {e.link && <ExternalLink size={12} />}
-                          </button>
-                          <em>{e.student_username}</em>
-                          <b className={styles.pointsBadge}>+{e.points}</b>
-                          <i> · {e.is_premium ? '👑 Premium' : '🆓 Free'}</i>
-                        </li>
-                      ))}
-                    </ul>
-                    {data.enrollments_detail.length > 10 && (
-                      <button onClick={() => openScoreDetail('teacher')} className={styles.viewMoreBtn}>
-                        View all {data.enrollments_detail.length} enrollments →
-                      </button>
-                    )}
+                    <div className={styles.filterBar}>
+                      <div className={styles.filterGroup}>
+                        <label className={styles.filterLabel}>Sort</label>
+                        <select className={styles.filterSelect} value={teacherEnrollSort} onChange={(e)=>setTeacherEnrollSort(e.target.value)}>
+                          <option value="newest">Newest</option>
+                          <option value="oldest">Oldest</option>
+                          <option value="az">A → Z</option>
+                          <option value="za">Z → A</option>
+                        </select>
+                      </div>
+                      <div className={styles.filterGroup}>
+                        <label className={styles.filterLabel}>Category</label>
+                        <div className={styles.segmented}>
+                          <button className={`${styles.segmentBtn} ${teacherEnrollFilter==='all'?styles.segmentActive:''}`} onClick={()=>setTeacherEnrollFilter('all')}>All</button>
+                          <button className={`${styles.segmentBtn} ${teacherEnrollFilter==='free'?styles.segmentActive:''}`} onClick={()=>setTeacherEnrollFilter('free')}>Free</button>
+                          <button className={`${styles.segmentBtn} ${teacherEnrollFilter==='premium'?styles.segmentActive:''}`} onClick={()=>setTeacherEnrollFilter('premium')}>Premium</button>
+                        </div>
+                      </div>
+                    </div>
+                    {(() => {
+                      let list = [...data.enrollments_detail];
+                      if (teacherEnrollFilter !== 'all') {
+                        list = list.filter(i => teacherEnrollFilter === 'free' ? !i.is_premium : i.is_premium);
+                      }
+                      if (teacherEnrollSort === 'newest') list.sort((a,b)=> new Date(b.enrolled_at) - new Date(a.enrolled_at));
+                      else if (teacherEnrollSort === 'oldest') list.sort((a,b)=> new Date(a.enrolled_at) - new Date(b.enrolled_at));
+                      else if (teacherEnrollSort === 'az') list.sort((a,b)=> (a.course_title||'').localeCompare(b.course_title||''));
+                      else if (teacherEnrollSort === 'za') list.sort((a,b)=> (b.course_title||'').localeCompare(a.course_title||''));
+                      return (
+                        <ul className={styles.list}>
+                          {list.map(e => (
+                            <li key={e.id}>
+                              <button 
+                                onClick={() => e.link && router.push(e.link)} 
+                                className={styles.linkBtn}
+                                disabled={!e.link}
+                              >
+                                <span>{e.course_title}</span>
+                                {e.link && <ExternalLink size={12} />}
+                              </button>
+                              <em>{e.student_username}</em>
+                              <b className={styles.pointsBadge}>+{e.points}</b>
+                              <i> · {e.is_premium ? '👑 Premium' : '🆓 Free'}</i>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

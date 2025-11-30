@@ -563,6 +563,34 @@
   text-align: center;
   padding: 18px;
 }
+
+/* Filters and sorting */
+.filterBar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+}
+.filterGroup { display:flex; align-items:center; gap:0.5rem; }
+.filterLabel { font-size: 0.9rem; color: var(--text-secondary); }
+.filterSelect {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px;
+  background: white;
+}
+.segmented { display:flex; gap:6px; background: rgba(0,0,0,0.05); padding:4px; border-radius: 8px; }
+.segmentBtn {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.segmentActive { background:white; color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 .bigStat {
   font-size: 36px;
   font-weight: 800;
