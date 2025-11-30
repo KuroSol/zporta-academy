@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+import importlib
 from pages.views import DynamicPageView
 from posts.views import DynamicPostView
 from courses.views import DynamicCourseView
@@ -40,9 +41,17 @@ urlpatterns = [
     path('api/feed/',       include('feed.urls')),
     path('api/tags/',       include('tags.urls')),
     path('api/',            include('mailmagazine.urls')),
-    path('api/gamification/', include('gamification.urls')),  # New gamification API
     path('', include('seo.urls')),
 ]
+
+# Optionally include gamification URLs if the app is installed
+try:
+    importlib.import_module('gamification')
+    urlpatterns += [
+        path('api/gamification/', include('gamification.urls')),
+    ]
+except Exception:
+    pass
 
 # ─── NEW: sitemap index + section files ─────────────────────
 SITEMAPS = {
