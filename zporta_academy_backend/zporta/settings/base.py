@@ -1,5 +1,6 @@
 # zporta/settings/base.py
 from pathlib import Path
+import importlib
 from decouple import config # Assuming you use python-decouple for config management
 import os # Good for path joining if preferred, though Pathlib is used here
 
@@ -36,6 +37,15 @@ if firebase_admin and not firebase_admin._apps:
 # --- End of Firebase Admin SDK Initialization ---
 
 # --- Your Existing INSTALLED_APPS ---
+def _optional(app_config_path: str):
+    try:
+        module_path = app_config_path.split('.apps.')[0]
+        importlib.import_module(module_path)
+        return [app_config_path]
+    except Exception:
+        print(f"⚠️  Optional app not found: {app_config_path}. Skipping.")
+        return []
+
 INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'django.contrib.admin',
@@ -74,8 +84,7 @@ INSTALLED_APPS = [
     'explorer',
     'django.contrib.sitemaps',
     'mailmagazine',
-    'gamification.apps.GamificationConfig',  # New gamification system
-]
+] + _optional('gamification.apps.GamificationConfig')
 
 ASGI_APPLICATION = 'zporta.asgi.application'
 
