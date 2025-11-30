@@ -44,14 +44,22 @@ export function AuthProvider({ children }) {
     router.push('/home')
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Attempt backend logout to record session end before clearing client state
+    try {
+      if (token) {
+        await apiClient.post('/users/logout/', {}, { headers: { Authorization: `Bearer ${token}` } })
+      }
+    } catch (e) {
+      // Ignore network/API errors; proceed with client-side cleanup
+    }
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('token')
     }
     setToken(null); setUser(null)
     delete apiClient.defaults.headers.common['Authorization']
     router.push('/login')
-  }, [router])
+  }, [router, token])
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout }}>

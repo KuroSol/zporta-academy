@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'explorer',
     'django.contrib.sitemaps',
     'mailmagazine',
+    'gamification.apps.GamificationConfig',  # New gamification system
 ]
 
 ASGI_APPLICATION = 'zporta.asgi.application'

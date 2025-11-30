@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/feed/',       include('feed.urls')),
     path('api/tags/',       include('tags.urls')),
     path('api/',            include('mailmagazine.urls')),
+    path('api/gamification/', include('gamification.urls')),  # New gamification API
     path('', include('seo.urls')),
 ]
 

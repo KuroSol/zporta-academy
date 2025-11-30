@@ -6,7 +6,9 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 
-from users.models import Profile, UserPreference
+from users.models import Profile, UserPreference, UserLoginEvent
+from django.contrib.auth.signals import user_logged_in, user_logged_out
+from django.utils import timezone
 from posts.models import Post
 from courses.models import Course
 from lessons.models import Lesson
@@ -90,3 +92,32 @@ def update_user_preferences_from_event(sender, instance, **kwargs):
             pref.interested_tags.add(tag)
 
     pref.save()
+
+
+# ────────────────────────────────────────────────────────────────
+# Login / Logout tracking for session analytics
+# ────────────────────────────────────────────────────────────────
+@receiver(user_logged_in)
+def track_user_login(sender, request, user, **kwargs):
+    # Create a login event and store its id in session for later duration calc
+    event = UserLoginEvent.objects.create(
+        user=user,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:255],
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    request.session['login_event_id'] = event.id
+
+@receiver(user_logged_out)
+def track_user_logout(sender, request, user, **kwargs):
+    event_id = request.session.pop('login_event_id', None)
+    if not event_id:
+        return
+    try:
+        ev = UserLoginEvent.objects.get(id=event_id, user=user)
+    except UserLoginEvent.DoesNotExist:
+        return
+    ev.logout_at = timezone.now()
+    if ev.logout_at and ev.login_at:
+        delta = ev.logout_at - ev.login_at
+        ev.session_duration_seconds = max(0, int(delta.total_seconds()))
+    ev.save()

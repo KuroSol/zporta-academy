@@ -4,6 +4,9 @@ from django.contrib.auth.models import User
 from django.conf import settings
 import uuid
 
+# Import UserActivity model for use in this app
+from .activity_models import UserActivity
+
 def profile_image_upload_to(instance, filename):
     """
     Stores profile images inside a folder specific to the user:
@@ -87,3 +90,24 @@ class UserPreference(models.Model):
     bio = models.TextField(blank=True, null=True)
 
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class UserLoginEvent(models.Model):
+    """Tracks user login events and optional session duration."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='login_events')
+    login_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    logout_at = models.DateTimeField(blank=True, null=True)
+    session_duration_seconds = models.PositiveIntegerField(blank=True, null=True)
+    user_agent = models.CharField(max_length=255, blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    last_heartbeat_at = models.DateTimeField(blank=True, null=True, help_text="Most recent client heartbeat (activity ping)")
+    forced_closed = models.BooleanField(default=False, help_text="Marked true if auto-closed due to inactivity timeout")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'login_at']),
+        ]
+        ordering = ['-login_at']
+
+    def __str__(self):
+        return f"LoginEvent(user={self.user_id}, at={self.login_at})"

@@ -200,12 +200,29 @@ class UserMemoryProfileResponseSerializer(serializers.Serializer):
     summary = serializers.DictField(help_text="Overall summary like total items tracked, average retention, etc.")
 
 class QuizAttemptOverviewSerializer(serializers.Serializer):
+    # Quiz data
     total_quizzes   = serializers.IntegerField()
     total_correct   = serializers.IntegerField()
     total_mistakes  = serializers.IntegerField()
     quizzes_fixed   = serializers.IntegerField()
     never_fixed     = serializers.IntegerField()
     filters         = serializers.DictField(child=serializers.ListField(), read_only=True)
+    
+    # Gamification data - Learning (as student)
+    total_points    = serializers.IntegerField(required=False)
+    learning_score  = serializers.IntegerField(required=False)
+    lessons_completed = serializers.IntegerField(required=False)
+    courses_completed = serializers.IntegerField(required=False)
+    accuracy_rate   = serializers.FloatField(required=False)
+    total_learning_time_hours = serializers.FloatField(required=False)
+    
+    # Gamification data - Impact (as teacher)
+    impact_score    = serializers.IntegerField(required=False)
+    students_enrolled = serializers.IntegerField(required=False)
+    quiz_first_attempts = serializers.IntegerField(required=False)
+    
+    # Recent activities
+    recent_activities = serializers.ListField(required=False)
 
 class QuizSessionProgressSerializer(serializers.ModelSerializer):
     class Meta:

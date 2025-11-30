@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login as django_login
+from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from django.db import IntegrityError
@@ -37,6 +37,8 @@ import geoip2.database
 from django.utils import timezone
 
 from users.utils import enrich_user_preference
+from users.models import UserLoginEvent
+from django.utils import timezone
 
 
 class UserPreferenceUpdateView(APIView):
@@ -170,6 +172,7 @@ class LoginView(APIView):
             )
 
             if authenticated_user:
+                django_login(request, authenticated_user)  # ensure user_logged_in signal fires
                 # 1) Get token & bump preference
                 token, _ = Token.objects.get_or_create(
                     user=authenticated_user
@@ -326,6 +329,26 @@ class RegisterView(APIView):
         except Exception as e:
              print(f"Unexpected Registration Error: {e}")
              return Response({"error": "An unexpected error occurred during registration."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        django_logout(request)  # fires user_logged_out signal
+        return Response({"detail": "Logged out"}, status=HTTP_200_OK)
+
+class HeartbeatView(APIView):
+    """Client pings this endpoint periodically to update active session heartbeat."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Find most recent open login event (no logout)
+        ev = UserLoginEvent.objects.filter(user=request.user, logout_at__isnull=True).order_by('-login_at').first()
+        if not ev:
+            return Response({"detail": "No active session"}, status=HTTP_200_OK)
+        ev.last_heartbeat_at = timezone.now()
+        ev.save(update_fields=['last_heartbeat_at'])
+        return Response({"detail": "heartbeat", "last_heartbeat_at": ev.last_heartbeat_at.isoformat()}, status=HTTP_200_OK)
 
 class MagicLinkRequestView(APIView):
     """
@@ -536,9 +559,12 @@ class MyScoreView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # ensure profile exists
-        profile, _ = Profile.objects.get_or_create(user=request.user)
+        from .scoring_service import ScoringService
+        # Get scores from UserActivity (all-time points)
+        learning_score = ScoringService.get_learning_score(request.user)
+        impact_score = ScoringService.get_impact_score(request.user)
+        
         return Response({
-            "growth_score": profile.growth_score,
-            "impact_score": profile.impact_score
+            "learning_score": learning_score,  # Changed from growth_score
+            "impact_score": impact_score
         }, status=HTTP_200_OK)

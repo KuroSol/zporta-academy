@@ -167,6 +167,11 @@ class CourseCompletion(models.Model):
         on_delete=models.CASCADE,
         related_name='completions'
     )
+    started_at   = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the user started this course (enrollment date)"
+    )
     completed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -176,3 +181,10 @@ class CourseCompletion(models.Model):
 
     def __str__(self):
         return f"{self.user.username} completed {self.course.title} on {self.completed_at}"
+    
+    def get_time_spent_seconds(self):
+        """Calculate time spent on entire course"""
+        if self.started_at and self.completed_at:
+            delta = self.completed_at - self.started_at
+            return int(delta.total_seconds())
+        return None

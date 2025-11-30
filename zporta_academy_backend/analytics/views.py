@@ -424,6 +424,88 @@ class QuizAttemptOverviewView(views.APIView):
             'locations': [prefs.location] if prefs.location else [],
         }
 
+        # Add gamification data
+        from gamification.models import UserScore, Activity, ActivityType
+        
+        gamification_data = {}
+        
+        try:
+            score = UserScore.objects.get(user=user)
+            gamification_data.update({
+                'total_points': score.total_points,
+                'learning_score': score.learning_score,
+                'lessons_completed': score.lessons_completed,
+                'courses_completed': score.courses_completed,
+                'accuracy_rate': round(score.accuracy_rate, 1),
+                'total_learning_time_hours': round(score.total_learning_time_hours, 2),
+                'impact_score': score.impact_score,
+            })
+            
+            # Count students enrolled (as teacher)
+            students_enrolled = Activity.objects.filter(
+                user=user,
+                activity_type__in=[ActivityType.ENROLLMENT_FREE, ActivityType.ENROLLMENT_PREMIUM]
+            ).count()
+            
+            # Count quiz first attempts (as teacher)
+            quiz_first_attempts = Activity.objects.filter(
+                user=user,
+                activity_type=ActivityType.QUIZ_FIRST_ATTEMPT
+            ).count()
+            
+            gamification_data.update({
+                'students_enrolled': students_enrolled,
+                'quiz_first_attempts': quiz_first_attempts,
+            })
+            
+            # Get recent activities
+            recent_activities = Activity.objects.filter(user=user).order_by('-created_at')[:10]
+            recent_list = []
+            
+            for activity in recent_activities:
+                activity_data = {
+                    'type': activity.get_activity_type_display(),
+                    'points': activity.points,
+                    'date': activity.created_at.isoformat(),
+                }
+                
+                # Add relevant metadata based on type
+                if activity.activity_type == ActivityType.LESSON_COMPLETED:
+                    activity_data['title'] = activity.metadata.get('lesson_title', 'Lesson')
+                    if activity.time_spent_seconds:
+                        activity_data['time_spent'] = f"{activity.time_spent_seconds // 60} min"
+                elif activity.activity_type == ActivityType.COURSE_COMPLETED:
+                    activity_data['title'] = activity.metadata.get('course_title', 'Course')
+                elif activity.activity_type in [ActivityType.ENROLLMENT_FREE, ActivityType.ENROLLMENT_PREMIUM]:
+                    activity_data['student'] = activity.metadata.get('student_username', 'Student')
+                    activity_data['course'] = activity.metadata.get('course_title', 'Course')
+                elif activity.activity_type == ActivityType.QUIZ_FIRST_ATTEMPT:
+                    activity_data['student'] = activity.metadata.get('student_username', 'Student')
+                    activity_data['quiz'] = activity.metadata.get('quiz_title', 'Quiz')
+                elif activity.activity_type == ActivityType.CORRECT_ANSWER:
+                    activity_data['quiz'] = activity.metadata.get('quiz_title', 'Quiz')
+                    if activity.is_mistake:
+                        activity_data['is_mistake'] = True
+                
+                recent_list.append(activity_data)
+            
+            gamification_data['recent_activities'] = recent_list
+            
+        except UserScore.DoesNotExist:
+            # No gamification data yet
+            gamification_data.update({
+                'total_points': 0,
+                'learning_score': 0,
+                'lessons_completed': 0,
+                'courses_completed': 0,
+                'accuracy_rate': 0.0,
+                'total_learning_time_hours': 0.0,
+                'impact_score': 0,
+                'students_enrolled': 0,
+                'quiz_first_attempts': 0,
+                'recent_activities': [],
+            })
+
         data = {
             'total_quizzes': total_quizzes,
             'total_correct': total_correct,
@@ -431,6 +513,7 @@ class QuizAttemptOverviewView(views.APIView):
             'quizzes_fixed': quizzes_fixed,
             'never_fixed': never_fixed,
             'filters': filters,
+            **gamification_data,  # Merge gamification data
         }
         serializer = QuizAttemptOverviewSerializer(data)
         return Response(serializer.data)

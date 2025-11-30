@@ -86,7 +86,7 @@ const Profile = () => {
   const [quizzesError, setQuizzesError] = useState("");
 
   // --- Scores State ---
-  const [scores, setScores] = useState({ growth_score: 0, impact_score: 0 }); // Initialize with 0
+  const [scores, setScores] = useState({ learning_score: 0, impact_score: 0 }); // Initialize with 0
   const [scoresLoading, setScoresLoading] = useState(true);
   const [scoresError, setScoresError] = useState(null); // Error specific to scores
 
@@ -150,13 +150,13 @@ const Profile = () => {
     try {
       const { data } = await apiClient.get('/users/score/');
       setScores({
-        growth_score: data.growth_score !== null ? data.growth_score : 0, // Default to 0 if null
+        learning_score: data.learning_score !== null ? data.learning_score : 0, // Default to 0 if null
         impact_score: data.impact_score !== null ? data.impact_score : 0  // Default to 0 if null
       });
     } catch (err) {
       console.error('Error loading scores:', err);
       setScoresError(err.response?.data?.detail || "Could not load scores.");
-      setScores({ growth_score: 0, impact_score: 0 }); // Default to 0 on error
+      setScores({ learning_score: 0, impact_score: 0 }); // Default to 0 on error
       if (err.response?.status === 401) logout();
     } finally {
       setScoresLoading(false);
@@ -389,7 +389,7 @@ const Profile = () => {
                   <FaBookReader size={22} />
                   <div>
                     <span className={styles.scoreValue}>
-                      {scoresLoading ? <FaSpinner className={styles.spinner} /> : scores.growth_score}
+                      {scoresLoading ? <FaSpinner className={styles.spinner} /> : scores.learning_score}
                     </span>
                     <div className={styles.scoreLabel}>Learning Score</div>
                   </div>
