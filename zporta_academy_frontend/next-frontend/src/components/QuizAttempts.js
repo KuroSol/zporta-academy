@@ -1227,7 +1227,7 @@ const ActivityJourneyDashboard = () => {
                       <div className={styles.analyticsGrid}>
                         <div className={styles.analyticsCard}>
                           <h4 className={styles.cardTitle}>📚 Most Incomplete Courses</h4>
-                          <p className={styles.cardDesc}>Courses you started but haven't finished</p>
+                          <p className={styles.cardDesc}>Courses you started but haven&apos;t finished</p>
                           {learningAnalytics.courses.most_incomplete && learningAnalytics.courses.most_incomplete.length > 0 ? (
                             <ul className={styles.analyticsList}>
                               {learningAnalytics.courses.most_incomplete.map((course, idx) => (
