@@ -395,6 +395,8 @@ def compute_learning_analytics(user):
         # Track per-question statistics
         question_stats = {}
         quiz_stats = {}
+        # Collect quiz metadata (title/permalink) from events to avoid DB lookups
+        quiz_meta = {}
         
         for event in quiz_events:
             metadata = event.metadata or {}
@@ -404,6 +406,14 @@ def compute_learning_analytics(user):
             
             if not quiz_id or not question_id:
                 continue
+            # Prefer latest seen title/permalink for this quiz id
+            q_title = metadata.get('quiz_title')
+            q_permalink = metadata.get('quiz_permalink')
+            if (q_title or q_permalink):
+                quiz_meta[quiz_id] = {
+                    'title': q_title or quiz_meta.get(quiz_id, {}).get('title'),
+                    'permalink': q_permalink or quiz_meta.get(quiz_id, {}).get('permalink')
+                }
             
             # Question-level stats
             if question_id not in question_stats:
@@ -465,40 +475,42 @@ def compute_learning_analytics(user):
         ][:10]
         
         # Enrich with quiz and question titles
-        if QUIZ_MODELS_AVAILABLE:
-            try:
-                quiz_cache = {}
-                
-                for item_list in [most_mistakes, most_repeated, fast_correct]:
-                    for item in item_list:
-                        quiz_id = item.get('quiz_id')
-                        question_id = item.get('question_id')
-                        
-                        # Fetch quiz info (cached)
-                        if quiz_id and quiz_id not in quiz_cache:
-                            try:
-                                quiz = Quiz.objects.get(id=quiz_id)
-                                quiz_cache[quiz_id] = {
-                                    'title': quiz.title,
-                                    'permalink': quiz.permalink
-                                }
-                            except Quiz.DoesNotExist:
-                                quiz_cache[quiz_id] = {'title': f'Quiz {quiz_id}', 'permalink': None}
-                        
-                        if quiz_id in quiz_cache:
-                            item['quiz_title'] = quiz_cache[quiz_id]['title']
-                            item['quiz_permalink'] = quiz_cache[quiz_id]['permalink']
-                        
-                        # Fetch question title
-                        if question_id:
-                            try:
+        try:
+            quiz_cache = {}
+            for item_list in [most_mistakes, most_repeated, fast_correct]:
+                for item in item_list:
+                    quiz_id = item.get('quiz_id')
+                    question_id = item.get('question_id')
+
+                    # Prefer metadata-derived info first
+                    if quiz_id in quiz_meta:
+                        item['quiz_title'] = quiz_meta[quiz_id].get('title') or item.get('quiz_title') or f'Quiz {quiz_id}'
+                        item['quiz_permalink'] = quiz_meta[quiz_id].get('permalink') or item.get('quiz_permalink')
+                    # Fall back to DB lookup if available
+                    elif QUIZ_MODELS_AVAILABLE and quiz_id and quiz_id not in quiz_cache:
+                        try:
+                            quiz = Quiz.objects.get(id=quiz_id)
+                            quiz_cache[quiz_id] = {
+                                'title': quiz.title,
+                                'permalink': quiz.permalink
+                            }
+                        except Exception:
+                            quiz_cache[quiz_id] = {'title': f'Quiz {quiz_id}', 'permalink': None}
+                    if quiz_id in quiz_cache and quiz_id not in quiz_meta:
+                        item['quiz_title'] = quiz_cache[quiz_id]['title']
+                        item['quiz_permalink'] = quiz_cache[quiz_id]['permalink']
+
+                    # Fetch question title if model available, otherwise leave as fallback
+                    if question_id and 'question_title' not in item:
+                        try:
+                            if QUIZ_MODELS_AVAILABLE:
                                 question = Question.objects.get(id=question_id)
-                                item['question_title'] = question.text[:100]  # Truncate long questions
-                            except Question.DoesNotExist:
-                                item['question_title'] = f'Question {question_id}'
-            except Exception as e:
-                # If enrichment fails, continue without titles
-                pass
+                                item['question_title'] = (getattr(question, 'text', None) or getattr(question, 'title', '') or '').strip()[:100] or f'Question {question_id}'
+                        except Exception:
+                            item['question_title'] = f'Question {question_id}'
+        except Exception:
+            # If enrichment fails, continue without titles
+            pass
         
         analytics['quizzes']['most_mistakes'] = most_mistakes
         analytics['quizzes']['most_repeated'] = most_repeated
