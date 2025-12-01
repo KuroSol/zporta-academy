@@ -638,10 +638,10 @@ const AnalyticsAndStatistics = () => {
                         // Heuristic: questions with many wrong attempts; courses with low completion
                         const quizWeak = (learningAnalytics?.quizzes?.most_mistakes || [])
                           .map(q => ({
-                            type: 'Quiz Question',
-                            title: q.question_title || `Question ${q.question_id}`,
+                            type: 'Quiz',
+                            title: q.quiz_title || `Quiz ${q.quiz_id}`,
                             permalink: q.quiz_permalink,
-                            issue: `${q.wrong_attempts ?? 0} wrong`
+                            issue: `${q.wrong_attempts ?? 0} mistakes`
                           }));
                         const courseWeak = (learningAnalytics?.courses?.most_incomplete || [])
                           .map(c => ({
