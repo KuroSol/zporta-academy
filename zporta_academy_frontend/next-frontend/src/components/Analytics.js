@@ -478,7 +478,11 @@ const AnalyticsAndStatistics = () => {
                     <table className={styles.table}>
                       <thead><tr><th>When</th><th>Role</th><th>Activity</th><th>Points</th></tr></thead>
                       <tbody>
-                        {history.results.slice(0,25).map(a => (
+                        {history.results
+                          .slice()
+                          .sort((a,b)=> new Date(b.created_at||0) - new Date(a.created_at||0))
+                          .slice(0,25)
+                          .map(a => (
                           <tr key={a.id}>
                             <td>{new Date(a.created_at).toLocaleString()}</td>
                             <td>{a.role_display || a.role}</td>
@@ -548,7 +552,11 @@ const AnalyticsAndStatistics = () => {
                 <table className={styles.table}>
                   <thead><tr><th>When</th><th>Type</th><th>Title</th><th>User</th><th>Points</th></tr></thead>
                   <tbody>
-                    {[...(impactScore?.course_items||[]),(impactScore?.quiz_items||[])].slice(0,25).map((item,i)=>(
+                    {[...(impactScore?.course_items||[]),(impactScore?.quiz_items||[])]
+                      .slice()
+                      .sort((a,b)=> new Date((b.enrolled_at||b.answered_at||0)) - new Date((a.enrolled_at||a.answered_at||0)))
+                      .slice(0,25)
+                      .map((item,i)=>(
                       <tr key={`eng-${i}`}>
                         <td>{item.enrolled_at?new Date(item.enrolled_at).toLocaleDateString():item.answered_at?new Date(item.answered_at).toLocaleDateString():'—'}</td>
                         <td>{item.course_title? 'Enrollment' : 'Quiz Answer'}</td>
@@ -595,6 +603,9 @@ const AnalyticsAndStatistics = () => {
                     <thead><tr><th>Title</th><th>Type</th><th>Metric</th></tr></thead>
                     <tbody>
                       {(() => {
+                        const toDate = (obj) => (
+                          obj.last_timestamp || obj.answered_at || obj.completed_at || obj.enrolled_at || obj.enrolled_date || obj.last_attempt_at || obj.first_attempt_at || obj.timestamp || null
+                        );
                         // Heuristic: quizzes with high accuracy and multiple attempts → confident mastery
                         const quizStrong = (learningAnalytics?.quizzes?.fast_correct || [])
                           .map(q => ({
@@ -602,7 +613,8 @@ const AnalyticsAndStatistics = () => {
                             title: q.quiz_title || `Quiz ${q.quiz_id}`,
                             permalink: q.quiz_permalink,
                             metricLabel: 'First-try Correct',
-                            metricValue: '✓'
+                            metricValue: '✓',
+                            _date: toDate(q)
                           }));
                         const courseStrong = (learningAnalytics?.courses?.most_complete || [])
                           .map(c => ({
@@ -610,9 +622,12 @@ const AnalyticsAndStatistics = () => {
                             title: c.title,
                             permalink: c.permalink,
                             metricLabel: 'Completion',
-                            metricValue: `${c.completion_rate ?? c.avg_completion_rate ?? '—'}%`
+                            metricValue: `${c.completion_rate ?? c.avg_completion_rate ?? '—'}%`,
+                            _date: toDate(c)
                           }));
-                        const items = [...quizStrong, ...courseStrong].slice(0,5);
+                        const items = [...quizStrong, ...courseStrong]
+                          .sort((a,b)=> new Date(b._date||0) - new Date(a._date||0))
+                          .slice(0,5);
                         return items.length ? items.map((it,i)=>(
                           <tr key={`str-${i}`} className={styles.rowClickable} onClick={()=> it.permalink && router.push(`/` + (it.type==='Course'?'courses':'quizzes') + `/${it.permalink}`)}>
                             <td className={styles.contentCell}>
@@ -635,22 +650,29 @@ const AnalyticsAndStatistics = () => {
                     <thead><tr><th>Title</th><th>Type</th><th>Issue</th></tr></thead>
                     <tbody>
                       {(() => {
+                        const toDate = (obj) => (
+                          obj.last_timestamp || obj.answered_at || obj.completed_at || obj.enrolled_at || obj.enrolled_date || obj.last_attempt_at || obj.first_attempt_at || obj.timestamp || null
+                        );
                         // Heuristic: questions with many wrong attempts; courses with low completion
                         const quizWeak = (learningAnalytics?.quizzes?.most_mistakes || [])
                           .map(q => ({
                             type: 'Quiz',
                             title: q.quiz_title || `Quiz ${q.quiz_id}`,
                             permalink: q.quiz_permalink,
-                            issue: `${q.wrong_attempts ?? 0} mistakes`
+                            issue: `${q.wrong_attempts ?? 0} mistakes`,
+                            _date: toDate(q)
                           }));
                         const courseWeak = (learningAnalytics?.courses?.most_incomplete || [])
                           .map(c => ({
                             type: 'Course',
                             title: c.title,
                             permalink: c.permalink,
-                            issue: `Incomplete (${c.completed_lessons}/${c.total_lessons})`
+                            issue: `Incomplete (${c.completed_lessons}/${c.total_lessons})`,
+                            _date: toDate(c)
                           }));
-                        const items = [...quizWeak, ...courseWeak].slice(0,5);
+                        const items = [...quizWeak, ...courseWeak]
+                          .sort((a,b)=> new Date(b._date||0) - new Date(a._date||0))
+                          .slice(0,5);
                         return items.length ? items.map((it,i)=>(
                           <tr key={`weak-${i}`} className={styles.rowClickable} onClick={()=> it.permalink && router.push(`/` + (it.type==='Course'?'courses':'quizzes') + `/${it.permalink}`)}>
                             <td className={styles.contentCell}>
@@ -702,6 +724,8 @@ const AnalyticsAndStatistics = () => {
                   <thead><tr><th>Question</th><th>Wrong Attempts</th></tr></thead>
                   <tbody>
                     {(learningAnalytics?.quizzes?.most_mistakes||[]) 
+                      .slice()
+                      .sort((a,b)=> new Date(b.last_timestamp||0) - new Date(a.last_timestamp||0))
                       .slice(0,10)
                       .map((q,i)=>{
                         const title = q.question_title || `Question ${q.question_id}`;
@@ -854,7 +878,11 @@ const AnalyticsAndStatistics = () => {
                       pts
                     </h4>
                     <ul className={styles.list}>
-                      {data.lesson_completions_detail.slice(0, 10).map((l) => (
+                      {data.lesson_completions_detail
+                        .slice()
+                        .sort((a,b)=> new Date(b.completed_at||0) - new Date(a.completed_at||0))
+                        .slice(0, 10)
+                        .map((l) => (
                         <li key={l.id}>
                           <button
                             onClick={() => l.link && router.push(l.link)}
@@ -1012,7 +1040,10 @@ const AnalyticsAndStatistics = () => {
                       pts
                     </h4>
                     <ul className={styles.list}>
-                      {data.course_completions_detail.map((c) => (
+                      {data.course_completions_detail
+                        .slice()
+                        .sort((a,b)=> new Date(b.completed_at||0) - new Date(a.completed_at||0))
+                        .map((c) => (
                         <li key={c.id}>
                           <button
                             onClick={() => c.link && router.push(c.link)}
@@ -2233,7 +2264,10 @@ const AnalyticsAndStatistics = () => {
                           learningAnalytics.courses.most_incomplete.length >
                             0 ? (
                             <ul className={styles.analyticsList}>
-                              {learningAnalytics.courses.most_incomplete.map(
+                              {learningAnalytics.courses.most_incomplete
+                                .slice()
+                                .sort((a,b)=> new Date(b.enrolled_date||0) - new Date(a.enrolled_date||0))
+                                .map(
                                 (course, idx) => (
                                   <li
                                     key={idx}
@@ -2278,7 +2312,10 @@ const AnalyticsAndStatistics = () => {
                           {learningAnalytics.courses.most_complete &&
                           learningAnalytics.courses.most_complete.length > 0 ? (
                             <ul className={styles.analyticsList}>
-                              {learningAnalytics.courses.most_complete.map(
+                              {learningAnalytics.courses.most_complete
+                                .slice()
+                                .sort((a,b)=> new Date(b.enrolled_date||0) - new Date(a.enrolled_date||0))
+                                .map(
                                 (course, idx) => (
                                   <li
                                     key={idx}
