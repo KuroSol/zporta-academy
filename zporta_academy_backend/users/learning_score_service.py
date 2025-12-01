@@ -465,36 +465,40 @@ def compute_learning_analytics(user):
         ][:10]
         
         # Enrich with quiz and question titles
-        from quizzes.models import Quiz, Question
-        quiz_cache = {}
-        
-        for item_list in [most_mistakes, most_repeated, fast_correct]:
-            for item in item_list:
-                quiz_id = item.get('quiz_id')
-                question_id = item.get('question_id')
+        if QUIZ_MODELS_AVAILABLE:
+            try:
+                quiz_cache = {}
                 
-                # Fetch quiz info (cached)
-                if quiz_id and quiz_id not in quiz_cache:
-                    try:
-                        quiz = Quiz.objects.get(id=quiz_id)
-                        quiz_cache[quiz_id] = {
-                            'title': quiz.title,
-                            'permalink': quiz.permalink
-                        }
-                    except Quiz.DoesNotExist:
-                        quiz_cache[quiz_id] = {'title': f'Quiz {quiz_id}', 'permalink': None}
-                
-                if quiz_id in quiz_cache:
-                    item['quiz_title'] = quiz_cache[quiz_id]['title']
-                    item['quiz_permalink'] = quiz_cache[quiz_id]['permalink']
-                
-                # Fetch question title
-                if question_id:
-                    try:
-                        question = Question.objects.get(id=question_id)
-                        item['question_title'] = question.text[:100]  # Truncate long questions
-                    except Question.DoesNotExist:
-                        item['question_title'] = f'Question {question_id}'
+                for item_list in [most_mistakes, most_repeated, fast_correct]:
+                    for item in item_list:
+                        quiz_id = item.get('quiz_id')
+                        question_id = item.get('question_id')
+                        
+                        # Fetch quiz info (cached)
+                        if quiz_id and quiz_id not in quiz_cache:
+                            try:
+                                quiz = Quiz.objects.get(id=quiz_id)
+                                quiz_cache[quiz_id] = {
+                                    'title': quiz.title,
+                                    'permalink': quiz.permalink
+                                }
+                            except Quiz.DoesNotExist:
+                                quiz_cache[quiz_id] = {'title': f'Quiz {quiz_id}', 'permalink': None}
+                        
+                        if quiz_id in quiz_cache:
+                            item['quiz_title'] = quiz_cache[quiz_id]['title']
+                            item['quiz_permalink'] = quiz_cache[quiz_id]['permalink']
+                        
+                        # Fetch question title
+                        if question_id:
+                            try:
+                                question = Question.objects.get(id=question_id)
+                                item['question_title'] = question.text[:100]  # Truncate long questions
+                            except Question.DoesNotExist:
+                                item['question_title'] = f'Question {question_id}'
+            except Exception as e:
+                # If enrichment fails, continue without titles
+                pass
         
         analytics['quizzes']['most_mistakes'] = most_mistakes
         analytics['quizzes']['most_repeated'] = most_repeated
