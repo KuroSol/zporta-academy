@@ -316,7 +316,19 @@ class ScoringService:
                     'course_title': act.metadata.get('course_title'),
                     'points': act.points,
                     'completed_at': act.created_at.isoformat(),
-                    'link': f"/lessons/{act.metadata.get('lesson_id')}" if act.metadata.get('lesson_id') else None,
+                    'link': (
+                        f"/courses/{act.metadata.get('course_username')}/{act.metadata.get('course_date')}/"
+                        f"{act.metadata.get('course_subject')}/{act.metadata.get('course_permalink')}/lessons/{act.metadata.get('lesson_permalink')}/"
+                        if all([
+                            act.metadata.get('course_username'),
+                            act.metadata.get('course_date'),
+                            act.metadata.get('course_subject'),
+                            act.metadata.get('course_permalink'),
+                            act.metadata.get('lesson_permalink')
+                        ]) else (
+                            f"/lessons/{act.metadata.get('lesson_id')}" if act.metadata.get('lesson_id') else None
+                        )
+                    ),
                 }
                 for act in lesson_activities
             ]
@@ -336,7 +348,9 @@ class ScoringService:
                     'topic': act.metadata.get('topic'),
                     'points': act.points,
                     'answered_at': act.created_at.isoformat(),
-                    'link': f"/quizzes/{act.metadata.get('quiz_id')}" if act.metadata.get('quiz_id') else None,
+                    'link': (f"/quizzes/{act.metadata.get('quiz_permalink')}" if act.metadata.get('quiz_permalink') else (
+                        f"/quizzes/{act.metadata.get('quiz_id')}" if act.metadata.get('quiz_id') else None
+                    )),
                 }
                 for act in correct_answer_activities
             ]
@@ -350,7 +364,7 @@ class ScoringService:
                 ).values_list('metadata__quiz_id', flat=True)
             )
 
-            quiz_attempt_agg = QuizAttempt.objects.filter(user=user).values('quiz_id', 'quiz__title').annotate(
+            quiz_attempt_agg = QuizAttempt.objects.filter(user=user).values('quiz_id', 'quiz__title', 'quiz__permalink').annotate(
                 attempts_count=Count('id'),
                 correct_count=Sum(Case(When(is_correct=True, then=1), default=0, output_field=IntegerField())),
                 first_attempt_at=Min('attempted_at'),
@@ -371,7 +385,9 @@ class ScoringService:
                     'points_total': total_points,
                     'first_attempt_at': row['first_attempt_at'].isoformat() if row['first_attempt_at'] else None,
                     'last_attempt_at': row['last_attempt_at'].isoformat() if row['last_attempt_at'] else None,
-                    'link': f"/quizzes/{qid}" if qid else None,
+                    'link': (f"/quizzes/{row.get('quiz__permalink')}" if row.get('quiz__permalink') else (
+                        f"/quizzes/{qid}" if qid else None
+                    )),
                 })
 
             result['quizzes_taken_detail'] = quizzes_taken_detail
@@ -393,7 +409,18 @@ class ScoringService:
                     'course_title': act.metadata.get('course_title', 'Unknown Course'),
                     'points': act.points,
                     'enrolled_at': act.created_at.isoformat(),
-                    'link': f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None,
+                    'link': (
+                        f"/courses/{act.metadata.get('course_username')}/{act.metadata.get('course_date')}/"
+                        f"{act.metadata.get('course_subject')}/{act.metadata.get('course_permalink')}/"
+                        if all([
+                            act.metadata.get('course_username'),
+                            act.metadata.get('course_date'),
+                            act.metadata.get('course_subject'),
+                            act.metadata.get('course_permalink')
+                        ]) else (
+                            f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None
+                        )
+                    ),
                     'enrollment_type': 'Premium' if act.metadata.get('is_premium') else 'Free',
                 }
                 for act in enrolled_course_activities
@@ -406,7 +433,18 @@ class ScoringService:
                     'course_title': act.metadata.get('course_title', 'Unknown Course'),
                     'points': act.points,
                     'completed_at': act.created_at.isoformat(),
-                    'link': f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None,
+                    'link': (
+                        f"/courses/{act.metadata.get('course_username')}/{act.metadata.get('course_date')}/"
+                        f"{act.metadata.get('course_subject')}/{act.metadata.get('course_permalink')}/"
+                        if all([
+                            act.metadata.get('course_username'),
+                            act.metadata.get('course_date'),
+                            act.metadata.get('course_subject'),
+                            act.metadata.get('course_permalink')
+                        ]) else (
+                            f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None
+                        )
+                    ),
                     'time_spent_days': act.metadata.get('time_spent_days'),
                 }
                 for act in course_activities
@@ -460,7 +498,18 @@ class ScoringService:
                     'is_premium': act.metadata.get('is_premium', False),
                     'points': act.points,
                     'enrolled_at': act.created_at.isoformat(),
-                    'link': f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None,
+                    'link': (
+                        f"/courses/{act.metadata.get('course_username')}/{act.metadata.get('course_date')}/"
+                        f"{act.metadata.get('course_subject')}/{act.metadata.get('course_permalink')}/"
+                        if all([
+                            act.metadata.get('course_username'),
+                            act.metadata.get('course_date'),
+                            act.metadata.get('course_subject'),
+                            act.metadata.get('course_permalink')
+                        ]) else (
+                            f"/courses/{act.metadata.get('course_id')}" if act.metadata.get('course_id') else None
+                        )
+                    ),
                 }
                 for act in enrollment_activities
             ]
@@ -479,7 +528,9 @@ class ScoringService:
                     'student_username': act.metadata.get('student_username'),
                     'points': act.points,
                     'attempted_at': act.created_at.isoformat(),
-                    'link': f"/quizzes/{act.metadata.get('quiz_id')}" if act.metadata.get('quiz_id') else None,
+                    'link': (f"/quizzes/{act.metadata.get('quiz_permalink')}" if act.metadata.get('quiz_permalink') else (
+                        f"/quizzes/{act.metadata.get('quiz_id')}" if act.metadata.get('quiz_id') else None
+                    )),
                 }
                 for act in quiz_activities
             ]
