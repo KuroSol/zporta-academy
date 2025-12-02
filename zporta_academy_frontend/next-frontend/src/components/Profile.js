@@ -1987,7 +1987,7 @@ const Profile = () => {
                         {mailMagazineEnabled && (
                           <div className={teacherStyles.nestedSettings}>
                             <h4 style={{marginBottom: '12px', fontSize: '1rem', fontWeight: '600'}}>
-                              Teachers You're Learning From
+                              Teachers You&apos;re Learning From
                             </h4>
                             {loadingTeachers ? (
                               <div style={{textAlign: 'center', padding: '20px'}}>
@@ -2102,7 +2102,7 @@ const Profile = () => {
                           <FaBookOpen /> Manage Subjects & Language Preferences
                         </button>
                         <p className={teacherStyles.helpText}>
-                          Select subjects you're interested in and your preferred learning language
+                          Select subjects you&apos;re interested in and your preferred learning language
                         </p>
 
                         {isTeacherOrAdmin && (
