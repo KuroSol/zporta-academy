@@ -48,6 +48,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source="user.last_name", required=False, allow_blank=True)
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True, format="%Y-%m-%d")
     profile_image_url = serializers.SerializerMethodField()
+    showcase_image_1_url = serializers.SerializerMethodField()
+    showcase_image_2_url = serializers.SerializerMethodField()
+    showcase_image_3_url = serializers.SerializerMethodField()
     display_name = serializers.CharField(required=False, allow_blank=True, max_length=60)
     is_staff = serializers.BooleanField(source="user.is_staff", read_only=True)
 
@@ -57,9 +60,19 @@ class ProfileSerializer(serializers.ModelSerializer):
             "user_id", "username", "email", "first_name", "last_name", "date_joined",
             "display_name", "role", "bio", "active_guide", "profile_image", "profile_image_url",
             "is_staff",
+            # Teacher fields
+            "teacher_tagline", "teacher_about", "teaching_specialties",
+            "showcase_image_1", "showcase_image_1_url",
+            "showcase_image_2", "showcase_image_2_url",
+            "showcase_image_3", "showcase_image_3_url",
+            "youtube_url", "linkedin_url", "twitter_url", "website_url",
+            "intro_video_url"
         ]
         extra_kwargs = {
             "profile_image": {"required": False, "allow_null": True},
+            "showcase_image_1": {"required": False, "allow_null": True},
+            "showcase_image_2": {"required": False, "allow_null": True},
+            "showcase_image_3": {"required": False, "allow_null": True},
         }
 
     def get_profile_image_url(self, obj):
@@ -68,6 +81,30 @@ class ProfileSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.profile_image.url)
             return obj.profile_image.url
+        return None
+    
+    def get_showcase_image_1_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_1:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_1.url)
+            return obj.showcase_image_1.url
+        return None
+    
+    def get_showcase_image_2_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_2:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_2.url)
+            return obj.showcase_image_2.url
+        return None
+    
+    def get_showcase_image_3_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_3:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_3.url)
+            return obj.showcase_image_3.url
         return None
 
 # Registration Serializer
@@ -174,6 +211,9 @@ class PublicProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source="user.last_name", required=False, allow_blank=True)
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True, format="%Y-%m-%d")
     profile_image_url = serializers.SerializerMethodField()
+    showcase_image_1_url = serializers.SerializerMethodField()
+    showcase_image_2_url = serializers.SerializerMethodField()
+    showcase_image_3_url = serializers.SerializerMethodField()
     growth_score = serializers.IntegerField(read_only=True)
     impact_score = serializers.IntegerField(read_only=True)
     display_name = serializers.CharField(read_only=True)
@@ -184,10 +224,20 @@ class PublicProfileSerializer(serializers.ModelSerializer):
             "id", "user_id", "username", "email", "first_name", "last_name", "date_joined",
             "display_name",
             "role", "bio", "active_guide", "profile_image", "profile_image_url",
-            "growth_score", "impact_score"
+            "growth_score", "impact_score",
+            # Teacher enhancement fields
+            "teacher_tagline", "teacher_about", "teaching_specialties",
+            "showcase_image_1", "showcase_image_1_url",
+            "showcase_image_2", "showcase_image_2_url",
+            "showcase_image_3", "showcase_image_3_url",
+            "youtube_url", "linkedin_url", "twitter_url", "website_url",
+            "intro_video_url"
         ]
         extra_kwargs = {
             "profile_image": {"required": False, "allow_null": True},
+            "showcase_image_1": {"required": False, "allow_null": True},
+            "showcase_image_2": {"required": False, "allow_null": True},
+            "showcase_image_3": {"required": False, "allow_null": True},
         }
 
     def get_profile_image_url(self, obj):
@@ -196,6 +246,30 @@ class PublicProfileSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.profile_image.url)
             return obj.profile_image.url
+        return None
+    
+    def get_showcase_image_1_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_1:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_1.url)
+            return obj.showcase_image_1.url
+        return None
+    
+    def get_showcase_image_2_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_2:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_2.url)
+            return obj.showcase_image_2.url
+        return None
+    
+    def get_showcase_image_3_url(self, obj):
+        request = self.context.get("request")
+        if obj.showcase_image_3:
+            if request:
+                return request.build_absolute_uri(obj.showcase_image_3.url)
+            return obj.showcase_image_3.url
         return None
 
 class UserScoreSerializer(serializers.ModelSerializer):

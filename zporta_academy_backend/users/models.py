@@ -16,6 +16,15 @@ def profile_image_upload_to(instance, filename):
     new_filename = f"{instance.user.username}-profile-image-zporta-academy-{uuid.uuid4().hex}.{ext}"
     return os.path.join(f"user_{instance.user.username}", "profile_image", new_filename)
 
+def showcase_image_upload_to(instance, filename):
+    """
+    Stores teacher showcase/portfolio images:
+    MEDIA_ROOT/user_<username>/showcase/<filename>
+    """
+    ext = filename.split('.')[-1]
+    new_filename = f"{instance.user.username}-showcase-{uuid.uuid4().hex}.{ext}"
+    return os.path.join(f"user_{instance.user.username}", "showcase", new_filename)
+
 class Profile(models.Model):
     ROLE_CHOICES = [
         ('explorer', 'Explorer'),
@@ -29,6 +38,45 @@ class Profile(models.Model):
     bio = models.TextField(blank=True, null=True)
     active_guide = models.BooleanField(default=False)
     profile_image = models.ImageField(upload_to=profile_image_upload_to, blank=True, null=True)
+    
+    # ── Teacher Profile Enhancement ────────────────────────────────────────────
+    # Rich introduction for teachers
+    teacher_tagline = models.CharField(
+        max_length=120, 
+        blank=True, 
+        null=True,
+        help_text="Short catchy tagline (e.g., 'Helping students master Japanese in 90 days')"
+    )
+    teacher_about = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Detailed introduction, teaching philosophy, experience, credentials"
+    )
+    teaching_specialties = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Comma-separated specialties (e.g., 'JLPT N1, Business Japanese, Conversation')"
+    )
+    
+    # Showcase images (portfolio/teaching materials/classroom)
+    showcase_image_1 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    showcase_image_2 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    showcase_image_3 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    
+    # Social & external links
+    youtube_url = models.URLField(blank=True, null=True, help_text="YouTube channel or intro video")
+    linkedin_url = models.URLField(blank=True, null=True, help_text="LinkedIn profile")
+    twitter_url = models.URLField(blank=True, null=True, help_text="Twitter/X profile")
+    website_url = models.URLField(blank=True, null=True, help_text="Personal website or portfolio")
+    
+    # Video introduction (YouTube embed URL)
+    intro_video_url = models.URLField(
+        blank=True, 
+        null=True,
+        help_text="YouTube video URL for teacher introduction (will be embedded)"
+    )
+    # ────────────────────────────────────────────────────────────────────────────
 
     # ── Growth & Impact Scores ─────────────────────────────────────────────────
     growth_score = models.PositiveIntegerField(
