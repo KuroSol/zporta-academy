@@ -384,25 +384,21 @@
   margin-bottom: 8px;
   position: relative;
   z-index: 2;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  flex-wrap: wrap;
 }
-.tabNav::-webkit-scrollbar { height: 8px; }
-.tabNav::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 8px; }
 .tabBtn {
   background: #f3f4f6;
   border: none;
-  padding: 12px 20px;
-  border-radius: 14px 14px 0 0;
-  font-size: 15px;
+  padding: 10px 16px;
+  border-radius: 12px 12px 0 0;
+  font-size: 14px;
   font-weight: 700;
   color: #667eea;
   box-shadow: 0 2px 8px rgba(102,126,234,0.08);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   position: relative;
   top: 2px;
@@ -608,6 +604,16 @@
 }
 
 @media (max-width: 480px) {
-  .tabNav { gap: 8px; padding: 0 10px; }
-  .tabBtn { padding: 8px 14px; font-size: 13px; }
+  .tabNav {
+    gap: 8px;
+    padding: 0 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .tabBtn {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
 }
