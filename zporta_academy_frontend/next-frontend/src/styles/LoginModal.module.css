@@ -1,0 +1,12 @@
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(10,35,66,.25);width:min(520px,90vw);padding:22px;position:relative}
+.close{position:absolute;top:10px;right:12px;background:transparent;border:0;font-size:22px;cursor:pointer}
+.title{margin:0 0 12px 0;font-weight:800;color:#0A2342}
+.form{display:flex;flex-direction:column;gap:12px}
+.label{font-size:.95rem;color:#0f172a;display:flex;flex-direction:column;gap:6px}
+.input{border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:1rem}
+.actions{display:flex;gap:10px;margin-top:8px}
+.primaryBtn{background:#0A2342;color:#fff;border:1px solid #0A2342;border-radius:10px;padding:.6rem 1rem;font-weight:700}
+.secondaryBtn{background:#fff;color:#0A2342;border:1px solid #0A2342;border-radius:10px;padding:.6rem 1rem;font-weight:700}
+.oauthRow{margin-top:12px;display:flex;justify-content:center}
+.googleBtn{background:#fff;color:#0A2342;border:1px solid #e2e8f0;border-radius:9999px;padding:.5rem 1rem;font-weight:700}

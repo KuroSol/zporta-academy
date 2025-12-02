@@ -5,6 +5,7 @@ import { AuthContext } from "@/context/AuthContext";
 import apiClient from "@/api";
 import styles from "@/styles/HomePage.module.css";
 import { quizPermalinkToUrl } from '@/utils/urls';
+import LoginModal from "@/components/LoginModal";
 
 import {
   FaRocket, FaChalkboardTeacher, FaNewspaper, FaGraduationCap,
@@ -46,11 +47,15 @@ const HomePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState(null);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-    // Redirect to login if no token
-    useEffect(() => {
-        if (!token) router.push("/login");
-    }, [token, router]);
+    // Marketing content for non-authenticated users
+    const [publicCourses, setPublicCourses] = useState([]);
+    const [publicLessons, setPublicLessons] = useState([]);
+    const [publicQuizzes, setPublicQuizzes] = useState([]);
+    const [loadingPublic, setLoadingPublic] = useState(false);
+
+    // Do not redirect unauthenticated users; show marketing homepage
 
     // --- Dynamic Spotlight Effect ---
     useEffect(() => {
@@ -162,6 +167,29 @@ const HomePage = () => {
         }
         setErrorState(message);
     }, [logout]);
+
+    // Fetch public content for non-authenticated users
+    useEffect(() => {
+        if (token) return; // Skip if authenticated
+        const fetchPublicContent = async () => {
+            setLoadingPublic(true);
+            try {
+                const [coursesRes, lessonsRes, quizzesRes] = await Promise.all([
+                    apiClient.get('/courses/?random=6').catch(() => ({ data: [] })),
+                    apiClient.get('/lessons/?ordering=-created_at&limit=6').catch(() => ({ data: [] })),
+                    apiClient.get('/quizzes/?ordering=-created_at&limit=6').catch(() => ({ data: [] }))
+                ]);
+                setPublicCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
+                setPublicLessons(Array.isArray(lessonsRes.data) ? lessonsRes.data : []);
+                setPublicQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
+            } catch (err) {
+                console.error('Error fetching public content:', err);
+            } finally {
+                setLoadingPublic(false);
+            }
+        };
+        fetchPublicContent();
+    }, [token]);
 
     useEffect(() => {
         if (!token) return;
@@ -287,12 +315,103 @@ const HomePage = () => {
             </div>
         );
     }
+    
+    // Marketing homepage for non-authenticated users
     if (!user) {
         return (
-            <div className={styles.pageContainer}>
-                <div className={styles.fullPageLoader}>
-                    <LoadingPlaceholder message={token ? "Loading your profile…" : "Redirecting to login…"} />
-                </div>
+            <div className={styles.marketingContainer}>
+                <LoginModal open={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
+                
+                <section className={styles.heroSection}>
+                    <h1 className={styles.heroTitle}>Welcome to Zporta Academy</h1>
+                    <p className={styles.heroSubtitle}>Learn anything, anywhere. Start your journey today.</p>
+                    <div className={styles.heroCta}>
+                        <button className={styles.ctaPrimary} onClick={() => setLoginModalOpen(true)}>Get Started</button>
+                        <button className={styles.ctaSecondary} onClick={() => setLoginModalOpen(true)}>Sign In</button>
+                    </div>
+                </section>
+
+                {loadingPublic ? (
+                    <div className={styles.loadingSection}>
+                        <LoadingPlaceholder message="Loading content..." />
+                    </div>
+                ) : (
+                    <>
+                        {publicCourses.length > 0 && (
+                            <section className={styles.contentSection}>
+                                <h2 className={styles.sectionTitle}>
+                                    <FaBook /> Explore Courses
+                                </h2>
+                                <div className={styles.cardGrid}>
+                                    {publicCourses.map(course => (
+                                        <div key={course.id} className={styles.contentCard} onClick={() => setLoginModalOpen(true)}>
+                                            {course.cover_image && (
+                                                <div className={styles.cardImage}>
+                                                    <img src={course.cover_image} alt={course.title} />
+                                                </div>
+                                            )}
+                                            <div className={styles.cardBody}>
+                                                <h3>{course.title}</h3>
+                                                <p className={styles.cardMeta}>
+                                                    {course.created_by && `By ${course.created_by}`}
+                                                </p>
+                                                <button className={styles.cardBtn}>View Course</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {publicLessons.length > 0 && (
+                            <section className={styles.contentSection}>
+                                <h2 className={styles.sectionTitle}>
+                                    <FaGraduationCap /> Recent Lessons
+                                </h2>
+                                <div className={styles.cardGrid}>
+                                    {publicLessons.map(lesson => (
+                                        <div key={lesson.id} className={styles.contentCard} onClick={() => setLoginModalOpen(true)}>
+                                            <div className={styles.cardBody}>
+                                                <h3>{lesson.title}</h3>
+                                                <p className={styles.cardMeta}>
+                                                    {lesson.created_by && `By ${lesson.created_by}`}
+                                                </p>
+                                                {lesson.is_premium && <span className={styles.premiumBadge}>Premium</span>}
+                                                <button className={styles.cardBtn}>Start Learning</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {publicQuizzes.length > 0 && (
+                            <section className={styles.contentSection}>
+                                <h2 className={styles.sectionTitle}>
+                                    <FaBrain /> Practice Quizzes
+                                </h2>
+                                <div className={styles.cardGrid}>
+                                    {publicQuizzes.map(quiz => (
+                                        <div key={quiz.id} className={styles.contentCard} onClick={() => setLoginModalOpen(true)}>
+                                            <div className={styles.cardBody}>
+                                                <h3>{quiz.title}</h3>
+                                                <p className={styles.cardMeta}>
+                                                    {quiz.created_by && `By ${quiz.created_by}`}
+                                                </p>
+                                                <button className={styles.cardBtn}>Take Quiz</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </>
+                )}
+
+                <section className={styles.ctaSection}>
+                    <h2>Ready to start learning?</h2>
+                    <button className={styles.ctaPrimary} onClick={() => setLoginModalOpen(true)}>Join Zporta Academy</button>
+                </section>
             </div>
         );
     }

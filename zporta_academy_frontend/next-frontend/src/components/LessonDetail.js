@@ -12,6 +12,7 @@ import QuizCard from "@/components/QuizCard";
 import styles from "@/styles/LessonDetail.module.css";
 import "@/styles/Editor/ViewerAccordion.module.css";
 import PremiumLockOverlay from "@/components/PremiumLockOverlay";
+import LoginModal from "@/components/LoginModal";
 
 /* ---- helpers kept (used by accordion + content render) ---- */
 function initializeAccordions(containerElement) {
@@ -77,6 +78,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const [customCSS, setCustomCSS] = useState("");
   const [customJS, setCustomJS] = useState("");
   const [quizzes, setQuizzes] = useState([]);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const lessonContentDisplayRef = useRef(null);
 
@@ -161,9 +163,8 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         if (isMounted) {
           if (err.response?.status === 404) setError("Lesson not found.");
           else if (err.response?.status === 401) {
-            setError("Unauthorized.");
-            logout();
-            router.push("/login");
+            // Do not redirect; open login modal for UX
+            setLoginOpen(true);
           } else if (err.response?.status === 403) setError(err.response?.data?.detail || "Access forbidden.");
           else setError("An error occurred loading lesson data.");
         }
@@ -484,6 +485,7 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
 
   return (
     <div className={styles.lessonDetailContainer}>
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <Head>
         <title>{seo?.title || lesson.title || "Lesson Details"}</title>
         <meta name="description" content={seo?.description || stripHTML(lesson.content).substring(0, 160)} />

@@ -2,6 +2,7 @@ from rest_framework import generics, status, permissions
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from .permissions import FreeLessonOrAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
@@ -189,7 +190,7 @@ class DynamicLessonView(APIView):
     If the lesson is part of a premium course, enrollment is checked.
     OPTIMIZED: Uses select_related, prefetch_related, and caching to minimize database queries.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [FreeLessonOrAuthenticated]
 
     def get(self, request, permalink):
         # Generate cache key based on permalink and user authentication status
@@ -259,16 +260,33 @@ class DynamicLessonView(APIView):
 
             # For everyone else, show a gated response (200), not 403, to avoid global logout.
             if not request.user.is_authenticated:
+                # Provide free preview (first ~20% by characters) without exposing full content
+                preview_html = (lesson.content or "")
+                try:
+                    total_len = len(preview_html)
+                    cut = max(0, min(total_len, int(total_len * 0.2)))
+                    preview_html = preview_html[:cut]
+                except Exception:
+                    preview_html = (lesson.content or "")[:500]
                 return Response({
-                    "lesson": None,
+                    "lesson": {
+                        "id": lesson.id,
+                        "title": lesson.title,
+                        "permalink": lesson.permalink,
+                        "content": preview_html,
+                        "accent_color": lesson.accent_color,
+                        "custom_css": lesson.custom_css,
+                        "custom_js": "",
+                        "seo_title": lesson.seo_title,
+                        "seo_description": lesson.seo_description,
+                        "canonical_url": lesson.canonical_url,
+                    },
                     "seo": seo,
                     "access": "gated",
                     "message": f"Premium lesson\nThis lesson belongs to a premium course: {lesson.course.title if lesson.course else ''}. Log in and enroll to access.",
                     "course": attached_course,
+                    "preview": True,
                 }, status=status.HTTP_200_OK)
-                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
-                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
-                return resp
 
             # If logged in: require enrollment (only when lesson is attached to a course)
             if not lesson.course:
@@ -290,16 +308,33 @@ class DynamicLessonView(APIView):
                 enrollment_type="course"
             ).exists()
             if not enrollment_exists:
+                # Provide free preview to authenticated but not enrolled users as well
+                preview_html = (lesson.content or "")
+                try:
+                    total_len = len(preview_html)
+                    cut = max(0, min(total_len, int(total_len * 0.2)))
+                    preview_html = preview_html[:cut]
+                except Exception:
+                    preview_html = (lesson.content or "")[:500]
                 return Response({
-                    "lesson": None,
+                    "lesson": {
+                        "id": lesson.id,
+                        "title": lesson.title,
+                        "permalink": lesson.permalink,
+                        "content": preview_html,
+                        "accent_color": lesson.accent_color,
+                        "custom_css": lesson.custom_css,
+                        "custom_js": "",
+                        "seo_title": lesson.seo_title,
+                        "seo_description": lesson.seo_description,
+                        "canonical_url": lesson.canonical_url,
+                    },
                     "seo": seo,
                     "access": "gated",
                     "message": f"Premium lesson\nThis lesson belongs to a premium course: {lesson.course.title}. Enroll to access.",
                     "course": attached_course,
+                    "preview": True,
                 }, status=status.HTTP_200_OK)
-                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
-                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
-                return resp
 
         # OPTIMIZATION: Include enrollment status in the same response to avoid second API call
         is_enrolled = False
