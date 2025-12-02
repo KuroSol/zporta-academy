@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from .models import Profile
+from .guide_application_models import GuideApplicationRequest
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
@@ -279,3 +280,21 @@ class UserScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Profile
         fields = ['user_id', 'username', 'growth_score', 'impact_score']
+
+
+class GuideApplicationSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    referred_by_username = serializers.CharField(source='referred_by.username', read_only=True, allow_null=True)
+    reviewed_by_username = serializers.CharField(source='reviewed_by.username', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = GuideApplicationRequest
+        fields = [
+            'id', 'user_id', 'username',
+            'motivation', 'experience', 'subjects_to_teach',
+            'referred_by', 'referred_by_username',
+            'status', 'created_at', 'updated_at',
+            'reviewed_by', 'reviewed_by_username', 'reviewed_at', 'admin_notes'
+        ]
+        read_only_fields = ['user', 'status', 'reviewed_by', 'reviewed_at', 'admin_notes']

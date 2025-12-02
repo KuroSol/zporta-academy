@@ -8,7 +8,12 @@ import { AuthContext } from '@/context/AuthContext';
 export default function BottomMenu({ position = 'rightEdge', sidebarWidth = 64 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { token } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
+  
+  // Only show for active guides
+  if (!user || (user.role !== 'guide' && user.role !== 'both') || !user.active_guide) {
+    return null;
+  }
 
   const handleAction = (action) => {
     setOpen(false);

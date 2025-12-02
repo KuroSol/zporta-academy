@@ -6,6 +6,7 @@ import uuid
 
 # Import UserActivity model for use in this app
 from .activity_models import UserActivity
+from .guide_application_models import GuideApplicationRequest
 
 def profile_image_upload_to(instance, filename):
     """

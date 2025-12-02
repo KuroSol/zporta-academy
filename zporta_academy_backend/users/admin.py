@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from .models import Profile
 from .activity_models import UserActivity
+from .guide_application_models import GuideApplicationRequest
 
 class ProfileInline(admin.StackedInline):
     model = Profile
@@ -29,3 +30,46 @@ class UserActivityAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     ordering = ['-created_at']
 
+
+@admin.register(GuideApplicationRequest)
+class GuideApplicationRequestAdmin(admin.ModelAdmin):
+    list_display = ['user', 'subjects_to_teach', 'status', 'referred_by', 'created_at', 'reviewed_by']
+    list_filter = ['status', 'created_at', 'reviewed_at']
+    search_fields = ['user__username', 'user__email', 'subjects_to_teach', 'motivation']
+    readonly_fields = ['created_at', 'updated_at', 'reviewed_at']
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Applicant Info', {
+            'fields': ('user', 'referred_by')
+        }),
+        ('Application Details', {
+            'fields': ('motivation', 'experience', 'subjects_to_teach')
+        }),
+        ('Review', {
+            'fields': ('status', 'reviewed_by', 'reviewed_at', 'admin_notes')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['approve_applications', 'reject_applications']
+    
+    def approve_applications(self, request, queryset):
+        count = 0
+        for application in queryset.filter(status='pending'):
+            application.approve(request.user)
+            count += 1
+        self.message_user(request, f"Approved {count} guide application(s).")
+    approve_applications.short_description = "Approve selected applications"
+    
+    def reject_applications(self, request, queryset):
+        count = 0
+        for application in queryset.filter(status='pending'):
+            application.reject(request.user)
+            count += 1
+        self.message_user(request, f"Rejected {count} guide application(s).")
+    reject_applications.short_description = "Reject selected applications"

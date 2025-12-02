@@ -229,23 +229,6 @@ export default function Register() {
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="reg-role" className={styles.label}>
-                Register as
-              </label>
-              <select
-                id="reg-role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={styles.select}
-              >
-                <option value="explorer">Explorer (I want to learn)</option>
-                <option value="guide">Guide (I want to teach/share)</option>
-                <option value="both">Both Explorer &amp; Guide</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
               <label htmlFor="reg-bio" className={styles.label}>
                 Short Bio (Optional)
               </label>

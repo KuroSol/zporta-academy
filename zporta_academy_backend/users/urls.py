@@ -1,5 +1,11 @@
 from django.urls import path
-from .views import RegisterView, GoogleLoginView, LoginView, LogoutView, HeartbeatView, ProfileView,  PasswordResetView, PasswordResetConfirmView, ChangePasswordView, PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView , MagicLinkRequestView, MagicLinkLoginView, UserPreferenceUpdateView  
+from .views import (
+    RegisterView, GoogleLoginView, LoginView, LogoutView, HeartbeatView, ProfileView,
+    PasswordResetView, PasswordResetConfirmView, ChangePasswordView,
+    PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView,
+    MagicLinkRequestView, MagicLinkLoginView, UserPreferenceUpdateView,
+    GuideApplicationView, GuideApplicationListView, GuideApplicationApproveView, GuideApplicationRejectView
+)  
 from .activity_views import (
     ProgressOverviewView, 
     ActivityHistoryView, 
@@ -28,6 +34,12 @@ urlpatterns = [
     path('magic-link-login/<uidb64>/<token>/', MagicLinkLoginView.as_view(), name='magic_link_login'),
     path("preferences/", UserPreferenceUpdateView.as_view(), name="user-preferences"),
     path('search/', UserSearchView.as_view(), name='user-search'),
+    
+    # Guide application routes
+    path('guide-application/', GuideApplicationView.as_view(), name='guide-application'),
+    path('guide-applications/', GuideApplicationListView.as_view(), name='guide-applications-list'),
+    path('guide-applications/<int:application_id>/approve/', GuideApplicationApproveView.as_view(), name='guide-application-approve'),
+    path('guide-applications/<int:application_id>/reject/', GuideApplicationRejectView.as_view(), name='guide-application-reject'),
     
     # New activity-based progress endpoints
     path("progress/overview/", ProgressOverviewView.as_view(), name="progress-overview"),

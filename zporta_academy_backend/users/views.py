@@ -13,7 +13,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from django.db import IntegrityError
 from .models import Profile
-from .serializers import ProfileSerializer
+from .guide_application_models import GuideApplicationRequest
+from .serializers import ProfileSerializer, GuideApplicationSerializer
 from rest_framework import status
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
@@ -615,4 +616,94 @@ class MyScoreView(APIView):
         return Response({
             "learning_score": learning_score,  # Changed from growth_score
             "impact_score": impact_score
+        }, status=HTTP_200_OK)
+
+
+# ─── Guide Application Views ────────────────────────────────────────────────
+
+class GuideApplicationView(APIView):
+    """
+    POST: Submit application to become a guide
+    GET: Get user's own application status
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get user's latest guide application"""
+        application = GuideApplicationRequest.objects.filter(user=request.user).order_by('-created_at').first()
+        if not application:
+            return Response({"detail": "No application found."}, status=HTTP_404)
+        serializer = GuideApplicationSerializer(application)
+        return Response(serializer.data, status=HTTP_200_OK)
+    
+    def post(self, request):
+        """Submit guide application"""
+        # Check if user already has pending/approved application
+        existing = GuideApplicationRequest.objects.filter(
+            user=request.user,
+            status__in=['pending', 'approved']
+        ).first()
+        if existing:
+            return Response({
+                "detail": f"You already have a {existing.status} application."
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        serializer = GuideApplicationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=HTTP_201_CREATED)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class GuideApplicationListView(generics.ListAPIView):
+    """
+    Admin-only: List all guide applications
+    Filter by status: ?status=pending
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = GuideApplicationSerializer
+    
+    def get_queryset(self):
+        if not self.request.user.is_staff:
+            return GuideApplicationRequest.objects.none()
+        
+        qs = GuideApplicationRequest.objects.all()
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs.order_by('-created_at')
+
+
+class GuideApplicationApproveView(APIView):
+    """Admin-only: Approve guide application"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, application_id):
+        if not request.user.is_staff:
+            return Response({"detail": "Admin permission required."}, status=status.HTTP_403_FORBIDDEN)
+        
+        application = get_object_or_404(GuideApplicationRequest, id=application_id)
+        application.approve(request.user)
+        
+        return Response({
+            "detail": "Application approved. User is now an active guide.",
+            "application": GuideApplicationSerializer(application).data
+        }, status=HTTP_200_OK)
+
+
+class GuideApplicationRejectView(APIView):
+    """Admin-only: Reject guide application"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, application_id):
+        if not request.user.is_staff:
+            return Response({"detail": "Admin permission required."}, status=status.HTTP_403_FORBIDDEN)
+        
+        application = get_object_or_404(GuideApplicationRequest, id=application_id)
+        admin_notes = request.data.get('admin_notes', '')
+        application.reject(request.user, admin_notes)
+        
+        return Response({
+            "detail": "Application rejected.",
+            "application": GuideApplicationSerializer(application).data
         }, status=HTTP_200_OK)
