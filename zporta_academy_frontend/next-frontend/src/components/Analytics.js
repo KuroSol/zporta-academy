@@ -31,7 +31,7 @@ import {
 } from "recharts";
 
 const AnalyticsAndStatistics = () => {
-  const { token, logout } = useContext(AuthContext);
+  const { token, logout, user } = useContext(AuthContext);
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -305,6 +305,17 @@ const AnalyticsAndStatistics = () => {
   const loginGaugePercent = data?.login_goal_progress_percent ?? 0;
   const gaugeData = [{ name: "progress", value: loginGaugePercent }];
 
+  // Visibility: show teaching features to guides/teachers or admins, hide for pure students
+  const canSeeTeaching = !!(
+    user && (
+      user.role === "guide" ||
+      user.role === "both" ||
+      user.is_staff ||
+      user.is_superuser ||
+      user.is_admin
+    )
+  );
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -347,8 +358,8 @@ const AnalyticsAndStatistics = () => {
         >
           📊 Overview
         </button>
-        {/* Only show Teaching tab if user has teaching content (impact score > 0) */}
-        {impactScore && impactScore.total_score > 0 && (
+        {/* Show Teaching tab for teachers/guides or admins regardless of impact score */}
+        {canSeeTeaching && (
           <button
             className={`${styles.tabBtn} ${
               activeTab === "teaching" ? styles.tabBtnActive : ""
@@ -437,8 +448,8 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.panel}>
                 <h2 className={styles.sectionTitle}>Activity Summary</h2>
                 <div className={styles.cards}>
-                  {/* Only show Impact Score if user has teaching content */}
-                  {impactScore && impactScore.total_score > 0 && (
+                  {/* Show Impact Score for teachers/guides or admins */}
+                  {canSeeTeaching && (
                     <div
                       className={styles.card}
                       onClick={() => setShowImpactScoreModal(true)}
