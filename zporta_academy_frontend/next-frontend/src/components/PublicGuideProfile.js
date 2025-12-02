@@ -1,6 +1,7 @@
 // src/components/PublicGuideProfile.js
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import Link from "next/link";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { FaBookReader, FaAward } from "react-icons/fa";
 
@@ -36,6 +37,7 @@ export default function PublicGuideProfile() {
   const { user: currentUser, token, logout } = useContext(AuthContext);
 
   const [profile, setProfile] = useState(null);
+  const [seoData, setSeoData] = useState(null);
   const [activeTab, setActiveTab] = useState("courses");
 
   const [courses, setCourses] = useState([]);
@@ -129,11 +131,14 @@ export default function PublicGuideProfile() {
       setDisplayedQuizzesCount(SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
       setDisplayedMailIssuesCount(5);
 
-      try {
+      try:
         const profileRes = await apiClient.get(`/users/guides/${username}/`);
-        const fetchedProfileData = profileRes.data;
+        const fetchedProfileData = profileRes.data.profile || profileRes.data;
+        const fetchedSeoData = profileRes.data.seo || null;
+        
         if (!fetchedProfileData?.id) throw new Error("Guide profile not found.");
         setProfile(fetchedProfileData);
+        setSeoData(fetchedSeoData);
         const profileUserId = fetchedProfileData.id;
 
         const promises = [
@@ -521,7 +526,37 @@ export default function PublicGuideProfile() {
   };
 
   return (
-    <div className={styles.publicProfileDashboard}>
+    <>
+      <Head>
+        <title>{seoData?.title || `${profile?.display_name || profile?.username || 'Teacher'} - Zporta Academy`}</title>
+        <meta name="description" content={seoData?.description || `Learn with ${profile?.display_name || profile?.username} on Zporta Academy.`} />
+        {seoData?.canonical_url && <link rel="canonical" href={seoData.canonical_url} />}
+        {seoData?.robots && <meta name="robots" content={seoData.robots} />}
+        
+        {/* Open Graph tags */}
+        <meta property="og:title" content={seoData?.og_title || seoData?.title || `${profile?.display_name || profile?.username} - Teacher Profile`} />
+        <meta property="og:description" content={seoData?.og_description || seoData?.description || `Explore courses and lessons by ${profile?.display_name || profile?.username}`} />
+        <meta property="og:url" content={seoData?.canonical_url || (typeof window !== 'undefined' ? window.location.href : '')} />
+        {seoData?.og_image && <meta property="og:image" content={seoData.og_image} />}
+        {seoData?.og_type && <meta property="og:type" content={seoData.og_type} />}
+        <meta property="og:site_name" content="Zporta Academy" />
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoData?.og_title || seoData?.title || `${profile?.display_name || profile?.username}`} />
+        <meta name="twitter:description" content={seoData?.og_description || seoData?.description || ''} />
+        {seoData?.og_image && <meta name="twitter:image" content={seoData.og_image} />}
+        
+        {/* JSON-LD Schema */}
+        {seoData?.json_ld && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(seoData.json_ld) }}
+          />
+        )}
+      </Head>
+      
+      <div className={styles.publicProfileDashboard}>
       <aside className={styles.publicProfileSidebar}>
         <div className={styles.sidebarCard}>
           <div className={styles.sidebarImageContainer}>
@@ -635,5 +670,6 @@ export default function PublicGuideProfile() {
         <div className={styles.tabContent}>{renderTabContent()}</div>
       </main>
     </div>
+    </>
   );
 }

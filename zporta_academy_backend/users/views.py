@@ -239,17 +239,65 @@ class GuideProfileListView(generics.ListAPIView):
 
 
 
-class PublicGuideProfileView(generics.RetrieveAPIView):
-    serializer_class = PublicProfileSerializer
+class PublicGuideProfileView(APIView):
+    """
+    Public teacher/guide profile with full SEO metadata for Google discoverability.
+    Includes: canonical URL, OG tags, JSON-LD Person schema, meta description.
+    """
+    permission_classes = [AllowAny]
 
-    def get_object(self):
-        username = self.kwargs.get("username")
+    def get(self, request, username):
         try:
-            # Ensure profile exists before accessing it
-            profile = Profile.objects.get(user__username=username)
-            return profile
+            profile = Profile.objects.select_related('user').get(user__username=username)
         except Profile.DoesNotExist:
             raise Http404("Guide profile not found")
+        
+        serializer = PublicProfileSerializer(profile, context={'request': request})
+        
+        # Build absolute URL for canonical and OG tags
+        profile_url = request.build_absolute_uri(f"/guides/{username}/")
+        
+        # SEO metadata
+        display_name = profile.display_name or profile.user.username
+        seo_title = f"{display_name} - Teacher Profile | Zporta Academy"
+        seo_description = (profile.bio or f"Learn with {display_name} on Zporta Academy. Explore courses, lessons, and quizzes created by {display_name}.")[:160]
+        
+        # Profile image for OG tags
+        profile_image_url = profile.profile_image.url if profile.profile_image else "/static/default_teacher_avatar.jpg"
+        if not profile_image_url.startswith('http'):
+            profile_image_url = request.build_absolute_uri(profile_image_url)
+        
+        # JSON-LD Person schema for rich results
+        json_ld_schema = {
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": display_name,
+            "description": seo_description,
+            "url": profile_url,
+            "image": profile_image_url,
+            "jobTitle": "Teacher" if profile.role in ['guide', 'both'] else "Learner",
+            "alumniOf": {
+                "@type": "Organization",
+                "name": "Zporta Academy"
+            }
+        }
+        
+        seo_data = {
+            "title": seo_title,
+            "description": seo_description,
+            "canonical_url": profile_url,
+            "og_title": seo_title,
+            "og_description": seo_description,
+            "og_image": profile_image_url,
+            "og_type": "profile",
+            "json_ld": json_ld_schema,
+            "robots": "index,follow"  # Explicitly allow indexing
+        }
+        
+        return Response({
+            "profile": serializer.data,
+            "seo": seo_data
+        }, status=HTTP_200_OK)
 
 # Profile View
 class ProfileView(APIView):

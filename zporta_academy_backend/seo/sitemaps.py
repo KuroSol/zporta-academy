@@ -10,6 +10,7 @@ from courses.models import Course
 from lessons.models import Lesson
 from posts.models import Post
 from tags.models import Tag
+from users.models import Profile
 
 def _lastmod(obj):
     """
@@ -125,5 +126,28 @@ class TagSitemap(Sitemap):
     def location(self, obj):
         return f"/tags/{obj.slug}/"
 
+    def lastmod(self, obj):
+        return _lastmod(obj)
+
+
+class TeacherSitemap(Sitemap):
+    protocol   = "https"
+    changefreq = "weekly"
+    priority   = 0.8  # High priority for teacher discoverability
+    cache_timeout = 0
+    
+    def items(self):
+        """
+        Include all active guides/teachers with public profiles.
+        Filter by role 'guide' or 'both', and optionally active_guide=True.
+        """
+        return Profile.objects.filter(
+            role__in=['guide', 'both'],
+            active_guide=True
+        ).select_related('user').order_by('-created_at')
+    
+    def location(self, obj):
+        return f"/guides/{obj.user.username}/"
+    
     def lastmod(self, obj):
         return _lastmod(obj)
