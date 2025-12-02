@@ -433,9 +433,23 @@ const Profile = () => {
   // Fetch invitations when teacher tab is active
   useEffect(() => {
     if (activeTab === 'teacher' && isTeacherOrAdmin) {
-      fetchTeacherInvitations();
+      // Call API directly to avoid circular dependency with useCallback
+      const loadInvitations = async () => {
+        setInvitationsLoading(true);
+        try {
+          const { data } = await apiClient.get('/users/invitations/');
+          setInvitations(data.invitations || []);
+          setRemainingInvitations(data.remaining_this_month || 0);
+          setCanInvite(data.can_invite || false);
+        } catch (err) {
+          console.error('Failed to fetch invitations:', err);
+        } finally {
+          setInvitationsLoading(false);
+        }
+      };
+      loadInvitations();
     }
-  }, [activeTab, isTeacherOrAdmin, fetchTeacherInvitations]);
+  }, [activeTab, isTeacherOrAdmin]);
 
   // Generic "load more" handler for infinite scroll
   const handleLoadMore = useCallback((currentDisplayedCount, setDisplayedCount, totalItems, itemsPerLoad, setIsLoadingMoreFlag, isLoadingMoreFlag) => {
@@ -504,21 +518,6 @@ const Profile = () => {
   const handleCancelUpload = () => { setSelectedFile(null); setPreviewUrl(null); if(fileInputRef.current) fileInputRef.current.value = ""; setError(''); };
 
   // --- Teacher Profile Handlers ---
-  const fetchTeacherInvitations = useCallback(async () => {
-    if (!isTeacherOrAdmin) return;
-    setInvitationsLoading(true);
-    try {
-      const { data } = await apiClient.get('/users/invitations/');
-      setInvitations(data.invitations || []);
-      setRemainingInvitations(data.remaining_this_month || 0);
-      setCanInvite(data.can_invite || false);
-    } catch (err) {
-      console.error('Failed to fetch invitations:', err);
-    } finally {
-      setInvitationsLoading(false);
-    }
-  }, [isTeacherOrAdmin]);
-
   const handleSaveTeacherProfile = async () => {
     console.log('Auto-saving teacher profile...', {
       teacher_about: teacherBio,
