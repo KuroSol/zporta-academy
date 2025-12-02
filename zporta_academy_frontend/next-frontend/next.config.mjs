@@ -1,7 +1,9 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  trailingSlash: true,
+  // trailingSlash removed to avoid static html resolution issues for dynamic pages
+  // Enable source maps in production temporarily to debug minified ReferenceError (sC before initialization)
+  productionBrowserSourceMaps: true,
   // Specify the pages directory location
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   // Disable ESLint during production builds (warnings become errors in prod)
@@ -51,7 +53,10 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   env: {
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/',
+    // Prefer explicit production base URL fallback; keeps localhost for dev
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || (process.env.NODE_ENV === 'production'
+      ? 'https://www.zportaacademy.com/api/'
+      : 'http://localhost:8000/api/'),
   },
   // Proxy sitemap.xml requests to Django backend
   async rewrites() {
