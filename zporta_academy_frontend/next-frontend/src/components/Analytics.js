@@ -339,9 +339,30 @@ const AnalyticsAndStatistics = () => {
 
       {/* Simplified Primary Tabs */}
       <div className={styles.tabNav}>
-        <button className={`${styles.tabBtn} ${activeTab === 'overview' ? styles.tabBtnActive : ''}`} onClick={()=>setActiveTab('overview')}>📊 Overview</button>
-        <button className={`${styles.tabBtn} ${activeTab === 'teaching' ? styles.tabBtnActive : ''}`} onClick={()=>setActiveTab('teaching')}><Activity size={16}/> Teaching</button>
-        <button className={`${styles.tabBtn} ${activeTab === 'learning' ? styles.tabBtnActive : ''}`} onClick={()=>setActiveTab('learning')}><Brain size={16}/> Learning</button>
+        <button
+          className={`${styles.tabBtn} ${
+            activeTab === "overview" ? styles.tabBtnActive : ""
+          }`}
+          onClick={() => setActiveTab("overview")}
+        >
+          📊 Overview
+        </button>
+        <button
+          className={`${styles.tabBtn} ${
+            activeTab === "teaching" ? styles.tabBtnActive : ""
+          }`}
+          onClick={() => setActiveTab("teaching")}
+        >
+          <Activity size={16} /> Teaching
+        </button>
+        <button
+          className={`${styles.tabBtn} ${
+            activeTab === "learning" ? styles.tabBtnActive : ""
+          }`}
+          onClick={() => setActiveTab("learning")}
+        >
+          <Brain size={16} /> Learning
+        </button>
       </div>
 
       {/* Persistent Filter Bar applying globally */}
@@ -408,141 +429,302 @@ const AnalyticsAndStatistics = () => {
       {data && (
         <>
           {/* OVERVIEW TAB CONTENT */}
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <>
               <section className={styles.panel}>
                 <h2 className={styles.sectionTitle}>Activity Summary</h2>
                 <div className={styles.cards}>
                   {impactScore && (
-                    <div className={styles.card} onClick={()=>setShowImpactScoreModal(true)} style={{cursor:'pointer'}}>
-                      <div className={styles.cardHeader}><Activity/> <h3>Impact Score</h3></div>
-                      <div className={styles.bigValue}>{impactScore?.total_score ?? data.impact_score ?? 0}</div>
+                    <div
+                      className={styles.card}
+                      onClick={() => setShowImpactScoreModal(true)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className={styles.cardHeader}>
+                        <Activity /> <h3>Impact Score</h3>
+                      </div>
+                      <div className={styles.bigValue}>
+                        {impactScore?.total_score ?? data.impact_score ?? 0}
+                      </div>
                       <div className={styles.metaRow}>Creator impact</div>
                       <div className={styles.clickHint}>Breakdown</div>
                     </div>
                   )}
                   {learningScore && (
-                    <div className={styles.card} onClick={()=>setShowLearningScoreModal(true)} style={{cursor:'pointer'}}>
-                      <div className={styles.cardHeader}><Brain/> <h3>Learning Score</h3></div>
-                      <div className={styles.bigValue}>{learningScore?.total_score ?? 0}</div>
+                    <div
+                      className={styles.card}
+                      onClick={() => setShowLearningScoreModal(true)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className={styles.cardHeader}>
+                        <Brain /> <h3>Learning Score</h3>
+                      </div>
+                      <div className={styles.bigValue}>
+                        {learningScore?.total_score ?? 0}
+                      </div>
                       <div className={styles.metaRow}>Progress earned</div>
                       <div className={styles.clickHint}>Breakdown</div>
                     </div>
                   )}
                   <div className={styles.kpi}>
-                    <div className={styles.kpiItem}><BarChartHorizontalBig/> <span>{data.total_quizzes_answered ?? 0}</span><label>Quizzes</label></div>
-                    <div className={styles.kpiItem}><BookOpenCheck/> <span>{data.total_lessons_completed ?? 0}</span><label>Lessons</label></div>
-                    <div className={styles.kpiItem}><Award/> <span>{data.total_courses_enrolled ?? data.total_courses_completed ?? 0}</span><label>Courses</label></div>
+                    <div className={styles.kpiItem}>
+                      <BarChartHorizontalBig />{" "}
+                      <span>{data.total_quizzes_answered ?? 0}</span>
+                      <label>Quizzes</label>
+                    </div>
+                    <div className={styles.kpiItem}>
+                      <BookOpenCheck />{" "}
+                      <span>{data.total_lessons_completed ?? 0}</span>
+                      <label>Lessons</label>
+                    </div>
+                    <div className={styles.kpiItem}>
+                      <Award />{" "}
+                      <span>
+                        {data.total_courses_enrolled ??
+                          data.total_courses_completed ??
+                          0}
+                      </span>
+                      <label>Courses</label>
+                    </div>
                   </div>
                 </div>
                 {(data.learning_streak_days || data.impact_streak_days) && (
                   <div className={styles.streaks}>
-                    {data.learning_streak_days && (<div className={styles.streak}><Brain size={16}/> Learning Streak: <b>{data.learning_streak_days}d</b></div>)}
-                    {data.impact_streak_days && (<div className={styles.streak}><Activity size={16}/> Impact Streak: <b>{data.impact_streak_days}d</b></div>)}
+                    {data.learning_streak_days && (
+                      <div className={styles.streak}>
+                        <Brain size={16} /> Learning Streak:{" "}
+                        <b>{data.learning_streak_days}d</b>
+                      </div>
+                    )}
+                    {data.impact_streak_days && (
+                      <div className={styles.streak}>
+                        <Activity size={16} /> Impact Streak:{" "}
+                        <b>{data.impact_streak_days}d</b>
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
               <section className={styles.grid2}>
                 <div className={styles.panel}>
-                  <h3 className={styles.panelTitle}>Daily Points ({filterDateRange})</h3>
+                  <h3 className={styles.panelTitle}>
+                    Daily Points ({filterDateRange})
+                  </h3>
                   {chartSeries.length ? (
                     <ResponsiveContainer width="100%" height={240}>
                       <LineChart data={chartSeries}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2f36" />
-                        <XAxis dataKey="date" tickFormatter={(d)=>{const x=new Date(d);return `${x.getMonth()+1}/${x.getDate()}`}}/>
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(d) => {
+                            const x = new Date(d);
+                            return `${x.getMonth() + 1}/${x.getDate()}`;
+                          }}
+                        />
                         <YAxis />
-                        <Tooltip labelFormatter={(d)=>new Date(d).toLocaleDateString()}/>
-                        <Line type="monotone" dataKey="points" stroke="#667eea" strokeWidth={2} dot={{r:2}} />
+                        <Tooltip
+                          labelFormatter={(d) =>
+                            new Date(d).toLocaleDateString()
+                          }
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="points"
+                          stroke="#667eea"
+                          strokeWidth={2}
+                          dot={{ r: 2 }}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
-                  ) : <div className={styles.empty}>No points yet</div>}
+                  ) : (
+                    <div className={styles.empty}>No points yet</div>
+                  )}
                 </div>
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>Points Distribution</h3>
                   {pieData.length ? (
                     <ResponsiveContainer width="100%" height={240}>
                       <PieChart>
-                        <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95}>
-                          {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={55}
+                          outerRadius={95}
+                        >
+                          {pieData.map((_, i) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
                         </Pie>
-                        <Tooltip formatter={(v,n)=>[`${v} pts`, n]} />
+                        <Tooltip formatter={(v, n) => [`${v} pts`, n]} />
                       </PieChart>
                     </ResponsiveContainer>
-                  ) : <div className={styles.empty}>No data</div>}
+                  ) : (
+                    <div className={styles.empty}>No data</div>
+                  )}
                 </div>
               </section>
               <section className={styles.panel}>
                 <h3 className={styles.panelTitle}>Recent Actions</h3>
-                {loadingHistory ? <div className={styles.loadingWrap}>Loading…</div> : (
-                  history?.results?.length ? (
-                    <table className={styles.table}>
-                      <thead><tr><th>When</th><th>Role</th><th>Activity</th><th>Points</th></tr></thead>
-                      <tbody>
-                        {history.results
-                          .slice()
-                          .sort((a,b)=> new Date(b.created_at||0) - new Date(a.created_at||0))
-                          .slice(0,25)
-                          .map(a => (
+                {loadingHistory ? (
+                  <div className={styles.loadingWrap}>Loading…</div>
+                ) : history?.results?.length ? (
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>When</th>
+                        <th>Role</th>
+                        <th>Activity</th>
+                        <th>Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.results
+                        .slice()
+                        .sort(
+                          (a, b) =>
+                            new Date(b.created_at || 0) -
+                            new Date(a.created_at || 0)
+                        )
+                        .slice(0, 25)
+                        .map((a) => (
                           <tr key={a.id}>
                             <td>{new Date(a.created_at).toLocaleString()}</td>
                             <td>{a.role_display || a.role}</td>
-                            <td>{a.activity_type_display || a.activity_type}</td>
+                            <td>
+                              {a.activity_type_display || a.activity_type}
+                            </td>
                             <td>{a.points}</td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
-                  ) : <div className={styles.empty}>No actions yet</div>
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className={styles.empty}>No actions yet</div>
                 )}
               </section>
             </>
           )}
 
           {/* TEACHING TAB CONTENT */}
-          {activeTab === 'teaching' && (
+          {activeTab === "teaching" && (
             <>
               <section className={styles.panel}>
                 <h2 className={styles.sectionTitle}>Teaching Performance</h2>
                 <div className={styles.kpiRow}>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Impact Score</span><b>{impactScore?.total_score ?? data.impact_score ?? 0}</b></div>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Enrollments</span><b>{impactScore?.course_items?.length ?? data.enrollments_detail?.length ?? 0}</b></div>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Quiz Answers</span><b>{impactScore?.quiz_items?.length ?? 0}</b></div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Impact Score</span>
+                    <b>{impactScore?.total_score ?? data.impact_score ?? 0}</b>
+                  </div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Enrollments</span>
+                    <b>
+                      {impactScore?.course_items?.length ??
+                        data.enrollments_detail?.length ??
+                        0}
+                    </b>
+                  </div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Quiz Answers</span>
+                    <b>{impactScore?.quiz_items?.length ?? 0}</b>
+                  </div>
                 </div>
               </section>
               <section className={styles.grid2}>
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>Strong Content</h3>
                   <table className={styles.table}>
-                    <thead><tr><th>Title</th><th>Metric</th><th>Value</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Metric</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      {(impactAnalytics?.courses?.highest_completion || []).slice(0,5).map((c,i)=>(
-                        <tr key={`c-strong-${i}`} className={styles.rowClickable} onClick={()=>c.permalink&&router.push(`/courses/${c.permalink}`)}>
-                          <td>{c.title}</td><td>Completion Rate</td><td>{c.avg_completion_rate ?? c.completion_rate ?? '—'}%</td>
-                        </tr>
-                      ))}
-                      {(impactAnalytics?.quizzes?.highest_accuracy || []).slice(0,5).map((q,i)=>(
-                        <tr key={`q-strong-${i}`} className={styles.rowClickable} onClick={()=>q.permalink&&router.push(`/quizzes/${q.permalink}`)}>
-                          <td>{q.title}</td><td>Accuracy</td><td>{q.accuracy_rate ?? '—'}%</td>
-                        </tr>
-                      ))}
+                      {(impactAnalytics?.courses?.highest_completion || [])
+                        .slice(0, 5)
+                        .map((c, i) => (
+                          <tr
+                            key={`c-strong-${i}`}
+                            className={styles.rowClickable}
+                            onClick={() =>
+                              c.permalink &&
+                              router.push(`/courses/${c.permalink}`)
+                            }
+                          >
+                            <td>{c.title}</td>
+                            <td>Completion Rate</td>
+                            <td>
+                              {c.avg_completion_rate ??
+                                c.completion_rate ??
+                                "—"}
+                              %
+                            </td>
+                          </tr>
+                        ))}
+                      {(impactAnalytics?.quizzes?.highest_accuracy || [])
+                        .slice(0, 5)
+                        .map((q, i) => (
+                          <tr
+                            key={`q-strong-${i}`}
+                            className={styles.rowClickable}
+                            onClick={() =>
+                              q.permalink &&
+                              router.push(`/quizzes/${q.permalink}`)
+                            }
+                          >
+                            <td>{q.title}</td>
+                            <td>Accuracy</td>
+                            <td>{q.accuracy_rate ?? "—"}%</td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>Needs Attention</h3>
                   <table className={styles.table}>
-                    <thead><tr><th>Title</th><th>Issue</th><th>Metric</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Issue</th>
+                        <th>Metric</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      {(impactAnalytics?.courses?.needs_attention || []).slice(0,5).map((c,i)=>(
-                        <tr key={`c-weak-${i}`} className={styles.rowClickable} onClick={()=>c.permalink&&router.push(`/courses/${c.permalink}`)}>
-                          <td>{c.title}</td><td>Low Completion</td><td>{c.avg_completion_rate ?? '—'}%</td>
-                        </tr>
-                      ))}
-                      {(impactAnalytics?.quizzes?.challenging || []).slice(0,5).map((q,i)=>(
-                        <tr key={`q-weak-${i}`} className={styles.rowClickable} onClick={()=>q.permalink&&router.push(`/quizzes/${q.permalink}`)}>
-                          <td>{q.title}</td><td>Low Accuracy</td><td>{q.accuracy_rate ?? '—'}%</td>
-                        </tr>
-                      ))}
+                      {(impactAnalytics?.courses?.needs_attention || [])
+                        .slice(0, 5)
+                        .map((c, i) => (
+                          <tr
+                            key={`c-weak-${i}`}
+                            className={styles.rowClickable}
+                            onClick={() =>
+                              c.permalink &&
+                              router.push(`/courses/${c.permalink}`)
+                            }
+                          >
+                            <td>{c.title}</td>
+                            <td>Low Completion</td>
+                            <td>{c.avg_completion_rate ?? "—"}%</td>
+                          </tr>
+                        ))}
+                      {(impactAnalytics?.quizzes?.challenging || [])
+                        .slice(0, 5)
+                        .map((q, i) => (
+                          <tr
+                            key={`q-weak-${i}`}
+                            className={styles.rowClickable}
+                            onClick={() =>
+                              q.permalink &&
+                              router.push(`/quizzes/${q.permalink}`)
+                            }
+                          >
+                            <td>{q.title}</td>
+                            <td>Low Accuracy</td>
+                            <td>{q.accuracy_rate ?? "—"}%</td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -550,34 +732,72 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.panel}>
                 <h3 className={styles.panelTitle}>Recent Engagement</h3>
                 <table className={styles.table}>
-                  <thead><tr><th>When</th><th>Type</th><th>Title</th><th>User</th><th>Points</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Type</th>
+                      <th>Title</th>
+                      <th>User</th>
+                      <th>Points</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {[...(impactScore?.course_items||[]),(impactScore?.quiz_items||[])]
+                    {[
+                      ...(impactScore?.course_items || []),
+                      impactScore?.quiz_items || [],
+                    ]
                       .slice()
-                      .sort((a,b)=> new Date((b.enrolled_at||b.answered_at||0)) - new Date((a.enrolled_at||a.answered_at||0)))
-                      .slice(0,25)
-                      .map((item,i)=>(
-                      <tr key={`eng-${i}`}>
-                        <td>{item.enrolled_at?new Date(item.enrolled_at).toLocaleDateString():item.answered_at?new Date(item.answered_at).toLocaleDateString():'—'}</td>
-                        <td>{item.course_title? 'Enrollment' : 'Quiz Answer'}</td>
-                        <td>{item.course_title || item.quiz_title}</td>
-                        <td>{item.student_name || '—'}</td>
-                        <td>{item.points}</td>
-                      </tr>
-                    ))}
+                      .sort(
+                        (a, b) =>
+                          new Date(b.enrolled_at || b.answered_at || 0) -
+                          new Date(a.enrolled_at || a.answered_at || 0)
+                      )
+                      .slice(0, 25)
+                      .map((item, i) => (
+                        <tr key={`eng-${i}`}>
+                          <td>
+                            {item.enrolled_at
+                              ? new Date(item.enrolled_at).toLocaleDateString()
+                              : item.answered_at
+                              ? new Date(item.answered_at).toLocaleDateString()
+                              : "—"}
+                          </td>
+                          <td>
+                            {item.course_title ? "Enrollment" : "Quiz Answer"}
+                          </td>
+                          <td>{item.course_title || item.quiz_title}</td>
+                          <td>{item.student_name || "—"}</td>
+                          <td>{item.points}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </section>
               <section className={styles.panel}>
                 <h3 className={styles.panelTitle}>Common Mistake Hotspots</h3>
                 <table className={styles.table}>
-                  <thead><tr><th>Quiz</th><th>Accuracy</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Quiz</th>
+                      <th>Accuracy</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {(impactAnalytics?.quizzes?.challenging||[]).slice(0,10).map((q,i)=>(
-                      <tr key={`hot-${i}`} className={styles.rowClickable} onClick={()=>q.permalink&&router.push(`/quizzes/${q.permalink}`)}>
-                        <td>{q.title}</td><td>{q.accuracy_rate ?? '—'}%</td>
-                      </tr>
-                    ))}
+                    {(impactAnalytics?.quizzes?.challenging || [])
+                      .slice(0, 10)
+                      .map((q, i) => (
+                        <tr
+                          key={`hot-${i}`}
+                          className={styles.rowClickable}
+                          onClick={() =>
+                            q.permalink &&
+                            router.push(`/quizzes/${q.permalink}`)
+                          }
+                        >
+                          <td>{q.title}</td>
+                          <td>{q.accuracy_rate ?? "—"}%</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </section>
@@ -585,60 +805,115 @@ const AnalyticsAndStatistics = () => {
           )}
 
           {/* LEARNING TAB CONTENT */}
-          {activeTab === 'learning' && (
+          {activeTab === "learning" && (
             <>
               <section className={styles.panel}>
                 <h2 className={styles.sectionTitle}>Learning Progress</h2>
                 <div className={styles.kpiRow}>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Learning Score</span><b>{learningScore?.total_score ?? 0}</b></div>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Quizzes</span><b>{data.total_quizzes_answered ?? 0}</b></div>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Lessons</span><b>{data.total_lessons_completed ?? 0}</b></div>
-                  <div className={styles.kpiItemBox}><span className={styles.kpiLabel}>Courses</span><b>{data.total_courses_enrolled ?? data.total_courses_completed ?? 0}</b></div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Learning Score</span>
+                    <b>{learningScore?.total_score ?? 0}</b>
+                  </div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Quizzes</span>
+                    <b>{data.total_quizzes_answered ?? 0}</b>
+                  </div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Lessons</span>
+                    <b>{data.total_lessons_completed ?? 0}</b>
+                  </div>
+                  <div className={styles.kpiItemBox}>
+                    <span className={styles.kpiLabel}>Courses</span>
+                    <b>
+                      {data.total_courses_enrolled ??
+                        data.total_courses_completed ??
+                        0}
+                    </b>
+                  </div>
                 </div>
               </section>
               <section className={styles.grid2}>
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>Strengths</h3>
                   <table className={styles.table}>
-                    <thead><tr><th>Title</th><th>Type</th><th>Metric</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Metric</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {(() => {
-                        const toDate = (obj) => (
-                          obj.last_timestamp || obj.answered_at || obj.completed_at || obj.enrolled_at || obj.enrolled_date || obj.last_attempt_at || obj.first_attempt_at || obj.timestamp || null
-                        );
+                        const toDate = (obj) =>
+                          obj.last_timestamp ||
+                          obj.answered_at ||
+                          obj.completed_at ||
+                          obj.enrolled_at ||
+                          obj.enrolled_date ||
+                          obj.last_attempt_at ||
+                          obj.first_attempt_at ||
+                          obj.timestamp ||
+                          null;
                         // Heuristic: quizzes with high accuracy and multiple attempts → confident mastery
-                        const quizStrong = (learningAnalytics?.quizzes?.fast_correct || [])
-                          .map(q => ({
-                            type: 'Quiz',
-                            title: q.quiz_title || `Quiz ${q.quiz_id}`,
-                            permalink: q.quiz_permalink,
-                            metricLabel: 'First-try Correct',
-                            metricValue: '✓',
-                            _date: toDate(q)
-                          }));
-                        const courseStrong = (learningAnalytics?.courses?.most_complete || [])
-                          .map(c => ({
-                            type: 'Course',
-                            title: c.title,
-                            permalink: c.permalink,
-                            metricLabel: 'Completion',
-                            metricValue: `${c.completion_rate ?? c.avg_completion_rate ?? '—'}%`,
-                            _date: toDate(c)
-                          }));
+                        const quizStrong = (
+                          learningAnalytics?.quizzes?.fast_correct || []
+                        ).map((q) => ({
+                          type: "Quiz",
+                          title: q.quiz_title || `Quiz ${q.quiz_id}`,
+                          permalink: q.quiz_permalink,
+                          metricLabel: "First-try Correct",
+                          metricValue: "✓",
+                          _date: toDate(q),
+                        }));
+                        const courseStrong = (
+                          learningAnalytics?.courses?.most_complete || []
+                        ).map((c) => ({
+                          type: "Course",
+                          title: c.title,
+                          permalink: c.permalink,
+                          metricLabel: "Completion",
+                          metricValue: `${
+                            c.completion_rate ?? c.avg_completion_rate ?? "—"
+                          }%`,
+                          _date: toDate(c),
+                        }));
                         const items = [...quizStrong, ...courseStrong]
-                          .sort((a,b)=> new Date(b._date||0) - new Date(a._date||0))
-                          .slice(0,5);
-                        return items.length ? items.map((it,i)=>(
-                          <tr key={`str-${i}`} className={styles.rowClickable} onClick={()=> it.permalink && router.push(`/` + (it.type==='Course'?'courses':'quizzes') + `/${it.permalink}`)}>
-                            <td className={styles.contentCell}>
-                              <span>{it.title}</span>
-                              {it.permalink && <ExternalLink size={12} />}
+                          .sort(
+                            (a, b) =>
+                              new Date(b._date || 0) - new Date(a._date || 0)
+                          )
+                          .slice(0, 5);
+                        return items.length ? (
+                          items.map((it, i) => (
+                            <tr
+                              key={`str-${i}`}
+                              className={styles.rowClickable}
+                              onClick={() =>
+                                it.permalink &&
+                                router.push(
+                                  `/` +
+                                    (it.type === "Course"
+                                      ? "courses"
+                                      : "quizzes") +
+                                    `/${it.permalink}`
+                                )
+                              }
+                            >
+                              <td className={styles.contentCell}>
+                                <span>{it.title}</span>
+                                {it.permalink && <ExternalLink size={12} />}
+                              </td>
+                              <td>{it.type}</td>
+                              <td>{it.metricValue}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} className={styles.empty}>
+                              No strengths detected yet.
                             </td>
-                            <td>{it.type}</td>
-                            <td>{it.metricValue}</td>
                           </tr>
-                        )) : (
-                          <tr><td colSpan={3} className={styles.empty}>No strengths detected yet.</td></tr>
                         );
                       })()}
                     </tbody>
@@ -647,43 +922,80 @@ const AnalyticsAndStatistics = () => {
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>Weaknesses</h3>
                   <table className={styles.table}>
-                    <thead><tr><th>Title</th><th>Type</th><th>Issue</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Issue</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {(() => {
-                        const toDate = (obj) => (
-                          obj.last_timestamp || obj.answered_at || obj.completed_at || obj.enrolled_at || obj.enrolled_date || obj.last_attempt_at || obj.first_attempt_at || obj.timestamp || null
-                        );
+                        const toDate = (obj) =>
+                          obj.last_timestamp ||
+                          obj.answered_at ||
+                          obj.completed_at ||
+                          obj.enrolled_at ||
+                          obj.enrolled_date ||
+                          obj.last_attempt_at ||
+                          obj.first_attempt_at ||
+                          obj.timestamp ||
+                          null;
                         // Heuristic: questions with many wrong attempts; courses with low completion
-                        const quizWeak = (learningAnalytics?.quizzes?.most_mistakes || [])
-                          .map(q => ({
-                            type: 'Quiz',
-                            title: q.quiz_title || `Quiz ${q.quiz_id}`,
-                            permalink: q.quiz_permalink,
-                            issue: `${q.wrong_attempts ?? 0} mistakes`,
-                            _date: toDate(q)
-                          }));
-                        const courseWeak = (learningAnalytics?.courses?.most_incomplete || [])
-                          .map(c => ({
-                            type: 'Course',
-                            title: c.title,
-                            permalink: c.permalink,
-                            issue: `Incomplete (${c.completed_lessons}/${c.total_lessons})`,
-                            _date: toDate(c)
-                          }));
+                        const quizWeak = (
+                          learningAnalytics?.quizzes?.most_mistakes || []
+                        ).map((q) => ({
+                          type: "Quiz",
+                          title: q.quiz_title || `Quiz ${q.quiz_id}`,
+                          permalink: q.quiz_permalink,
+                          issue: `${q.wrong_attempts ?? 0} mistakes`,
+                          _date: toDate(q),
+                        }));
+                        const courseWeak = (
+                          learningAnalytics?.courses?.most_incomplete || []
+                        ).map((c) => ({
+                          type: "Course",
+                          title: c.title,
+                          permalink: c.permalink,
+                          issue: `Incomplete (${c.completed_lessons}/${c.total_lessons})`,
+                          _date: toDate(c),
+                        }));
                         const items = [...quizWeak, ...courseWeak]
-                          .sort((a,b)=> new Date(b._date||0) - new Date(a._date||0))
-                          .slice(0,5);
-                        return items.length ? items.map((it,i)=>(
-                          <tr key={`weak-${i}`} className={styles.rowClickable} onClick={()=> it.permalink && router.push(`/` + (it.type==='Course'?'courses':'quizzes') + `/${it.permalink}`)}>
-                            <td className={styles.contentCell}>
-                              <span>{it.title}</span>
-                              {it.permalink && <ExternalLink size={12} />}
+                          .sort(
+                            (a, b) =>
+                              new Date(b._date || 0) - new Date(a._date || 0)
+                          )
+                          .slice(0, 5);
+                        return items.length ? (
+                          items.map((it, i) => (
+                            <tr
+                              key={`weak-${i}`}
+                              className={styles.rowClickable}
+                              onClick={() =>
+                                it.permalink &&
+                                router.push(
+                                  `/` +
+                                    (it.type === "Course"
+                                      ? "courses"
+                                      : "quizzes") +
+                                    `/${it.permalink}`
+                                )
+                              }
+                            >
+                              <td className={styles.contentCell}>
+                                <span>{it.title}</span>
+                                {it.permalink && <ExternalLink size={12} />}
+                              </td>
+                              <td>{it.type}</td>
+                              <td>{it.issue}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} className={styles.empty}>
+                              No weaknesses detected yet.
                             </td>
-                            <td>{it.type}</td>
-                            <td>{it.issue}</td>
                           </tr>
-                        )) : (
-                          <tr><td colSpan={3} className={styles.empty}>No weaknesses detected yet.</td></tr>
                         );
                       })()}
                     </tbody>
@@ -693,19 +1005,82 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.panel}>
                 <h3 className={styles.panelTitle}>Recent Progress</h3>
                 <table className={styles.table}>
-                  <thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Points</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Title</th>
+                      <th>Points</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {[...(learningScore?.quiz_items||[]),(learningScore?.lesson_items||[]),(learningScore?.course_items||[])]
-                      .sort((a,b)=>(new Date(b.answered_at||b.completed_at||b.enrolled_at||0))-(new Date(a.answered_at||a.completed_at||a.enrolled_at||0)))
-                      .slice(0,25)
-                      .map((it,i)=>{
-                        const type = it.quiz_title? 'Quiz' : it.lesson_title? 'Lesson' : it.course_title? 'Course' : 'Item';
-                        const title = it.quiz_title||it.lesson_title||it.course_title||'—';
-                        const permalink = it.quiz_permalink||it.lesson_permalink||it.course_permalink||it.link;
-                        const pathPrefix = it.quiz_permalink? 'quizzes' : it.lesson_permalink? 'lessons' : it.course_permalink? 'courses' : '';
+                    {[
+                      ...(learningScore?.quiz_items || []),
+                      learningScore?.lesson_items || [],
+                      learningScore?.course_items || [],
+                    ]
+                      .sort(
+                        (a, b) =>
+                          new Date(
+                            b.answered_at ||
+                              b.completed_at ||
+                              b.enrolled_at ||
+                              0
+                          ) -
+                          new Date(
+                            a.answered_at ||
+                              a.completed_at ||
+                              a.enrolled_at ||
+                              0
+                          )
+                      )
+                      .slice(0, 25)
+                      .map((it, i) => {
+                        const type = it.quiz_title
+                          ? "Quiz"
+                          : it.lesson_title
+                          ? "Lesson"
+                          : it.course_title
+                          ? "Course"
+                          : "Item";
+                        const title =
+                          it.quiz_title ||
+                          it.lesson_title ||
+                          it.course_title ||
+                          "—";
+                        const permalink =
+                          it.quiz_permalink ||
+                          it.lesson_permalink ||
+                          it.course_permalink ||
+                          it.link;
+                        const pathPrefix = it.quiz_permalink
+                          ? "quizzes"
+                          : it.lesson_permalink
+                          ? "lessons"
+                          : it.course_permalink
+                          ? "courses"
+                          : "";
                         return (
-                          <tr key={`prog-${i}`} className={permalink? styles.rowClickable : ''} onClick={()=>{ if(permalink){ router.push(`/${pathPrefix}/${permalink}`) } }}>
-                            <td>{(it.answered_at||it.completed_at||it.enrolled_at)? new Date(it.answered_at||it.completed_at||it.enrolled_at).toLocaleDateString():'—'}</td>
+                          <tr
+                            key={`prog-${i}`}
+                            className={permalink ? styles.rowClickable : ""}
+                            onClick={() => {
+                              if (permalink) {
+                                router.push(`/${pathPrefix}/${permalink}`);
+                              }
+                            }}
+                          >
+                            <td>
+                              {it.answered_at ||
+                              it.completed_at ||
+                              it.enrolled_at
+                                ? new Date(
+                                    it.answered_at ||
+                                      it.completed_at ||
+                                      it.enrolled_at
+                                  ).toLocaleDateString()
+                                : "—"}
+                            </td>
                             <td>{type}</td>
                             <td className={styles.contentCell}>
                               <span>{title}</span>
@@ -721,17 +1096,35 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.panel}>
                 <h3 className={styles.panelTitle}>Frequent Mistakes</h3>
                 <table className={styles.table}>
-                  <thead><tr><th>Question</th><th>Wrong Attempts</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Wrong Attempts</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {(learningAnalytics?.quizzes?.most_mistakes||[]) 
+                    {(learningAnalytics?.quizzes?.most_mistakes || [])
                       .slice()
-                      .sort((a,b)=> new Date(b.last_timestamp||0) - new Date(a.last_timestamp||0))
-                      .slice(0,10)
-                      .map((q,i)=>{
-                        const title = q.question_title || `Question ${q.question_id}`;
+                      .sort(
+                        (a, b) =>
+                          new Date(b.last_timestamp || 0) -
+                          new Date(a.last_timestamp || 0)
+                      )
+                      .slice(0, 10)
+                      .map((q, i) => {
+                        const title =
+                          q.question_title || `Question ${q.question_id}`;
                         const permalink = q.quiz_permalink;
                         return (
-                          <tr key={`lm-${i}`} className={permalink? styles.rowClickable:''} onClick={()=>{ if(permalink){ router.push(`/quizzes/${permalink}`) } }}>
+                          <tr
+                            key={`lm-${i}`}
+                            className={permalink ? styles.rowClickable : ""}
+                            onClick={() => {
+                              if (permalink) {
+                                router.push(`/quizzes/${permalink}`);
+                              }
+                            }}
+                          >
                             <td className={styles.contentCell}>
                               <span>{title}</span>
                               {permalink && <ExternalLink size={12} />}
@@ -880,25 +1273,29 @@ const AnalyticsAndStatistics = () => {
                     <ul className={styles.list}>
                       {data.lesson_completions_detail
                         .slice()
-                        .sort((a,b)=> new Date(b.completed_at||0) - new Date(a.completed_at||0))
+                        .sort(
+                          (a, b) =>
+                            new Date(b.completed_at || 0) -
+                            new Date(a.completed_at || 0)
+                        )
                         .slice(0, 10)
                         .map((l) => (
-                        <li key={l.id}>
-                          <button
-                            onClick={() => l.link && router.push(l.link)}
-                            className={styles.linkBtn}
-                            disabled={!l.link}
-                          >
-                            <span>{l.lesson_title}</span>
-                            {l.link && <ExternalLink size={12} />}
-                          </button>
-                          <em>
-                            {new Date(l.completed_at).toLocaleDateString()}
-                          </em>
-                          <b className={styles.pointsBadge}>+{l.points}</b>
-                          {l.course_title && <i> · {l.course_title}</i>}
-                        </li>
-                      ))}
+                          <li key={l.id}>
+                            <button
+                              onClick={() => l.link && router.push(l.link)}
+                              className={styles.linkBtn}
+                              disabled={!l.link}
+                            >
+                              <span>{l.lesson_title}</span>
+                              {l.link && <ExternalLink size={12} />}
+                            </button>
+                            <em>
+                              {new Date(l.completed_at).toLocaleDateString()}
+                            </em>
+                            <b className={styles.pointsBadge}>+{l.points}</b>
+                            {l.course_title && <i> · {l.course_title}</i>}
+                          </li>
+                        ))}
                     </ul>
                     {data.lesson_completions_detail.length > 10 && (
                       <button
@@ -1042,26 +1439,30 @@ const AnalyticsAndStatistics = () => {
                     <ul className={styles.list}>
                       {data.course_completions_detail
                         .slice()
-                        .sort((a,b)=> new Date(b.completed_at||0) - new Date(a.completed_at||0))
+                        .sort(
+                          (a, b) =>
+                            new Date(b.completed_at || 0) -
+                            new Date(a.completed_at || 0)
+                        )
                         .map((c) => (
-                        <li key={c.id}>
-                          <button
-                            onClick={() => c.link && router.push(c.link)}
-                            className={styles.linkBtn}
-                            disabled={!c.link}
-                          >
-                            <span>{c.course_title}</span>
-                            {c.link && <ExternalLink size={12} />}
-                          </button>
-                          <em>
-                            {new Date(c.completed_at).toLocaleDateString()}
-                          </em>
-                          <b className={styles.pointsBadge}>+{c.points}</b>
-                          {c.time_spent_days && (
-                            <i> · {Math.round(c.time_spent_days)} days</i>
-                          )}
-                        </li>
-                      ))}
+                          <li key={c.id}>
+                            <button
+                              onClick={() => c.link && router.push(c.link)}
+                              className={styles.linkBtn}
+                              disabled={!c.link}
+                            >
+                              <span>{c.course_title}</span>
+                              {c.link && <ExternalLink size={12} />}
+                            </button>
+                            <em>
+                              {new Date(c.completed_at).toLocaleDateString()}
+                            </em>
+                            <b className={styles.pointsBadge}>+{c.points}</b>
+                            {c.time_spent_days && (
+                              <i> · {Math.round(c.time_spent_days)} days</i>
+                            )}
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 )}
@@ -2266,9 +2667,12 @@ const AnalyticsAndStatistics = () => {
                             <ul className={styles.analyticsList}>
                               {learningAnalytics.courses.most_incomplete
                                 .slice()
-                                .sort((a,b)=> new Date(b.enrolled_date||0) - new Date(a.enrolled_date||0))
-                                .map(
-                                (course, idx) => (
+                                .sort(
+                                  (a, b) =>
+                                    new Date(b.enrolled_date || 0) -
+                                    new Date(a.enrolled_date || 0)
+                                )
+                                .map((course, idx) => (
                                   <li
                                     key={idx}
                                     className={styles.analyticsListItem}
@@ -2291,8 +2695,7 @@ const AnalyticsAndStatistics = () => {
                                       </span>
                                     </button>
                                   </li>
-                                )
-                              )}
+                                ))}
                             </ul>
                           ) : (
                             <p className={styles.emptyState}>
@@ -2314,9 +2717,12 @@ const AnalyticsAndStatistics = () => {
                             <ul className={styles.analyticsList}>
                               {learningAnalytics.courses.most_complete
                                 .slice()
-                                .sort((a,b)=> new Date(b.enrolled_date||0) - new Date(a.enrolled_date||0))
-                                .map(
-                                (course, idx) => (
+                                .sort(
+                                  (a, b) =>
+                                    new Date(b.enrolled_date || 0) -
+                                    new Date(a.enrolled_date || 0)
+                                )
+                                .map((course, idx) => (
                                   <li
                                     key={idx}
                                     className={styles.analyticsListItem}
@@ -2337,8 +2743,7 @@ const AnalyticsAndStatistics = () => {
                                       </span>
                                     </button>
                                   </li>
-                                )
-                              )}
+                                ))}
                             </ul>
                           ) : (
                             <p className={styles.emptyState}>

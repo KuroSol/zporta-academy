@@ -79,8 +79,6 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const [customJS, setCustomJS] = useState("");
   const [quizzes, setQuizzes] = useState([]);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [hasShownScrollModal, setHasShownScrollModal] = useState(false);
 
   const lessonContentDisplayRef = useRef(null);
 
@@ -251,27 +249,6 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       } catch {}
     };
   }, [loading, lessonData?.lesson?.custom_css]);
-
-  /* Scroll-triggered login modal for anonymous users */
-  useEffect(() => {
-    if (token || hasShownScrollModal) return; // Only for non-authenticated users
-    
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const progress = (scrollTop / scrollHeight) * 100;
-      setScrollProgress(progress);
-      
-      // Show login modal after 40% scroll for anonymous users
-      if (progress > 40 && !hasShownScrollModal) {
-        setLoginOpen(true);
-        setHasShownScrollModal(true);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [token, hasShownScrollModal]);
 
   /* actions */
   const handleCompleteLesson = async () => {
