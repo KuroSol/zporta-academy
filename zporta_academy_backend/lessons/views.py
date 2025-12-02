@@ -232,6 +232,9 @@ class DynamicLessonView(APIView):
             ):
                 # Hide existence of drafts from others
                 return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+            # Drafts visible to owner/staff must not be indexed
+            # Ensure robots noindex for any draft visibility
+            # Note: header applied on response objects below
             
         seo = {
             "title": lesson.seo_title or lesson.title,
@@ -256,6 +259,7 @@ class DynamicLessonView(APIView):
                 resp = Response({"lesson": serializer.data, "seo": seo})
                 patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
                 resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                resp["X-Robots-Tag"] = "noindex, nofollow"
                 return resp
 
             # For everyone else, show a gated response (200), not 403, to avoid global logout.
@@ -268,7 +272,7 @@ class DynamicLessonView(APIView):
                     preview_html = preview_html[:cut]
                 except Exception:
                     preview_html = (lesson.content or "")[:500]
-                return Response({
+                resp = Response({
                     "lesson": {
                         "id": lesson.id,
                         "title": lesson.title,
@@ -287,6 +291,10 @@ class DynamicLessonView(APIView):
                     "course": attached_course,
                     "preview": True,
                 }, status=status.HTTP_200_OK)
+                resp["X-Robots-Tag"] = "noindex, nofollow"
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
 
             # If logged in: require enrollment (only when lesson is attached to a course)
             if not lesson.course:
@@ -298,6 +306,7 @@ class DynamicLessonView(APIView):
                 }, status=status.HTTP_200_OK)
                 patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
                 resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                resp["X-Robots-Tag"] = "noindex, nofollow"
                 return resp
 
             course_ct = ContentType.objects.get_for_model(Course)
@@ -316,7 +325,7 @@ class DynamicLessonView(APIView):
                     preview_html = preview_html[:cut]
                 except Exception:
                     preview_html = (lesson.content or "")[:500]
-                return Response({
+                resp = Response({
                     "lesson": {
                         "id": lesson.id,
                         "title": lesson.title,
@@ -335,6 +344,10 @@ class DynamicLessonView(APIView):
                     "course": attached_course,
                     "preview": True,
                 }, status=status.HTTP_200_OK)
+                resp["X-Robots-Tag"] = "noindex, nofollow"
+                patch_cache_control(resp, no_cache=True, no_store=True, must_revalidate=True, private=True, max_age=0, s_maxage=0)
+                resp["Vary"] = "Accept, Cookie, Authorization, Origin"
+                return resp
 
         # OPTIMIZATION: Include enrollment status in the same response to avoid second API call
         is_enrolled = False
@@ -385,6 +398,15 @@ class DynamicLessonView(APIView):
             cache.set(cache_key, response_data, timeout=300)
         
         resp = Response(response_data)
+        # Apply robots noindex headers for non-published or premium lessons
+        if lesson.status != Lesson.PUBLISHED or lesson.is_premium:
+            resp["X-Robots-Tag"] = "noindex, nofollow"
+            # Also reflect in seo block for clients rendering meta tags
+            try:
+                if isinstance(response_data.get("seo"), dict):
+                    response_data["seo"]["robots"] = "noindex,nofollow"
+            except Exception:
+                pass
         # Add conservative cache headers for anonymous/public access
         if not request.user.is_authenticated and lesson.status == Lesson.PUBLISHED and not lesson.is_premium:
             patch_cache_control(resp, public=True, max_age=300, s_maxage=300)

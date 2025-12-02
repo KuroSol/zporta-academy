@@ -76,16 +76,18 @@ class LessonSitemap(Sitemap):
     priority   = 0.5
     cache_timeout = 0
 
-    def items(self):
-        """
-        Public lessons:
-          - exclude premium lessons
-          - and either have no course OR the parent course is free
-        """
-        return Lesson.objects.filter(
-            Q(is_premium=False) &
-            (Q(course__isnull=True) | Q(course__course_type="free"))
-        ).order_by("id")
+        def items(self):
+                """
+                Public lessons:
+                    - must be status=published
+                    - exclude premium lessons
+                    - and either have no course OR the parent course is free
+                """
+                return Lesson.objects.filter(
+                        Q(status=Lesson.PUBLISHED) &
+                        Q(is_premium=False) &
+                        (Q(course__isnull=True) | Q(course__course_type="free"))
+                ).order_by("id")
 
     def location(self, obj):
         return f"/lessons/{obj.permalink}/"
@@ -101,7 +103,8 @@ class PostSitemap(Sitemap):
     cache_timeout = 0
     
     def items(self):
-        return Post.objects.all().order_by("-created_at")
+        # Only published posts
+        return Post.objects.filter(is_published=True).order_by("-created_at")
 
     def location(self, obj):
         return f"/posts/{obj.permalink}/"
