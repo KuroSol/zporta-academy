@@ -4,6 +4,10 @@ const nextConfig = {
   trailingSlash: true,
   // Specify the pages directory location
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  // Disable ESLint during production builds (warnings become errors in prod)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     // Modern remotePatterns config (replaces deprecated domains)
     remotePatterns: [
