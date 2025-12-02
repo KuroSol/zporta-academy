@@ -1498,7 +1498,7 @@ const Profile = () => {
                                           className={`${teacherStyles.tagSuggestion} ${teacherStyles.createNew}`}
                                           onClick={() => handleAddTag(1, tagInput1)}
                                         >
-                                          + Create "{tagInput1}"
+                                          + Create &quot;{tagInput1}&quot;
                                         </div>
                                       </div>
                                     )}
@@ -1617,7 +1617,7 @@ const Profile = () => {
                                           className={`${teacherStyles.tagSuggestion} ${teacherStyles.createNew}`}
                                           onClick={() => handleAddTag(2, tagInput2)}
                                         >
-                                          + Create "{tagInput2}"
+                                          + Create &quot;{tagInput2}&quot;
                                         </div>
                                       </div>
                                     )}
@@ -1736,7 +1736,7 @@ const Profile = () => {
                                           className={`${teacherStyles.tagSuggestion} ${teacherStyles.createNew}`}
                                           onClick={() => handleAddTag(3, tagInput3)}
                                         >
-                                          + Create "{tagInput3}"
+                                          + Create &quot;{tagInput3}&quot;
                                         </div>
                                       </div>
                                     )}
@@ -2021,7 +2021,7 @@ const Profile = () => {
                               </div>
                             ) : (
                               <p className={teacherStyles.emptyText}>
-                                You haven't enrolled in any courses yet. Start learning to see your teachers here!
+                                You haven&apos;t enrolled in any courses yet. Start learning to see your teachers here!
                               </p>
                             )}
                           </div>
