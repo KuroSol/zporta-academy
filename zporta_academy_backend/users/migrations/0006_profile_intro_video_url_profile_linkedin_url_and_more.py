@@ -70,42 +70,4 @@ class Migration(migrations.Migration):
             name='youtube_url',
             field=models.URLField(blank=True, help_text='YouTube channel or intro video', null=True),
         ),
-        migrations.CreateModel(
-            name='UserActivity',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.CharField(choices=[('student', 'Student'), ('teacher', 'Teacher')], db_index=True, max_length=10)),
-                ('activity_type', models.CharField(choices=[('CORRECT_ANSWER', 'Correct Answer'), ('LESSON_COMPLETED', 'Lesson Completed'), ('COURSE_COMPLETED', 'Course Completed'), ('ENROLLMENT_FREE', 'Free Enrollment'), ('ENROLLMENT_PREMIUM', 'Premium Enrollment'), ('QUIZ_FIRST_ATTEMPT', 'First Quiz Attempt'), ('STANDALONE_LESSON', 'Standalone Lesson')], db_index=True, max_length=50)),
-                ('points', models.IntegerField(default=0)),
-                ('object_id', models.PositiveIntegerField(blank=True, null=True)),
-                ('metadata', models.JSONField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_activities', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'verbose_name': 'User Activity',
-                'verbose_name_plural': 'User Activities',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['user', 'role', 'created_at'], name='users_usera_user_id_5f8f9d_idx'), models.Index(fields=['user', 'activity_type', 'created_at'], name='users_usera_user_id_ab4acf_idx'), models.Index(fields=['created_at'], name='users_usera_created_828ca1_idx')],
-            },
-        ),
-        migrations.CreateModel(
-            name='UserLoginEvent',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('login_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('logout_at', models.DateTimeField(blank=True, null=True)),
-                ('session_duration_seconds', models.PositiveIntegerField(blank=True, null=True)),
-                ('user_agent', models.CharField(blank=True, max_length=255, null=True)),
-                ('ip_address', models.GenericIPAddressField(blank=True, null=True)),
-                ('last_heartbeat_at', models.DateTimeField(blank=True, help_text='Most recent client heartbeat (activity ping)', null=True)),
-                ('forced_closed', models.BooleanField(default=False, help_text='Marked true if auto-closed due to inactivity timeout')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='login_events', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'ordering': ['-login_at'],
-                'indexes': [models.Index(fields=['user', 'login_at'], name='users_userl_user_id_333acc_idx')],
-            },
-        ),
     ]

@@ -21,6 +21,14 @@ export default function Register() {
     bio: '',
   });
 
+  const [applyForGuide, setApplyForGuide] = useState(false);
+  const [guideApplication, setGuideApplication] = useState({
+    motivation: '',
+    experience: '',
+    subjects_to_teach: '',
+    referred_by: '',
+  });
+
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'error' | 'success'
 
@@ -130,13 +138,41 @@ export default function Register() {
   const handleChange = (e) =>
     setFormData((s) => ({ ...s, [e.target.name]: e.target.value }));
 
+  const handleGuideAppChange = (e) =>
+    setGuideApplication((s) => ({ ...s, [e.target.name]: e.target.value }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     showMessage('');
     try {
-      await apiClient.post('/users/register/', formData);
-      showMessage('Registration successful! Redirecting to login...', 'success');
-      setTimeout(() => router.push('/login'), 1500);
+      // First register the user
+      const { data } = await apiClient.post('/users/register/', formData);
+      
+      // If user applied for guide role, submit application
+      if (applyForGuide && guideApplication.motivation.trim()) {
+        try {
+          // Login first to get token
+          const loginRes = await apiClient.post('/users/login/', {
+            username: formData.username,
+            password: formData.password,
+          });
+          
+          if (loginRes.data.token) {
+            // Submit guide application with token
+            await apiClient.post('/users/guide-application/', guideApplication, {
+              headers: { Authorization: `Token ${loginRes.data.token}` }
+            });
+            showMessage('Registration successful! Your guide application has been submitted for review.', 'success');
+          }
+        } catch (appErr) {
+          console.error('Guide application error:', appErr);
+          showMessage('Registration successful, but guide application failed. You can reapply later.', 'success');
+        }
+      } else {
+        showMessage('Registration successful! Redirecting to login...', 'success');
+      }
+      
+      setTimeout(() => router.push('/login'), 2000);
     } catch (err) {
       let errorMsg = 'Registration failed. Please check the fields.';
       if (err.response?.data) {
@@ -227,6 +263,109 @@ export default function Register() {
                 autoComplete="new-password"
               />
             </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="reg-role" className={styles.label}>
+                Join As
+              </label>
+              <select
+                id="reg-role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className={styles.select}
+              >
+                <option value="explorer">Explorer (Student)</option>
+                <option value="guide">Guide (Teacher)</option>
+                <option value="both">Both Explorer & Guide</option>
+              </select>
+              <small className={styles.helpText}>
+                Choose "Guide" to teach and create content after admin approval
+              </small>
+            </div>
+
+            {(formData.role === 'guide' || formData.role === 'both') && (
+              <div className={styles.formGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={applyForGuide}
+                    onChange={(e) => setApplyForGuide(e.target.checked)}
+                    className={styles.checkbox}
+                  />
+                  <span>Apply to become an approved guide</span>
+                </label>
+                <small className={styles.helpText}>
+                  Your application will be reviewed by administrators
+                </small>
+              </div>
+            )}
+
+            {applyForGuide && (
+              <>
+                <div className={styles.formGroup}>
+                  <label htmlFor="reg-motivation" className={styles.label}>
+                    Why do you want to become a guide? *
+                  </label>
+                  <textarea
+                    id="reg-motivation"
+                    name="motivation"
+                    value={guideApplication.motivation}
+                    onChange={handleGuideAppChange}
+                    required={applyForGuide}
+                    className={styles.textarea}
+                    placeholder="Tell us about your passion for teaching..."
+                    rows="3"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="reg-experience" className={styles.label}>
+                    Teaching Experience (Optional)
+                  </label>
+                  <textarea
+                    id="reg-experience"
+                    name="experience"
+                    value={guideApplication.experience}
+                    onChange={handleGuideAppChange}
+                    className={styles.textarea}
+                    placeholder="Describe your teaching background..."
+                    rows="3"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="reg-subjects" className={styles.label}>
+                    Subjects You'll Teach *
+                  </label>
+                  <input
+                    id="reg-subjects"
+                    type="text"
+                    name="subjects_to_teach"
+                    value={guideApplication.subjects_to_teach}
+                    onChange={handleGuideAppChange}
+                    required={applyForGuide}
+                    className={styles.input}
+                    placeholder="e.g., Japanese, Mathematics, Guitar"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="reg-referred" className={styles.label}>
+                    Referred By (Username - Optional)
+                  </label>
+                  <input
+                    id="reg-referred"
+                    type="text"
+                    name="referred_by"
+                    value={guideApplication.referred_by}
+                    onChange={handleGuideAppChange}
+                    className={styles.input}
+                    placeholder="Enter username if invited by a teacher"
+                  />
+                </div>
+              </>
+            )}
 
             <div className={styles.formGroup}>
               <label htmlFor="reg-bio" className={styles.label}>
