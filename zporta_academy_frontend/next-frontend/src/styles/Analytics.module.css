@@ -56,6 +56,8 @@
   .grid2 { grid-template-columns: 1fr; }
   .recentGrid { grid-template-columns: 1fr; }
   .breakdownWrap { grid-template-columns: 1fr; }
+  .tabNav { gap: 10px; padding: 0 12px; }
+  .tabBtn { padding: 10px 16px; font-size: 14px; }
 }
 
 /* Study time gauge & stats */
@@ -376,29 +378,35 @@
 
 .tabNav {
   display: flex;
-  gap: 18px;
-  padding: 0 24px;
+  gap: 12px;
+  padding: 0 16px;
   margin-top: -16px;
   margin-bottom: 8px;
   position: relative;
   z-index: 2;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
+.tabNav::-webkit-scrollbar { height: 8px; }
+.tabNav::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 8px; }
 .tabBtn {
   background: #f3f4f6;
   border: none;
-  padding: 16px 32px;
-  border-radius: 18px 18px 0 0;
-  font-size: 17px;
+  padding: 12px 20px;
+  border-radius: 14px 14px 0 0;
+  font-size: 15px;
   font-weight: 700;
   color: #667eea;
   box-shadow: 0 2px 8px rgba(102,126,234,0.08);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   position: relative;
   top: 2px;
+  white-space: nowrap;
 }
 .tabBtn:hover {
   background: #e0e7ff;
@@ -415,7 +423,7 @@
   background: #f8fafc;
   border-bottom-left-radius: var(--r-md);
   border-bottom-right-radius: var(--r-md);
-  padding: 32px 24px 24px 24px;
+  padding: 24px 16px 16px 16px;
   min-height: 420px;
 }
 .analyticsHeader {
@@ -597,4 +605,9 @@
   color: #667eea;
   text-align: center;
   margin: 20px 0;
+}
+
+@media (max-width: 480px) {
+  .tabNav { gap: 8px; padding: 0 10px; }
+  .tabBtn { padding: 8px 14px; font-size: 13px; }
 }
