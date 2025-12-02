@@ -14,7 +14,9 @@ from google.auth.transport import requests
 from django.db import IntegrityError
 from .models import Profile
 from .guide_application_models import GuideApplicationRequest
+from .invitation_models import TeacherInvitation
 from .serializers import ProfileSerializer, GuideApplicationSerializer
+from .serializers import TeacherInvitationSerializer
 from rest_framework import status
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
@@ -339,6 +341,52 @@ class ProfileView(APIView):
 
     patch = put
 
+    def delete(self, request):
+        """Permanently delete user account and all associated data"""
+        user = request.user
+        username = user.username
+        
+        try:
+            # Delete the user (this will cascade delete the profile and related data)
+            user.delete()
+            return Response(
+                {"message": f"Account {username} has been permanently deleted."},
+                status=HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to delete account: {str(e)}"},
+                status=HTTP_400_BAD_REQUEST
+            )
+
+
+class DeactivateAccountView(APIView):
+    """Deactivate user account (can be reactivated by logging in)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        reason = request.data.get('reason', '')
+        
+        try:
+            # Deactivate the account
+            user.is_active = False
+            user.save()
+            
+            # Optional: Log the deactivation reason
+            if reason:
+                print(f"User {user.username} deactivated. Reason: {reason}")
+            
+            return Response(
+                {"message": "Account has been deactivated. You can reactivate it by logging in."},
+                status=HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to deactivate account: {str(e)}"},
+                status=HTTP_400_BAD_REQUEST
+            )
+
 # Register View
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -650,9 +698,60 @@ class GuideApplicationView(APIView):
         
         serializer = GuideApplicationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=HTTP_201_CREATED)
+            application = serializer.save(user=request.user)
+            
+            # Send email notification to admin
+            try:
+                self._send_admin_notification(application, request)
+            except Exception as e:
+                print(f"Failed to send admin notification email: {e}")
+                # Don't fail the request if email fails
+            
+            return Response({
+                "detail": "Application submitted successfully! Administrators will review it soon.",
+                "application": serializer.data
+            }, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+    
+    def _send_admin_notification(self, application, request):
+        """Send email to admin when new teacher application is submitted"""
+        admin_emails = User.objects.filter(is_staff=True, is_active=True).values_list('email', flat=True)
+        admin_emails = [email for email in admin_emails if email]  # Filter out empty emails
+        
+        if not admin_emails:
+            return
+        
+        admin_url = f"{request.scheme}://{request.get_host()}/administration-zporta-repersentiivie/users/guideapplicationrequest/{application.id}/change/"
+        
+        subject = f"🎓 New Teacher Application: {application.user.username}"
+        message = f"""
+A new teacher application has been submitted on Zporta Academy!
+
+📋 Application Details:
+- Username: {application.user.username}
+- Email: {application.user.email}
+- Subjects: {application.subjects_to_teach}
+
+✍️ Motivation:
+{application.motivation}
+
+📚 Experience:
+{application.experience if application.experience else 'Not provided'}
+
+👉 Review and approve/reject this application:
+{admin_url}
+
+---
+This is an automated notification from Zporta Academy.
+"""
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            admin_emails,
+            fail_silently=False,
+        )
 
 
 class GuideApplicationListView(generics.ListAPIView):
@@ -706,4 +805,193 @@ class GuideApplicationRejectView(APIView):
         return Response({
             "detail": "Application rejected.",
             "application": GuideApplicationSerializer(application).data
+        }, status=HTTP_200_OK)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEACHER INVITATION SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TeacherInvitationSendView(APIView):
+    """Send teacher invitation (requires permission)"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        # Check if user can send invitations
+        can_send, error_msg = TeacherInvitation.can_send_invitation(request.user)
+        if not can_send:
+            return Response({"detail": error_msg}, status=status.HTTP_403_FORBIDDEN)
+        
+        invitee_email = request.data.get('invitee_email', '').strip().lower()
+        personal_message = request.data.get('personal_message', '').strip()
+        
+        if not invitee_email:
+            return Response({"detail": "Email address is required."}, status=HTTP_400_BAD_REQUEST)
+        
+        # Check if email already has an account
+        if User.objects.filter(email=invitee_email).exists():
+            return Response({
+                "detail": "This email already has an account on Zporta Academy."
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        # Check for existing pending invitation
+        existing = TeacherInvitation.objects.filter(
+            inviter=request.user,
+            invitee_email=invitee_email,
+            status='pending'
+        ).first()
+        
+        if existing:
+            return Response({
+                "detail": "You already sent an invitation to this email."
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        # Create invitation
+        invitation = TeacherInvitation.objects.create(
+            inviter=request.user,
+            invitee_email=invitee_email,
+            personal_message=personal_message
+        )
+        
+        # Send email
+        try:
+            self._send_invitation_email(invitation, request)
+        except Exception as e:
+            print(f"Failed to send invitation email: {e}")
+            # Don't fail the request if email fails
+        
+        return Response({
+            "detail": "Invitation sent successfully!",
+            "invitation": TeacherInvitationSerializer(invitation, context={'request': request}).data,
+            "remaining_invitations": 3 - TeacherInvitation.get_monthly_invitation_count(request.user)
+        }, status=HTTP_201_CREATED)
+    
+    def _send_invitation_email(self, invitation, request):
+        """Send invitation email to invitee"""
+        invitation_url = f"{request.scheme}://{request.get_host()}/accept-invitation?token={invitation.token}"
+        
+        subject = f"{invitation.inviter.username} invited you to teach on Zporta Academy"
+        message = f"""
+Hello!
+
+{invitation.inviter.profile.display_name or invitation.inviter.username} has invited you to become a teacher on Zporta Academy.
+
+{invitation.personal_message if invitation.personal_message else 'Join our community of educators and share your knowledge with students worldwide.'}
+
+Click the link below to accept this invitation:
+{invitation_url}
+
+This invitation expires on {invitation.expires_at.strftime('%B %d, %Y')}.
+
+Welcome to Zporta Academy!
+"""
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [invitation.invitee_email],
+            fail_silently=False,
+        )
+
+
+class TeacherInvitationListView(APIView):
+    """List user's sent invitations"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        invitations = TeacherInvitation.objects.filter(inviter=request.user)
+        serializer = TeacherInvitationSerializer(invitations, many=True, context={'request': request})
+        monthly_count = TeacherInvitation.get_monthly_invitation_count(request.user)
+        
+        return Response({
+            "invitations": serializer.data,
+            "monthly_count": monthly_count,
+            "remaining_this_month": max(0, 3 - monthly_count),
+            "can_invite": request.user.profile.can_invite_teachers
+        }, status=HTTP_200_OK)
+
+
+class TeacherInvitationAcceptView(APIView):
+    """Accept teacher invitation (public - no auth required initially)"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get invitation details"""
+        token = request.query_params.get('token')
+        if not token:
+            return Response({"detail": "Token is required."}, status=HTTP_400_BAD_REQUEST)
+        
+        invitation = get_object_or_404(TeacherInvitation, token=token)
+        
+        if invitation.status != 'pending':
+            return Response({
+                "detail": f"This invitation has already been {invitation.status}.",
+                "status": invitation.status
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        if invitation.is_expired():
+            invitation.status = 'expired'
+            invitation.save()
+            return Response({
+                "detail": "This invitation has expired.",
+                "status": "expired"
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "invitation": TeacherInvitationSerializer(invitation, context={'request': request}).data,
+            "inviter_name": invitation.inviter.profile.display_name or invitation.inviter.username
+        }, status=HTTP_200_OK)
+    
+    def post(self, request):
+        """Accept invitation after registration"""
+        token = request.data.get('token')
+        if not token:
+            return Response({"detail": "Token is required."}, status=HTTP_400_BAD_REQUEST)
+        
+        invitation = get_object_or_404(TeacherInvitation, token=token)
+        
+        # User must be authenticated
+        if not request.user.is_authenticated:
+            return Response({"detail": "Please register or login first."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user email matches invitation
+        if request.user.email.lower() != invitation.invitee_email.lower():
+            return Response({
+                "detail": "This invitation was sent to a different email address."
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        # Accept invitation
+        success = invitation.accept(request.user)
+        
+        if not success:
+            return Response({
+                "detail": "This invitation has expired or is no longer valid.",
+                "status": invitation.status
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "detail": "Welcome to Zporta Academy! You are now an approved teacher.",
+            "invitation": TeacherInvitationSerializer(invitation, context={'request': request}).data
+        }, status=HTTP_200_OK)
+
+
+class TeacherInvitationCancelView(APIView):
+    """Cancel sent invitation"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, invitation_id):
+        invitation = get_object_or_404(TeacherInvitation, id=invitation_id, inviter=request.user)
+        
+        if invitation.status != 'pending':
+            return Response({
+                "detail": "Only pending invitations can be cancelled."
+            }, status=HTTP_400_BAD_REQUEST)
+        
+        invitation.status = 'cancelled'
+        invitation.save()
+        
+        return Response({
+            "detail": "Invitation cancelled.",
+            "invitation": TeacherInvitationSerializer(invitation, context={'request': request}).data
         }, status=HTTP_200_OK)

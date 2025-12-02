@@ -3,11 +3,13 @@ from django.contrib.auth.models import User
 from .models import Profile
 from .activity_models import UserActivity
 from .guide_application_models import GuideApplicationRequest
+from .invitation_models import TeacherInvitation
 
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = "Profiles"
+    fields = ('role', 'active_guide', 'can_invite_teachers', 'bio', 'profile_image')
 
 class UserAdmin(admin.ModelAdmin):
     inlines = (ProfileInline,)
@@ -73,3 +75,29 @@ class GuideApplicationRequestAdmin(admin.ModelAdmin):
             count += 1
         self.message_user(request, f"Rejected {count} guide application(s).")
     reject_applications.short_description = "Reject selected applications"
+
+
+@admin.register(TeacherInvitation)
+class TeacherInvitationAdmin(admin.ModelAdmin):
+    list_display = ['inviter', 'invitee_email', 'invitee', 'status', 'created_at', 'expires_at']
+    list_filter = ['status', 'created_at', 'expires_at']
+    search_fields = ['inviter__username', 'invitee_email', 'invitee__username']
+    readonly_fields = ['token', 'created_at', 'accepted_at', 'expires_at']
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Invitation Info', {
+            'fields': ('inviter', 'invitee_email', 'invitee', 'token')
+        }),
+        ('Message', {
+            'fields': ('personal_message',)
+        }),
+        ('Status', {
+            'fields': ('status', 'created_at', 'accepted_at', 'expires_at')
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Prevent creating invitations through admin
+        return False

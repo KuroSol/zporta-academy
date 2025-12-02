@@ -4,7 +4,9 @@ from .views import (
     PasswordResetView, PasswordResetConfirmView, ChangePasswordView,
     PublicGuideProfileView, GuideProfileListView, UserLearningScoreView, MyScoreView,
     MagicLinkRequestView, MagicLinkLoginView, UserPreferenceUpdateView,
-    GuideApplicationView, GuideApplicationListView, GuideApplicationApproveView, GuideApplicationRejectView
+    GuideApplicationView, GuideApplicationListView, GuideApplicationApproveView, GuideApplicationRejectView,
+    TeacherInvitationSendView, TeacherInvitationListView, TeacherInvitationAcceptView, TeacherInvitationCancelView,
+    DeactivateAccountView
 )  
 from .activity_views import (
     ProgressOverviewView, 
@@ -23,6 +25,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("session/heartbeat/", HeartbeatView.as_view(), name="session-heartbeat"),
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("deactivate/", DeactivateAccountView.as_view(), name="deactivate-account"),
     path('password-reset/', PasswordResetView.as_view(), name='password_reset_api'),
     path("password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
@@ -40,6 +43,12 @@ urlpatterns = [
     path('guide-applications/', GuideApplicationListView.as_view(), name='guide-applications-list'),
     path('guide-applications/<int:application_id>/approve/', GuideApplicationApproveView.as_view(), name='guide-application-approve'),
     path('guide-applications/<int:application_id>/reject/', GuideApplicationRejectView.as_view(), name='guide-application-reject'),
+    
+    # Teacher invitation routes
+    path('invitations/send/', TeacherInvitationSendView.as_view(), name='send-invitation'),
+    path('invitations/', TeacherInvitationListView.as_view(), name='my-invitations'),
+    path('invitations/accept/', TeacherInvitationAcceptView.as_view(), name='accept-invitation'),
+    path('invitations/<int:invitation_id>/cancel/', TeacherInvitationCancelView.as_view(), name='cancel-invitation'),
     
     # New activity-based progress endpoints
     path("progress/overview/", ProgressOverviewView.as_view(), name="progress-overview"),

@@ -6,6 +6,7 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from .models import Profile
 from .guide_application_models import GuideApplicationRequest
+from .invitation_models import TeacherInvitation
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
@@ -54,6 +55,21 @@ class ProfileSerializer(serializers.ModelSerializer):
     showcase_image_3_url = serializers.SerializerMethodField()
     display_name = serializers.CharField(required=False, allow_blank=True, max_length=60)
     is_staff = serializers.BooleanField(source="user.is_staff", read_only=True)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Import here to avoid circular imports
+        from tags.models import Tag
+        # Add tag fields dynamically
+        self.fields['showcase_image_1_tags'] = serializers.PrimaryKeyRelatedField(
+            many=True, queryset=Tag.objects.all(), required=False
+        )
+        self.fields['showcase_image_2_tags'] = serializers.PrimaryKeyRelatedField(
+            many=True, queryset=Tag.objects.all(), required=False
+        )
+        self.fields['showcase_image_3_tags'] = serializers.PrimaryKeyRelatedField(
+            many=True, queryset=Tag.objects.all(), required=False
+        )
 
     class Meta:
         model = Profile
@@ -63,9 +79,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_staff",
             # Teacher fields
             "teacher_tagline", "teacher_about", "teaching_specialties",
-            "showcase_image_1", "showcase_image_1_url",
-            "showcase_image_2", "showcase_image_2_url",
-            "showcase_image_3", "showcase_image_3_url",
+            "showcase_image_1", "showcase_image_1_url", "showcase_image_1_caption", "showcase_image_1_tags",
+            "showcase_image_2", "showcase_image_2_url", "showcase_image_2_caption", "showcase_image_2_tags",
+            "showcase_image_3", "showcase_image_3_url", "showcase_image_3_caption", "showcase_image_3_tags",
             "youtube_url", "linkedin_url", "twitter_url", "website_url",
             "intro_video_url"
         ]
@@ -215,6 +231,9 @@ class PublicProfileSerializer(serializers.ModelSerializer):
     showcase_image_1_url = serializers.SerializerMethodField()
     showcase_image_2_url = serializers.SerializerMethodField()
     showcase_image_3_url = serializers.SerializerMethodField()
+    showcase_image_1_tags_detail = serializers.SerializerMethodField()
+    showcase_image_2_tags_detail = serializers.SerializerMethodField()
+    showcase_image_3_tags_detail = serializers.SerializerMethodField()
     growth_score = serializers.IntegerField(read_only=True)
     impact_score = serializers.IntegerField(read_only=True)
     display_name = serializers.CharField(read_only=True)
@@ -228,9 +247,9 @@ class PublicProfileSerializer(serializers.ModelSerializer):
             "growth_score", "impact_score",
             # Teacher enhancement fields
             "teacher_tagline", "teacher_about", "teaching_specialties",
-            "showcase_image_1", "showcase_image_1_url",
-            "showcase_image_2", "showcase_image_2_url",
-            "showcase_image_3", "showcase_image_3_url",
+            "showcase_image_1", "showcase_image_1_url", "showcase_image_1_caption", "showcase_image_1_tags_detail",
+            "showcase_image_2", "showcase_image_2_url", "showcase_image_2_caption", "showcase_image_2_tags_detail",
+            "showcase_image_3", "showcase_image_3_url", "showcase_image_3_caption", "showcase_image_3_tags_detail",
             "youtube_url", "linkedin_url", "twitter_url", "website_url",
             "intro_video_url"
         ]
@@ -272,6 +291,15 @@ class PublicProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.showcase_image_3.url)
             return obj.showcase_image_3.url
         return None
+    
+    def get_showcase_image_1_tags_detail(self, obj):
+        return [{"id": tag.id, "name": tag.name} for tag in obj.showcase_image_1_tags.all()]
+    
+    def get_showcase_image_2_tags_detail(self, obj):
+        return [{"id": tag.id, "name": tag.name} for tag in obj.showcase_image_2_tags.all()]
+    
+    def get_showcase_image_3_tags_detail(self, obj):
+        return [{"id": tag.id, "name": tag.name} for tag in obj.showcase_image_3_tags.all()]
 
 class UserScoreSerializer(serializers.ModelSerializer):
     user_id  = serializers.IntegerField(source='user.id', read_only=True)
@@ -298,3 +326,33 @@ class GuideApplicationSerializer(serializers.ModelSerializer):
             'reviewed_by', 'reviewed_by_username', 'reviewed_at', 'admin_notes'
         ]
         read_only_fields = ['user', 'status', 'reviewed_by', 'reviewed_at', 'admin_notes']
+
+
+class TeacherInvitationSerializer(serializers.ModelSerializer):
+    inviter_username = serializers.CharField(source='inviter.username', read_only=True)
+    inviter_display_name = serializers.CharField(source='inviter.profile.display_name', read_only=True)
+    invitee_username = serializers.CharField(source='invitee.username', read_only=True, allow_null=True)
+    is_expired = serializers.SerializerMethodField()
+    invitation_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TeacherInvitation
+        fields = [
+            'id', 'inviter', 'inviter_username', 'inviter_display_name',
+            'invitee_email', 'invitee', 'invitee_username',
+            'token', 'personal_message', 'status',
+            'created_at', 'accepted_at', 'expires_at',
+            'is_expired', 'invitation_url'
+        ]
+        read_only_fields = ['inviter', 'invitee', 'token', 'status', 'accepted_at', 'is_expired', 'invitation_url']
+    
+    def get_is_expired(self, obj):
+        return obj.is_expired()
+    
+    def get_invitation_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            # Frontend URL for invitation acceptance
+            return f"{request.scheme}://{request.get_host()}/accept-invitation?token={obj.token}"
+        return None
+

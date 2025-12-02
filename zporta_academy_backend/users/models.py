@@ -7,6 +7,7 @@ import uuid
 # Import UserActivity model for use in this app
 from .activity_models import UserActivity
 from .guide_application_models import GuideApplicationRequest
+from .invitation_models import TeacherInvitation
 
 def profile_image_upload_to(instance, filename):
     """
@@ -38,6 +39,10 @@ class Profile(models.Model):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='explorer')
     bio = models.TextField(blank=True, null=True)
     active_guide = models.BooleanField(default=False)
+    can_invite_teachers = models.BooleanField(
+        default=False,
+        help_text="Allow this teacher to invite others (admin permission required)"
+    )
     profile_image = models.ImageField(upload_to=profile_image_upload_to, blank=True, null=True)
     
     # ── Teacher Profile Enhancement ────────────────────────────────────────────
@@ -62,8 +67,16 @@ class Profile(models.Model):
     
     # Showcase images (portfolio/teaching materials/classroom)
     showcase_image_1 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    showcase_image_1_caption = models.CharField(max_length=200, blank=True, null=True, help_text="Caption for showcase image 1")
+    showcase_image_1_tags = models.ManyToManyField('tags.Tag', blank=True, related_name='showcase_1_profiles', help_text="Tags for discoverability")
+    
     showcase_image_2 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    showcase_image_2_caption = models.CharField(max_length=200, blank=True, null=True, help_text="Caption for showcase image 2")
+    showcase_image_2_tags = models.ManyToManyField('tags.Tag', blank=True, related_name='showcase_2_profiles', help_text="Tags for discoverability")
+    
     showcase_image_3 = models.ImageField(upload_to=showcase_image_upload_to, blank=True, null=True)
+    showcase_image_3_caption = models.CharField(max_length=200, blank=True, null=True, help_text="Caption for showcase image 3")
+    showcase_image_3_tags = models.ManyToManyField('tags.Tag', blank=True, related_name='showcase_3_profiles', help_text="Tags for discoverability")
     
     # Social & external links
     youtube_url = models.URLField(blank=True, null=True, help_text="YouTube channel or intro video")

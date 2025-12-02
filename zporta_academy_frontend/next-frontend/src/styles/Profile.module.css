@@ -223,6 +223,23 @@
   box-shadow: 0 0 0 2px rgba(255,193,7,0.3);
   outline: none;
 }
+.bioTextarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+.bioTextarea:focus {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(255,193,7,0.3);
+  outline: none;
+}
 .emailEditActions {
   display: flex;
   justify-content: flex-end;

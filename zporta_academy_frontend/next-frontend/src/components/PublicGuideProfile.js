@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext, useCallback } from "react";
 import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { FaBookReader, FaAward } from "react-icons/fa";
+import { FaBookReader, FaAward, FaGlobe, FaLinkedin, FaTwitter, FaChalkboardTeacher } from "react-icons/fa";
 
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
@@ -69,6 +69,8 @@ export default function PublicGuideProfile() {
 
   const [guideRequest, setGuideRequest] = useState(null);
   const [attendLoading, setAttendLoading] = useState(false);
+  const [showBioModal, setShowBioModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const stripHTML = (html) => {
     const tempDiv = document.createElement("div");
@@ -131,7 +133,7 @@ export default function PublicGuideProfile() {
       setDisplayedQuizzesCount(SUBSEQUENT_LOAD_BATCH_SIZE.quizzes);
       setDisplayedMailIssuesCount(5);
 
-      try:
+      try {
         const profileRes = await apiClient.get(`/users/guides/${username}/`);
         const fetchedProfileData = profileRes.data.profile || profileRes.data;
         const fetchedSeoData = profileRes.data.seo || null;
@@ -525,29 +527,48 @@ export default function PublicGuideProfile() {
     return null;
   };
 
+  // Determine if user is a teacher/guide
+  const isTeacher = profile && (profile.role === 'guide' || profile.role === 'both');
+  
   return (
     <>
       <Head>
-        <title>{seoData?.title || `${profile?.display_name || profile?.username || 'Teacher'} - Zporta Academy`}</title>
-        <meta name="description" content={seoData?.description || `Learn with ${profile?.display_name || profile?.username} on Zporta Academy.`} />
+        <title>{seoData?.title || `${profile?.display_name || profile?.username} - ${profile?.teaching_specialties || (isTeacher ? 'Teacher' : 'Student')} | Zporta Academy`}</title>
+        <meta name="description" content={seoData?.description || profile?.teacher_about || profile?.bio || `${profile?.display_name || profile?.username}'s profile on Zporta Academy`} />
         {seoData?.canonical_url && <link rel="canonical" href={seoData.canonical_url} />}
         {seoData?.robots && <meta name="robots" content={seoData.robots} />}
         
-        {/* Open Graph tags */}
-        <meta property="og:title" content={seoData?.og_title || seoData?.title || `${profile?.display_name || profile?.username} - Teacher Profile`} />
-        <meta property="og:description" content={seoData?.og_description || seoData?.description || `Explore courses and lessons by ${profile?.display_name || profile?.username}`} />
+        <meta name="keywords" content={`${profile?.display_name || profile?.username}, ${isTeacher ? profile?.teaching_specialties || 'teacher' : 'student'}, online learning, education, Zporta Academy`} />
+        
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content={seoData?.og_title || seoData?.title || `${profile?.display_name || profile?.username}`} />
+        <meta property="og:description" content={seoData?.og_description || seoData?.description || profile?.teacher_about || profile?.bio} />
         <meta property="og:url" content={seoData?.canonical_url || (typeof window !== 'undefined' ? window.location.href : '')} />
-        {seoData?.og_image && <meta property="og:image" content={seoData.og_image} />}
-        {seoData?.og_type && <meta property="og:type" content={seoData.og_type} />}
+        {(seoData?.og_image || profile?.profile_image_url) && <meta property="og:image" content={seoData?.og_image || profile?.profile_image_url} />}
         <meta property="og:site_name" content="Zporta Academy" />
         
-        {/* Twitter Card tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoData?.og_title || seoData?.title || `${profile?.display_name || profile?.username}`} />
-        <meta name="twitter:description" content={seoData?.og_description || seoData?.description || ''} />
-        {seoData?.og_image && <meta name="twitter:image" content={seoData.og_image} />}
+        {!seoData?.json_ld && profile && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Person",
+                "name": profile.display_name || profile.username,
+                "url": typeof window !== 'undefined' ? window.location.href : '',
+                "image": profile.profile_image_url,
+                "description": isTeacher ? (profile.teacher_about || "") : (profile.bio || ""),
+                "jobTitle": isTeacher ? (profile.teaching_specialties || "Teacher") : "Student",
+                "worksFor": {
+                  "@type": "EducationalOrganization",
+                  "name": "Zporta Academy"
+                },
+                "sameAs": [profile.website_url, profile.linkedin_url, profile.twitter_url].filter(Boolean),
+              })
+            }}
+          />
+        )}
         
-        {/* JSON-LD Schema */}
         {seoData?.json_ld && (
           <script
             type="application/ld+json"
@@ -557,119 +578,327 @@ export default function PublicGuideProfile() {
       </Head>
       
       <div className={styles.publicProfileDashboard}>
-      <aside className={styles.publicProfileSidebar}>
-        <div className={styles.sidebarCard}>
-          <div className={styles.sidebarImageContainer}>
+        {/* Hero Banner */}
+        <div className={styles.heroBanner}>
+          <div className={styles.heroContent}>
             <img
-              src={
-                profile.profile_image_url && profile.profile_image_url.trim()
-                  ? profile.profile_image_url
-                  : "https://placehold.co/150x150/FFC107/1B2735?text=User"
-              }
-              alt={profile.username}
-              className={styles.hexagon}
+              src={profile.profile_image_url || "https://placehold.co/180x180/3b82f6/ffffff?text=User"}
+              alt={profile.display_name || profile.username}
+              className={styles.heroAvatar}
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = "https://placehold.co/150x150/FFC107/1B2735?text=User";
+                e.currentTarget.src = "https://placehold.co/180x180/3b82f6/ffffff?text=User";
               }}
             />
+            
+            <div className={styles.heroInfo}>
+              <h1>{profile.display_name || profile.username}</h1>
+              
+              <div className={styles.heroRole}>
+                {isTeacher ? <FaChalkboardTeacher /> : <FaBookReader />}
+                {isTeacher ? (profile.teaching_specialties || 'Teacher') : 'Student'}
+              </div>
+              
+              {((isTeacher && profile.teacher_about) || (!isTeacher && profile.bio)) && (
+                <div className={styles.heroBioSection}>
+                  <p className={styles.heroBio}>
+                    {(() => {
+                      const bioText = isTeacher ? profile.teacher_about : profile.bio;
+                      return bioText.length > 200 
+                        ? bioText.substring(0, 200) + '...' 
+                        : bioText;
+                    })()}
+                  </p>
+                  {(() => {
+                    const bioText = isTeacher ? profile.teacher_about : profile.bio;
+                    return bioText.length > 200 && (
+                      <button 
+                        onClick={() => setShowBioModal(true)} 
+                        className={styles.readMoreBtn}
+                      >
+                        Read Full Bio →
+                      </button>
+                    );
+                  })()}
+                </div>
+              )}
+              
+              <div className={styles.heroStats}>
+                <div className={styles.heroStat}>
+                  <span className="value">{profile.growth_score || 0}</span>
+                  <span className="label">Learning Score</span>
+                </div>
+                <div className={styles.heroStat}>
+                  <span className="value">{profile.impact_score || 0}</span>
+                  <span className="label">Impact Score</span>
+                </div>
+                <div className={styles.heroStat}>
+                  <span className="value">{attendances}</span>
+                  <span className="label">Attendees</span>
+                </div>
+              </div>
+              
+              {(profile.website_url || profile.linkedin_url || profile.twitter_url) && (
+                <div className={styles.socialLinks}>
+                  {profile.website_url && (
+                    <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                      <FaGlobe />
+                    </a>
+                  )}
+                  {profile.linkedin_url && (
+                    <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                      <FaLinkedin />
+                    </a>
+                  )}
+                  {profile.twitter_url && (
+                    <a href={profile.twitter_url} target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                      <FaTwitter />
+                    </a>
+                  )}
+                </div>
+              )}
+              
+              {currentUser && currentUser.username !== profile.username && (
+                <div className={styles.attendSection}>
+                  {attendButton}
+                </div>
+              )}
+            </div>
           </div>
-          <div className={styles.sidebarInfo}>
-            <h1 className={styles.sidebarUsername}>
-              {profile.display_name?.trim() || profile.username}
-            </h1>
-            <p className={styles.sidebarJoined}>
-              Guide since: {new Date(profile.date_joined).toLocaleDateString()}
-            </p>
-            <p className={styles.sidebarBio}>{profile.bio || "This guide hasn't shared a bio yet."}</p>
-          </div>
+        </div>
 
-          <div className={styles.scoreContainer}>
-            <div className={styles.scoreItem}>
-              <FaBookReader size={24} />
-              <div>
-                <span className={styles.scoreValue}>{profile.growth_score || 0}</span>
-                <div className={styles.scoreLabel}>Learning Score</div>
+        {/* Main Content */}
+        <div className={styles.mainContent}>
+          {/* Showcase Gallery for Teachers */}
+          {isTeacher && (profile.showcase_image_1_url || profile.showcase_image_2_url || profile.showcase_image_3_url) && (
+            <div className={styles.showcaseSection}>
+              <h2 className={styles.showcaseTitle}>
+                <span>🖼️</span> Portfolio Gallery
+              </h2>
+              <div className={styles.showcaseGrid}>
+                {profile.showcase_image_1_url && (
+                  <div className={styles.showcaseItem}>
+                    <div 
+                      className={styles.showcaseHexagon}
+                      onClick={() => setSelectedImage(profile.showcase_image_1_url)}
+                    >
+                      <div className={styles.hexagonInner}>
+                        <img src={profile.showcase_image_1_url} alt="Showcase 1" />
+                      </div>
+                    </div>
+                    {(profile.showcase_image_1_caption || profile.showcase_image_1_tags_detail?.length > 0) && (
+                      <div className={styles.showcaseMeta}>
+                        {profile.showcase_image_1_caption && (
+                          <p className={styles.showcaseCaption}>{profile.showcase_image_1_caption}</p>
+                        )}
+                        {profile.showcase_image_1_tags_detail?.length > 0 && (
+                          <div className={styles.showcaseTags}>
+                            {profile.showcase_image_1_tags_detail.map(tag => (
+                              <span key={tag.id} className={styles.showcaseTag}>
+                                #{tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {profile.showcase_image_2_url && (
+                  <div className={styles.showcaseItem}>
+                    <div 
+                      className={styles.showcaseHexagon}
+                      onClick={() => setSelectedImage(profile.showcase_image_2_url)}
+                    >
+                      <div className={styles.hexagonInner}>
+                        <img src={profile.showcase_image_2_url} alt="Showcase 2" />
+                      </div>
+                    </div>
+                    {(profile.showcase_image_2_caption || profile.showcase_image_2_tags_detail?.length > 0) && (
+                      <div className={styles.showcaseMeta}>
+                        {profile.showcase_image_2_caption && (
+                          <p className={styles.showcaseCaption}>{profile.showcase_image_2_caption}</p>
+                        )}
+                        {profile.showcase_image_2_tags_detail?.length > 0 && (
+                          <div className={styles.showcaseTags}>
+                            {profile.showcase_image_2_tags_detail.map(tag => (
+                              <span key={tag.id} className={styles.showcaseTag}>
+                                #{tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {profile.showcase_image_3_url && (
+                  <div className={styles.showcaseItem}>
+                    <div 
+                      className={styles.showcaseHexagon}
+                      onClick={() => setSelectedImage(profile.showcase_image_3_url)}
+                    >
+                      <div className={styles.hexagonInner}>
+                        <img src={profile.showcase_image_3_url} alt="Showcase 3" />
+                      </div>
+                    </div>
+                    {(profile.showcase_image_3_caption || profile.showcase_image_3_tags_detail?.length > 0) && (
+                      <div className={styles.showcaseMeta}>
+                        {profile.showcase_image_3_caption && (
+                          <p className={styles.showcaseCaption}>{profile.showcase_image_3_caption}</p>
+                        )}
+                        {profile.showcase_image_3_tags_detail?.length > 0 && (
+                          <div className={styles.showcaseTags}>
+                            {profile.showcase_image_3_tags_detail.map(tag => (
+                              <span key={tag.id} className={styles.showcaseTag}>
+                                #{tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-            <div className={styles.scoreItem}>
-              <FaAward size={24} />
-              <div>
-                <span className={styles.scoreValue}>{profile.impact_score || 0}</span>
-                <div className={styles.scoreLabel}>Impact Score</div>
-              </div>
-            </div>
-          </div>
-
-          {currentUser && currentUser.username !== profile.username && (
-            <div className={styles.attendSection}>{attendButton}</div>
           )}
+          
+          {/* Stats Grid - Clickable Cards */}
+          <div className={styles.statsGrid}>
+            <div
+              className={`${styles.statCard} ${activeTab === "courses" ? styles.active : ""}`}
+              onClick={() => setActiveTab("courses")}
+            >
+              <div className="icon">📚</div>
+              <span className="value">{courses.length}</span>
+              <span className="label">Courses</span>
+            </div>
+
+            <div
+              className={`${styles.statCard} ${activeTab === "lessons" ? styles.active : ""}`}
+              onClick={() => setActiveTab("lessons")}
+            >
+              <div className="icon">📖</div>
+              <span className="value">{lessons.length}</span>
+              <span className="label">Lessons</span>
+            </div>
+
+            <div
+              className={`${styles.statCard} ${activeTab === "quizzes" ? styles.active : ""}`}
+              onClick={() => setActiveTab("quizzes")}
+            >
+              <div className="icon">❓</div>
+              <span className="value">{quizzes.length}</span>
+              <span className="label">Quizzes</span>
+            </div>
+
+            {isTeacher && (
+              <div
+                className={`${styles.statCard} ${activeTab === "mailMagazines" ? styles.active : ""}`}
+                onClick={() => setActiveTab("mailMagazines")}
+              >
+                <div className="icon">📧</div>
+                <span className="value">{mailIssues.length}</span>
+                <span className="label">Magazines</span>
+              </div>
+            )}
+          </div>
+
+          {/* Content Section */}
+          <div className={styles.contentSection}>
+            <div className={styles.contentHeader}>
+              <h2>
+                <span className="icon">
+                  {activeTab === "courses" && "📚"}
+                  {activeTab === "lessons" && "📖"}
+                  {activeTab === "quizzes" && "❓"}
+                  {activeTab === "mailMagazines" && "📧"}
+                </span>
+                {activeTab === "courses" && `${isTeacher ? 'Created' : 'Enrolled'} Courses`}
+                {activeTab === "lessons" && `${isTeacher ? 'Created' : 'Studied'} Lessons`}
+                {activeTab === "quizzes" && `${isTeacher ? 'Created' : 'Completed'} Quizzes`}
+                {activeTab === "mailMagazines" && "Mail Magazine Issues"}
+              </h2>
+            </div>
+            
+            {renderTabContent()}
+          </div>
         </div>
-      </aside>
+      </div>
 
-      <main className={styles.publicProfileMain}>
-        <div className={styles.statsSection}>
-          <div
-            className={`${styles.stat} ${styles.statClickable} ${
-              activeTab === "courses" ? styles.statActive : ""
-            }`}
-            onClick={() => setActiveTab("courses")}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => e.key === "Enter" && setActiveTab("courses")}
-          >
-            <h3>{courses.length}</h3>
-            <p>Courses</p>
-          </div>
-
-          <div
-            className={`${styles.stat} ${styles.statClickable} ${
-              activeTab === "lessons" ? styles.statActive : ""
-            }`}
-            onClick={() => setActiveTab("lessons")}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => e.key === "Enter" && setActiveTab("lessons")}
-          >
-            <h3>{lessons.length}</h3>
-            <p>Lessons</p>
-          </div>
-
-          <div
-            className={`${styles.stat} ${styles.statClickable} ${
-              activeTab === "quizzes" ? styles.statActive : ""
-            }`}
-            onClick={() => setActiveTab("quizzes")}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => e.key === "Enter" && setActiveTab("quizzes")}
-          >
-            <h3>{quizzes.length}</h3>
-            <p>Quizzes</p>
-          </div>
-
-          <div
-            className={`${styles.stat} ${styles.statClickable} ${
-              activeTab === "mailMagazines" ? styles.statActive : ""
-            }`}
-            onClick={() => setActiveTab("mailMagazines")}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => e.key === "Enter" && setActiveTab("mailMagazines")}
-          >
-            <h3>{mailIssues.length}</h3>
-            <p>Magazines</p>
-          </div>
-
-          <div className={styles.stat}>
-            <h3>{attendances}</h3>
-            <p>Attendees</p>
+      {/* Bio Modal */}
+      {showBioModal && (
+        <div className={styles.modal} onClick={() => setShowBioModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={() => setShowBioModal(false)}>✕</button>
+            <div className={styles.modalHeader}>
+              <img
+                src={profile.profile_image_url || "https://placehold.co/100x100/3b82f6/ffffff?text=User"}
+                alt={profile.display_name || profile.username}
+                className={styles.modalAvatar}
+              />
+              <div>
+                <h2>{profile.display_name || profile.username}</h2>
+                <p className={styles.modalRole}>
+                  {isTeacher ? <FaChalkboardTeacher /> : <FaBookReader />}
+                  {isTeacher ? (profile.teaching_specialties || 'Teacher') : 'Student'}
+                </p>
+              </div>
+            </div>
+            <div className={styles.modalBody}>
+              <h3>About</h3>
+              <p>{isTeacher ? profile.teacher_about : profile.bio}</p>
+              
+              {(profile.website_url || profile.linkedin_url || profile.twitter_url) && (
+                <>
+                  <h3>Connect</h3>
+                  <div className={styles.modalSocialLinks}>
+                    {profile.website_url && (
+                      <a href={profile.website_url} target="_blank" rel="noopener noreferrer">
+                        <FaGlobe /> Website
+                      </a>
+                    )}
+                    {profile.linkedin_url && (
+                      <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                        <FaLinkedin /> LinkedIn
+                      </a>
+                    )}
+                    {profile.twitter_url && (
+                      <a href={profile.twitter_url} target="_blank" rel="noopener noreferrer">
+                        <FaTwitter /> Twitter/X
+                      </a>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              <div className={styles.modalStats}>
+                <div className={styles.modalStatItem}>
+                  <span className="value">{profile.growth_score || 0}</span>
+                  <span className="label">Learning Score</span>
+                </div>
+                <div className={styles.modalStatItem}>
+                  <span className="value">{profile.impact_score || 0}</span>
+                  <span className="label">Impact Score</span>
+                </div>
+                <div className={styles.modalStatItem}>
+                  <span className="value">{attendances}</span>
+                  <span className="label">Attendees</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className={styles.tabContent}>{renderTabContent()}</div>
-      </main>
-    </div>
+      {/* Image Lightbox */}
+      {selectedImage && (
+        <div className={styles.lightbox} onClick={() => setSelectedImage(null)}>
+          <button className={styles.lightboxClose} onClick={() => setSelectedImage(null)}>✕</button>
+          <img src={selectedImage} alt="Showcase" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </>
   );
 }
