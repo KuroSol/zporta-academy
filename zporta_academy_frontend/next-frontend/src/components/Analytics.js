@@ -64,11 +64,6 @@ const AnalyticsAndStatistics = () => {
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState("learning"); // 'learning' | 'impact'
   // Simplified main page tabs: overview / teaching / learning
   const [activeTab, setActiveTab] = useState("overview"); // 'overview' | 'teaching' | 'learning'
-  // Persistent filter bar
-  const [filterDateRange, setFilterDateRange] = useState("30d"); // '7d' | '30d' | '90d' | 'all'
-  const [filterContentType, setFilterContentType] = useState("all"); // 'all' | 'posts' | 'quizzes' | 'lessons' | 'courses'
-  const [filterSubject, setFilterSubject] = useState("all");
-  const [filterLanguage, setFilterLanguage] = useState("all");
   const [learningAnalytics, setLearningAnalytics] = useState(null);
   const [impactAnalytics, setImpactAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -379,61 +374,6 @@ const AnalyticsAndStatistics = () => {
         </button>
       </div>
 
-      {/* Persistent Filter Bar applying globally */}
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Date Range</label>
-          <select
-            className={styles.filterSelect}
-            value={filterDateRange}
-            onChange={(e) => setFilterDateRange(e.target.value)}
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
-        </div>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Content Type</label>
-          <select
-            className={styles.filterSelect}
-            value={filterContentType}
-            onChange={(e) => setFilterContentType(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="posts">Posts</option>
-            <option value="quizzes">Quizzes</option>
-            <option value="lessons">Lessons</option>
-            <option value="courses">Courses</option>
-          </select>
-        </div>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Subject</label>
-          <select
-            className={styles.filterSelect}
-            value={filterSubject}
-            onChange={(e) => setFilterSubject(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="math">Math</option>
-            <option value="science">Science</option>
-            <option value="language">Language</option>
-          </select>
-        </div>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Language</label>
-          <select
-            className={styles.filterSelect}
-            value={filterLanguage}
-            onChange={(e) => setFilterLanguage(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="en">English</option>
-            <option value="ja">Japanese</option>
-          </select>
-        </div>
-      </div>
 
       {loading && (
         <div className={styles.loadingWrap}>Loading your activity…</div>
