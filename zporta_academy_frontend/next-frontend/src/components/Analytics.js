@@ -347,14 +347,17 @@ const AnalyticsAndStatistics = () => {
         >
           📊 Overview
         </button>
-        <button
-          className={`${styles.tabBtn} ${
-            activeTab === "teaching" ? styles.tabBtnActive : ""
-          }`}
-          onClick={() => setActiveTab("teaching")}
-        >
-          <Activity size={16} /> Teaching
-        </button>
+        {/* Only show Teaching tab if user has teaching content (impact score > 0) */}
+        {impactScore && impactScore.total_score > 0 && (
+          <button
+            className={`${styles.tabBtn} ${
+              activeTab === "teaching" ? styles.tabBtnActive : ""
+            }`}
+            onClick={() => setActiveTab("teaching")}
+          >
+            <Activity size={16} /> Teaching
+          </button>
+        )}
         <button
           className={`${styles.tabBtn} ${
             activeTab === "learning" ? styles.tabBtnActive : ""
@@ -434,7 +437,8 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.panel}>
                 <h2 className={styles.sectionTitle}>Activity Summary</h2>
                 <div className={styles.cards}>
-                  {impactScore && (
+                  {/* Only show Impact Score if user has teaching content */}
+                  {impactScore && impactScore.total_score > 0 && (
                     <div
                       className={styles.card}
                       onClick={() => setShowImpactScoreModal(true)}
