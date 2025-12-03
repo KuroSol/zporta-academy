@@ -508,7 +508,7 @@ class ScoringService:
                     'course_title': act.metadata.get('course_title', 'Unknown Course'),
                     'student_id': act.metadata.get('student_id'),
                     'student_username': act.metadata.get('student_username'),
-                    'student_profile_link': f"/profile/{act.metadata.get('student_username')}" if act.metadata.get('student_username') else None,
+                    'student_profile_link': f"/guide/{act.metadata.get('student_username')}" if act.metadata.get('student_username') else None,
                     'is_premium': act.metadata.get('is_premium', False),
                     'points': act.points,
                     'enrolled_at': act.created_at.isoformat(),
@@ -541,7 +541,7 @@ class ScoringService:
                     'quiz_title': act.metadata.get('quiz_title', 'Quiz'),
                     'student_id': act.metadata.get('student_id'),
                     'student_username': act.metadata.get('student_username'),
-                    'student_profile_link': f"/profile/{act.metadata.get('student_username')}" if act.metadata.get('student_username') else None,
+                    'student_profile_link': f"/guide/{act.metadata.get('student_username')}" if act.metadata.get('student_username') else None,
                     'points': act.points,
                     'attempted_at': act.created_at.isoformat(),
                     'link': (f"/quizzes/{act.metadata.get('quiz_permalink')}" if act.metadata.get('quiz_permalink') else (
