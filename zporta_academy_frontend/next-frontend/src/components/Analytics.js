@@ -1525,7 +1525,14 @@ const AnalyticsAndStatistics = () => {
                                 <span>{e.course_title}</span>
                                 {e.link && <ExternalLink size={12} />}
                               </button>
-                              <em>{e.student_username}</em>
+                              <button
+                                onClick={() => e.student_profile_link && router.push(e.student_profile_link)}
+                                className={styles.linkBtn}
+                                disabled={!e.student_profile_link}
+                                title={`View ${e.student_username}'s profile (ID: ${e.student_id})`}
+                              >
+                                <em>{e.student_username} (ID: {e.student_id})</em>
+                              </button>
                               <b className={styles.pointsBadge}>+{e.points}</b>
                               <i>
                                 {" "}
