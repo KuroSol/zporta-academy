@@ -2309,7 +2309,22 @@ const AnalyticsAndStatistics = () => {
                                 <td>
                                   {item.is_free ? "🆓 Free" : "💎 Premium"}
                                 </td>
-                                <td>{item.student_name}</td>
+                                <td className={styles.contentCell}>
+                                  {item.student_username ? (
+                                    <button
+                                      onClick={() =>
+                                        router.push(`/guide/${item.student_username}`)
+                                      }
+                                      className={styles.contentLink}
+                                      title={`View ${item.student_username}'s profile`}
+                                    >
+                                      <span>{item.student_username} (ID: {item.student_id})</span>
+                                      <ExternalLink size={14} />
+                                    </button>
+                                  ) : (
+                                    <span>{item.student_name}</span>
+                                  )}
+                                </td>
                                 <td>
                                   {item.enrolled_at
                                     ? new Date(
@@ -2393,7 +2408,22 @@ const AnalyticsAndStatistics = () => {
                                 </td>
                                 <td>{item.subject || "—"}</td>
                                 <td>{item.question_text || "—"}</td>
-                                <td>{item.student_name}</td>
+                                <td className={styles.contentCell}>
+                                  {item.student_username ? (
+                                    <button
+                                      onClick={() =>
+                                        router.push(`/guide/${item.student_username}`)
+                                      }
+                                      className={styles.contentLink}
+                                      title={`View ${item.student_username}'s profile`}
+                                    >
+                                      <span>{item.student_username} (ID: {item.student_id})</span>
+                                      <ExternalLink size={14} />
+                                    </button>
+                                  ) : (
+                                    <span>{item.student_name}</span>
+                                  )}
+                                </td>
                                 <td>
                                   {item.answered_at
                                     ? new Date(
