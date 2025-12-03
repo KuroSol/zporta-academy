@@ -235,6 +235,8 @@ def compute_impact_score(user):
                 'course_title': course.title,
                 'course_permalink': course.permalink,
                 'subject': subject_name,
+                'student_id': enrollment.user.id,
+                'student_username': enrollment.user.username,
                 'student_name': enrollment.user.get_full_name() or enrollment.user.username,
                 'enrolled_at': enrollment.enrollment_date.isoformat() if enrollment.enrollment_date else None,
                 'is_free': is_free,
@@ -298,6 +300,8 @@ def compute_impact_score(user):
                     'question_id': question_id,
                     'question_text': question_text,
                     'subject': subject_name,
+                    'student_id': event.user.id if event.user else None,
+                    'student_username': event.user.username if event.user else 'unknown',
                     'student_name': event.user.get_full_name() if event.user else 'Unknown',
                     'answered_at': event.timestamp.isoformat() if event.timestamp else None,
                     'points': 1
