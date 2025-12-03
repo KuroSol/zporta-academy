@@ -11,7 +11,7 @@ from users.models import UserLoginEvent
 from lessons.models import LessonCompletion
 from enrollment.models import CourseCompletion
 try:
-    from gamification.models import UserScore, Activity
+    from gamification.models import UserScore, Activity, ActivityType
     GAMIFICATION_AVAILABLE = True
 except Exception:
     # Fallback to internal activity tracking when gamification app is not installed
@@ -23,6 +23,12 @@ except Exception:
             self.learning_score = 0
             self.impact_score = 0
     UserScore = _UserScorePlaceholder
+    # Placeholder ActivityType
+    class ActivityType:
+        CORRECT_ANSWER = "correct_answer"
+        LESSON_COMPLETED = "lesson_completed"
+        COURSE_COMPLETED = "course_completed"
+        COURSE_ENROLLED = "course_enrolled"
 from analytics.models import QuizAttempt
 from enrollment.models import Enrollment
 
@@ -277,19 +283,19 @@ class ScoringService:
             # Additional student metrics from gamification Activity table
             result['total_quizzes_answered'] = Activity.objects.filter(
                 user=user, 
-                activity_type='CORRECT_ANSWER'
+                activity_type=ActivityType.CORRECT_ANSWER
             ).count()
             result['total_lessons_completed'] = Activity.objects.filter(
                 user=user, 
-                activity_type='LESSON_COMPLETED'
+                activity_type=ActivityType.LESSON_COMPLETED
             ).count()
             result['total_courses_completed'] = Activity.objects.filter(
                 user=user,
-                activity_type='COURSE_COMPLETED'
+                activity_type=ActivityType.COURSE_COMPLETED
             ).count()
             result['total_courses_enrolled'] = Activity.objects.filter(
                 user=user,
-                activity_type='COURSE_ENROLLED'
+                activity_type=ActivityType.COURSE_ENROLLED
             ).count()
             result['recent_lessons'] = list(
                 LessonCompletion.objects.filter(user=user)
