@@ -463,7 +463,7 @@ const AnalyticsAndStatistics = () => {
               <section className={styles.grid2}>
                 <div className={styles.panel}>
                   <h3 className={styles.panelTitle}>
-                    Daily Points ({filterDateRange})
+                    Daily Points
                   </h3>
                   {chartSeries.length ? (
                     <ResponsiveContainer width="100%" height={240}>
