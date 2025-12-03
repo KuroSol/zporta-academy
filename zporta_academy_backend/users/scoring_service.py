@@ -243,9 +243,14 @@ class ScoringService:
         Returns all-time scores (not percentile-based).
         Uses gamification app data.
         """
-        profile = user.profile
-        is_teacher = profile.role in ['guide', 'both']
-        is_student = profile.role in ['explorer', 'both']
+        try:
+            profile = user.profile
+            is_teacher = profile.role in ['guide', 'both']
+            is_student = profile.role in ['explorer', 'both']
+        except Exception:
+            # Default to student if profile doesn't exist
+            is_teacher = False
+            is_student = True
         
         result = {}
         
@@ -258,7 +263,7 @@ class ScoringService:
         if is_student:
             # All-time points from gamification
             if user_score:
-                all_time_points_student = user_score.learning_score
+                all_time_points_student = user_score.total_points
                 result['learning_score'] = all_time_points_student
                 result['all_time_points_student'] = all_time_points_student
             else:
@@ -451,14 +456,15 @@ class ScoringService:
             ]
         
         if is_teacher:
-            # All-time points from gamification
-            if user_score:
-                all_time_points_teacher = user_score.impact_score
-                result['impact_score'] = all_time_points_teacher
-                result['all_time_points_teacher'] = all_time_points_teacher
-            else:
-                result['impact_score'] = 0
-                result['all_time_points_teacher'] = 0
+            # All-time points from gamification - teacher activities
+            # Calculate teacher points from teacher activities only
+            teacher_points = Activity.objects.filter(
+                user=user,
+                activity_type__in=ScoringService.TEACHER_ACTIVITIES
+            ).aggregate(total=Sum('points'))['total'] or 0
+            
+            result['impact_score'] = teacher_points
+            result['all_time_points_teacher'] = teacher_points
             
             result['total_points_30d_teacher'] = ScoringService.calculate_30d_points(user, 'teacher')
             result['breakdown_by_activity_type_teacher'] = ScoringService.get_breakdown_by_activity_type(user, 'teacher')
