@@ -213,6 +213,7 @@ class DynamicLessonView(APIView):
             ).prefetch_related(
                 'tags',            # Prefetch tags
                 'quizzes__created_by',  # Prefetch quizzes with their creators
+                'quizzes__subject'      # Prefetch quiz subjects for full details
             ).only(
                 # Only fetch fields we actually need
                 'id', 'title', 'content', 'video_url', 'content_type',

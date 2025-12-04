@@ -251,14 +251,18 @@ class PublicGuideProfileView(APIView):
 
     def get(self, request, username):
         try:
-            profile = Profile.objects.select_related('user').get(user__username=username)
+            profile = Profile.objects.select_related(
+                'user',
+                'user__profile'  # Optimize for accessing profile details
+            ).get(user__username=username)
         except Profile.DoesNotExist:
             raise Http404("Guide profile not found")
         
         serializer = PublicProfileSerializer(profile, context={'request': request})
         
         # Build absolute URL for canonical and OG tags
-        profile_url = request.build_absolute_uri(f"/guides/{username}/")
+        # Use /guide/{username} to match Next.js route
+        profile_url = request.build_absolute_uri(f"/guide/{username}/")
         
         # SEO metadata
         display_name = profile.display_name or profile.user.username

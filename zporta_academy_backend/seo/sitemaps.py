@@ -147,7 +147,8 @@ class TeacherSitemap(Sitemap):
         ).select_related('user').order_by('-created_at')
     
     def location(self, obj):
-        return f"/guides/{obj.user.username}/"
+        # Frontend route is /guide/{username}, not /guides/
+        return f"/guide/{obj.user.username}/"
     
     def lastmod(self, obj):
         return _lastmod(obj)

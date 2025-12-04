@@ -285,7 +285,7 @@ class DynamicCourseView(APIView):
 
     def get(self, request, permalink):
         course = get_object_or_404(
-            Course.all_objects.select_related('created_by', 'subject').prefetch_related('allowed_testers'),
+            Course.all_objects.select_related('created_by', 'created_by__profile', 'subject').prefetch_related('allowed_testers'),
             permalink=permalink
         )
         
@@ -300,7 +300,13 @@ class DynamicCourseView(APIView):
                 raise Http404("Course not found.")
                 
         # Public dynamic view should also hide drafts for non-owners
-        base_lessons = Lesson.objects.filter(course=course).select_related('created_by', 'course', 'subject')
+        # OPTIMIZATION: Prefetch related objects to avoid N+1 queries when listing lessons
+        base_lessons = Lesson.objects.filter(course=course).select_related(
+            'created_by',
+            'created_by__profile',
+            'course',
+            'subject'
+        ).prefetch_related('tags')
         is_privileged = request.user.is_authenticated and (
             request.user == course.created_by or request.user.is_staff or request.user.is_superuser
         )
