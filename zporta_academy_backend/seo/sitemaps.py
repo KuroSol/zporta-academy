@@ -104,8 +104,8 @@ class PostSitemap(Sitemap):
     cache_timeout = 0
     
     def items(self):
-        # Only published posts
-        return Post.objects.filter(is_published=True).order_by("-created_at")
+        # Return all posts (Post model doesn't have is_published field)
+        return Post.objects.all().order_by("-created_at")
 
     def location(self, obj):
         return f"/posts/{obj.permalink}/"
