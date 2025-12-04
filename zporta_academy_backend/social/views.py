@@ -1,9 +1,9 @@
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from django.db.models import Q
 from .models import GuideRequest
-from .serializers import GuideRequestSerializer
+from .serializers import GuideRequestSerializer, TeacherListSerializer, StudentListSerializer
 from notifications.models import Notification
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers
@@ -64,3 +64,57 @@ class GuideRequestViewSet(viewsets.ModelViewSet):
         guide_request.save()
         Notification.objects.filter(guide_request=guide_request).update(is_read=True)
         return Response({"detail": "Guide request declined."}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_teachers(request):
+    """Get list of teachers the current user is learning from (accepted guide requests)"""
+    guide_requests = GuideRequest.objects.filter(
+        explorer=request.user,
+        status='accepted'
+    ).select_related('guide', 'guide__profile')
+    
+    teachers = []
+    for gr in guide_requests:
+        teacher = gr.guide
+        profile = getattr(teacher, 'profile', None)
+        profile_picture_url = None
+        if profile and profile.profile_image:
+            profile_picture_url = request.build_absolute_uri(profile.profile_image.url)
+        
+        teachers.append({
+            'id': teacher.id,
+            'username': teacher.username,
+            'display_name': profile.display_name if profile and profile.display_name else teacher.username,
+            'profile_picture_url': profile_picture_url
+        })
+    
+    serializer = TeacherListSerializer(teachers, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_students(request):
+    """Get list of students learning from the current user as teacher (accepted guide requests)"""
+    guide_requests = GuideRequest.objects.filter(
+        guide=request.user,
+        status='accepted'
+    ).select_related('explorer', 'explorer__profile')
+    
+    students = []
+    for gr in guide_requests:
+        student = gr.explorer
+        profile = getattr(student, 'profile', None)
+        profile_picture_url = None
+        if profile and profile.profile_image:
+            profile_picture_url = request.build_absolute_uri(profile.profile_image.url)
+        
+        students.append({
+            'id': student.id,
+            'username': student.username,
+            'display_name': profile.display_name if profile and profile.display_name else student.username,
+            'profile_picture_url': profile_picture_url
+        })
+    
+    serializer = StudentListSerializer(students, many=True)
+    return Response(serializer.data)
