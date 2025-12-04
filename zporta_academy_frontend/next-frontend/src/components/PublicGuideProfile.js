@@ -846,17 +846,22 @@ export default function PublicGuideProfile() {
                   Currently hidden when viewing a profile where profile.role === 'explorer' (pure student).
                   Anyone can follow teachers, but no one can follow students (for now). */}
               {(() => {
-                console.log('🔍 Attend Button Debug:', {
+                console.log("🔍 Attend Button Debug:", {
                   hasCurrentUser: !!currentUser,
                   currentUsername: currentUser?.username,
                   profileUsername: profile?.username,
                   profileRole: profile?.role,
-                  shouldShow: currentUser && currentUser.username !== profile.username && profile.role !== 'explorer'
+                  shouldShow:
+                    currentUser &&
+                    currentUser.username !== profile.username &&
+                    profile.role !== "explorer",
                 });
-                return currentUser && 
-                       currentUser.username !== profile.username && 
-                       profile.role !== 'explorer' && (
-                  <div className={styles.attendSection}>{attendButton}</div>
+                return (
+                  currentUser &&
+                  currentUser.username !== profile.username &&
+                  profile.role !== "explorer" && (
+                    <div className={styles.attendSection}>{attendButton}</div>
+                  )
                 );
               })()}
             </div>
