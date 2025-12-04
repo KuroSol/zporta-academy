@@ -595,6 +595,22 @@ const QuizCard = ({
                         </Link>
                     )}
                     <h2 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
+                    {/* Quiz Attachment Information */}
+                    <div className={styles.attachmentBadges}>
+                        {quiz.lesson_title ? (
+                            <Link href={`/lessons/${quiz.lesson_permalink}`} className={styles.attachmentBadge} title={`Part of lesson: ${quiz.lesson_title}`}>
+                                📖 {quiz.lesson_title}
+                            </Link>
+                        ) : quiz.course_title ? (
+                            <span className={styles.attachmentBadge} title={`Part of course: ${quiz.course_title}`}>
+                                🎓 {quiz.course_title}
+                            </span>
+                        ) : (
+                            <span className={styles.attachmentBadge + ' ' + styles.standaloneQuiz} title="Standalone quiz">
+                                ⭐ Standalone Quiz
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className={styles.cardFooter}>
                     <div className={styles.quizStatsLine}>

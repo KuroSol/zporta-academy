@@ -25,6 +25,7 @@ import SpeechToTextInput from './SpeechToTextInput'; // Adjust the import path a
 import styles from '../styles/QuizPage.module.css';
 import FillInTheBlanksQuestion from './FillInTheBlanksQuestion';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import ReportQuizModal from './ReportQuizModal';
 import ShareQuizModal from './ShareQuizModal';
 
@@ -537,6 +538,22 @@ const QuizPage = ({ initialData, permalink: propPermalink, username: pUser, subj
             <div className={styles.quizContainer}>
                 <div className={styles.quizHeader}>
                     <h1 className={styles.quizTitle} dangerouslySetInnerHTML={{ __html: quizData.title }}></h1>
+                    {/* Quiz Attachment Information */}
+                    <div className={styles.attachmentBadges}>
+                        {quizData.lesson_title ? (
+                            <Link href={`/lessons/${quizData.lesson_permalink}`} className={styles.attachmentBadge} title={`Part of lesson: ${quizData.lesson_title}`}>
+                                📖 {quizData.lesson_title}
+                            </Link>
+                        ) : quizData.course_title ? (
+                            <span className={styles.attachmentBadge} title={`Part of course: ${quizData.course_title}`}>
+                                🎓 {quizData.course_title}
+                            </span>
+                        ) : (
+                            <span className={styles.attachmentBadge + ' ' + styles.standaloneQuiz} title="Standalone quiz">
+                                ⭐ Standalone Quiz
+                            </span>
+                        )}
+                    </div>
                     {isOwner && (
                         <div className={styles.quizActions}>
                             <button onClick={() => window.location.href = `/admin/create-quiz/${quizData.id}`} title="Edit Quiz" className={`${styles.actionButton} ${styles.editButton}`} disabled={isDeleting}><Edit3 size={16} /><span>Edit</span></button>

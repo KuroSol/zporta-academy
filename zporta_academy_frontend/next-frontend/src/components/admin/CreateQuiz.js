@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useCallback, useMemo, useRef } 
 import { useRouter } from 'next/router';
 import apiClient from '@/api';
 import { AuthContext } from '@/context/AuthContext';
+import Modal from '@/components/Modal/Modal';
 
 import styles from '@/styles/admin/CreateQuiz.module.css';
 
@@ -17,6 +18,16 @@ const CustomEditor = dynamic(
 
 const CreateSubjectSelect = dynamic(
   () => import('@/components/admin/CreateSubjectSelect').then(m => m.default ?? m.CreateSubjectSelect),
+  { ssr: false }
+);
+
+const CreateCourse = dynamic(
+  () => import('@/components/admin/CreateCourse'),
+  { ssr: false }
+);
+
+const CreateLesson = dynamic(
+  () => import('@/components/admin/CreateLesson'),
   { ssr: false }
 );
 
@@ -164,6 +175,14 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
   const [submitting, setSubmitting] = useState(false); // Loading state during submission
   const [openIndex, setOpenIndex] = useState(0); // [UI-ONLY] Controls which question accordion is open
   const questionRefs = useRef([]); // [UI-ONLY] For scrolling to questions
+  
+  // Course and Lesson selection
+  const [courses, setCourses] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedLesson, setSelectedLesson] = useState('');
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
 
   // [UI-ONLY] Scroll to the active question when it opens
   useEffect(() => {
@@ -179,6 +198,32 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       }, 100); // A small delay can help with layout shifts
     }
   }, [openIndex]);
+
+  // --- Fetch user's courses and lessons for attachment ---
+  const fetchCoursesAndLessons = useCallback(async () => {
+    try {
+      const [coursesRes, lessonsRes] = await Promise.all([
+        apiClient.get('/courses/my/'),
+        apiClient.get('/lessons/my/')
+      ]);
+      
+      if (Array.isArray(coursesRes.data)) {
+        setCourses(coursesRes.data);
+      }
+      
+      if (Array.isArray(lessonsRes.data)) {
+        setLessons(lessonsRes.data);
+      }
+    } catch (error) {
+      console.error('Error fetching courses/lessons:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchCoursesAndLessons();
+    }
+  }, [token, fetchCoursesAndLessons]);
 
   // [UI-ONLY] Basic validation to check if a question has minimum required info before switching
   const validateQuestionForSwitching = (q, index) => {
@@ -430,6 +475,14 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
       // Populate tags from the array of tag objects/strings
       setTags(Array.isArray(quiz.tags) ? quiz.tags.map(t => t.name || t).join(',') : (quiz.tags || ''));
 
+      // --- Set course and lesson if they exist ---
+      if (quiz.course) {
+        setSelectedCourse(String(quiz.course));
+      }
+      if (quiz.lesson) {
+        setSelectedLesson(String(quiz.lesson));
+      }
+
       // --- Populate Questions ---
       setQuestions((quiz.questions || []).map((q, idx) => {
         // Start with initial state and override with loaded data
@@ -624,6 +677,13 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
     formData.append('status', desiredStatus === 'published' ? 'published' : 'draft');
     if (subjectOption && subjectOption.value) {
       formData.append('subject', subjectOption.value);
+    }
+    // Append course and lesson if selected
+    if (selectedCourse) {
+      formData.append('course', selectedCourse);
+    }
+    if (selectedLesson) {
+      formData.append('lesson', selectedLesson);
     }
     // Append tags if present
     const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -1071,6 +1131,82 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
                 <label htmlFor="quizSubject" className={styles.inputLabel}>Subject: <span className={styles.required}>*</span></label>
                 <CreateSubjectSelect onChange={setSubjectOption} value={subjectOption} isDisabled={submitting} aria-labelledby="quizSubject" />
               </div>
+
+              {/* Attachment Section - Course OR Lesson */}
+              <fieldset className={styles.formSection}>
+                <legend>Attach Quiz (Optional)</legend>
+                <p className={styles.fieldHelpText}>
+                  You can attach this quiz to a course or a lesson, but not both. Leave both unselected for a standalone quiz.
+                </p>
+
+                <div className={styles.formGrid}>
+                  {/* Course Selection */}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="quizCourse">Attach to Course</label>
+                    <select
+                      id="quizCourse"
+                      value={selectedCourse || ''}
+                      onChange={e => {
+                        const value = e.target.value || null;
+                        setSelectedCourse(value);
+                        if (value) setSelectedLesson(null); // Clear lesson if course selected
+                      }}
+                      disabled={submitting || !!selectedLesson}
+                      className={styles.selectField}
+                    >
+                      <option value="">
+                        {courses.length === 0 ? 'No courses found' : 'Do not attach to course'}
+                      </option>
+                      {courses.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}{c.is_draft ? ' (draft)' : ''}{c.course_type === 'premium' ? ' • Premium' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsCourseModalOpen(true)}
+                      className={styles.btnSecondary}
+                      disabled={submitting || !!selectedLesson}
+                    >
+                      <Plus size={16} /> Create New Course
+                    </button>
+                  </div>
+
+                  {/* Lesson Selection */}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="quizLesson">Attach to Lesson</label>
+                    <select
+                      id="quizLesson"
+                      value={selectedLesson || ''}
+                      onChange={e => {
+                        const value = e.target.value || null;
+                        setSelectedLesson(value);
+                        if (value) setSelectedCourse(null); // Clear course if lesson selected
+                      }}
+                      disabled={submitting || !!selectedCourse}
+                      className={styles.selectField}
+                    >
+                      <option value="">
+                        {lessons.length === 0 ? 'No lessons found' : 'Do not attach to lesson'}
+                      </option>
+                      {lessons.map(l => (
+                        <option key={l.id} value={l.id}>
+                          {l.title}{l.is_draft ? ' (draft)' : ''}{l.premium ? ' • Premium' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsLessonModalOpen(true)}
+                      className={styles.btnSecondary}
+                      disabled={submitting || !!selectedCourse}
+                    >
+                      <Plus size={16} /> Create New Lesson
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
             </div>
           )}
 
@@ -1229,6 +1365,42 @@ const CreateQuiz = ({ onSuccess, onClose, isModalMode = false }) => {
             {isModalMode && <button type="button" onClick={onClose} className={`${styles.btn} ${styles.btnSecondary}`} disabled={submitting}>Cancel</button>}
           </div>
         </form>
+
+        {/* Course Creation Modal */}
+        {isCourseModalOpen && (
+          <Modal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)}>
+            <CreateCourse
+              isModalMode={true}
+              onSuccess={(newCourse) => {
+                setIsCourseModalOpen(false);
+                fetchCoursesAndLessons(); // Refresh courses list
+                if (newCourse?.id) {
+                  setSelectedCourse(String(newCourse.id));
+                  setSelectedLesson(null); // Clear lesson since course is selected
+                }
+              }}
+              onClose={() => setIsCourseModalOpen(false)}
+            />
+          </Modal>
+        )}
+
+        {/* Lesson Creation Modal */}
+        {isLessonModalOpen && (
+          <Modal isOpen={isLessonModalOpen} onClose={() => setIsLessonModalOpen(false)}>
+            <CreateLesson
+              isModalMode={true}
+              onSuccess={(newLesson) => {
+                setIsLessonModalOpen(false);
+                fetchCoursesAndLessons(); // Refresh lessons list
+                if (newLesson?.id) {
+                  setSelectedLesson(String(newLesson.id));
+                  setSelectedCourse(null); // Clear course since lesson is selected
+                }
+              }}
+              onClose={() => setIsLessonModalOpen(false)}
+            />
+          </Modal>
+        )}
       </div>
     </div>
   );

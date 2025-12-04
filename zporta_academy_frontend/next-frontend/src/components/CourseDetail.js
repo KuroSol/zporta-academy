@@ -1449,13 +1449,20 @@ const CourseDetail = ({ initialCourse = null, initialLessons = [], initialQuizze
                                                     <div className={styles.quizNumber}>{index + 1}</div>
                                                     <div className={styles.quizInfo}>
                                                         <h3 className={styles.quizTitle}>{quiz.title}</h3>
+                                                        {quiz.lesson_title && (
+                                                            <p className={styles.quizLessonMeta}>
+                                                                Lesson: <Link href={`/lessons/${quiz.lesson_permalink}`} className={styles.lessonLink}>{quiz.lesson_title}</Link>
+                                                            </p>
+                                                        )}
                                                         {quiz.description && (
                                                             <p className={styles.quizDescription}>
                                                                 {quiz.description.substring(0, 80)}...
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <FaCheckCircle className={styles.quizIcon} />
+                                                    <Link href={`/quizzes/${quiz.permalink}`} className={styles.quizActionBtn} title="Take this quiz">
+                                                        <FaCheckCircle className={styles.quizIcon} />
+                                                    </Link>
                                                 </div>
                                             ))}
                                         </div>

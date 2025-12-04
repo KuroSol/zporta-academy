@@ -204,12 +204,19 @@ class QuizSerializer(serializers.ModelSerializer):
         allow_null=True,
         required=False
     )
+    # Read-only course details (for showing attachment relationships)
+    course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
+    # Read-only lesson details (for showing attachment relationships)
+    lesson_id = serializers.IntegerField(source='lesson.id', read_only=True, allow_null=True)
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True, allow_null=True)
+    lesson_permalink = serializers.CharField(source='lesson.permalink', read_only=True, allow_null=True)
 
     class Meta:
         model = Quiz
         fields = [
             'id', 'title', 'content', 'lesson',
-            'subject', 'course', 'quiz_type',
+            'lesson_id', 'lesson_title', 'lesson_permalink',
+            'subject', 'course', 'course_title', 'quiz_type',
             'permalink', 'created_by', 'created_at', 'is_locked',
             'status', 'published_at',
             'tags', 'tag_names', 'questions',
@@ -223,6 +230,7 @@ class QuizSerializer(serializers.ModelSerializer):
             'is_locked', 'tags', 'attempt_count',
             'correct_count', 'wrong_count',
             'languages', 'detected_location',
+            'course_title', 'lesson_id', 'lesson_title', 'lesson_permalink',
         ]
         extra_kwargs = {
             'title':   {'required': True, 'allow_blank': False},

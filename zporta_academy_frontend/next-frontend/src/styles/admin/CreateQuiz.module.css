@@ -833,3 +833,49 @@
 .username { font-weight: 600; }
 .metaLine { color: #666; font-size: 12px; }
 .emptyState { color: #666; padding: 16px 0; text-align: center; }
+
+/* ==========================================================================
+   Attachment Section (Course/Lesson)
+   ========================================================================== */
+.formSection {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--bg-subtle);
+}
+
+.formSection legend {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 0 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.fieldHelpText {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.formGroup button.btnSecondary {
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -983,9 +983,21 @@ ${sanitizeLessonCss(customCSS || "")}
       {quizzes?.length > 0 && (
         <section className={styles.lessonQuizzes}>
           <h2>Associated Quizzes</h2>
-          {quizzes.map((q) => (
-            <QuizCard key={q.id} quiz={q} />
-          ))}
+          <div className={styles.quizzesContainer}>
+            {quizzes.map((q) => (
+              <div key={q.id} className={styles.quizListItem}>
+                <div className={styles.quizItemContent}>
+                  <h3 className={styles.quizItemTitle}>{q.title}</h3>
+                  <p className={styles.quizItemMeta}>
+                    Type: <span className={styles.quizType}>{q.quiz_type}</span>
+                  </p>
+                </div>
+                <Link href={`/quizzes/${q.permalink}`} className={styles.takeQuizBtn}>
+                  Take Quiz →
+                </Link>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 

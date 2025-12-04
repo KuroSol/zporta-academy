@@ -7,11 +7,22 @@ from .models import Course
 from lessons.models import Lesson
 from django.contrib.auth.models import User
 from tags.serializers import TagSerializer
+from quizzes.models import Quiz
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = ['id', 'title', 'content', 'created_at', 'permalink', 'is_premium', 'course', 'status', 'position']
+
+# Lightweight quiz serializer for course detail view (avoids fetching all questions)
+class LightweightQuizSerializer(serializers.ModelSerializer):
+    """Minimal quiz data for course detail - no questions loaded"""
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True, allow_null=True)
+    lesson_permalink = serializers.CharField(source='lesson.permalink', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = Quiz
+        fields = ['id', 'title', 'permalink', 'quiz_type', 'status', 'lesson_id', 'lesson_title', 'lesson_permalink']
 
 class CourseSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()
@@ -36,6 +47,9 @@ class CourseSerializer(serializers.ModelSerializer):
         queryset=User.objects.all(), many=True, required=False
     )
     
+    # Course-level quizzes (attached directly to this course)
+    quizzes = serializers.SerializerMethodField()
+    
     class Meta:
         model = Course
         fields = [
@@ -48,6 +62,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'enrolled_count', 'completed_count',
             'selling_points',
             'publish',
+            'quizzes',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'permalink', 'unique_code', 'is_draft']
     
@@ -218,3 +233,14 @@ class CourseSerializer(serializers.ModelSerializer):
         if obj.cover_image:
             return self._abs(request, obj.cover_image.url)
         return None
+
+    def get_quizzes(self, obj):
+        """Return lightweight quiz data for course detail view (course-level and lesson-level)"""
+        # Get course-level quizzes (attached directly to this course)
+        course_quizzes = obj.quizzes.all()
+        # Get lesson-level quizzes (from lessons attached to this course)
+        lesson_quizzes = Quiz.objects.filter(lesson__course=obj)
+        # Combine both (avoid duplicates if a quiz is attached at both levels)
+        all_quizzes = (course_quizzes | lesson_quizzes).distinct()
+        # Return lightweight serialized data
+        return LightweightQuizSerializer(all_quizzes, many=True).data
