@@ -193,7 +193,7 @@ STATIC_URL = 'django-static/'
 STATICFILES_DIRS = [BASE_DIR / "static"] # For local development static files
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3001",
+    "http://localhost:3000",
     "http://localhost:3000",
     "https://zportaacademy.com",      # Allow frontend origin with HTTPS
     "https://www.zportaacademy.com",  # Allow www subdomain if used

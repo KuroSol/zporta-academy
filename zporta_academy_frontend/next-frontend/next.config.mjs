@@ -76,8 +76,8 @@ const nextConfig = {
       },
     ];
   },
-  ...(process.env.NODE_ENV === 'development' && {
-    allowedDevOrigins: [process.env.DEV_HOST || 'http://localhost:3000'],
+  ...(process.env.NODE_ENV === "development" && {
+    allowedDevOrigins: [process.env.DEV_HOST || "http://localhost:3000"],
   }),
 };
 

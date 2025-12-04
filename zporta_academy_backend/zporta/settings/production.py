@@ -1,7 +1,7 @@
 # zporta/settings/production.py
 # Production configuration for Zporta Academy on Ubuntu 22.04 AWS
 # Server: 18.176.206.74 (ap-northeast-1a)
-# Stack: Django → Nginx → Let's Encrypt SSL → Next.js (port 3001)
+# Stack: Django → Nginx → Let's Encrypt SSL → Next.js (port 3000)
 
 from .base import *
 from pathlib import Path
@@ -67,7 +67,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.zportaacademy.com',
 ]
 
-# CORS for Next.js frontend (port 3001)
+# CORS for Next.js frontend (port 3000)
 CORS_ALLOWED_ORIGINS = [
     'https://zportaacademy.com',
     'https://www.zportaacademy.com',
