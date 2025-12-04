@@ -43,30 +43,28 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def send_email(self, request, pk=None):
-        """Send email to selected recipients"""
+        """Send email to selected recipients (only followers with mail magazine enabled)"""
         magazine = self.get_object()
         
-        # Get recipients
-        recipients = list(magazine.selected_recipients.all())
+        # Get followers (students with accepted guide relationships)
+        from social.models import GuideRequest
         
-        # If no specific recipients, get all enrolled students from teacher's courses
-        if not recipients:
-            from enrollment.models import Enrollment
-            from courses.models import Course
-            from django.contrib.contenttypes.models import ContentType
-            
-            # Get all courses by this teacher
-            teacher_courses = Course.objects.filter(teacher=request.user)
-            course_ct = ContentType.objects.get_for_model(Course)
-            
-            # Get all students enrolled in these courses
-            enrollments = Enrollment.objects.filter(
-                content_type=course_ct,
-                object_id__in=teacher_courses.values_list('id', flat=True),
-                enrollment_type='course'
-            ).select_related('user')
-            
-            recipients = [enrollment.user for enrollment in enrollments]
+        # Get recipients - only users who are following this teacher (accepted guide requests)
+        accepted_followers = GuideRequest.objects.filter(
+            guide=request.user,
+            status='accepted'
+        ).select_related('explorer', 'explorer__profile')
+        
+        # Get users who opted into mail magazine
+        recipients = [
+            gr.explorer for gr in accepted_followers 
+            if hasattr(gr.explorer, 'profile') and gr.explorer.profile.mail_magazine_enabled
+        ]
+        
+        # If specific recipients were selected, filter to only those who opted in
+        if magazine.selected_recipients.exists():
+            selected_ids = set(magazine.selected_recipients.values_list('id', flat=True))
+            recipients = [r for r in recipients if r.id in selected_ids]
         
         if not recipients:
             return Response(

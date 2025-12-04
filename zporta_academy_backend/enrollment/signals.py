@@ -7,6 +7,7 @@ from lessons.models    import Lesson, LessonCompletion
 from courses.models    import Course
 from .models           import Enrollment, CourseCompletion
 from users.models      import Profile
+from social.models     import GuideRequest
 
 # ── Impact Score: Creation ─────────────────────────────────────────────────────
 

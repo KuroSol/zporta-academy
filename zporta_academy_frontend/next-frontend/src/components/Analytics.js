@@ -302,13 +302,12 @@ const AnalyticsAndStatistics = () => {
 
   // Visibility: show teaching features to guides/teachers or admins, hide for pure students
   const canSeeTeaching = !!(
-    user && (
-      user.role === "guide" ||
+    user &&
+    (user.role === "guide" ||
       user.role === "both" ||
       user.is_staff ||
       user.is_superuser ||
-      user.is_admin
-    )
+      user.is_admin)
   );
 
   return (
@@ -373,7 +372,6 @@ const AnalyticsAndStatistics = () => {
           <Brain size={16} /> Learning
         </button>
       </div>
-
 
       {loading && (
         <div className={styles.loadingWrap}>Loading your activity…</div>
@@ -462,9 +460,7 @@ const AnalyticsAndStatistics = () => {
               </section>
               <section className={styles.grid2}>
                 <div className={styles.panel}>
-                  <h3 className={styles.panelTitle}>
-                    Daily Points
-                  </h3>
+                  <h3 className={styles.panelTitle}>Daily Points</h3>
                   {chartSeries.length ? (
                     <ResponsiveContainer width="100%" height={240}>
                       <LineChart data={chartSeries}>
@@ -1526,12 +1522,17 @@ const AnalyticsAndStatistics = () => {
                                 {e.link && <ExternalLink size={12} />}
                               </button>
                               <button
-                                onClick={() => e.student_profile_link && router.push(e.student_profile_link)}
+                                onClick={() =>
+                                  e.student_profile_link &&
+                                  router.push(e.student_profile_link)
+                                }
                                 className={styles.linkBtn}
                                 disabled={!e.student_profile_link}
                                 title={`View ${e.student_username}'s profile (ID: ${e.student_id})`}
                               >
-                                <em>{e.student_username} (ID: {e.student_id})</em>
+                                <em>
+                                  {e.student_username} (ID: {e.student_id})
+                                </em>
                               </button>
                               <b className={styles.pointsBadge}>+{e.points}</b>
                               <i>
@@ -2313,12 +2314,17 @@ const AnalyticsAndStatistics = () => {
                                   {item.student_username ? (
                                     <button
                                       onClick={() =>
-                                        router.push(`/guide/${item.student_username}`)
+                                        router.push(
+                                          `/guide/${item.student_username}`
+                                        )
                                       }
                                       className={styles.contentLink}
                                       title={`View ${item.student_username}'s profile`}
                                     >
-                                      <span>{item.student_username} (ID: {item.student_id})</span>
+                                      <span>
+                                        {item.student_username} (ID:{" "}
+                                        {item.student_id})
+                                      </span>
                                       <ExternalLink size={14} />
                                     </button>
                                   ) : (
@@ -2412,12 +2418,17 @@ const AnalyticsAndStatistics = () => {
                                   {item.student_username ? (
                                     <button
                                       onClick={() =>
-                                        router.push(`/guide/${item.student_username}`)
+                                        router.push(
+                                          `/guide/${item.student_username}`
+                                        )
                                       }
                                       className={styles.contentLink}
                                       title={`View ${item.student_username}'s profile`}
                                     >
-                                      <span>{item.student_username} (ID: {item.student_id})</span>
+                                      <span>
+                                        {item.student_username} (ID:{" "}
+                                        {item.student_id})
+                                      </span>
                                       <ExternalLink size={14} />
                                     </button>
                                   ) : (

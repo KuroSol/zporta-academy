@@ -4,7 +4,15 @@ import ShadowRootContainer from "@/components/common/ShadowRootContainer";
 import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { FaPlus, FaTimes, FaArrowUp, FaCheck, FaArrowLeft, FaRegClock, FaUser } from "react-icons/fa";
+import {
+  FaPlus,
+  FaTimes,
+  FaArrowUp,
+  FaCheck,
+  FaArrowLeft,
+  FaRegClock,
+  FaUser,
+} from "react-icons/fa";
 import { Pencil, Trash2, Download, Music } from "lucide-react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
@@ -21,16 +29,25 @@ function initializeAccordions(containerElement) {
   accordions.forEach((accordion) => {
     const header = accordion.querySelector(".accordion-header");
     const contents = accordion.querySelectorAll(".accordion-content");
-    const defaultState = accordion.getAttribute("data-default-state") || "closed";
-    if (!header || contents.length === 0 || accordion.dataset.accordionInitialized === "true") return;
+    const defaultState =
+      accordion.getAttribute("data-default-state") || "closed";
+    if (
+      !header ||
+      contents.length === 0 ||
+      accordion.dataset.accordionInitialized === "true"
+    )
+      return;
     accordion.dataset.accordionInitialized = "true";
     if (defaultState === "open") accordion.classList.add("is-open");
     else accordion.classList.remove("is-open");
     const clickHandler = () => accordion.classList.toggle("is-open");
-    if (header.__accordionClickHandler__) header.removeEventListener("click", header.__accordionClickHandler__);
+    if (header.__accordionClickHandler__)
+      header.removeEventListener("click", header.__accordionClickHandler__);
     header.addEventListener("click", clickHandler);
     header.__accordionClickHandler__ = clickHandler;
-    contents.forEach((content) => requestAnimationFrame(() => initializeAccordions(content)));
+    contents.forEach((content) =>
+      requestAnimationFrame(() => initializeAccordions(content))
+    );
   });
 }
 const sanitizeContentViewerHTML = (htmlString) => {
@@ -39,7 +56,9 @@ const sanitizeContentViewerHTML = (htmlString) => {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
-    doc.querySelectorAll('[contenteditable="true"]').forEach((el) => el.removeAttribute("contenteditable"));
+    doc
+      .querySelectorAll('[contenteditable="true"]')
+      .forEach((el) => el.removeAttribute("contenteditable"));
     return doc.body.innerHTML;
   } catch {
     return htmlString;
@@ -57,7 +76,12 @@ const getLessonHTML = (l) => l?.content ?? "";
 /* ---- component ---- */
 const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const router = useRouter();
-  const { username: paramUsername, subject, date, lessonSlug } = router.query || {};
+  const {
+    username: paramUsername,
+    subject,
+    date,
+    lessonSlug,
+  } = router.query || {};
   const permalink = useMemo(() => {
     if (!paramUsername || !subject || !date || !lessonSlug) return null;
     return `${paramUsername}/${subject}/${date}/${lessonSlug}`;
@@ -65,8 +89,12 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   const { user, token, logout } = useContext(AuthContext);
 
   const [lessonData, setLessonData] = useState(initialData);
-  const [isEnrolled, setIsEnrolled] = useState(initialData?.is_enrolled || false);
-  const [isCompleted, setIsCompleted] = useState(initialData?.is_completed || false);
+  const [isEnrolled, setIsEnrolled] = useState(
+    initialData?.is_enrolled || false
+  );
+  const [isCompleted, setIsCompleted] = useState(
+    initialData?.is_completed || false
+  );
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -82,7 +110,10 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
 
   const lessonContentDisplayRef = useRef(null);
 
-  const lessonHTML = useMemo(() => getLessonHTML(lessonData?.lesson), [lessonData?.lesson]);
+  const lessonHTML = useMemo(
+    () => getLessonHTML(lessonData?.lesson),
+    [lessonData?.lesson]
+  );
 
   const stripHTML = (html) => {
     if (!html) return "";
@@ -95,12 +126,19 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     let isMounted = true;
     const initialize = async () => {
       // If we rendered with initial data for this permalink, skip client fetch
-  // BUT: always re-fetch if user is authenticated to check enrollment status
-  const shouldSkipFetch = initialData && initialPermalink && initialPermalink === permalink && !token;
-  if (shouldSkipFetch) {
+      // BUT: always re-fetch if user is authenticated to check enrollment status
+      const shouldSkipFetch =
+        initialData &&
+        initialPermalink &&
+        initialPermalink === permalink &&
+        !token;
+      if (shouldSkipFetch) {
         // But still need to process gated status and enrollment flags
         if (initialData?.access === "gated" && !initialData.lesson) {
-          setGateInfo({ message: initialData.message, course: initialData.course });
+          setGateInfo({
+            message: initialData.message,
+            course: initialData.course,
+          });
           setLessonData({ lesson: null, seo: initialData.seo || null });
         } else if (initialData.lesson) {
           setLessonData(initialData);
@@ -129,7 +167,10 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         const lessonRes = await apiClient.get(`/lessons/${permalink}/`);
         if (!isMounted) return;
         if (lessonRes?.data?.access === "gated" && !lessonRes.data.lesson) {
-          setGateInfo({ message: lessonRes.data.message, course: lessonRes.data.course });
+          setGateInfo({
+            message: lessonRes.data.message,
+            course: lessonRes.data.course,
+          });
           setLessonData({ lesson: null, seo: lessonRes.data.seo || null });
         } else if (lessonRes.data.lesson) {
           setLessonData(lessonRes.data);
@@ -141,13 +182,18 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
           throw new Error("Lesson data not found in response.");
         }
         // Prefer server-computed flags to avoid an extra network trip
-        if (lessonRes.data && typeof lessonRes.data.is_enrolled !== "undefined") {
+        if (
+          lessonRes.data &&
+          typeof lessonRes.data.is_enrolled !== "undefined"
+        ) {
           setIsEnrolled(!!lessonRes.data.is_enrolled);
           setIsCompleted(!!lessonRes.data.is_completed);
         } else if (token && lessonRes.data.lesson) {
           // Fallback only if API didn't include the flags (backward compatibility)
           try {
-            const statusRes = await apiClient.get(`/lessons/${permalink}/enrollment-status/`);
+            const statusRes = await apiClient.get(
+              `/lessons/${permalink}/enrollment-status/`
+            );
             if (!isMounted) return;
             setIsEnrolled(!!statusRes.data.is_enrolled);
             setIsCompleted(!!statusRes.data.is_completed);
@@ -165,7 +211,8 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
           else if (err.response?.status === 401) {
             // Do not redirect; open login modal for UX
             setLoginOpen(true);
-          } else if (err.response?.status === 403) setError(err.response?.data?.detail || "Access forbidden.");
+          } else if (err.response?.status === 403)
+            setError(err.response?.data?.detail || "Access forbidden.");
           else setError("An error occurred loading lesson data.");
         }
       } finally {
@@ -198,7 +245,10 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         const headers = container.querySelectorAll(".accordion-header");
         headers.forEach((header) => {
           if (header.__accordionClickHandler__) {
-            header.removeEventListener("click", header.__accordionClickHandler__);
+            header.removeEventListener(
+              "click",
+              header.__accordionClickHandler__
+            );
             delete header.__accordionClickHandler__;
           }
         });
@@ -231,7 +281,9 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const css = lessonData?.lesson?.custom_css || "";
-    const fontMatch = css.match(/@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i);
+    const fontMatch = css.match(
+      /@import\s+url\(['"]?([^'")]*googleapis[^'")]+)['"]?\);?/i
+    );
     const fontHref = fontMatch?.[1];
     if (!fontHref) return;
     const hostEl = document.querySelector(`.${styles.lessonShadowRoot}`);
@@ -252,12 +304,16 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
 
   /* actions */
   const handleCompleteLesson = async () => {
-    if (!lessonData?.lesson?.id || !permalink || isCompleted || isSubmitting) return;
+    if (!lessonData?.lesson?.id || !permalink || isCompleted || isSubmitting)
+      return;
     setError("");
     setSuccessMessage("");
     setIsSubmitting(true);
     try {
-      const response = await apiClient.post(`/lessons/${permalink}/complete/`, {});
+      const response = await apiClient.post(
+        `/lessons/${permalink}/complete/`,
+        {}
+      );
       setSuccessMessage(response.data.message || "Lesson marked complete!");
       setIsCompleted(true);
     } catch (err) {
@@ -301,34 +357,40 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     if (!lessonData?.lesson?.id || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
-    setDownloadingType('pdf');
+    setDownloadingType("pdf");
     try {
       // Call the backend PDF export endpoint
-      const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-pdf/`, {
-        responseType: 'blob', // Important: receive as binary blob
-      });
-      
+      const response = await apiClient.get(
+        `/lessons/${lessonData.lesson.id}/export-pdf/`,
+        {
+          responseType: "blob", // Important: receive as binary blob
+        }
+      );
+
       // Create a blob from the PDF data
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      
+      const blob = new Blob([response.data], { type: "application/pdf" });
+
       // Create a temporary URL for the blob
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary anchor element and trigger download
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `lesson-${lessonData.lesson.id}.pdf`;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       setSuccessMessage("PDF downloaded successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to download PDF. Please try again.");
+      setError(
+        err.response?.data?.detail ||
+          "Failed to download PDF. Please try again."
+      );
       if (err.response?.status === 401) {
         logout();
       }
@@ -342,30 +404,33 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     if (!lessonData?.lesson?.id || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
-    setDownloadingType('audio');
+    setDownloadingType("audio");
     try {
-      const response = await apiClient.get(`/lessons/${lessonData.lesson.id}/export-audio/`, {
-        responseType: 'blob',
-      });
-      
-      const blob = new Blob([response.data], { type: 'application/zip' });
+      const response = await apiClient.get(
+        `/lessons/${lessonData.lesson.id}/export-audio/`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `lesson-${lessonData.lesson.id}-audio.zip`;
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       setSuccessMessage("Audio downloaded successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
       if (err.response?.status === 404) {
-          setError("No audio files found for this lesson.");
+        setError("No audio files found for this lesson.");
       } else {
-          setError(err.response?.data?.detail || "Failed to download audio.");
+        setError(err.response?.data?.detail || "Failed to download audio.");
       }
       if (err.response?.status === 401) {
         logout();
@@ -381,10 +446,23 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
     let videoId = null;
     try {
       const parsedUrl = new URL(url);
-      if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.searchParams.has("v")) videoId = parsedUrl.searchParams.get("v");
-      else if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.pathname.startsWith("/embed/")) videoId = parsedUrl.pathname.substring("/embed/".length);
-      else if (parsedUrl.hostname === "youtu.be") videoId = parsedUrl.pathname.slice(1);
-      else if (parsedUrl.hostname.includes("youtube.com") && parsedUrl.pathname.startsWith("/shorts/")) videoId = parsedUrl.pathname.split("/shorts/")[1];
+      if (
+        parsedUrl.hostname.includes("youtube.com") &&
+        parsedUrl.searchParams.has("v")
+      )
+        videoId = parsedUrl.searchParams.get("v");
+      else if (
+        parsedUrl.hostname.includes("youtube.com") &&
+        parsedUrl.pathname.startsWith("/embed/")
+      )
+        videoId = parsedUrl.pathname.substring("/embed/".length);
+      else if (parsedUrl.hostname === "youtu.be")
+        videoId = parsedUrl.pathname.slice(1);
+      else if (
+        parsedUrl.hostname.includes("youtube.com") &&
+        parsedUrl.pathname.startsWith("/shorts/")
+      )
+        videoId = parsedUrl.pathname.split("/shorts/")[1];
       if (videoId) {
         videoId = videoId.split("&")[0].split("?")[0];
         return `https://www.youtube.com/embed/${videoId}`;
@@ -394,63 +472,132 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   };
 
   /* render guards */
-  if (loading) return <div style={{ padding: "20px", textAlign: "center" }}>Loading lesson details...</div>;
-  if (error && !lessonData && !gateInfo) return <p className={`${styles.message} ${styles.error}`} style={{ padding: "20px", textAlign: "center" }}>{error}</p>;
+  if (loading)
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        Loading lesson details...
+      </div>
+    );
+  if (error && !lessonData && !gateInfo)
+    return (
+      <p
+        className={`${styles.message} ${styles.error}`}
+        style={{ padding: "20px", textAlign: "center" }}
+      >
+        {error}
+      </p>
+    );
 
   // Handle gated premium lessons - show SEO-friendly preview with lock overlay
   if (gateInfo && !lessonData?.lesson) {
     const seo = lessonData?.seo || {};
     const course = gateInfo.course || {};
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com';
-    const pageUrl = typeof window !== 'undefined' ? window.location.href : (seo.canonical_url || '');
-    
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com";
+    const pageUrl =
+      typeof window !== "undefined"
+        ? window.location.href
+        : seo.canonical_url || "";
+
     return (
       <div className={styles.lessonDetailContainer}>
         <Head>
           <title>{seo.title || course.title || "Premium Lesson"}</title>
-          <meta name="description" content={seo.description || `Premium lesson from ${course.title || "Zporta Academy"}`} />
-          <link rel="canonical" href={seo.canonical_url || (typeof window !== 'undefined' ? window.location.href : '')} />
+          <meta
+            name="description"
+            content={
+              seo.description ||
+              `Premium lesson from ${course.title || "Zporta Academy"}`
+            }
+          />
+          <link
+            rel="canonical"
+            href={
+              seo.canonical_url ||
+              (typeof window !== "undefined" ? window.location.href : "")
+            }
+          />
           <meta property="og:type" content="article" />
-          <meta property="og:title" content={seo.og_title || seo.title || "Premium Lesson"} />
-          <meta property="og:description" content={seo.og_description || seo.description || ""} />
+          <meta
+            property="og:title"
+            content={seo.og_title || seo.title || "Premium Lesson"}
+          />
+          <meta
+            property="og:description"
+            content={seo.og_description || seo.description || ""}
+          />
           {seo.og_image && <meta property="og:image" content={seo.og_image} />}
           <meta name="twitter:card" content="summary_large_image" />
           {/* Note: Premium lessons should still allow indexing of preview/metadata */}
           <meta name="robots" content="index,follow" />
-          {seo.focus_keyword ? <meta name="keywords" content={seo.focus_keyword} /> : null}
+          {seo.focus_keyword ? (
+            <meta name="keywords" content={seo.focus_keyword} />
+          ) : null}
           {pageUrl ? <meta property="og:url" content={pageUrl} /> : null}
           {/* JSON-LD Breadcrumb (minimal for gated) */}
-          <script type="application/ld+json" dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context':'https://schema.org',
-              '@type':'BreadcrumbList',
-              itemListElement:[
-                { '@type':'ListItem', position:1, name:'Home', item: siteUrl },
-                { '@type':'ListItem', position:2, name:'Courses', item: `${siteUrl}/courses/` },
-                course?.title ? { '@type':'ListItem', position:3, name: course.title, item: `${siteUrl}/courses/${course.permalink}` } : undefined,
-                pageUrl ? { '@type':'ListItem', position:4, name: seo.title || 'Premium Lesson', item: pageUrl } : undefined
-              ].filter(Boolean)
-            })
-          }} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                itemListElement: [
+                  {
+                    "@type": "ListItem",
+                    position: 1,
+                    name: "Home",
+                    item: siteUrl,
+                  },
+                  {
+                    "@type": "ListItem",
+                    position: 2,
+                    name: "Courses",
+                    item: `${siteUrl}/courses/`,
+                  },
+                  course?.title
+                    ? {
+                        "@type": "ListItem",
+                        position: 3,
+                        name: course.title,
+                        item: `${siteUrl}/courses/${course.permalink}`,
+                      }
+                    : undefined,
+                  pageUrl
+                    ? {
+                        "@type": "ListItem",
+                        position: 4,
+                        name: seo.title || "Premium Lesson",
+                        item: pageUrl,
+                      }
+                    : undefined,
+                ].filter(Boolean),
+              }),
+            }}
+          />
         </Head>
-        
+
         <h1 className={styles.lessonTitle}>
           {seo.title || course.title || "Premium Lesson"}
         </h1>
-        
+
         {course?.title && (
           <div className={styles.courseInfo}>
             <p>
               Part of course:{" "}
-              <Link href={`/courses/${course.permalink}`} className={styles.courseLink}>
+              <Link
+                href={`/courses/${course.permalink}`}
+                className={styles.courseLink}
+              >
                 {course.title}
               </Link>
             </p>
           </div>
         )}
-        
-        {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
-        
+
+        {error && (
+          <p className={`${styles.message} ${styles.error}`}>{error}</p>
+        )}
+
         {/* SEO-friendly description/preview (if available from backend) */}
         {seo.description && (
           <div className={styles.lessonPreview}>
@@ -458,11 +605,14 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
             <p>{seo.description}</p>
           </div>
         )}
-        
+
         <PremiumLockOverlay
           isVisible={true}
           course={course}
-          message={gateInfo.message || "This is a premium lesson. Enroll in the course to access full content."}
+          message={
+            gateInfo.message ||
+            "This is a premium lesson. Enroll in the course to access full content."
+          }
           isAuthenticated={!!token}
           redirectPath={`/lessons/${permalink}`}
         />
@@ -471,69 +621,143 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
   }
 
   if (!lessonData?.lesson) {
-    if (error) return <p className={`${styles.message} ${styles.error}`} style={{ padding: "20px", textAlign: "center" }}>{error}</p>;
-    return <p style={{ padding: "20px", textAlign: "center" }}>Lesson not found.</p>;
+    if (error)
+      return (
+        <p
+          className={`${styles.message} ${styles.error}`}
+          style={{ padding: "20px", textAlign: "center" }}
+        >
+          {error}
+        </p>
+      );
+    return (
+      <p style={{ padding: "20px", textAlign: "center" }}>Lesson not found.</p>
+    );
   }
 
   const { lesson, seo } = lessonData;
   const accent = lesson.accent_color || "#222E3B";
-  const isOwner = user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
+  const isOwner =
+    user && lesson?.created_by?.toLowerCase() === user.username?.toLowerCase();
   const isLocked = lesson.is_locked;
   const isAttachedToCourse = !!lesson.course_data?.permalink;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com';
-  const pageUrl = typeof window !== 'undefined' ? window.location.href : (seo?.canonical_url || '');
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com";
+  const pageUrl =
+    typeof window !== "undefined"
+      ? window.location.href
+      : seo?.canonical_url || "";
 
   return (
     <div className={styles.lessonDetailContainer}>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <Head>
         <title>{seo?.title || lesson.title || "Lesson Details"}</title>
-        <meta name="description" content={seo?.description || stripHTML(lesson.content).substring(0, 160)} />
+        <meta
+          name="description"
+          content={
+            seo?.description || stripHTML(lesson.content).substring(0, 160)
+          }
+        />
         <meta
           name="robots"
-          content={lesson.status === "draft" ? "noindex,follow" : seo?.robots || "index,follow"}
+          content={
+            lesson.status === "draft"
+              ? "noindex,follow"
+              : seo?.robots || "index,follow"
+          }
         />
-        {lesson.focus_keyword ? <meta name="keywords" content={lesson.focus_keyword} /> : null}
+        {lesson.focus_keyword ? (
+          <meta name="keywords" content={lesson.focus_keyword} />
+        ) : null}
         {pageUrl ? <meta property="og:url" content={pageUrl} /> : null}
         <style>{`.${styles.lessonDetailContainer}{--accent-color:${accent};}`}</style>
         {(() => {
-          const base = typeof window !== "undefined" ? window.location.origin : "";
+          const base =
+            typeof window !== "undefined" ? window.location.origin : "";
           let canonical = lesson.canonical_url || "";
-          if (!canonical && base && permalink) canonical = `${base}/lessons/${permalink}`;
+          if (!canonical && base && permalink)
+            canonical = `${base}/lessons/${permalink}`;
           return canonical ? <link rel="canonical" href={canonical} /> : null;
         })()}
-        <meta property="og:title" content={lesson.og_title || seo?.title || lesson.title} />
-        <meta property="og:description" content={lesson.og_description || seo?.description || stripHTML(lesson.content).substring(0, 160)} />
-        {lesson.og_image && <meta property="og:image" content={lesson.og_image} />}
+        <meta
+          property="og:title"
+          content={lesson.og_title || seo?.title || lesson.title}
+        />
+        <meta
+          property="og:description"
+          content={
+            lesson.og_description ||
+            seo?.description ||
+            stripHTML(lesson.content).substring(0, 160)
+          }
+        />
+        {lesson.og_image && (
+          <meta property="og:image" content={lesson.og_image} />
+        )}
         {/* JSON-LD: Lesson + Breadcrumb */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context':'https://schema.org',
-            '@type':'LearningResource',
-            name: lesson.title,
-            description: seo?.description || stripHTML(lesson.content).substring(0,160),
-            url: pageUrl || undefined,
-            creator: { '@type':'Person', name: lesson.created_by || 'Instructor' },
-            inLanguage: 'en',
-            isAccessibleForFree: !lesson.is_premium,
-            educationalLevel: lesson.course_data ? lesson.course_data.subject_name : undefined
-          })
-        }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context':'https://schema.org',
-            '@type':'BreadcrumbList',
-            itemListElement:[
-              { '@type':'ListItem', position:1, name:'Home', item: siteUrl },
-              { '@type':'ListItem', position:2, name:'Lessons', item: `${siteUrl}/lessons/` },
-              pageUrl ? { '@type':'ListItem', position:3, name: lesson.title, item: pageUrl } : undefined
-            ].filter(Boolean)
-          })
-        }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LearningResource",
+              name: lesson.title,
+              description:
+                seo?.description || stripHTML(lesson.content).substring(0, 160),
+              url: pageUrl || undefined,
+              creator: {
+                "@type": "Person",
+                name: lesson.created_by || "Instructor",
+              },
+              inLanguage: "en",
+              isAccessibleForFree: !lesson.is_premium,
+              educationalLevel: lesson.course_data
+                ? lesson.course_data.subject_name
+                : undefined,
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: siteUrl,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Lessons",
+                  item: `${siteUrl}/lessons/`,
+                },
+                pageUrl
+                  ? {
+                      "@type": "ListItem",
+                      position: 3,
+                      name: lesson.title,
+                      item: pageUrl,
+                    }
+                  : undefined,
+              ].filter(Boolean),
+            }),
+          }}
+        />
       </Head>
 
       <h1 className={styles.lessonTitle}>
-        {lesson.title} {isLocked && isOwner && <span className={styles.lockedIndicator} title="Locked">🔒</span>}
+        {lesson.title}{" "}
+        {isLocked && isOwner && (
+          <span className={styles.lockedIndicator} title="Locked">
+            🔒
+          </span>
+        )}
       </h1>
 
       {/* Course info */}
@@ -541,7 +765,10 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         <div className={styles.courseInfo}>
           <p>
             Part of course:{" "}
-            <Link href={`/courses/${lesson.course_data.permalink}`} className={styles.courseLink}>
+            <Link
+              href={`/courses/${lesson.course_data.permalink}`}
+              className={styles.courseLink}
+            >
               {lesson.course_data.title}
             </Link>
           </p>
@@ -550,17 +777,33 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
         <div className={styles.lessonStatusInfo}>
           <p>
             Standalone Lesson{" "}
-            {lesson.is_premium ? <span className={styles.badgePremium}>Premium</span> : <span className={styles.badgeFree}>Free</span>}
+            {lesson.is_premium ? (
+              <span className={styles.badgePremium}>Premium</span>
+            ) : (
+              <span className={styles.badgeFree}>Free</span>
+            )}
           </p>
           {lesson.is_premium && !isEnrolled && (
-            <p className={styles.enrollPrompt}>{token ? "Enrollment required." : <Link href={`/login?redirect=/lessons/${permalink}`}>Log in</Link>}</p>
+            <p className={styles.enrollPrompt}>
+              {token ? (
+                "Enrollment required."
+              ) : (
+                <Link href={`/login?redirect=/lessons/${permalink}`}>
+                  Log in
+                </Link>
+              )}
+            </p>
           )}
         </div>
       )}
 
       {/* messages */}
       {error && <p className={`${styles.message} ${styles.error}`}>{error}</p>}
-      {successMessage && <p className={`${styles.message} ${styles.success}`}>{successMessage}</p>}
+      {successMessage && (
+        <p className={`${styles.message} ${styles.success}`}>
+          {successMessage}
+        </p>
+      )}
 
       {/* owner actions: Edit & Download - moved to top */}
       {isOwner && (
@@ -580,45 +823,48 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
       )}
 
       {/* Download section - moved to top for visibility */}
-      {user && (isEnrolled || !lesson.is_premium || lesson.created_by === user.username) && (
-        <div className={styles.downloadSectionTop}>
-          <h3 className={styles.downloadTitle}>Download this lesson</h3>
-          <div className={styles.downloadButtons}>
-            <button
-              onClick={handleDownloadPDF}
-              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
-              title="Download as PDF"
-              disabled={isSubmitting}
-            >
-              {downloadingType === 'pdf' ? (
-                <>
-                  <span className={styles.spinner}></span> Preparing PDF...
-                </>
-              ) : (
-                <>
-                  <Download size={16} /> PDF
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleDownloadAudio}
-              className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
-              title="Download Audio (ZIP)"
-              disabled={isSubmitting}
-            >
-              {downloadingType === 'audio' ? (
-                <>
-                  <span className={styles.spinner}></span> Preparing Audio...
-                </>
-              ) : (
-                <>
-                  <Music size={16} /> Audio
-                </>
-              )}
-            </button>
+      {user &&
+        (isEnrolled ||
+          !lesson.is_premium ||
+          lesson.created_by === user.username) && (
+          <div className={styles.downloadSectionTop}>
+            <h3 className={styles.downloadTitle}>Download this lesson</h3>
+            <div className={styles.downloadButtons}>
+              <button
+                onClick={handleDownloadPDF}
+                className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+                title="Download as PDF"
+                disabled={isSubmitting}
+              >
+                {downloadingType === "pdf" ? (
+                  <>
+                    <span className={styles.spinner}></span> Preparing PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} /> PDF
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleDownloadAudio}
+                className={`${styles.btn} ${styles.btnSecondary} ${styles.downloadBtn}`}
+                title="Download Audio (ZIP)"
+                disabled={isSubmitting}
+              >
+                {downloadingType === "audio" ? (
+                  <>
+                    <span className={styles.spinner}></span> Preparing Audio...
+                  </>
+                ) : (
+                  <>
+                    <Music size={16} /> Audio
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* video */}
       {lesson.video_url &&
@@ -638,7 +884,11 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
             <div className={styles.lessonVideoLink}>
               <p>
                 Video:{" "}
-                <a href={lesson.video_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={lesson.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {lesson.video_url}
                 </a>
               </p>
@@ -646,9 +896,14 @@ const LessonDetail = ({ initialData = null, initialPermalink = null }) => {
           );
         })()}
 
-  {/* content in shadow DOM */}
-<ShadowRootContainer as="div" className={styles.lessonShadowRoot} data-lesson-root="true" style={{ "--accent-color": accent }}>
-  <style>{`:host { --accent-color: ${accent}; }
+      {/* content in shadow DOM */}
+      <ShadowRootContainer
+        as="div"
+        className={styles.lessonShadowRoot}
+        data-lesson-root="true"
+        style={{ "--accent-color": accent }}
+      >
+        <style>{`:host { --accent-color: ${accent}; }
 ${sanitizeLessonCss(customCSS || "")}
 
 /* grid/columns */
@@ -714,14 +969,15 @@ ${sanitizeLessonCss(customCSS || "")}
 .lesson-content .gated-content.gc-compact .gc-link:hover{background:#0A2342;color:#fff}
 `}</style>
 
-  <div
-    key={`html-${lesson.id}-${lesson.content?.length}`}
-    ref={lessonContentDisplayRef}
-    className="lesson-content"
-    dangerouslySetInnerHTML={{ __html: sanitizeContentViewerHTML(lesson.content || "") }}
-  />
-</ShadowRootContainer>
-
+        <div
+          key={`html-${lesson.id}-${lesson.content?.length}`}
+          ref={lessonContentDisplayRef}
+          className="lesson-content"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeContentViewerHTML(lesson.content || ""),
+          }}
+        />
+      </ShadowRootContainer>
 
       {/* quizzes display */}
       {quizzes?.length > 0 && (
@@ -737,18 +993,26 @@ ${sanitizeLessonCss(customCSS || "")}
       <div className={styles.metaContainer}>
         <p className={styles.postMeta}>
           <span className={styles.metaItem}>
-            <FaUser className={styles.metaIcon} /> {lesson.created_by || "Unknown"}
+            <FaUser className={styles.metaIcon} />{" "}
+            {lesson.created_by || "Unknown"}
           </span>
           <span className={styles.metaSeparator}>|</span>
           <span className={styles.metaItem}>
-            <FaRegClock className={styles.metaIcon} /> {lesson.created_at ? new Date(lesson.created_at).toLocaleDateString() : "Unknown"}
+            <FaRegClock className={styles.metaIcon} />{" "}
+            {lesson.created_at
+              ? new Date(lesson.created_at).toLocaleDateString()
+              : "Unknown"}
           </span>
         </p>
         {lesson.tags?.length > 0 && (
           <div className={styles.lessonTags}>
             <strong>Tags:</strong>
             {lesson.tags.map((tag) => (
-              <Link key={tag.id} href={`/tags/${tag.slug}`} className={styles.tagLink}>
+              <Link
+                key={tag.id}
+                href={`/tags/${tag.slug}`}
+                className={styles.tagLink}
+              >
                 #{tag.name}
               </Link>
             ))}
@@ -761,18 +1025,30 @@ ${sanitizeLessonCss(customCSS || "")}
       {/* completion */}
       {isEnrolled && !isCompleted && (
         <div className={styles.completionAction}>
-          <button className={`${styles.btn} ${styles.btnPrimary} ${styles.completeBtn}`} onClick={handleCompleteLesson} disabled={isSubmitting}>
+          <button
+            className={`${styles.btn} ${styles.btnPrimary} ${styles.completeBtn}`}
+            onClick={handleCompleteLesson}
+            disabled={isSubmitting}
+          >
             Mark Lesson Complete
           </button>
         </div>
       )}
-      {isCompleted && <div className={styles.completedIndicator}>✅ Lesson Completed!</div>}
+      {isCompleted && (
+        <div className={styles.completedIndicator}>✅ Lesson Completed!</div>
+      )}
 
       {/* owner actions: Edit -> route to admin editor; Delete stays */}
       {isOwner && (
         <div className={styles.lessonActions}>
-          <button className={styles.deleteBtn} onClick={handleDeleteLesson} disabled={isLocked || isSubmitting} title={isLocked ? "Locked" : "Delete"}>
-            <Trash2 size={18} /> <span>{confirmingDelete ? "Confirm!" : "Delete"}</span>
+          <button
+            className={styles.deleteBtn}
+            onClick={handleDeleteLesson}
+            disabled={isLocked || isSubmitting}
+            title={isLocked ? "Locked" : "Delete"}
+          >
+            <Trash2 size={18} />{" "}
+            <span>{confirmingDelete ? "Confirm!" : "Delete"}</span>
           </button>
         </div>
       )}
@@ -788,11 +1064,19 @@ ${sanitizeLessonCss(customCSS || "")}
             <FaPlus size={24} />
           </button>
           {isEnrolled && !isCompleted && (
-            <button className={`${styles.radialMenuButton} ${styles.item} ${styles.item2}`} onClick={handleCompleteLesson} title="Mark Complete">
+            <button
+              className={`${styles.radialMenuButton} ${styles.item} ${styles.item2}`}
+              onClick={handleCompleteLesson}
+              title="Mark Complete"
+            >
               <FaCheck size={20} />
             </button>
           )}
-          <button className={`${styles.radialMenuButton} ${styles.item} ${styles.item3}`} onClick={() => router.back()} title="Go Back">
+          <button
+            className={`${styles.radialMenuButton} ${styles.item} ${styles.item3}`}
+            onClick={() => router.back()}
+            title="Go Back"
+          >
             <FaArrowLeft size={20} />
           </button>
         </div>

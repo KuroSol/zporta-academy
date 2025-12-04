@@ -18,11 +18,21 @@ const LoginModal = ({ open = false, onClose = () => {} }) => {
   };
 
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label="Login" onClick={onClose}>
+    <div
+      className={styles.backdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Login"
+      onClick={onClose}
+    >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.close} onClick={onClose} aria-label="Close">×</button>
+        <button className={styles.close} onClick={onClose} aria-label="Close">
+          ×
+        </button>
         <h2 className={styles.title}>Sign in to continue</h2>
-        <p className={styles.subtitle}>Access premium content, track your progress, and more</p>
+        <p className={styles.subtitle}>
+          Access premium content, track your progress, and more
+        </p>
         <div className={styles.actions}>
           <button className={styles.primaryBtn} onClick={handleLogin}>
             Log In

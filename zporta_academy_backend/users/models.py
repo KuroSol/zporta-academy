@@ -104,6 +104,17 @@ class Profile(models.Model):
         help_text="✨ Impact Score: +2 per quiz, +4 per lesson, +6 per course created; +1/+2/+3 when others complete"
     )
     # ────────────────────────────────────────────────────────────────────────────
+    
+    # ── Email & Notification Preferences ───────────────────────────────────────
+    email_notifications = models.BooleanField(
+        default=True,
+        help_text="Receive email notifications (system notifications, guide requests, etc.)"
+    )
+    mail_magazine_enabled = models.BooleanField(
+        default=True,
+        help_text="Receive mail magazine emails from teachers you follow"
+    )
+    # ────────────────────────────────────────────────────────────────────────────
 
 
     created_at = models.DateTimeField(auto_now_add=True)
