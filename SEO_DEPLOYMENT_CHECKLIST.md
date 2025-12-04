@@ -4,11 +4,12 @@
 
 - [ ] Review all changes in Git
 - [ ] Test locally that premium lessons show preview with lock overlay
-- [ ] Verify robots.txt is accessible at `http://localhost:3001/robots.txt`
+- [ ] Verify robots.txt is accessible at `http://localhost:3000/robots.txt`
 
 ## 🚀 Deployment Steps
 
 ### 1. Deploy to Production
+
 ```bash
 # Commit changes
 git add .
@@ -25,6 +26,7 @@ git push origin main
 After deployment, check these URLs in your browser:
 
 ✅ **robots.txt**
+
 - URL: `https://zportaacademy.com/robots.txt`
 - Should show:
   ```
@@ -36,11 +38,13 @@ After deployment, check these URLs in your browser:
   ```
 
 ✅ **sitemap.xml**
+
 - URL: `https://zportaacademy.com/sitemap.xml`
 - Should show XML with all your courses/lessons
 - If you get 404, check your Django backend is serving it
 
 ✅ **Test a Premium Lesson** (not logged in)
+
 - Pick one: `https://zportaacademy.com/lessons/[username]/[subject]/[date]/[slug]`
 - Should show:
   - ✅ Title and description visible
@@ -50,6 +54,7 @@ After deployment, check these URLs in your browser:
   - ✅ Page returns HTTP 200 (not 302/307)
 
 ✅ **Test a Course Page** (not logged in)
+
 - URL: `https://zportaacademy.com/courses/[username]/[date]/[subject]/[slug]`
 - Should show:
   - ✅ Full course details
@@ -62,9 +67,11 @@ After deployment, check these URLs in your browser:
 ### Option A: Quick Re-indexing (Recommended)
 
 1. **Go to Google Search Console**
+
    - https://search.google.com/search-console
 
 2. **Remove and Re-add Sitemap**
+
    - Click "Sitemaps" in left menu
    - Find `sitemap.xml` → Click ⋮ → "Remove sitemap"
    - Wait 10 seconds
@@ -89,12 +96,14 @@ After deployment, check these URLs in your browser:
 ## 📊 Expected Results (1-2 Weeks)
 
 ### Before (Current State):
+
 - ❌ Page with redirect: 6
 - ❌ Crawled - currently not indexed: 24
 - ❌ Soft 404: 41
 - ✅ Indexed: ~84 pages
 
 ### After (Expected):
+
 - ✅ Page with redirect: 0 (FIXED)
 - ✅ Crawled - currently not indexed: 0-5 (FIXED - Google will index them)
 - ❓ Soft 404: May need separate investigation
@@ -103,18 +112,21 @@ After deployment, check these URLs in your browser:
 ## 🐛 Troubleshooting
 
 ### If sitemap.xml returns 404:
+
 1. Check Django backend is running
 2. Verify URL in backend: `https://your-django-backend.com/sitemap.xml`
 3. Update `next.config.mjs` rewrites with correct backend URL
 4. Restart Next.js
 
 ### If premium lessons still redirect:
+
 1. Clear browser cache
 2. Test in incognito mode
 3. Check JavaScript console for errors
 4. Verify `PremiumLockOverlay.js` was deployed
 
 ### If Google still shows old data:
+
 - Be patient! Google can take 1-2 weeks to re-index
 - Use "Request Indexing" for specific important pages
 - Don't remove/re-add sitemap more than once per week

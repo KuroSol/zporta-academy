@@ -3,6 +3,7 @@
 Current repository contains legacy React code plus the active Next.js app in `zporta_academy_frontend/next-frontend`.
 
 Goals:
+
 1. Reduce server memory/CPU by running only production build artifacts.
 2. Preserve source code (including legacy React) in Git but exclude it from runtime footprint.
 3. Prepare for future React Native development without deploying unused code.
@@ -16,12 +17,14 @@ Goals:
    npm run build
    ```
 2. Sync only the minimal runtime directories to server:
+
    - `.next/` (after build)
    - `package.json` + `package-lock.json`
    - `public/`
    - Any env files (`.env.production`)
 
 3. Do NOT copy:
+
    - `node_modules/` (reinstall on server with `npm ci`)
    - Legacy React folders outside `next-frontend`
    - Test directories, storybook, screenshots, etc.
@@ -31,6 +34,7 @@ Goals:
 ### systemd Unit Example
 
 Create `/etc/systemd/system/zporta-next.service`:
+
 ```
 [Unit]
 Description=Zporta Next.js Frontend
@@ -40,8 +44,8 @@ After=network.target
 Type=simple
 WorkingDirectory=/home/ubuntu/zporta-academy/zporta_academy_frontend/next-frontend
 Environment=NODE_ENV=production
-Environment=PORT=3001
-ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3001
+Environment=PORT=3000
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000
 Restart=always
 RestartSec=5
 User=ubuntu
@@ -52,6 +56,7 @@ WantedBy=multi-user.target
 ```
 
 Enable + start:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable zporta-next.service --now
@@ -60,6 +65,7 @@ sudo systemctl enable zporta-next.service --now
 ### Optional: Rsync Filter File
 
 Create `frontend.rsync-filter` to limit deployed files:
+
 ```
 + /zporta_academy_frontend/next-frontend/.next/**
 + /zporta_academy_frontend/next-frontend/public/**
@@ -69,6 +75,7 @@ Create `frontend.rsync-filter` to limit deployed files:
 ```
 
 Deploy:
+
 ```bash
 rsync -av --filter='. frontend.rsync-filter' ./ ubuntu@SERVER:/home/ubuntu/zporta-academy
 ```
@@ -77,7 +84,7 @@ rsync -av --filter='. frontend.rsync-filter' ./ ubuntu@SERVER:/home/ubuntu/zport
 
 ```
 location / {
-    proxy_pass http://127.0.0.1:3001;
+    proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -98,8 +105,8 @@ Keep legacy React web code in Git branches (`legacy-react-web`) rather than depl
 1. Stop any `next dev` processes.
 2. Ensure production build exists (`.next/standalone` if using output=standalone for Docker).
 3. Remove stray large directories (node_modules from unused root-level React) from server.
-4. Confirm Nginx upstream points only to port 3001.
-5. Validate logs show `Ready - started server on 0.0.0.0:3001` without dev warnings.
+4. Confirm Nginx upstream points only to port 3000.
+5. Validate logs show `Ready - started server on 0.0.0.0:3000` without dev warnings.
 
 ### Quick Verification
 
@@ -110,4 +117,5 @@ curl -I https://zportaacademy.com | grep -i x-powered-by
 If header shows `Next.js`, ensure caching headers are appropriate; configure CDN later for static assets.
 
 ---
+
 Document generated to guide lean frontend deployment and removal of unused legacy React runtime code.

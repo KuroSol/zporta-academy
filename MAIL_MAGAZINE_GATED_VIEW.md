@@ -9,6 +9,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 ### 1. Database Schema
 
 **MailMagazineIssue Model** (`mailmagazine/models.py`):
+
 - **Fields**:
   - `magazine`: ForeignKey to TeacherMailMagazine
   - `title`: Magazine title (CharField, 200 chars)
@@ -17,7 +18,6 @@ Successfully implemented a gated web view system for mail magazine issues, allow
   - `sent_at`: Timestamp of when issue was sent (DateTimeField, auto_now_add)
   - `is_public`: Flag to make issue publicly accessible (BooleanField, default False)
   - `recipients`: ManyToMany to User model (who received this issue)
-  
 - **Meta**:
   - Ordering: `-sent_at` (newest first)
   - Index: `(magazine, -sent_at)` for efficient queries
@@ -27,6 +27,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 ### 2. Backend API
 
 **Issue Storage** (`mailmagazine/admin.py` & `mailmagazine/views.py`):
+
 - Modified both admin action and API endpoint to:
   1. Create MailMagazineIssue record before sending
   2. Generate unique issue ID
@@ -35,6 +36,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
   5. Save final HTML content to issue
 
 **Issue Detail Endpoint** (`mailmagazine/views.py`):
+
 - `MailMagazineIssueDetailView`: RetrieveAPIView for accessing issues
 - **URL**: `/mailmagazine/issues/<int:pk>/`
 - **Access Control**:
@@ -45,6 +47,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 - **Authentication**: Requires login (IsAuthenticated permission)
 
 **Serializer** (`mailmagazine/serializers.py`):
+
 - `MailMagazineIssueSerializer`: Exposes issue data for API
 - **Fields**: id, magazine, magazine_title, teacher_username, title, subject, html_content, sent_at, is_public
 - Read-only fields for security
@@ -52,19 +55,25 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 ### 3. Email Integration
 
 **View in Browser Link**:
+
 - Added to top of email HTML wrapper
 - Format: "Having trouble viewing this email? [View in browser]"
 - Link color: `#ffb703` (golden accent)
 - Uses `SITE_URL` from Django settings:
   - Production: `https://zportaacademy.com/mail-magazines/{issue_id}`
-  - Local: `http://localhost:3001/mail-magazines/{issue_id}`
+  - Local: `http://localhost:3000/mail-magazines/{issue_id}`
 
 **HTML Wrapper Updates** (both `admin.py` and `views.py`):
+
 ```html
 <div style="background-color: #0b1523; padding: 12px; text-align: center;">
   <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-    Having trouble viewing this email? 
-    <a href="{view_in_browser_url}" style="color: #ffb703; text-decoration: none;">View in browser</a>
+    Having trouble viewing this email?
+    <a
+      href="{view_in_browser_url}"
+      style="color: #ffb703; text-decoration: none;"
+      >View in browser</a
+    >
   </p>
 </div>
 ```
@@ -72,6 +81,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 ### 4. Frontend Page
 
 **Next.js Page** (`pages/mail-magazines/[issueId].js`):
+
 - Dynamic route for issue viewing
 - **Authentication**: Redirects to `/login` if not logged in
 - **Fetch Logic**:
@@ -86,6 +96,7 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 - **Display**: Renders full HTML via `dangerouslySetInnerHTML`
 
 **Styling** (`styles/MailMagazineIssue.module.css`):
+
 - Dark theme matching platform (`#0b1523` background)
 - Meta info card (sent date, teacher name)
 - Responsive layout (mobile-first)
@@ -95,20 +106,23 @@ Successfully implemented a gated web view system for mail magazine issues, allow
 ### 5. Settings Configuration
 
 **Django Settings**:
+
 - Added `SITE_URL` to both `production.py` and `local.py`:
   - `production.py`: `SITE_URL = 'https://zportaacademy.com'`
-  - `local.py`: `SITE_URL = 'http://localhost:3001'`
+  - `local.py`: `SITE_URL = 'http://localhost:3000'`
 
 ## Technical Implementation Details
 
 ### Issue Creation Flow
 
 **Before** (without gated view):
+
 ```
 Send Email → Store HTML → Done
 ```
 
 **After** (with gated view):
+
 ```
 1. Create MailMagazineIssue (empty html_content)
 2. Get issue.id
@@ -124,15 +138,15 @@ Send Email → Store HTML → Done
 def retrieve(self, request, *args, **kwargs):
     issue = self.get_object()
     user = request.user
-    
+
     # Check access
     is_teacher = issue.magazine.teacher == user
     is_recipient = issue.recipients.filter(id=user.id).exists()
     is_public = issue.is_public
-    
+
     if not (is_teacher or is_recipient or is_public):
         return Response({'error': '...'}, status=403)
-    
+
     serializer = self.get_serializer(issue)
     return Response(serializer.data)
 ```
@@ -148,6 +162,7 @@ def retrieve(self, request, *args, **kwargs):
 ## Files Modified
 
 ### Backend
+
 1. `mailmagazine/models.py` - Added MailMagazineIssue model
 2. `mailmagazine/migrations/0004_mailmagazineissue.py` - Migration file
 3. `mailmagazine/admin.py` - Issue creation on send (admin action)
@@ -158,6 +173,7 @@ def retrieve(self, request, *args, **kwargs):
 8. `zporta/settings/local.py` - Added SITE_URL
 
 ### Frontend
+
 1. `pages/mail-magazines/[issueId].js` - New dynamic page
 2. `styles/MailMagazineIssue.module.css` - Page styling
 
@@ -204,15 +220,18 @@ def retrieve(self, request, *args, **kwargs):
 ### Production Deployment
 
 1. **Database Migration**:
+
    ```bash
    python manage.py migrate mailmagazine
    ```
 
 2. **Verify Settings**:
+
    - Ensure `SITE_URL = 'https://zportaacademy.com'` in `production.py`
    - Check email configuration (Gmail SMTP)
 
 3. **Test Flow**:
+
    - Create mail magazine in admin
    - Send to test recipient
    - Check email received
@@ -226,6 +245,7 @@ def retrieve(self, request, *args, **kwargs):
 ### Rollback Plan
 
 If issues occur:
+
 1. **Database**: Previous migration state is preserved
 2. **Code**: Git revert to previous commit
 3. **Email Sending**: Old system still works (just missing "View in browser" link)

@@ -3,6 +3,7 @@
 ## What Changed
 
 ### New Features
+
 1. **Guide Application System** - Students must apply to become teachers
 2. **Role Restrictions** - Only approved guides can create content
 3. **Enhanced Teacher Profiles** - More fields for teacher discovery
@@ -17,6 +18,7 @@ python manage.py migrate users
 This will create:
 
 ### Migration 0006: Teacher Profile Enhancement
+
 - `teacher_tagline` (CharField 120)
 - `teacher_about` (TextField)
 - `teaching_specialties` (CharField 255)
@@ -25,6 +27,7 @@ This will create:
 - `intro_video_url` (URLField)
 
 ### Migration 0007: Guide Application System
+
 - New table: `users_guideapplicationrequest`
   - `user` (ForeignKey)
   - `motivation` (TextField)
@@ -40,6 +43,7 @@ This will create:
 ## What This Does
 
 ### For Students (Explorers)
+
 - ✅ Everyone starts as "Explorer" role on registration
 - ✅ Can browse, learn, take quizzes
 - ❌ Cannot create courses/lessons/quizzes
@@ -47,6 +51,7 @@ This will create:
 - ✅ Can request to become a guide via API
 
 ### For Teachers (Guides)
+
 - ✅ Must apply via guide application form
 - ✅ Admin reviews and approves/rejects
 - ✅ After approval: `active_guide=True` and can create content
@@ -54,6 +59,7 @@ This will create:
 - ✅ Enhanced profile fields for marketing
 
 ### Admin Features
+
 - View all guide applications in Django admin
 - Bulk approve/reject actions
 - Can invite users to become guides
