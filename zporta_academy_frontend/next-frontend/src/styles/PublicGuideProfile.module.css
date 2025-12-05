@@ -1120,3 +1120,32 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* Bio Renderer Styles */
+.bioRendererSection {
+  display: block;
+  width: 100%;
+}
+
+.bioModalSection {
+  display: block;
+  width: 100%;
+}
+
+.bioModalContent {
+  font-size: 1rem;
+  color: #333;
+  word-break: break-word;
+  white-space: pre-line;
+  line-height: 1.7;
+  margin: 0.8rem 0;
+}
+
+.bioModalContent:first-child {
+  margin-top: 0;
+}
+
+.bioModalContent:last-child {
+  margin-bottom: 0;
+}
+

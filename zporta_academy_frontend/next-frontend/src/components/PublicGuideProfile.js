@@ -14,6 +14,7 @@ import {
 
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
+import BioRenderer from "@/components/BioRenderer";
 import { quizPermalinkToUrl } from "@/utils/urls";
 import styles from "@/styles/PublicGuideProfile.module.css";
 
@@ -761,29 +762,31 @@ export default function PublicGuideProfile() {
               {((isTeacher && profile.teacher_about) ||
                 (!isTeacher && profile.bio)) && (
                 <div className={styles.heroBioSection}>
-                  <p className={styles.heroBio}>
-                    {(() => {
-                      const bioText = isTeacher
-                        ? profile.teacher_about
-                        : profile.bio;
-                      return bioText.length > 200
-                        ? bioText.substring(0, 200) + "..."
-                        : bioText;
-                    })()}
-                  </p>
                   {(() => {
                     const bioText = isTeacher
                       ? profile.teacher_about
                       : profile.bio;
+                    const isTruncated = bioText.length > 200;
+                    const displayText = isTruncated
+                      ? bioText.substring(0, 200) + "..."
+                      : bioText;
+                    
                     return (
-                      bioText.length > 200 && (
-                        <button
-                          onClick={() => setShowBioModal(true)}
-                          className={styles.readMoreBtn}
-                        >
-                          Read Full Bio →
-                        </button>
-                      )
+                      <>
+                        <BioRenderer 
+                          bio={displayText}
+                          sectionClass={styles.bioRendererSection}
+                          contentClass={styles.heroBio}
+                        />
+                        {isTruncated && (
+                          <button
+                            onClick={() => setShowBioModal(true)}
+                            className={styles.readMoreBtn}
+                          >
+                            Read Full Bio →
+                          </button>
+                        )}
+                      </>
                     );
                   })()}
                 </div>
@@ -1115,7 +1118,11 @@ export default function PublicGuideProfile() {
             </div>
             <div className={styles.modalBody}>
               <h3>About</h3>
-              <p>{isTeacher ? profile.teacher_about : profile.bio}</p>
+              <BioRenderer 
+                bio={isTeacher ? profile.teacher_about : profile.bio}
+                sectionClass={styles.bioModalSection}
+                contentClass={styles.bioModalContent}
+              />
 
               {(profile.website_url ||
                 profile.linkedin_url ||

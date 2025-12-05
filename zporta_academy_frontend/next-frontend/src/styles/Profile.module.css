@@ -649,3 +649,26 @@
   to { transform: rotate(360deg); }
 }
 
+/* Bio Section Styles */
+.bioSection {
+  display: block;
+  width: 100%;
+}
+
+.bioContent {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+  white-space: pre-line;
+  line-height: 1.6;
+  margin: 0.5rem 0;
+}
+
+.bioContent:first-child {
+  margin-top: 0;
+}
+
+.bioContent:last-child {
+  margin-bottom: 0;
+}
+

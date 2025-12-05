@@ -29,6 +29,7 @@ import {
 } from "react-icons/fa";
 import { AuthContext } from "@/context/AuthContext";
 import apiClient from "@/api";
+import BioRenderer from "@/components/BioRenderer";
 import styles from "@/styles/Profile.module.css";
 import teacherStyles from "@/styles/TeacherDashboard.module.css";
 
@@ -1391,13 +1392,11 @@ const Profile = () => {
                         </div>
                       </div>
                     ) : (
-                      <p
-                        className={`${styles.infoValue} ${
-                          profile.bio ? "" : "italic"
-                        }`}
-                      >
-                        {profile.bio || "No bio provided."}
-                      </p>
+                      <BioRenderer 
+                        bio={profile.bio}
+                        sectionClass={styles.bioSection}
+                        contentClass={styles.bioContent}
+                      />
                     )}
                   </div>
                 )}
