@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'enrollment.apps.EnrollmentConfig',
     'payments',
     'analytics',
+    'intelligence.apps.IntelligenceConfig',  # AI Intelligence & Ranking System
     'social',
     'notifications', # This app will likely use the Firebase Admin SDK
     'mentions',

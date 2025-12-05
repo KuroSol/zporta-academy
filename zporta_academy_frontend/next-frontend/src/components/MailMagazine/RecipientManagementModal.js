@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import apiClient from '@/api';
-import styles from '@/styles/RecipientManagement.module.css';
+import React, { useState, useEffect, useCallback } from "react";
+import apiClient from "@/api";
+import styles from "@/styles/RecipientManagement.module.css";
 import {
-  FaSearch, FaTimes, FaUserPlus, FaUsers, FaSave, FaTrash, FaPlus, FaFolder
-} from 'react-icons/fa';
+  FaSearch,
+  FaTimes,
+  FaUserPlus,
+  FaUsers,
+  FaSave,
+  FaTrash,
+  FaPlus,
+  FaFolder,
+} from "react-icons/fa";
 
 /**
  * Advanced Recipient Management Modal
@@ -14,37 +21,33 @@ import {
  * - Saved recipient groups
  * - Dynamic course-based groups
  */
-const RecipientManagementModal = ({ 
-  magazine, 
-  onClose, 
-  onSave 
-}) => {
+const RecipientManagementModal = ({ magazine, onClose, onSave }) => {
   // UI state
-  const [searchText, setSearchText] = useState('');
-  const [activeTab, setActiveTab] = useState('available'); // 'available', 'selected', 'groups'
+  const [searchText, setSearchText] = useState("");
+  const [activeTab, setActiveTab] = useState("available"); // 'available', 'selected', 'groups'
   const [showNewGroupForm, setShowNewGroupForm] = useState(false);
-  
+
   // Data state
   const [availableStudents, setAvailableStudents] = useState([]);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [recipientGroups, setRecipientGroups] = useState([]);
-  const [groupFilter, setGroupFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState("");
   const [groupMemberSelect, setGroupMemberSelect] = useState({});
-  
+
   // Filters
   const [filters, setFilters] = useState({
-    courseId: '',
+    courseId: "",
   });
-  
+
   // New group form
   const [newGroup, setNewGroup] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     isDynamic: false,
-    linkedCourse: ''
+    linkedCourse: "",
   });
   const [newGroupMembers, setNewGroupMembers] = useState([]);
-  
+
   // Loading state
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState([]);
@@ -54,19 +57,23 @@ const RecipientManagementModal = ({
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchText) params.append('search', searchText);
-      if (filters.courseId) params.append('course_id', filters.courseId);
+      if (searchText) params.append("search", searchText);
+      if (filters.courseId) params.append("course_id", filters.courseId);
 
-      const { data } = await apiClient.get(`/recipient-management/available_students/?${params}`);
-      
+      const { data } = await apiClient.get(
+        `/recipient-management/available_students/?${params}`
+      );
+
       // Filter by email preference if specified
       let students = (data.students || []).filter(
-        (s) => (s.email_enabled ?? true) && (s.guide_status === 'accepted' || !s.guide_status)
+        (s) =>
+          (s.email_enabled ?? true) &&
+          (s.guide_status === "accepted" || !s.guide_status)
       );
 
       setAvailableStudents(students);
     } catch (error) {
-      console.error('Failed to load available students:', error);
+      console.error("Failed to load available students:", error);
       setAvailableStudents([]);
     } finally {
       setLoading(false);
@@ -76,20 +83,20 @@ const RecipientManagementModal = ({
   // Load recipient groups
   const loadRecipientGroups = useCallback(async () => {
     try {
-      const { data } = await apiClient.get('/recipient-groups/');
+      const { data } = await apiClient.get("/recipient-groups/");
       setRecipientGroups(data.results || data);
     } catch (error) {
-      console.error('Failed to load recipient groups:', error);
+      console.error("Failed to load recipient groups:", error);
     }
   }, []);
 
   // Load courses for filter dropdown
   const loadCourses = useCallback(async () => {
     try {
-      const { data } = await apiClient.get('/courses/my/');
+      const { data } = await apiClient.get("/courses/my/");
       setCourses(data.results ? data.results : data);
     } catch (error) {
-      console.error('Failed to load courses:', error);
+      console.error("Failed to load courses:", error);
     }
   }, []);
 
@@ -98,7 +105,7 @@ const RecipientManagementModal = ({
     loadAvailableStudents();
     loadRecipientGroups();
     loadCourses();
-    
+
     // Load current magazine's recipients if exists
     if (magazine?.id) {
       loadMagazineRecipients();
@@ -115,29 +122,32 @@ const RecipientManagementModal = ({
 
   const loadMagazineRecipients = async () => {
     try {
-      const { data } = await apiClient.get(`/teacher-mail-magazines/${magazine.id}/`);
+      const { data } = await apiClient.get(
+        `/teacher-mail-magazines/${magazine.id}/`
+      );
       // Prefer detailed objects when available; fall back to IDs if necessary
-      const detailed = data.selected_recipients_details || data.selected_recipients || [];
+      const detailed =
+        data.selected_recipients_details || data.selected_recipients || [];
       setSelectedRecipients(detailed);
     } catch (error) {
-      console.error('Failed to load magazine recipients:', error);
+      console.error("Failed to load magazine recipients:", error);
     }
   };
 
   // Handlers
   const handleAddRecipient = (student) => {
-    if (!selectedRecipients.find(r => r.id === student.id)) {
+    if (!selectedRecipients.find((r) => r.id === student.id)) {
       setSelectedRecipients([...selectedRecipients, student]);
     }
   };
 
   const handleRemoveRecipient = (studentId) => {
-    setSelectedRecipients(selectedRecipients.filter(r => r.id !== studentId));
+    setSelectedRecipients(selectedRecipients.filter((r) => r.id !== studentId));
   };
 
   const handleAddAll = () => {
     const newRecipients = availableStudents.filter(
-      s => !selectedRecipients.find(r => r.id === s.id)
+      (s) => !selectedRecipients.find((r) => r.id === s.id)
     );
     setSelectedRecipients([...selectedRecipients, ...newRecipients]);
   };
@@ -148,33 +158,34 @@ const RecipientManagementModal = ({
 
   const handleApplyGroup = async (group) => {
     try {
-      await apiClient.post(
-        `/recipient-groups/${group.id}/apply_to_magazine/`,
-        { magazine_id: magazine.id }
-      );
+      await apiClient.post(`/recipient-groups/${group.id}/apply_to_magazine/`, {
+        magazine_id: magazine.id,
+      });
       // Reload recipients from magazine detail to ensure consistent shape
       await loadMagazineRecipients();
     } catch (error) {
-      console.error('Failed to apply group:', error);
+      console.error("Failed to apply group:", error);
     }
   };
 
   const handleSaveNewGroup = async () => {
     if (!newGroup.name.trim()) {
-      alert('Please enter a group name');
+      alert("Please enter a group name");
       return;
     }
 
     if (newGroup.isDynamic && !newGroup.linkedCourse) {
-      alert('Please choose a course for a dynamic group.');
+      alert("Please choose a course for a dynamic group.");
       return;
     }
 
     // Validate chosen course exists when dynamic
     const courseIdValue = newGroup.linkedCourse;
-    const courseIdValid = courseIdValue && courses.some(c => String(c.id) === String(courseIdValue));
+    const courseIdValid =
+      courseIdValue &&
+      courses.some((c) => String(c.id) === String(courseIdValue));
     if (newGroup.isDynamic && !courseIdValid) {
-      alert('Selected course is not available. Please choose a valid course.');
+      alert("Selected course is not available. Please choose a valid course.");
       return;
     }
 
@@ -183,61 +194,64 @@ const RecipientManagementModal = ({
         name: newGroup.name,
         description: newGroup.description,
         is_dynamic: newGroup.isDynamic,
-        linked_course: newGroup.isDynamic && courseIdValid ? Number(courseIdValue) : null,
+        linked_course:
+          newGroup.isDynamic && courseIdValid ? Number(courseIdValue) : null,
       };
 
-      const { data } = await apiClient.post('/recipient-groups/', groupData);
-      
+      const { data } = await apiClient.post("/recipient-groups/", groupData);
+
       // Add members if not dynamic
       const memberIds = newGroup.isDynamic
         ? []
-        : (newGroupMembers.length > 0
-            ? newGroupMembers
-            : selectedRecipients.map(r => r.id));
+        : newGroupMembers.length > 0
+        ? newGroupMembers
+        : selectedRecipients.map((r) => r.id);
 
       if (!newGroup.isDynamic && memberIds.length > 0) {
-        await apiClient.post(
-          `/recipient-groups/${data.id}/add_members/`,
-          { member_ids: memberIds }
-        );
+        await apiClient.post(`/recipient-groups/${data.id}/add_members/`, {
+          member_ids: memberIds,
+        });
       }
 
       setRecipientGroups([...recipientGroups, data]);
-      setNewGroup({ name: '', description: '', isDynamic: false, linkedCourse: '' });
+      setNewGroup({
+        name: "",
+        description: "",
+        isDynamic: false,
+        linkedCourse: "",
+      });
       setNewGroupMembers([]);
       setShowNewGroupForm(false);
     } catch (error) {
-      console.error('Failed to create group:', error);
-      const detail = error?.response?.data || 'Failed to create recipient group';
+      console.error("Failed to create group:", error);
+      const detail =
+        error?.response?.data || "Failed to create recipient group";
       alert(JSON.stringify(detail));
     }
   };
 
   const handleSaveRecipients = async () => {
     try {
-      await apiClient.post(
-        `/recipient-management/bulk_add_recipients/`,
-        {
-          magazine_id: magazine.id,
-          recipient_ids: selectedRecipients.map(r => r.id)
-        }
-      );
+      await apiClient.post(`/recipient-management/bulk_add_recipients/`, {
+        magazine_id: magazine.id,
+        recipient_ids: selectedRecipients.map((r) => r.id),
+      });
       onSave();
     } catch (error) {
-      console.error('Failed to save recipients:', error);
-      alert('Failed to save recipients');
+      console.error("Failed to save recipients:", error);
+      alert("Failed to save recipients");
     }
   };
 
   const handleDeleteGroup = async (groupId) => {
-    if (!confirm('Are you sure you want to delete this group?')) return;
-    
+    if (!confirm("Are you sure you want to delete this group?")) return;
+
     try {
       await apiClient.delete(`/recipient-groups/${groupId}/`);
-      setRecipientGroups(recipientGroups.filter(g => g.id !== groupId));
+      setRecipientGroups(recipientGroups.filter((g) => g.id !== groupId));
     } catch (error) {
-      console.error('Failed to delete group:', error);
-      alert('Failed to delete group');
+      console.error("Failed to delete group:", error);
+      alert("Failed to delete group");
     }
   };
 
@@ -245,33 +259,39 @@ const RecipientManagementModal = ({
     const memberId = groupMemberSelect[groupId];
     if (!memberId) return;
     try {
-      await apiClient.post(`/recipient-groups/${groupId}/add_members/`, { member_ids: [Number(memberId)] });
+      await apiClient.post(`/recipient-groups/${groupId}/add_members/`, {
+        member_ids: [Number(memberId)],
+      });
       await loadRecipientGroups();
-      setGroupMemberSelect(prev => ({ ...prev, [groupId]: '' }));
+      setGroupMemberSelect((prev) => ({ ...prev, [groupId]: "" }));
     } catch (error) {
-      console.error('Failed to add member to group:', error);
-      alert('Failed to add member to group');
+      console.error("Failed to add member to group:", error);
+      alert("Failed to add member to group");
     }
   };
 
   const handleAddSelectedRecipientsToGroup = async (groupId) => {
-    const memberIds = selectedRecipients.map(r => r.id);
+    const memberIds = selectedRecipients.map((r) => r.id);
     if (memberIds.length === 0) return;
     try {
-      await apiClient.post(`/recipient-groups/${groupId}/add_members/`, { member_ids: memberIds });
+      await apiClient.post(`/recipient-groups/${groupId}/add_members/`, {
+        member_ids: memberIds,
+      });
       await loadRecipientGroups();
     } catch (error) {
-      console.error('Failed to add selected recipients to group:', error);
-      alert('Failed to add selected recipients to group');
+      console.error("Failed to add selected recipients to group:", error);
+      alert("Failed to add selected recipients to group");
     }
   };
 
-  const filteredAvailableStudents = availableStudents.filter(student => {
-    const alreadySelected = selectedRecipients.some(r => r.id === student.id);
+  const filteredAvailableStudents = availableStudents.filter((student) => {
+    const alreadySelected = selectedRecipients.some((r) => r.id === student.id);
     if (alreadySelected) return false;
     if (groupFilter) {
-      const group = recipientGroups.find(g => String(g.id) === String(groupFilter));
-      const memberIds = group?.members_details?.map(m => m.id) || [];
+      const group = recipientGroups.find(
+        (g) => String(g.id) === String(groupFilter)
+      );
+      const memberIds = group?.members_details?.map((m) => m.id) || [];
       return memberIds.includes(student.id);
     }
     return true;
@@ -292,20 +312,26 @@ const RecipientManagementModal = ({
 
         <div className={styles.tabs}>
           <button
-            className={`${styles.tab} ${activeTab === 'available' ? styles.active : ''}`}
-            onClick={() => setActiveTab('available')}
+            className={`${styles.tab} ${
+              activeTab === "available" ? styles.active : ""
+            }`}
+            onClick={() => setActiveTab("available")}
           >
             <FaUsers /> Available Students ({filteredAvailableStudents.length})
           </button>
           <button
-            className={`${styles.tab} ${activeTab === 'selected' ? styles.active : ''}`}
-            onClick={() => setActiveTab('selected')}
+            className={`${styles.tab} ${
+              activeTab === "selected" ? styles.active : ""
+            }`}
+            onClick={() => setActiveTab("selected")}
           >
             <FaUserPlus /> Selected ({selectedRecipients.length})
           </button>
           <button
-            className={`${styles.tab} ${activeTab === 'groups' ? styles.active : ''}`}
-            onClick={() => setActiveTab('groups')}
+            className={`${styles.tab} ${
+              activeTab === "groups" ? styles.active : ""
+            }`}
+            onClick={() => setActiveTab("groups")}
           >
             <FaFolder /> Recipient Groups ({recipientGroups.length})
           </button>
@@ -313,7 +339,7 @@ const RecipientManagementModal = ({
 
         <div className={styles.modalBody}>
           {/* Available Students Tab */}
-          {activeTab === 'available' && (
+          {activeTab === "available" && (
             <div className={styles.tabContent}>
               <div className={styles.filterSection}>
                 <div className={styles.searchBox}>
@@ -329,11 +355,13 @@ const RecipientManagementModal = ({
                 <div className={styles.filterRow}>
                   <select
                     value={filters.courseId}
-                    onChange={(e) => setFilters({...filters, courseId: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, courseId: e.target.value })
+                    }
                     className={styles.filterSelect}
                   >
                     <option value="">All Courses</option>
-                    {courses.map(course => (
+                    {courses.map((course) => (
                       <option key={course.id} value={course.id}>
                         {course.title}
                       </option>
@@ -346,7 +374,7 @@ const RecipientManagementModal = ({
                     className={styles.filterSelect}
                   >
                     <option value="">All Groups</option>
-                    {recipientGroups.map(group => (
+                    {recipientGroups.map((group) => (
                       <option key={group.id} value={group.id}>
                         {group.name}
                       </option>
@@ -374,20 +402,33 @@ const RecipientManagementModal = ({
 
                   <div className={styles.studentsList}>
                     {filteredAvailableStudents.map((student) => {
-                      const status = student.guide_status || 'none';
-                      const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+                      const status = student.guide_status || "none";
+                      const statusLabel =
+                        status.charAt(0).toUpperCase() + status.slice(1);
                       return (
                         <div key={student.id} className={styles.studentCard}>
                           <div className={styles.studentInfo}>
-                            <strong>{student.display_name || student.username}</strong>
-                            <span className={styles.studentEmail}>{student.email}</span>
+                            <strong>
+                              {student.display_name || student.username}
+                            </strong>
+                            <span className={styles.studentEmail}>
+                              {student.email}
+                            </span>
                             <div className={styles.studentMeta}>
                               {student.email_enabled ? (
-                                <span className={styles.emailBadge}>✓ Email Enabled</span>
+                                <span className={styles.emailBadge}>
+                                  ✓ Email Enabled
+                                </span>
                               ) : (
-                                <span className={styles.emailBadgeDis}>✗ Email Disabled</span>
+                                <span className={styles.emailBadgeDis}>
+                                  ✗ Email Disabled
+                                </span>
                               )}
-                              <span className={`${styles.statusBadge} ${styles[status] || ''}`}>
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  styles[status] || ""
+                                }`}
+                              >
                                 {statusLabel}
                               </span>
                             </div>
@@ -408,7 +449,7 @@ const RecipientManagementModal = ({
           )}
 
           {/* Selected Recipients Tab */}
-          {activeTab === 'selected' && (
+          {activeTab === "selected" && (
             <div className={styles.tabContent}>
               <div className={styles.bulkActions}>
                 <button
@@ -425,26 +466,40 @@ const RecipientManagementModal = ({
 
               {selectedRecipients.length === 0 ? (
                 <div className={styles.emptyMessage}>
-                  No recipients selected. Use the Available Students tab to add students.
+                  No recipients selected. Use the Available Students tab to add
+                  students.
                 </div>
               ) : (
                 <div className={styles.studentsList}>
                   {selectedRecipients.map((student) => {
-                    const status = student.guide_status || 'none';
-                    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+                    const status = student.guide_status || "none";
+                    const statusLabel =
+                      status.charAt(0).toUpperCase() + status.slice(1);
                     return (
                       <div key={student.id} className={styles.studentCard}>
                         <div className={styles.studentInfo}>
-                          <strong>{student.display_name || student.username}</strong>
-                          <span className={styles.studentEmail}>{student.email}</span>
+                          <strong>
+                            {student.display_name || student.username}
+                          </strong>
+                          <span className={styles.studentEmail}>
+                            {student.email}
+                          </span>
                           <div className={styles.studentMeta}>
                             {student.email_enabled ? (
-                              <span className={styles.emailBadge}>✓ Email Enabled</span>
+                              <span className={styles.emailBadge}>
+                                ✓ Email Enabled
+                              </span>
                             ) : (
-                              <span className={styles.emailBadgeDis}>✗ Email Disabled</span>
+                              <span className={styles.emailBadgeDis}>
+                                ✗ Email Disabled
+                              </span>
                             )}
-                            {status !== 'none' && (
-                              <span className={`${styles.statusBadge} ${styles[status] || ''}`}>
+                            {status !== "none" && (
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  styles[status] || ""
+                                }`}
+                              >
                                 {statusLabel}
                               </span>
                             )}
@@ -465,7 +520,7 @@ const RecipientManagementModal = ({
           )}
 
           {/* Recipient Groups Tab */}
-          {activeTab === 'groups' && (
+          {activeTab === "groups" && (
             <div className={styles.tabContent}>
               {!showNewGroupForm ? (
                 <button
@@ -481,13 +536,17 @@ const RecipientManagementModal = ({
                     type="text"
                     placeholder="Group name (e.g., 'Premium Students')"
                     value={newGroup.name}
-                    onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({ ...newGroup, name: e.target.value })
+                    }
                     className={styles.formInput}
                   />
                   <textarea
                     placeholder="Description (optional)"
                     value={newGroup.description}
-                    onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({ ...newGroup, description: e.target.value })
+                    }
                     className={styles.formTextarea}
                   />
 
@@ -496,7 +555,12 @@ const RecipientManagementModal = ({
                       <input
                         type="checkbox"
                         checked={newGroup.isDynamic}
-                        onChange={(e) => setNewGroup({...newGroup, isDynamic: e.target.checked})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            isDynamic: e.target.checked,
+                          })
+                        }
                       />
                       Make this a dynamic group (auto-include course attendees)
                     </label>
@@ -505,11 +569,18 @@ const RecipientManagementModal = ({
                   {newGroup.isDynamic && (
                     <select
                       value={newGroup.linkedCourse}
-                      onChange={(e) => setNewGroup({...newGroup, linkedCourse: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          linkedCourse: e.target.value,
+                        })
+                      }
                       className={styles.filterSelect}
                     >
-                      <option value="">Select a course to auto-include attendees</option>
-                      {courses.map(course => (
+                      <option value="">
+                        Select a course to auto-include attendees
+                      </option>
+                      {courses.map((course) => (
                         <option key={course.id} value={course.id}>
                           {course.title}
                         </option>
@@ -537,25 +608,34 @@ const RecipientManagementModal = ({
                       <h4>Select members for this group</h4>
                       <div className={styles.studentsList}>
                         {availableStudents.length === 0 ? (
-                          <div className={styles.emptyMessage}>No students available to add.</div>
+                          <div className={styles.emptyMessage}>
+                            No students available to add.
+                          </div>
                         ) : (
                           availableStudents.map((student) => (
-                            <label key={student.id} className={styles.studentCard}>
+                            <label
+                              key={student.id}
+                              className={styles.studentCard}
+                            >
                               <input
                                 type="checkbox"
                                 checked={newGroupMembers.includes(student.id)}
                                 onChange={(e) => {
                                   const checked = e.target.checked;
-                                  setNewGroupMembers(prev =>
+                                  setNewGroupMembers((prev) =>
                                     checked
                                       ? [...prev, student.id]
-                                      : prev.filter(id => id !== student.id)
+                                      : prev.filter((id) => id !== student.id)
                                   );
                                 }}
                               />
                               <div className={styles.studentInfo}>
-                                <strong>{student.display_name || student.username}</strong>
-                                <span className={styles.studentEmail}>{student.email}</span>
+                                <strong>
+                                  {student.display_name || student.username}
+                                </strong>
+                                <span className={styles.studentEmail}>
+                                  {student.email}
+                                </span>
                               </div>
                             </label>
                           ))
@@ -569,15 +649,18 @@ const RecipientManagementModal = ({
               <div className={styles.groupsList}>
                 {recipientGroups.length === 0 ? (
                   <div className={styles.emptyMessage}>
-                    No recipient groups yet. Create one to save and reuse recipient lists.
+                    No recipient groups yet. Create one to save and reuse
+                    recipient lists.
                   </div>
                 ) : (
-                  recipientGroups.map(group => (
+                  recipientGroups.map((group) => (
                     <div key={group.id} className={styles.groupCard}>
                       <div className={styles.groupInfo}>
                         <strong>{group.name}</strong>
                         {group.description && (
-                          <p className={styles.groupDescription}>{group.description}</p>
+                          <p className={styles.groupDescription}>
+                            {group.description}
+                          </p>
                         )}
                         <div className={styles.groupMeta}>
                           <span className={styles.memberCount}>
@@ -587,26 +670,35 @@ const RecipientManagementModal = ({
                             <span className={styles.dynamicBadge}>Dynamic</span>
                           )}
                         </div>
-                        {group.members_details && group.members_details.length > 0 && (
-                          <div className={styles.memberList}>
-                            {group.members_details.map(member => (
-                              <span key={member.id} className={styles.memberPill}>
-                                {member.display_name || member.username}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {group.members_details &&
+                          group.members_details.length > 0 && (
+                            <div className={styles.memberList}>
+                              {group.members_details.map((member) => (
+                                <span
+                                  key={member.id}
+                                  className={styles.memberPill}
+                                >
+                                  {member.display_name || member.username}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                       </div>
                       <div className={styles.groupActions}>
                         {!group.is_dynamic && (
                           <div className={styles.inlineAdd}>
                             <select
-                              value={groupMemberSelect[group.id] || ''}
-                              onChange={(e) => setGroupMemberSelect(prev => ({ ...prev, [group.id]: e.target.value }))}
+                              value={groupMemberSelect[group.id] || ""}
+                              onChange={(e) =>
+                                setGroupMemberSelect((prev) => ({
+                                  ...prev,
+                                  [group.id]: e.target.value,
+                                }))
+                              }
                               className={styles.filterSelect}
                             >
                               <option value="">Add student...</option>
-                              {availableStudents.map(student => (
+                              {availableStudents.map((student) => (
                                 <option key={student.id} value={student.id}>
                                   {student.display_name || student.username}
                                 </option>
@@ -621,7 +713,9 @@ const RecipientManagementModal = ({
                             </button>
                             <button
                               className={styles.bulkButton}
-                              onClick={() => handleAddSelectedRecipientsToGroup(group.id)}
+                              onClick={() =>
+                                handleAddSelectedRecipientsToGroup(group.id)
+                              }
                               disabled={selectedRecipients.length === 0}
                             >
                               Add selected recipients

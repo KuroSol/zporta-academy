@@ -349,8 +349,8 @@ class QuizListCreateView(generics.ListCreateAPIView):
         unique_users_sub = base.values('user').annotate(c=Count('user', distinct=True)).values('c')[:1]
 
 
+        # Note: attempt_count is already a field on the Quiz model, so we only annotate correct_count and wrong_count
         q = q.annotate(
-            attempt_count=Coalesce(Subquery(unique_users_sub, output_field=IntegerField()), 0),
             correct_count=Coalesce(Subquery(correct_sub, output_field=IntegerField()), 0),
             wrong_count=Coalesce(Subquery(wrong_sub, output_field=IntegerField()), 0),
             # optional: total answers if you want it

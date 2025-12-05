@@ -3,11 +3,26 @@
 from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 from datetime import timedelta
+import logging
 
 from quizzes.models import Quiz
 from analytics.models import MemoryStat, FeedExposure, QuizAttempt
 from quizzes.serializers import QuizSerializer
 from users.models import UserPreference
+
+# AI Intelligence imports
+try:
+    from intelligence.feed_enhancement import (
+        get_ai_personalized_quizzes,
+        get_ai_challenge_quizzes,
+        get_ai_confidence_builders
+    )
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    get_ai_personalized_quizzes = None
+
+logger = logging.getLogger(__name__)
 
 def log_quiz_feed_exposure(user, quiz, source):
     """Record that we showed this quiz to the user in this feed."""
@@ -237,7 +252,13 @@ def generate_user_feed(user, limit=55):
     if add(get_review_queue(user, limit)):
         return final_feed
 
-    # 2) Personalized
+    # 2) Personalized (try AI first, fallback to classic)
+    if AI_AVAILABLE and get_ai_personalized_quizzes:
+        ai_personalized = get_ai_personalized_quizzes(user, limit)
+        if ai_personalized and add(ai_personalized):
+            return final_feed
+    
+    # Fallback to classic personalized
     if add(get_personalized_quizzes(user, limit)):
         return final_feed
 

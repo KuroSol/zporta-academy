@@ -594,20 +594,46 @@ const QuizCard = ({
                           </span>
                         </Link>
                     )}
+                    
+                    {/* AI Difficulty Badge - Top Right Corner */}
+                    {quiz.difficulty_explanation && (
+                        <div 
+                            className={styles.difficultyBadge} 
+                            data-difficulty-level={quiz.difficulty_explanation.level_5?.toLowerCase().replace(/\s+/g, '-') || 'medium'}
+                            title={`${quiz.difficulty_explanation.level_5} (${quiz.difficulty_explanation.confidence}% confidence)`}
+                        >
+                            <span className={styles.difficultyEmoji}>{quiz.difficulty_explanation.emoji}</span>
+                            <span className={styles.difficultyRank}>{(() => {
+                                const ranks = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
+                                const score = quiz.difficulty_explanation?.difficulty_score || 260;
+                                const index = Math.min(Math.max(Math.floor(score / 130), 0), 4);
+                                return ranks[index] || 'Medium';
+                            })()}</span>
+                        </div>
+                    )}
+                    
                     <h2 className={styles.cardTitle} dangerouslySetInnerHTML={{ __html: publicStats.quizTitle || quiz.title || 'Quiz' }} />
-                    {/* Quiz Attachment Information */}
-                    <div className={styles.attachmentBadges}>
+                    
+                    {/* Question Count - Bottom Left Corner */}
+                    {totalQuestions > 0 && (
+                        <div className={styles.questionCountBadge}>
+                            {totalQuestions} {totalQuestions === 1 ? 'Question' : 'Questions'}
+                        </div>
+                    )}
+                    
+                    {/* Quiz Attachment - Bottom Right Corner */}
+                    <div className={styles.attachmentBadge}>
                         {quiz.lesson_title ? (
-                            <Link href={`/lessons/${quiz.lesson_permalink}`} className={styles.attachmentBadge} title={`Part of lesson: ${quiz.lesson_title}`}>
-                                📖 {quiz.lesson_title}
+                            <Link href={`/lessons/${quiz.lesson_permalink}`} className={styles.attachmentLink} title={`Part of lesson: ${quiz.lesson_title}`}>
+                                📖 Lesson
                             </Link>
                         ) : quiz.course_title ? (
-                            <span className={styles.attachmentBadge} title={`Part of course: ${quiz.course_title}`}>
-                                🎓 {quiz.course_title}
+                            <span className={styles.attachmentType} title={`Part of course: ${quiz.course_title}`}>
+                                🎓 Course
                             </span>
                         ) : (
-                            <span className={styles.attachmentBadge + ' ' + styles.standaloneQuiz} title="Standalone quiz">
-                                ⭐ Standalone Quiz
+                            <span className={styles.attachmentType} title="Standalone quiz">
+                                ⭐ Standalone
                             </span>
                         )}
                     </div>

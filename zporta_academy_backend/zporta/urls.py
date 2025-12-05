@@ -36,6 +36,7 @@ urlpatterns = [
          include(('notifications.urls','notifications'), namespace='notifications')),
     path('api/user_media/', include('user_media.urls')),
     path('api/analytics/',  include('analytics.urls')),  # corrected
+    path('api/intelligence/', include('intelligence.urls')),  # AI system
     path('api/study/',      include('learning.urls')),
     path('api/explorer/',   include('explorer.urls')),
     path('api/feed/',       include('feed.urls')),

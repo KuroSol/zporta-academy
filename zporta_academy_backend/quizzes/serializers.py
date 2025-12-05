@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 
 # Local app imports
 from .models import Quiz, Question, FillBlankQuestion, BlankWord, BlankSolution, QuizReport, QuizShare
+from .difficulty_explanation import get_difficulty_explanation
 from tags.models import Tag
 from subjects.models import Subject
 from courses.models import Course
@@ -53,6 +54,28 @@ class QuestionSerializer(serializers.ModelSerializer):
     attempt_count = serializers.IntegerField(read_only=True)
     correct_count = serializers.IntegerField(read_only=True)
     wrong_count   = serializers.IntegerField(read_only=True)
+    
+    # AI-computed difficulty (read-only)
+    computed_difficulty_score = serializers.FloatField(read_only=True)
+    difficulty_level = serializers.SerializerMethodField()
+    
+    def get_difficulty_level(self, obj):
+        """Return human-readable difficulty level."""
+        score = getattr(obj, 'computed_difficulty_score', None)
+        if score is None:
+            return None
+        if score < 300:
+            return "Very Easy"
+        elif score < 400:
+            return "Easy"
+        elif score < 500:
+            return "Medium"
+        elif score < 600:
+            return "Hard"
+        elif score < 700:
+            return "Very Hard"
+        else:
+            return "Expert"
 
     # Type-specific answer fields
     correct_option = serializers.IntegerField(required=False, allow_null=True)
@@ -96,7 +119,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             'option4', 'option4_image', 'option4_image_alt', 'option4_audio',
             'correct_option', 'correct_options', 'correct_answer', 'question_data',
             'fill_blank', '_fill_blank', 'hint1', 'hint2', 'attempt_count',
-            'correct_count', 'wrong_count',
+            'correct_count', 'wrong_count', 'computed_difficulty_score', 'difficulty_level',
         ]
         read_only_fields = [
             'id', '_fill_blank', 'question_image_alt', 'option1_image_alt',
@@ -184,6 +207,36 @@ class QuizSerializer(serializers.ModelSerializer):
     attempt_count = serializers.IntegerField(read_only=True)
     correct_count = serializers.IntegerField(read_only=True)
     wrong_count = serializers.IntegerField(read_only=True)
+    
+    # AI-computed difficulty (read-only)
+    computed_difficulty_score = serializers.FloatField(read_only=True)
+    difficulty_level = serializers.SerializerMethodField()
+    difficulty_explanation = serializers.SerializerMethodField()
+    
+    def get_difficulty_level(self, obj):
+        """Return human-readable difficulty level."""
+        score = getattr(obj, 'computed_difficulty_score', None)
+        if score is None:
+            return None
+        if score < 300:
+            return "Very Easy"
+        elif score < 400:
+            return "Easy"
+        elif score < 500:
+            return "Medium"
+        elif score < 600:
+            return "Hard"
+        elif score < 700:
+            return "Very Hard"
+        else:
+            return "Expert"
+    
+    def get_difficulty_explanation(self, obj):
+        """
+        Return a detailed explanation of why the quiz received its difficulty rating.
+        Includes 5-level categorization, confidence score, and AI factors.
+        """
+        return get_difficulty_explanation(obj)
 
     # Tagging fields
     tags = TagSerializer(many=True, read_only=True)
@@ -221,6 +274,7 @@ class QuizSerializer(serializers.ModelSerializer):
             'status', 'published_at',
             'tags', 'tag_names', 'questions',
             'attempt_count', 'correct_count', 'wrong_count',
+            'computed_difficulty_score', 'difficulty_level', 'difficulty_explanation',
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'languages', 'detected_location',
@@ -229,6 +283,7 @@ class QuizSerializer(serializers.ModelSerializer):
             'id', 'permalink', 'created_by', 'created_at',
             'is_locked', 'tags', 'attempt_count',
             'correct_count', 'wrong_count',
+            'computed_difficulty_score', 'difficulty_level', 'difficulty_explanation',
             'languages', 'detected_location',
             'course_title', 'lesson_id', 'lesson_title', 'lesson_permalink',
         ]

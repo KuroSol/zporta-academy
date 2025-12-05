@@ -103,6 +103,27 @@ class Profile(models.Model):
         db_index=True,
         help_text="✨ Impact Score: +2 per quiz, +4 per lesson, +6 per course created; +1/+2/+3 when others complete"
     )
+    
+    # AI-computed ability scores (populated by intelligence app, denormalized from UserAbilityProfile)
+    overall_ability_score = models.FloatField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="AI-computed overall ability score (0-1000 scale, higher = more advanced)"
+    )
+    
+    ability_rank = models.IntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="User's global rank among all users (1 = highest ability)"
+    )
+    
+    last_ability_update = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When ability scores were last computed"
+    )
     # ────────────────────────────────────────────────────────────────────────────
     
     # ── Email & Notification Preferences ───────────────────────────────────────

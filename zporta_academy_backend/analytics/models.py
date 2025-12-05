@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.conf import settings
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 import math
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,32 @@ class ActivityEvent(models.Model):
         help_text="UUID for a single continuous quiz attempt"
     )
     metadata = models.JSONField(null=True, blank=True, help_text="Stores event-specific data.")
+
+    def clean(self):
+        """
+        Validate metadata to prevent corruption.
+        
+        Ensures metadata is either:
+        - None/null (allowed)
+        - A dict (JSON object) - the expected type
+        
+        Rejects:
+        - Numeric types (int, float) that cause Django JSONField decoder errors
+        - Strings, lists without proper structure
+        """
+        super().clean()
+        
+        if self.metadata is not None:
+            if not isinstance(self.metadata, dict):
+                raise ValidationError({
+                    'metadata': f'Metadata must be a dictionary (JSON object), not {type(self.metadata).__name__}. '
+                               f'Got value: {self.metadata}'
+                })
+    
+    def save(self, *args, **kwargs):
+        """Override save to always validate metadata before saving."""
+        self.full_clean()  # This calls clean() and validates all fields
+        super().save(*args, **kwargs)
 
     def __str__(self):
         username = self.user.username if self.user else 'System/Anonymous'
