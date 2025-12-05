@@ -46,7 +46,7 @@ class Command(BaseCommand):
             enrollment_type='course',
             status='active',
             content_type=course_content_type
-        ).select_related('user', 'content_object').select_related('user__profile')
+        ).select_related('user', 'user__profile')
         
         total_processed = 0
         new_attendees = 0
@@ -57,7 +57,14 @@ class Command(BaseCommand):
         
         for enrollment in active_enrollments:
             student = enrollment.user
-            course = enrollment.content_object
+            # Fetch the course object (GenericForeignKey requires manual fetch)
+            try:
+                course = Course.objects.get(id=enrollment.object_id)
+            except Course.DoesNotExist:
+                # Course was deleted, skip this enrollment
+                total_processed += 1
+                continue
+            
             teacher = course.created_by
             
             # Skip if student and teacher are the same
