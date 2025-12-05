@@ -396,6 +396,9 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         username = request.data.get("username")
         email = request.data.get("email")
         password = request.data.get("password")
@@ -415,21 +418,41 @@ class RegisterView(APIView):
         # Create user and profile
         try:
             user = User.objects.create_user(username=username, email=email, password=password)
-            # Create or update profile *after* user is created
-            Profile.objects.update_or_create(user=user, defaults={'role': role, 'bio': bio})
+            
+            # Profile is auto-created by post_save signal.
+            # Update it with the provided role and bio instead of using update_or_create()
+            # to avoid race conditions in production (Gunicorn + multiple workers).
+            if hasattr(user, 'profile') and user.profile:
+                user.profile.role = role
+                user.profile.bio = bio
+                user.profile.save()
+            else:
+                # If profile wasn't created by signal, this is a critical error
+                logger.error(f"Profile not found for newly created user {user.id}")
+                user.delete()  # Clean up orphaned user
+                return Response(
+                    {"error": "An unexpected error occurred during profile creation."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
             return Response({"message": "User registered successfully."}, status=HTTP_201_CREATED)
-        except IntegrityError as e: # Catch potential integrity errors during user creation
-             print(f"Registration Error: {e}")
-             # Determine if it's username or email based on error message if possible, or provide generic
-             error_msg = "Registration failed due to a database constraint. The username or email might already exist."
-             if 'username' in str(e).lower():
-                 error_msg = "Username already taken."
-             elif 'email' in str(e).lower():
-                 error_msg = "Email already registered."
-             return Response({"error": error_msg}, status=HTTP_400_BAD_REQUEST)
+            
+        except IntegrityError as e:
+            # Catch potential integrity errors during user creation
+            logger.warning(f"Registration IntegrityError: {e}")
+            error_msg = "Registration failed due to a database constraint. The username or email might already exist."
+            if 'username' in str(e).lower():
+                error_msg = "Username already taken."
+            elif 'email' in str(e).lower():
+                error_msg = "Email already registered."
+            return Response({"error": error_msg}, status=HTTP_400_BAD_REQUEST)
+            
         except Exception as e:
-             print(f"Unexpected Registration Error: {e}")
-             return Response({"error": "An unexpected error occurred during registration."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Unexpected Registration Error: {e}", exc_info=True)
+            return Response(
+                {"error": "An unexpected error occurred during registration."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]

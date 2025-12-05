@@ -99,6 +99,9 @@ class TeacherInvitation(models.Model):
     
     def accept(self, user):
         """Mark invitation as accepted and grant guide status"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         if self.is_expired():
             self.status = 'expired'
             self.save()
@@ -116,7 +119,13 @@ class TeacherInvitation(models.Model):
         else:
             profile.role = 'guide'
         profile.active_guide = True
-        profile.can_invite_teachers = False  # Don't allow chain invitations by default
+        
+        # Safely set can_invite_teachers field if it exists
+        if hasattr(profile, 'can_invite_teachers'):
+            profile.can_invite_teachers = False  # Don't allow chain invitations by default
+        else:
+            logger.warning(f"Profile for user {user.id} missing 'can_invite_teachers' field. Skipping.")
+        
         profile.save()
         
         return True

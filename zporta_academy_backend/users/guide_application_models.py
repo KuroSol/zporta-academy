@@ -76,7 +76,10 @@ class GuideApplicationRequest(models.Model):
     
     def approve(self, admin_user):
         """Approve application and set user as active guide"""
+        import logging
         from django.utils import timezone
+        logger = logging.getLogger(__name__)
+        
         self.status = 'approved'
         self.reviewed_by = admin_user
         self.reviewed_at = timezone.now()
@@ -89,6 +92,13 @@ class GuideApplicationRequest(models.Model):
         else:
             profile.role = 'guide'
         profile.active_guide = True
+        
+        # Safely set can_invite_teachers field if it exists
+        if hasattr(profile, 'can_invite_teachers'):
+            profile.can_invite_teachers = False  # Don't allow chain invitations by default
+        else:
+            logger.warning(f"Profile for user {self.user.id} missing 'can_invite_teachers' field. Skipping.")
+        
         profile.save()
     
     def reject(self, admin_user, notes=''):

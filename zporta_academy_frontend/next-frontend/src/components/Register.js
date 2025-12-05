@@ -38,13 +38,7 @@ export default function Register() {
     setMessageType(type);
   };
 
-  // Check invitation token if present
-  useEffect(() => {
-    if (invitationToken) {
-      fetchInvitationDetails(invitationToken);
-    }
-  }, [invitationToken, fetchInvitationDetails]);
-
+  // Define fetchInvitationDetails BEFORE useEffect that uses it
   const fetchInvitationDetails = useCallback(async (token) => {
     try {
       const { data } = await apiClient.get(
@@ -67,6 +61,13 @@ export default function Register() {
       showMessage(err.response?.data?.detail || "Invalid invitation code.");
     }
   }, []);
+
+  // Check invitation token if present
+  useEffect(() => {
+    if (invitationToken) {
+      fetchInvitationDetails(invitationToken);
+    }
+  }, [invitationToken, fetchInvitationDetails]);
 
   // Google Sign-In callback
   const handleGoogleResponse = useCallback(
