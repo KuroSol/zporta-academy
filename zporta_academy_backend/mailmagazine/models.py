@@ -187,3 +187,73 @@ class MailMagazineIssue(models.Model):
 
     def __str__(self):
         return f"{self.subject} - {self.sent_at.strftime('%Y-%m-%d')}"
+
+
+class RecipientGroup(models.Model):
+    """
+    Saved recipient groups for reuse across mail magazines.
+    Teachers can create groups of students and apply them to multiple campaigns.
+    """
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='mail_recipient_groups'
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text='Group name (e.g., "Japanese Course A", "Premium Students")'
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Optional description of the group'
+    )
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='recipient_groups',
+        blank=True,
+        help_text='Students in this recipient group'
+    )
+    is_dynamic = models.BooleanField(
+        default=False,
+        help_text='If True, automatically includes all course attendees'
+    )
+    linked_course = models.ForeignKey(
+        'courses.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text='For dynamic groups: link to a course'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['teacher', '-updated_at']),
+        ]
+        unique_together = ('teacher', 'name')
+
+    def __str__(self):
+        member_count = self.members.count()
+        return f"{self.name} ({member_count} members)"
+
+    def get_members_queryset(self):
+        """Get all members, including dynamic course members if applicable"""
+        if self.is_dynamic and self.linked_course:
+            # For dynamic groups, include all course attendees
+            from enrollment.models import Enrollment
+            from django.contrib.contenttypes.models import ContentType
+            from courses.models import Course
+            course_ct = ContentType.objects.get_for_model(Course)
+            course_enrolled = Enrollment.objects.filter(
+                content_type=course_ct,
+                object_id=self.linked_course.id,
+                status='active'
+            ).values_list('user_id', flat=True)
+            User = settings.AUTH_USER_MODEL
+            return User.objects.filter(id__in=course_enrolled)
+        else:
+            # Static group
+            return self.members.all()

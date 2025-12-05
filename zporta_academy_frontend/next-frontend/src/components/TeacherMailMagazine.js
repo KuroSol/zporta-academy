@@ -6,6 +6,7 @@ import apiClient from '@/api';
 import styles from '@/styles/TeacherMailMagazine.module.css';
 import MailMagazineEditor from './Editor/MailMagazineEditor';
 import AutomationManager from './MailMagazine/AutomationManager';
+import RecipientManagementModal from './MailMagazine/RecipientManagementModal';
 import { 
   FaPaperPlane, FaSyncAlt, FaUsers, FaEye, FaCopy, FaEdit, 
   FaTrash, FaChartLine, FaTimes, FaUserPlus, FaSave, FaCalendarAlt, FaBolt, FaFileAlt
@@ -860,100 +861,14 @@ const TeacherMailMagazine = () => {
         )}
 
         {showRecipientsModal && selectedMagazine && (
-          <div className={styles.modal} onClick={closeModals}>
-            <div 
-              className={styles.modalContent} 
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="recipients-modal-title"
-            >
-              <div className={styles.modalHeader}>
-                <h2 id="recipients-modal-title">
-                  <FaUsers /> Recipient Management
-                </h2>
-                <button className={styles.closeButton} onClick={closeModals}>
-                  <FaTimes />
-                </button>
-              </div>
-              <div className={styles.modalBody}>
-                <p className={styles.modalSubtext}>
-                  Managing recipients for: <strong>{selectedMagazine.title}</strong>
-                </p>
-
-                <div className={styles.recipientGroups}>
-                  <h3>Recipient Groups</h3>
-                  {recipientGroups.length === 0 ? (
-                    <p className={styles.emptyText}>
-                      No student groups found. Students will appear here once they enroll in your courses.
-                    </p>
-                  ) : (
-                    recipientGroups.map((group) => (
-                      <div key={group.id} className={styles.groupCard}>
-                        <div className={styles.groupInfo}>
-                          <strong>{group.name}</strong>
-                          <span className={styles.groupCount}>
-                            {group.count} {group.count === 1 ? 'student' : 'students'}
-                          </span>
-                        </div>
-                        <button 
-                          className={styles.selectGroupButton}
-                          onClick={() => handleSelectGroup(group)}
-                          disabled={group.count === 0}
-                        >
-                          <FaUserPlus /> Select All
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className={styles.selectedRecipients}>
-                  <h3>Selected Recipients ({selectedRecipients.length})</h3>
-                  {selectedRecipients.length === 0 ? (
-                    <p className={styles.emptyText}>
-                      No recipients selected yet. Select a group above or the mail will be sent to all enrolled students.
-                    </p>
-                  ) : (
-                    <ul className={styles.recipientList}>
-                      {selectedRecipients.map((recipient) => (
-                        <li key={recipient.id} className={styles.recipientItem}>
-                          <div className={styles.recipientInfo}>
-                            <strong>ID: {recipient.id} - {recipient.username}</strong>
-                            {recipient.display_name && recipient.display_name !== recipient.username && (
-                              <span className={styles.recipientEmail}>{recipient.display_name}</span>
-                            )}
-                          </div>
-                          <button
-                            className={styles.removeRecipientButton}
-                            onClick={() => handleRemoveRecipient(recipient.id)}
-                            title="Remove"
-                          >
-                            <FaTimes />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className={styles.modalActions}>
-                  <button 
-                    className={styles.primaryButton}
-                    onClick={handleSaveRecipients}
-                  >
-                    <FaSave /> Save Recipients
-                  </button>
-                  <button 
-                    className={styles.secondaryButton}
-                    onClick={() => setSelectedRecipients([])}
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <RecipientManagementModal
+            magazine={selectedMagazine}
+            onClose={closeModals}
+            onSave={() => {
+              closeModals();
+              loadMagazines();
+            }}
+          />
         )}
 
         {showAnalyticsModal && selectedMagazine && analyticsData && (

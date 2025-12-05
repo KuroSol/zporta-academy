@@ -7,12 +7,23 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.utils import timezone
 from django.db import models
-from .models import TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, MailMagazineAutomation
+from django.db.models import Q, Count
+from django.contrib.auth import get_user_model
+from .models import (
+    TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, 
+    MailMagazineAutomation, RecipientGroup
+)
 from .serializers import (
     TeacherMailMagazineSerializer, 
     MailMagazineTemplateSerializer,
-    MailMagazineAutomationSerializer
+    MailMagazineAutomationSerializer,
+    RecipientGroupSerializer
 )
+from social.models import GuideRequest
+from enrollment.models import Enrollment
+from django.contrib.contenttypes.models import ContentType
+
+User = get_user_model()
 
 
 class IsTeacherOrAdmin(BasePermission):
@@ -338,4 +349,202 @@ class MailMagazineAutomationViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user)
+
+
+class RecipientManagementViewSet(viewsets.ViewSet):
+    """
+    Advanced recipient management for mail magazines.
+    Provides search, filtering, and group management.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def available_students(self, request):
+        """
+        Get all available attendees (students) for the logged-in teacher.
+        Supports search and filtering.
+        
+        Query parameters:
+        - search: Search by username, display_name, or email
+        - course_id: Filter by course enrollment
+        - status: 'all', 'accepted', 'pending', 'declined'
+        """
+        teacher = request.user
+        search = request.query_params.get('search', '').strip()
+        course_id = request.query_params.get('course_id', None)
+        guide_status = request.query_params.get('status', 'accepted')
+
+        # Get all attendees (guide requests)
+        query = GuideRequest.objects.filter(guide=teacher)
+        
+        if guide_status != 'all':
+            query = query.filter(status=guide_status)
+        
+        # Get students
+        student_ids = query.values_list('explorer_id', flat=True)
+        students = User.objects.filter(id__in=student_ids).select_related('profile')
+
+        # Filter by course if specified
+        if course_id:
+            from courses.models import Course
+            course_ct = ContentType.objects.get_for_model(Course)
+            enrolled = Enrollment.objects.filter(
+                object_id=course_id,
+                status='active',
+                content_type=course_ct
+            ).values_list('user_id', flat=True)
+            students = students.filter(id__in=enrolled)
+
+        # Search
+        if search:
+            students = students.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(profile__display_name__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+
+        # Get email preferences
+        students_data = []
+        for student in students.order_by('username'):
+            profile = getattr(student, 'profile', None)
+            guide_req = GuideRequest.objects.filter(
+                guide=teacher,
+                explorer=student
+            ).first()
+            
+            students_data.append({
+                'id': student.id,
+                'username': student.username,
+                'email': student.email,
+                'display_name': profile.display_name if profile else student.username,
+                'full_name': f"{student.first_name} {student.last_name}".strip() or student.username,
+                'guide_status': guide_req.status if guide_req else 'none',
+                'email_enabled': profile.mail_magazine_enabled if profile else True,
+            })
+
+        return Response({
+            'count': len(students_data),
+            'students': students_data
+        })
+
+    @action(detail=False, methods=['post'])
+    def bulk_add_recipients(self, request):
+        """Bulk add multiple recipients to a magazine."""
+        magazine_id = request.data.get('magazine_id')
+        recipient_ids = request.data.get('recipient_ids', [])
+
+        try:
+            magazine = TeacherMailMagazine.objects.get(id=magazine_id, teacher=request.user)
+            magazine.selected_recipients.add(*recipient_ids)
+            return Response({
+                'success': True,
+                'message': f'Added {len(recipient_ids)} recipients',
+                'total_recipients': magazine.selected_recipients.count()
+            })
+        except TeacherMailMagazine.DoesNotExist:
+            return Response(
+                {'error': 'Magazine not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['post'])
+    def bulk_remove_recipients(self, request):
+        """Bulk remove multiple recipients from a magazine."""
+        magazine_id = request.data.get('magazine_id')
+        recipient_ids = request.data.get('recipient_ids', [])
+
+        try:
+            magazine = TeacherMailMagazine.objects.get(id=magazine_id, teacher=request.user)
+            magazine.selected_recipients.remove(*recipient_ids)
+            return Response({
+                'success': True,
+                'message': f'Removed {len(recipient_ids)} recipients',
+                'total_recipients': magazine.selected_recipients.count()
+            })
+        except TeacherMailMagazine.DoesNotExist:
+            return Response(
+                {'error': 'Magazine not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['post'])
+    def clear_recipients(self, request):
+        """Clear all selected recipients from a magazine."""
+        magazine_id = request.data.get('magazine_id')
+
+        try:
+            magazine = TeacherMailMagazine.objects.get(id=magazine_id, teacher=request.user)
+            count = magazine.selected_recipients.count()
+            magazine.selected_recipients.clear()
+            return Response({
+                'success': True,
+                'message': f'Cleared {count} recipients',
+                'total_recipients': 0
+            })
+        except TeacherMailMagazine.DoesNotExist:
+            return Response(
+                {'error': 'Magazine not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class RecipientGroupViewSet(viewsets.ModelViewSet):
+    """
+    Manage saved recipient groups for mail campaigns.
+    Teachers can create, edit, and reuse recipient groups.
+    """
+    serializer_class = RecipientGroupSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return RecipientGroup.objects.filter(teacher=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def add_members(self, request, pk=None):
+        """Add members to a recipient group."""
+        group = self.get_object()
+        member_ids = request.data.get('member_ids', [])
+        group.members.add(*member_ids)
+        return Response({
+            'success': True,
+            'message': f'Added {len(member_ids)} members',
+            'total_members': group.members.count()
+        })
+
+    @action(detail=True, methods=['post'])
+    def remove_members(self, request, pk=None):
+        """Remove members from a recipient group."""
+        group = self.get_object()
+        member_ids = request.data.get('member_ids', [])
+        group.members.remove(*member_ids)
+        return Response({
+            'success': True,
+            'message': f'Removed {len(member_ids)} members',
+            'total_members': group.members.count()
+        })
+
+    @action(detail=True, methods=['post'])
+    def apply_to_magazine(self, request, pk=None):
+        """Apply this group to a mail magazine."""
+        group = self.get_object()
+        magazine_id = request.data.get('magazine_id')
+
+        try:
+            magazine = TeacherMailMagazine.objects.get(id=magazine_id, teacher=request.user)
+            magazine.selected_recipients.set(group.get_members_queryset())
+            return Response({
+                'success': True,
+                'message': f'Applied group to magazine',
+                'recipients_count': magazine.selected_recipients.count()
+            })
+        except TeacherMailMagazine.DoesNotExist:
+            return Response(
+                {'error': 'Magazine not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 

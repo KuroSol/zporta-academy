@@ -5,13 +5,17 @@ from .views import (
     MailMagazineIssueDetailView, 
     TeacherMailMagazineIssuesListView,
     MailMagazineTemplateViewSet,
-    MailMagazineAutomationViewSet
+    MailMagazineAutomationViewSet,
+    RecipientManagementViewSet,
+    RecipientGroupViewSet
 )
 
 router = DefaultRouter()
 router.register(r'teacher-mail-magazines', TeacherMailMagazineViewSet, basename='teacher-mail-magazines')
 router.register(r'templates', MailMagazineTemplateViewSet, basename='mail-templates')
 router.register(r'automations', MailMagazineAutomationViewSet, basename='mail-automations')
+router.register(r'recipient-management', RecipientManagementViewSet, basename='recipient-management')
+router.register(r'recipient-groups', RecipientGroupViewSet, basename='recipient-groups')
 
 urlpatterns = [
     path('', include(router.urls)),

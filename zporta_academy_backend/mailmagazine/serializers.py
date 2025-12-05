@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, MailMagazineAutomation
+from .models import TeacherMailMagazine, MailMagazineIssue, MailMagazineTemplate, MailMagazineAutomation, RecipientGroup
 
 User = get_user_model()
 
@@ -125,3 +125,27 @@ class MailMagazineIssueSerializer(serializers.ModelSerializer):
             'is_public',
         ]
         read_only_fields = ['id', 'sent_at', 'magazine_title', 'teacher_username']
+
+
+class RecipientGroupSerializer(serializers.ModelSerializer):
+    """Serializer for recipient groups."""
+    members_count = serializers.SerializerMethodField()
+    members_details = SimpleRecipientSerializer(source='get_members_queryset', many=True, read_only=True)
+    members = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        many=True,
+        write_only=True,
+        required=False
+    )
+    linked_course_name = serializers.CharField(source='linked_course.title', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = RecipientGroup
+        fields = [
+            'id', 'name', 'description', 'is_dynamic', 'linked_course', 'linked_course_name',
+            'members', 'members_count', 'members_details', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def get_members_count(self, obj):
+        return obj.get_members_queryset().count()
