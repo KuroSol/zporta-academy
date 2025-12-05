@@ -27,14 +27,152 @@
     color: var(--text-primary);
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
+    overflow: hidden;
 }
 .cardTitle {
     font-size: clamp(1.5rem, 5vw, 2.2rem);
     font-weight: 800;
     line-height: 1.2;
     margin: 0;
+    padding: 3rem 1rem;
     z-index: 2;
 }
+
+/* Question Count Badge - Bottom Left Corner */
+.questionCountBadge {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #475569;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+}
+
+/* Attachment Type Badge - Bottom Right Corner */
+.attachmentBadge {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
+}
+
+.attachmentLink,
+.attachmentType {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #475569;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.attachmentLink:hover {
+    background: rgba(255, 255, 255, 0.98);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* AI Difficulty Badge - Corner Badge Style */
+.difficultyBadge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #1e293b;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+}
+
+.difficultyBadge:hover {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.difficultyEmoji {
+    font-size: 1rem;
+    display: inline-block;
+    line-height: 1;
+}
+
+.difficultyRank {
+    letter-spacing: 0.4px;
+    min-width: 45px;
+    text-align: center;
+}
+
+/* Color coding for different difficulty levels using data attributes */
+/* Subtle color tints for difficulty levels */
+.difficultyBadge[data-difficulty-level="beginner"] {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(240, 253, 250, 0.95);
+    color: #15803d;
+}
+
+.difficultyBadge[data-difficulty-level="beginner-➜-medium"],
+.difficultyBadge[data-difficulty-level="beginner-→-medium"],
+.difficultyBadge[data-difficulty-level="beginner---medium"] {
+    border-color: rgba(202, 138, 4, 0.3);
+    background: rgba(254, 252, 232, 0.95);
+    color: #b45309;
+}
+
+.difficultyBadge[data-difficulty-level="medium"] {
+    border-color: rgba(234, 88, 12, 0.3);
+    background: rgba(255, 247, 237, 0.95);
+    color: #c2410c;
+}
+
+.difficultyBadge[data-difficulty-level="medium-➜-hard"],
+.difficultyBadge[data-difficulty-level="medium-→-hard"],
+.difficultyBadge[data-difficulty-level="medium---hard"] {
+    border-color: rgba(220, 38, 38, 0.3);
+    background: rgba(254, 242, 242, 0.95);
+    color: #b91c1c;
+}
+
+.difficultyBadge[data-difficulty-level="hard/expert"] {
+    border-color: rgba(139, 0, 0, 0.4);
+    background: rgba(245, 240, 240, 0.95);
+    color: #7f1d1d;
+    font-weight: 700;
+}
+
+
 .creatorInfo {
     position: absolute;
     top: 1rem;

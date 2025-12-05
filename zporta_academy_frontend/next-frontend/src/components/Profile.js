@@ -1392,7 +1392,7 @@ const Profile = () => {
                         </div>
                       </div>
                     ) : (
-                      <BioRenderer 
+                      <BioRenderer
                         bio={profile.bio}
                         sectionClass={styles.bioSection}
                         contentClass={styles.bioContent}

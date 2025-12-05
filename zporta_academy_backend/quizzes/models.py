@@ -110,6 +110,31 @@ class Quiz(models.Model):
         null=True,
         help_text="Difficulty level of the quiz."
     )
+    
+    # AI-computed difficulty and performance metrics (populated by intelligence app)
+    computed_difficulty_score = models.FloatField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="AI-computed difficulty score (0-1000 scale, matches user ability scale)"
+    )
+    
+    avg_completion_time_seconds = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Average time users spend completing this quiz"
+    )
+    
+    overall_success_rate = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Overall success rate (0-100%) across all attempts"
+    )
+    
+    attempt_count = models.IntegerField(
+        default=0,
+        help_text="Total number of quiz attempts (denormalized for sorting)"
+    )
 
     # ─── Tagging: many quizzes ↔ many tags ───────────────────────────────
     tags = models.ManyToManyField(
@@ -230,6 +255,25 @@ class Question(models.Model):
     # --- Hints ---
     hint1               = models.TextField(blank=True)
     hint2               = models.TextField(blank=True)
+    
+    # AI-computed difficulty metrics (populated by intelligence app)
+    computed_difficulty_score = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="AI-computed difficulty score (0-1000 scale)"
+    )
+    
+    avg_time_spent_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Average time users spend on this question (milliseconds)"
+    )
+    
+    success_rate = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Question success rate (0-100%)"
+    )
 
     def save(self, *args, **kwargs):
         # Auto-gen alt-text for question image

@@ -770,10 +770,10 @@ export default function PublicGuideProfile() {
                     const displayText = isTruncated
                       ? bioText.substring(0, 200) + "..."
                       : bioText;
-                    
+
                     return (
                       <>
-                        <BioRenderer 
+                        <BioRenderer
                           bio={displayText}
                           sectionClass={styles.bioRendererSection}
                           contentClass={styles.heroBio}
@@ -1118,7 +1118,7 @@ export default function PublicGuideProfile() {
             </div>
             <div className={styles.modalBody}>
               <h3>About</h3>
-              <BioRenderer 
+              <BioRenderer
                 bio={isTeacher ? profile.teacher_about : profile.bio}
                 sectionClass={styles.bioModalSection}
                 contentClass={styles.bioModalContent}
