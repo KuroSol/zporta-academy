@@ -751,20 +751,24 @@ class CacheStatistics(models.Model):
         return self.cost_saved_cents / 100.0
     
     @staticmethod
-    def estimate_cost(tokens, model_name='gpt-4o'):
+    def estimate_cost(tokens, model_name='gpt-4o', input_tokens=None, output_tokens=None):
         """
-        Estimate cost for a request based on tokens and model.
+        Calculate cost for API request based on actual or estimated token usage.
         Returns cost in cents.
         
         Args:
-            tokens: Approximate token count (input + output)
+            tokens: Total token count (used if input/output not specified)
             model_name: Model name (gpt-4o, gpt-4o-mini, gemini-2.0-flash-exp, etc.)
+            input_tokens: Actual input tokens from API (optional, more accurate)
+            output_tokens: Actual output tokens from API (optional, more accurate)
         """
-        # Average assumption: 60% input tokens, 40% output tokens
-        input_tokens = tokens * 0.6
-        output_tokens = tokens * 0.4
+        # Use actual token breakdown if provided, otherwise estimate
+        if input_tokens is None or output_tokens is None:
+            # Average assumption: 60% input tokens, 40% output tokens
+            input_tokens = tokens * 0.6
+            output_tokens = tokens * 0.4
         
-        # Pricing per 1M tokens in USD
+        # Pricing per 1M tokens in USD (as of December 2025)
         pricing = {
             'gpt-4o': {'input': 2.50, 'output': 10.00},
             'gpt-4o-mini': {'input': 0.15, 'output': 0.60},
@@ -777,7 +781,7 @@ class CacheStatistics(models.Model):
         # Default to gpt-4o pricing if unknown
         rates = pricing.get(model_name, pricing['gpt-4o'])
         
-        # Calculate cost in USD
+        # Calculate cost in USD based on actual usage
         cost_usd = (input_tokens / 1_000_000 * rates['input']) + \
                    (output_tokens / 1_000_000 * rates['output'])
         

@@ -844,6 +844,7 @@ Return ONLY valid JSON with these keys:
 """
     
     # Call AI model
+    token_usage = {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}
     try:
         if ai_model.startswith('gemini'):
             genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -851,6 +852,14 @@ Return ONLY valid JSON with these keys:
             logger.info(f"Calling Gemini model: {ai_model}")
             response = model.generate_content(prompt)
             result_text = response.text
+            
+            # Extract actual token usage from Gemini API response
+            if hasattr(response, 'usage_metadata'):
+                token_usage['input_tokens'] = getattr(response.usage_metadata, 'prompt_token_count', 0)
+                token_usage['output_tokens'] = getattr(response.usage_metadata, 'candidates_token_count', 0)
+                token_usage['total_tokens'] = getattr(response.usage_metadata, 'total_token_count', 0)
+                logger.info(f"Gemini token usage: {token_usage['total_tokens']} total ({token_usage['input_tokens']} input + {token_usage['output_tokens']} output)")
+            
         elif ai_model.startswith('gpt'):
             from openai import OpenAI
             client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -862,6 +871,13 @@ Return ONLY valid JSON with these keys:
                 max_tokens=4000  # Increased for comprehensive response
             )
             result_text = response.choices[0].message.content
+            
+            # Extract actual token usage from OpenAI API response
+            if hasattr(response, 'usage'):
+                token_usage['input_tokens'] = response.usage.prompt_tokens
+                token_usage['output_tokens'] = response.usage.completion_tokens
+                token_usage['total_tokens'] = response.usage.total_tokens
+                logger.info(f"OpenAI token usage: {token_usage['total_tokens']} total ({token_usage['input_tokens']} input + {token_usage['output_tokens']} output)")
         else:
             raise ValueError(f"Unsupported AI model: {ai_model}")
         
@@ -877,6 +893,11 @@ Return ONLY valid JSON with these keys:
         
         ai_insights = json.loads(result_text)
         logger.info(f"Successfully parsed comprehensive AI insights with {len(ai_insights)} sections")
+        
+        # Include token usage in the response
+        ai_insights['_token_usage'] = token_usage
+        ai_insights['_model_used'] = ai_model
+        
         return ai_insights
         
     except Exception as e:

@@ -321,20 +321,29 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                     cache_hit = True
                     ai_insights = cached.ai_insights
                     cached.hits += 1
-                    cached.tokens_saved += 1500  # Estimate: one analysis ~1500 tokens
+                    
+                    # Use actual tokens from original API call
+                    tokens_saved = cached.tokens_used or 1500
+                    cached.tokens_saved += tokens_saved
                     cached.save(update_fields=['hits', 'tokens_saved'])
                     
                     logger.info(f"✅ CACHE HIT: {user.username} - Subject: {subject or 'All'} - Engine: {engine}")
                     logger.info(f"   📊 Hit count: {cached.hits}, Tokens saved: {cached.tokens_saved}")
                     cache_found = True
                     
-                    # Update statistics
+                    # Update statistics with cost calculation
                     today = timezone.now().date()
                     stats, _ = CacheStatistics.objects.get_or_create(date=today)
                     stats.ai_insights_cached += 1
                     stats.ai_insights_hits += cached.hits
-                    stats.ai_tokens_saved += 1500
-                    stats.save(update_fields=['ai_insights_cached', 'ai_insights_hits', 'ai_tokens_saved'])
+                    stats.ai_tokens_saved += tokens_saved
+                    
+                    # Calculate cost saved by using cache
+                    cost_saved_cents = CacheStatistics.estimate_cost(tokens_saved, engine)
+                    stats.cost_saved_cents += cost_saved_cents
+                    
+                    stats.save(update_fields=['ai_insights_cached', 'ai_insights_hits', 'ai_tokens_saved', 'cost_saved_cents'])
+                    logger.info(f"   💚 Cost saved: ${cost_saved_cents/100:.4f}")
                 else:
                     logger.info(f"⏱️  CACHE EXPIRED: {user.username} - Subject: {subject or 'All'}")
                     
@@ -352,6 +361,19 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                 # Run AI analysis with specified engine
                 ai_insights = _run_ai_deep_analysis(user, analysis_data, engine, subject=subject)
                 
+                # Extract actual token usage from API response
+                token_usage = ai_insights.get('_token_usage', {})
+                actual_tokens = token_usage.get('total_tokens', 0)
+                input_tokens = token_usage.get('input_tokens', 0)
+                output_tokens = token_usage.get('output_tokens', 0)
+                
+                # Fallback to estimate if API didn't return usage
+                if actual_tokens == 0:
+                    actual_tokens = 1500
+                    logger.warning(f"⚠️  No token usage from API, using estimate: {actual_tokens}")
+                else:
+                    logger.info(f"📊 Actual API usage: {actual_tokens} tokens ({input_tokens} input + {output_tokens} output)")
+                
                 # ====================================================================
                 # STEP 3: SAVE TO CACHE FOR FUTURE USE
                 # ====================================================================
@@ -364,7 +386,7 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                         engine=engine,
                         defaults={
                             'ai_insights': ai_insights,
-                            'tokens_used': 1500,  # Approximate tokens used
+                            'tokens_used': actual_tokens,  # Real tokens from API
                             'expires_at': expires_at,
                         }
                     )
@@ -372,12 +394,26 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                     logger.info(f"💾 CACHED: {user.username} - Subject: {subject or 'All'} - Engine: {engine}")
                     logger.info(f"   ⏰ Cache expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
                     
-                    # Update statistics
+                    # Update statistics with actual usage and cost
                     today = timezone.now().date()
                     stats, _ = CacheStatistics.objects.get_or_create(date=today)
                     stats.ai_insights_generated += 1
-                    stats.ai_tokens_used += 1500
-                    stats.save(update_fields=['ai_insights_generated', 'ai_tokens_used'])
+                    stats.ai_tokens_used += actual_tokens
+                    
+                    # Calculate actual cost using real input/output token breakdown
+                    if input_tokens > 0 and output_tokens > 0:
+                        cost_cents = CacheStatistics.estimate_cost(
+                            actual_tokens, engine, 
+                            input_tokens=input_tokens, 
+                            output_tokens=output_tokens
+                        )
+                        logger.info(f"   💰 Cost: ${cost_cents/100:.4f} ({input_tokens} in + {output_tokens} out = {actual_tokens} tokens, {engine})")
+                    else:
+                        cost_cents = CacheStatistics.estimate_cost(actual_tokens, engine)
+                        logger.info(f"   💰 Cost: ${cost_cents/100:.4f} for {actual_tokens} tokens using {engine}")
+                    
+                    stats.cost_usd_cents += cost_cents
+                    stats.save(update_fields=['ai_insights_generated', 'ai_tokens_used', 'cost_usd_cents'])
                     
                 except Exception as e:
                     logger.warning(f"Could not cache AI insights: {e}")
