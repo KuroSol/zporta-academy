@@ -249,18 +249,31 @@ def estimate_duration_seconds(script_text: str) -> int:
     return max(60, ceil(words / 150 * 60))  # assume 150 wpm
 
 
-def create_podcast_for_user(user, language: str | None = None) -> DailyPodcast:
-    """Orchestrate script + audio generation and persist DailyPodcast.
-    
-    Audio files (if generated) are saved directly to MEDIA_ROOT/podcasts/
-    No cloud storage (S3) required - all files stored on server disk.
-    AWS credentials are optional - system works with script-only podcasts.
-    """
+def create_podcast_for_user(
+    user,
+    language: str | None = None,
+    requested_by=None,
+    request_type: str = "user",
+) -> DailyPodcast:
+    """Orchestrate script + audio generation. No automatic triggers, no hardcoded users."""
     language = language or getattr(settings, "DAILYCAST_DEFAULT_LANGUAGE", "en")
 
-    allowed_id = getattr(settings, "DAILYCAST_TEST_USER_ID", None)
-    if allowed_id and user.id != allowed_id:
-        raise PermissionError("This prototype is restricted to the configured test user")
+    # Optional per-admin config: cooldown can be toggled in settings; default OFF
+    enforce_cooldown = getattr(settings, "DAILYCAST_ENFORCE_COOLDOWN", False)
+    if enforce_cooldown:
+        now = timezone.now()
+        from datetime import timedelta
+
+        recent = DailyPodcast.objects.filter(
+            user=user,
+            status=DailyPodcast.STATUS_COMPLETED,
+            created_at__gte=now - timedelta(hours=24),
+        ).order_by("-created_at").first()
+        if recent:
+            wait_until = recent.created_at + timedelta(hours=24)
+            raise PermissionError(
+                f"Podcast already generated. Please wait until {wait_until.strftime('%Y-%m-%d %H:%M UTC')}"
+            )
 
     stats = collect_user_stats(user)
 
@@ -268,6 +281,9 @@ def create_podcast_for_user(user, language: str | None = None) -> DailyPodcast:
         user=user,
         primary_language=language,
         status=DailyPodcast.STATUS_PENDING,
+        requested_by_user=requested_by is not None,
+        requested_by=requested_by,
+        user_request_type=request_type or "user",
     )
 
     try:

@@ -1,3 +1,39 @@
+
+    # ✅ REQUEST TRACKING FIELDS (NEW - fix hardcoded test user)
+    requested_by_user = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True = user/staff clicked button, False = system/task generated"
+    )
+    
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="podcasts_requested",
+        help_text="Who triggered this generation (for auditing)"
+    )
+    
+    user_request_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('user', 'User Self-Request'),
+            ('admin_dashboard', 'Admin Dashboard Button'),
+            ('api', 'API Endpoint'),
+            ('celery_task', 'Scheduled Task'),
+            ('cli', 'CLI Command'),
+        ],
+        default='user',
+        help_text="How was this podcast requested?"
+    )
+    
+    can_request_again_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When this user can request next podcast (24h cooldown)"
+    )
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models

@@ -881,38 +881,47 @@ class DailyPodcastAdmin(admin.ModelAdmin):
         return JsonResponse(response_data)
     
     def generate_test_podcast(self, request):
-        """Generate test podcast on-demand with 24-hour cooldown enforcement."""
+        """Generate podcast for ANY user (admin/staff only).
+        
+        Query params:
+        - user_id: Target user ID to generate podcast for
+        - language: Language code (en, ja, es, etc)
+        """
         User = get_user_model()
+        user_id = request.GET.get("user_id") or request.POST.get("user_id")
         language = request.GET.get("language") or getattr(
             settings, "DAILYCAST_DEFAULT_LANGUAGE", "en"
         )
-
+        
+        # ✅ NEW: Accept user_id parameter (any user, not just test user)
+        if not user_id:
+            messages.error(request, "user_id parameter required")
+            return self._redirect_to_changelist()
+        
         try:
-            user = User.objects.get(id=getattr(settings, "DAILYCAST_TEST_USER_ID", None))
+            user = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            messages.error(request, "Test user not found. Check DAILYCAST_TEST_USER_ID.")
+            messages.error(request, f"User with ID {user_id} not found")
             return self._redirect_to_changelist()
 
         try:
             # Try to generate podcast synchronously (on-demand, no Celery)
             from dailycast.services_interactive import create_multilingual_podcast_for_user
             
+            # ✅ NEW: Track that admin requested this, not the user
             podcast = create_multilingual_podcast_for_user(
                 user,
                 primary_language=language,
-                output_format="both"
+                output_format="both",
+                requested_by=request.user,  # Admin who triggered it
+                request_type='admin_dashboard'  # How it was triggered
             )
             messages.success(
                 request,
-                f"✅ Podcast generated successfully (ID {podcast.id}) for {user.username}. "
-                f"Script: {len(podcast.script_text)} chars, Audio: {podcast.audio_file.name if podcast.audio_file else 'N/A'}"
+                f"✅ Podcast generated for {user.username} (ID {user_id})"
             )
         except ValueError as e:
-            # Handle 24-hour cooldown error
-            if "already generated within" in str(e):
-                messages.warning(request, f"⏳ {e}")
-            else:
-                messages.error(request, f"❌ Validation error: {e}")
+            messages.warning(request, f"⏳ {e}")
         except PermissionError as e:
             messages.error(request, f"🚫 {e}")
         except Exception as e:

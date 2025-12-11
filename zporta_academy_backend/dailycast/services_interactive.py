@@ -1,3 +1,6 @@
+    requested_by_user=requested_by is not None,@@
+    requested_by=requested_by,@@
+    user_request_type=request_type,@@
 """
 Enhanced podcast generation with:
 - Course-specific content (personalized to user's courses)
@@ -8,7 +11,9 @@ Enhanced podcast generation with:
 - Bilingual audio stitching (EN + JA in single MP3)
 """
 import logging
-import time
+    requested_by=None,@@
+    request_type: str = 'user',@@
+) -> DailyPodcast:
 import os
 import io
 from math import ceil
@@ -24,42 +29,42 @@ from django.utils import timezone
 from dailycast.models import DailyPodcast
 
 logger = logging.getLogger(__name__)
+        requested_by: User who triggered generation (for auditing)
+        request_type: How was this requested ('user', 'admin_dashboard', 'api', etc)
 
 # Initialize Japanese transliterator
 try:
     from pykakasi import kakasi
     kks = kakasi()
-    KAKASI_AVAILABLE = True
-    logger.info("Japanese transliterator (pykakasi) loaded successfully")
 except ImportError:
-    KAKASI_AVAILABLE = False
-    logger.warning("pykakasi not available - Japanese transliteration disabled")
-
-
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
 try:
-    from intelligence.models import UserAbilityProfile
-except Exception:
-    UserAbilityProfile = None
-
-try:
-    from analytics.models import ActivityEvent
-except Exception:
-    ActivityEvent = None
-
-try:
-    from enrollment.models import Enrollment
-except Exception:
-    Enrollment = None
-
-try:
-    from courses.models import Course
-except Exception:
-    Course = None
-
-
-def has_japanese_text(text: str) -> bool:
-    """
-    Check if text contains Japanese characters (kanji/hiragana/katakana).
+    # ✅ NEW: Check 24-hour cooldown (per user, ALL users same limit)
+    enforce_cooldown = getattr(settings, "DAILYCAST_ENFORCE_COOLDOWN", True)
+    if enforce_cooldown:
+        now = timezone.now()
+        cooldown_threshold = now - timedelta(hours=24)
+        
+        recent_podcast = DailyPodcast.objects.filter(
+            user=user,
+            status=DailyPodcast.STATUS_COMPLETED,
+            created_at__gte=cooldown_threshold
+        ).order_by('-created_at').first()
+        
+        if recent_podcast:
+            time_remaining = recent_podcast.created_at + timedelta(hours=24) - now
+            hours_remaining = int(time_remaining.total_seconds() / 3600)
+            minutes_remaining = int((time_remaining.total_seconds() % 3600) / 60)
+            raise ValueError(
+                f"Podcast already generated. Please wait {hours_remaining}h {minutes_remaining}m."
+            )
+    
+    # ✅ NEW: Track request metadata
+    if not isinstance(requested_by, User) and requested_by is not None:
+        requested_by = None
     """
     if not text:
         return False
@@ -2041,6 +2046,8 @@ def create_multilingual_podcast_for_user(
     included_courses: list | None = None,
     month_range: str | None = None,
     reply_size: str | None = None,
+    requested_by=None,
+    request_type: str = "user",
 ) -> DailyPodcast:
     """
     Orchestrate ON-DEMAND podcast generation with:
@@ -2062,30 +2069,21 @@ def create_multilingual_podcast_for_user(
         reply_size: 'short', 'medium', 'long', or 'detailed'
     
     Returns: DailyPodcast instance
-    Raises: PermissionError if not test user
-            ValueError if cooldown not expired
+    Raises: ValueError if cooldown not expired (when enabled in settings)
     """
     from django.utils import timezone
     from datetime import timedelta
-    
-    # 1) ENFORCE TEST-ONLY: Only configured test user can generate podcasts
-    allowed_id = getattr(settings, "DAILYCAST_TEST_USER_ID", None)
-    if allowed_id and user.id != allowed_id:
-        raise PermissionError("Prototype restricted to test user only")
-    
-    # 2) ENFORCE 24-HOUR COOLDOWN: Only for non-test users
-    # Alex (test user) has NO LIMIT - can generate as many podcasts as needed
-    # All other users must wait 24 hours between podcasts
-    if not allowed_id or user.id != allowed_id:
+
+    # Optional: per-admin cooldown control (default OFF)
+    enforce_cooldown = getattr(settings, "DAILYCAST_ENFORCE_COOLDOWN", False)
+    if enforce_cooldown:
         now = timezone.now()
         cooldown_threshold = now - timedelta(hours=24)
-        
         recent_podcast = DailyPodcast.objects.filter(
             user=user,
             status=DailyPodcast.STATUS_COMPLETED,
             created_at__gte=cooldown_threshold
         ).order_by('-created_at').first()
-        
         if recent_podcast:
             time_remaining = recent_podcast.created_at + timedelta(hours=24) - now
             hours_remaining = int(time_remaining.total_seconds() / 3600)
@@ -2094,8 +2092,6 @@ def create_multilingual_podcast_for_user(
                 f"Podcast already generated within the last 24 hours. "
                 f"Please wait {hours_remaining}h {minutes_remaining}m before requesting another."
             )
-    else:
-        logger.info(f"⚡ No cooldown for test user {user.username} - unlimited generation allowed")
     
     # Set defaults
     primary_language = primary_language or getattr(settings, "DAILYCAST_DEFAULT_LANGUAGE", "en")
@@ -2124,6 +2120,9 @@ def create_multilingual_podcast_for_user(
         reply_size=reply_size,
         included_courses=included_courses or [c['title'] for c in stats.get('enrolled_courses', [])],
         status=DailyPodcast.STATUS_PENDING,
+        requested_by_user=requested_by is not None,
+        requested_by=requested_by,
+        user_request_type=request_type or "user",
     )
     
     try:
