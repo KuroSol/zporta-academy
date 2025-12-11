@@ -12,6 +12,7 @@ from django.shortcuts import render
 from django.db.models import Count, Avg, Q
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
 
 from dailycast.ai_analyzer import UserLearningAnalyzer, analyze_user_and_generate_feedback, _run_ai_deep_analysis
@@ -280,6 +281,7 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                 'error': str(e)
             }, status=500)
     
+    @csrf_exempt
     def ai_insights_view(self, request, user_id):
         """AJAX endpoint to generate AI insights with caching to reduce token usage."""
         import json
