@@ -700,27 +700,40 @@ class CachedUserAnalytics(models.Model):
 
 class CacheStatistics(models.Model):
     """
-    Tracks overall cache performance and token savings.
+    Tracks overall cache performance, token savings, and API costs.
+    
+    Pricing (as of Dec 2025):
+    - GPT-4o: $2.50 per 1M input tokens, $10.00 per 1M output tokens
+    - GPT-4o-mini: $0.15 per 1M input tokens, $0.60 per 1M output tokens
+    - Gemini 2.0 Flash: Free tier then $0.075/$0.30 per 1M tokens
+    - Gemini 2.0 Pro: $1.25/$5.00 per 1M tokens
     """
     
     date = models.DateField(auto_now_add=True, unique=True, db_index=True)
     
+    # Request tracking
     ai_insights_generated = models.IntegerField(default=0)
     ai_insights_cached = models.IntegerField(default=0)
     ai_insights_hits = models.IntegerField(default=0)
+    
+    # Token tracking
     ai_tokens_used = models.IntegerField(default=0)
     ai_tokens_saved = models.IntegerField(default=0)
+    
+    # Cost tracking (in USD cents to avoid floating point issues)
+    cost_usd_cents = models.IntegerField(default=0, help_text="Total API cost in cents (e.g., 150 = $1.50)")
+    cost_saved_cents = models.IntegerField(default=0, help_text="Cost saved by caching in cents")
     
     analytics_generated = models.IntegerField(default=0)
     analytics_cached = models.IntegerField(default=0)
     
     class Meta:
         verbose_name = "Cache Statistics"
-        verbose_name_plural = "📈 Cache Statistics"
+        verbose_name_plural = "📈 Cache Statistics & API Costs"
         ordering = ['-date']
     
     def __str__(self):
-        return f"Cache Stats - {self.date}"
+        return f"Stats {self.date} - ${self.cost_usd():.2f} spent, ${self.cost_saved_usd():.2f} saved"
     
     def cache_hit_rate(self):
         """Calculate cache hit rate percentage."""
@@ -728,3 +741,45 @@ class CacheStatistics(models.Model):
         if total == 0:
             return 0
         return round((self.ai_insights_cached / total) * 100, 2)
+    
+    def cost_usd(self):
+        """Get cost in USD dollars."""
+        return self.cost_usd_cents / 100.0
+    
+    def cost_saved_usd(self):
+        """Get saved cost in USD dollars."""
+        return self.cost_saved_cents / 100.0
+    
+    @staticmethod
+    def estimate_cost(tokens, model_name='gpt-4o'):
+        """
+        Estimate cost for a request based on tokens and model.
+        Returns cost in cents.
+        
+        Args:
+            tokens: Approximate token count (input + output)
+            model_name: Model name (gpt-4o, gpt-4o-mini, gemini-2.0-flash-exp, etc.)
+        """
+        # Average assumption: 60% input tokens, 40% output tokens
+        input_tokens = tokens * 0.6
+        output_tokens = tokens * 0.4
+        
+        # Pricing per 1M tokens in USD
+        pricing = {
+            'gpt-4o': {'input': 2.50, 'output': 10.00},
+            'gpt-4o-mini': {'input': 0.15, 'output': 0.60},
+            'gpt-4-turbo': {'input': 10.00, 'output': 30.00},  # Legacy
+            'gemini-2.0-flash-exp': {'input': 0.075, 'output': 0.30},
+            'gemini-2.0-pro-exp': {'input': 1.25, 'output': 5.00},
+            'gemini-1.5-pro': {'input': 1.25, 'output': 5.00},
+        }
+        
+        # Default to gpt-4o pricing if unknown
+        rates = pricing.get(model_name, pricing['gpt-4o'])
+        
+        # Calculate cost in USD
+        cost_usd = (input_tokens / 1_000_000 * rates['input']) + \
+                   (output_tokens / 1_000_000 * rates['output'])
+        
+        # Convert to cents
+        return int(cost_usd * 100)

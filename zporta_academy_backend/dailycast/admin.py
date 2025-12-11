@@ -2005,13 +2005,13 @@ class CachedUserAnalyticsAdmin(admin.ModelAdmin):
 
 @admin.register(CacheStatistics)
 class CacheStatisticsAdmin(admin.ModelAdmin):
-    """Display cache performance statistics."""
+    """Display cache performance statistics and API costs."""
     
     list_display = (
         'date',
         'ai_insights_stats',
-        'analytics_stats',
-        'tokens_saved_display',
+        'cost_display',
+        'cost_saved_display',
         'hit_rate_display',
     )
     
@@ -2023,6 +2023,8 @@ class CacheStatisticsAdmin(admin.ModelAdmin):
         'ai_insights_hits',
         'ai_tokens_used',
         'ai_tokens_saved',
+        'cost_usd_cents',
+        'cost_saved_cents',
         'analytics_generated',
         'analytics_cached',
         'detailed_stats',
@@ -2042,6 +2044,13 @@ class CacheStatisticsAdmin(admin.ModelAdmin):
             ),
             'description': '📊 Tracks AI analysis caching performance'
         }),
+        ('💰 API Costs', {
+            'fields': (
+                'cost_usd_cents',
+                'cost_saved_cents',
+            ),
+            'description': '💵 API costs in cents (100 cents = $1.00)'
+        }),
         ('Analytics Cache', {
             'fields': (
                 'analytics_generated',
@@ -2055,8 +2064,16 @@ class CacheStatisticsAdmin(admin.ModelAdmin):
     )
     
     def ai_insights_stats(self, obj):
-        return f"🤖 Gen: {obj.ai_insights_generated} | Cache: {obj.ai_insights_cached}"
-    ai_insights_stats.short_description = 'AI Insights'
+        return f"🤖 {obj.ai_insights_generated} gen | {obj.ai_insights_cached} cached"
+    ai_insights_stats.short_description = 'Requests'
+    
+    def cost_display(self, obj):
+        return f"💰 ${obj.cost_usd():.2f}"
+    cost_display.short_description = 'Cost'
+    
+    def cost_saved_display(self, obj):
+        return f"💚 ${obj.cost_saved_usd():.2f}"
+    cost_saved_display.short_description = 'Saved'
     
     def analytics_stats(self, obj):
         return f"📊 Gen: {obj.analytics_generated} | Cache: {obj.analytics_cached}"
@@ -2072,12 +2089,24 @@ class CacheStatisticsAdmin(admin.ModelAdmin):
     hit_rate_display.short_description = 'Hit Rate'
     
     def detailed_stats(self, obj):
-        cost_saved = (obj.ai_tokens_saved / 1000) * 0.000125 if obj.ai_tokens_saved > 0 else 0
         hit_rate = obj.cache_hit_rate()
+        cost_usd = obj.cost_usd()
+        saved_usd = obj.cost_saved_usd()
+        total_potential = cost_usd + saved_usd
         
         html = f'''
         <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196f3;">
-            <p style="margin: 0 0 15px 0;"><strong>🎯 Cache Performance Summary</strong></p>
+            <p style="margin: 0 0 15px 0;"><strong>🎯 Daily Performance Summary</strong></p>
+            
+            <div style="background: #fff3cd; padding: 10px; border-radius: 3px; margin-bottom: 10px; border-left: 3px solid #ffc107;">
+                <p style="margin: 5px 0;"><strong>💰 API Costs Today:</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Spent: <strong style="color: #d32f2f;">${cost_usd:.2f}</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Saved by cache: <strong style="color: #388e3c;">${saved_usd:.2f}</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Total potential cost: <strong>${total_potential:.2f}</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0; color: #666; font-size: 12px;">
+                    ℹ️ Without caching, would have cost ${total_potential:.2f}
+                </p>
+            </div>
             
             <div style="background: white; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
                 <p style="margin: 5px 0;"><strong>🤖 AI Insights Cache:</strong></p>
@@ -2088,10 +2117,9 @@ class CacheStatisticsAdmin(admin.ModelAdmin):
             </div>
             
             <div style="background: white; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
-                <p style="margin: 5px 0;"><strong>💾 Token Savings:</strong></p>
+                <p style="margin: 5px 0;"><strong>💾 Token Usage:</strong></p>
                 <p style="margin-left: 20px; margin: 5px 0;">• Tokens Used: {obj.ai_tokens_used:,}</p>
                 <p style="margin-left: 20px; margin: 5px 0;">• Tokens Saved: {obj.ai_tokens_saved:,}</p>
-                <p style="margin-left: 20px; margin: 5px 0;">• Cost Saved: ~${cost_saved:.4f}</p>
             </div>
             
             <div style="background: white; padding: 10px; border-radius: 3px;">
