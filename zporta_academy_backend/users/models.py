@@ -179,12 +179,43 @@ class UserPreference(models.Model):
     interested_subjects = models.ManyToManyField('subjects.Subject', blank=True)
     interested_tags = models.ManyToManyField('tags.Tag', blank=True)
 
+    # Daily Report Language Preferences
+    # These are independent to support users whose native language != study language
+    native_language = models.CharField(
+        max_length=12,
+        default="en",
+        choices=[
+            ("en", "English"),
+            ("ja", "Japanese (日本語)"),
+            ("es", "Spanish (Español)"),
+            ("fr", "French (Français)"),
+            ("de", "German (Deutsch)"),
+            ("zh", "Chinese (中文)"),
+            ("ko", "Korean (한국어)"),
+        ],
+        help_text="User's native/preferred language for audio narration"
+    )
+    
+    report_language = models.CharField(
+        max_length=12,
+        default="en",
+        choices=[
+            ("en", "English"),
+            ("ja", "Japanese (日本語)"),
+            ("es", "Spanish (Español)"),
+            ("fr", "French (Français)"),
+            ("de", "German (Deutsch)"),
+            ("zh", "Chinese (中文)"),
+            ("ko", "Korean (한국어)"),
+        ],
+        help_text="Language for daily study report audio (independent from native language)"
+    )
+
     # Optional
     location = models.CharField(max_length=255, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
 
     updated_at = models.DateTimeField(auto_now=True)
-
 
 class UserLoginEvent(models.Model):
     """Tracks user login events and optional session duration."""

@@ -236,7 +236,14 @@ class QuizSerializer(serializers.ModelSerializer):
         Return a detailed explanation of why the quiz received its difficulty rating.
         Includes 5-level categorization, confidence score, and AI factors.
         """
-        return get_difficulty_explanation(obj)
+        try:
+            return get_difficulty_explanation(obj)
+        except Exception as e:
+            # Fallback: return None if difficulty explanation fails
+            # This ensures the API doesn't crash and frontend renders without badge
+            import logging
+            logging.warning(f"Error computing difficulty explanation for quiz {obj.id}: {e}")
+            return None
 
     # Tagging fields
     tags = TagSerializer(many=True, read_only=True)

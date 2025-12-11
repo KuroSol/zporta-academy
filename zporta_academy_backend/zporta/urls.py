@@ -42,6 +42,7 @@ urlpatterns = [
     path('api/feed/',       include('feed.urls')),
     path('api/tags/',       include('tags.urls')),
     path('api/',            include('mailmagazine.urls')),
+    path('api/admin/ajax/', include('dailycast.ajax_urls')),  # AJAX endpoints for admin forms
     path('', include('seo.urls')),
 ]
 

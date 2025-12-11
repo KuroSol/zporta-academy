@@ -15,6 +15,17 @@ except ImportError:  # Provide graceful fallback
 # --- Existing BASE_DIR Definition ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# --- Google TTS / Dailycast settings ---
+GOOGLE_CREDENTIALS_DEFAULT = BASE_DIR / "google-credentials.json"
+
+# Force authoritative path to avoid stale env values (e.g., Downloads/...json)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(GOOGLE_CREDENTIALS_DEFAULT)
+print(f"[OK] GOOGLE_APPLICATION_CREDENTIALS -> {GOOGLE_CREDENTIALS_DEFAULT}")
+
+# --- ElevenLabs TTS API Key ---
+ELEVENLABS_API_KEY = "sk_1fa574d07736f4b13cc861985064ff00509b4d3eacd04982"
+print(f"[OK] ELEVENLABS_API_KEY configured")
+
 # --- Firebase Admin SDK Initialization ---
 # Path to your service account key file, relative to BASE_DIR from this file
 SERVICE_ACCOUNT_KEY_FILENAME = "firebase_credentials.json"
@@ -27,13 +38,13 @@ if firebase_admin and not firebase_admin._apps:
         if SERVICE_ACCOUNT_KEY_PATH.exists():
             cred = credentials.Certificate(str(SERVICE_ACCOUNT_KEY_PATH))
             firebase_admin.initialize_app(cred)
-            print("✅ Firebase Admin SDK initialized successfully.")
+            print("[OK] Firebase Admin SDK initialized successfully.")
         else:
-            print(f"⚠️  Firebase Admin SDK: Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
-            print("⚠️  Firebase features disabled (optional).")
+            print(f"[WARN] Firebase Admin SDK: Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
+            print("[WARN] Firebase features disabled (optional).")
     except Exception as e:
-        print(f"⚠️  Error initializing Firebase Admin SDK: {e}")
-        print("⚠️  Continuing without Firebase (optional).")
+        print(f"[WARN] Error initializing Firebase Admin SDK: {e}")
+        print("[WARN] Continuing without Firebase (optional).")
 # --- End of Firebase Admin SDK Initialization ---
 
 # --- Your Existing INSTALLED_APPS ---
@@ -83,6 +94,7 @@ INSTALLED_APPS = [
     'channels',
     'feed',
     'explorer',
+    'dailycast.apps.DailycastConfig',
     'django.contrib.sitemaps',
     'mailmagazine',
 ] + _optional('gamification.apps.GamificationConfig')
@@ -171,11 +183,11 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.co
 # Fallback: if credentials are missing in local dev, switch to console backend to avoid SMTP errors.
 if (not EMAIL_HOST_USER) or (not EMAIL_HOST_PASSWORD) or EMAIL_HOST_PASSWORD == '':
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    print('⚠️  Email credentials missing; using console backend (emails will print to terminal).')
+    print('[WARN] Email credentials missing; using console backend (emails will print to terminal).')
 else:
     # Ensure app password format (no spaces) to reduce common mistakes; warn if spaces present.
     if ' ' in EMAIL_HOST_PASSWORD:
-        print('⚠️  EMAIL_HOST_PASSWORD contains spaces. Remove spaces from your 16-character Gmail App Password.')
+        print('[WARN] EMAIL_HOST_PASSWORD contains spaces. Remove spaces from your 16-character Gmail App Password.')
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -201,3 +213,37 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 STATIC_ROOT = BASE_DIR / 'staticfiles' # For collectstatic in production
+
+# --- Dailycast prototype settings ---
+OPENAI_API_KEY = config('OPENAI_API_KEY', default=None)
+GEMINI_API_KEY = config('GEMINI_API_KEY', default=None)
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default=None)
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default=None)
+AWS_REGION = config('AWS_REGION', default='us-east-1')
+DAILYCAST_TEST_USER_ID = config('DAILYCAST_TEST_USER_ID', cast=int, default=1)
+DAILYCAST_DEFAULT_LANGUAGE = config('DAILYCAST_DEFAULT_LANGUAGE', default='en')
+
+# --- Logging Configuration (debugging) ---
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'dailycast': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

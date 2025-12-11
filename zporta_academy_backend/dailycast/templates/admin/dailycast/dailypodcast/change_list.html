@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a class="addlink" href="{% url 'admin:dailycast_dailypodcast_generate_test' %}">
+            Generate Test Podcast Now
+        </a>
+    </li>
+{% endblock %}

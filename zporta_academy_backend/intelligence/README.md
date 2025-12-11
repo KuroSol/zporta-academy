@@ -18,7 +18,7 @@ All heavy ML computations run **offline** via management commands. API endpoints
 ### Data Flow
 
 ```
-User Activity (ActivityEvent) 
+User Activity (ActivityEvent)
     ↓
 [Offline Batch Jobs] (Management Commands)
     ↓
@@ -46,6 +46,7 @@ Frontend (AI Dashboard, Enhanced Feed)
 Stores computed ability estimates for each user.
 
 **Fields:**
+
 - `overall_ability_score` (FloatField, 0-1000 scale): ELO-style rating
 - `ability_by_subject` (JSONField): Per-subject ability breakdowns
 - `ability_by_tag` (JSONField): Per-tag ability (optional)
@@ -63,6 +64,7 @@ Stores computed ability estimates for each user.
 Stores computed difficulty scores for quizzes and questions.
 
 **Fields:**
+
 - `content_type` / `object_id` (GenericFK): Points to Quiz or Question
 - `computed_difficulty_score` (FloatField, 0-1000): Difficulty on same scale as ability
 - `success_rate` (FloatField): Overall correctness percentage
@@ -79,6 +81,7 @@ Stores computed difficulty scores for quizzes and questions.
 Precomputed user-content match scores for fast feed generation.
 
 **Fields:**
+
 - `user` (FK): The student
 - `content_type` / `object_id` (GenericFK): The quiz/lesson
 - `match_score` (FloatField, 0-100): Overall match quality
@@ -97,6 +100,7 @@ Precomputed user-content match scores for fast feed generation.
 Denormalized cache for entire user feeds.
 
 **Fields:**
+
 - `user` (FK)
 - `feed_type` (CharField): 'personalized', 'review', 'explore', 'challenge'
 - `cached_quiz_ids` (JSONField): Ordered quiz IDs
@@ -114,16 +118,19 @@ Denormalized cache for entire user feeds.
 Computes difficulty scores for all quizzes and questions.
 
 **Usage:**
+
 ```bash
 python manage.py compute_content_difficulty --min-attempts 3 --days 90
 ```
 
 **Options:**
+
 - `--min-attempts`: Minimum attempts required (default: 3)
 - `--days`: Number of days of history (default: 90)
 - `--content-type`: `quiz`, `question`, or `all` (default: all)
 
 **What it does:**
+
 1. Analyzes `ActivityEvent` data for quiz/question attempts
 2. Computes difficulty based on success rate, time spent, attempt count
 3. Updates `ContentDifficultyProfile` and denormalized fields on Quiz/Question models
@@ -139,16 +146,19 @@ python manage.py compute_content_difficulty --min-attempts 3 --days 90
 Computes ability scores and rankings for all users.
 
 **Usage:**
+
 ```bash
 python manage.py compute_user_abilities --min-attempts 5 --days 90
 ```
 
 **Options:**
+
 - `--min-attempts`: Minimum quiz attempts for ranking (default: 5)
 - `--days`: Number of days of history (default: 90)
 - `--user-id`: Compute for specific user only (optional)
 
 **What it does:**
+
 1. For each user, fetches quiz attempt history
 2. Computes overall ability using ELO-style rating
 3. Computes subject-specific abilities
@@ -166,16 +176,19 @@ python manage.py compute_user_abilities --min-attempts 5 --days 90
 Computes user-content match scores for personalized recommendations.
 
 **Usage:**
+
 ```bash
 python manage.py compute_match_scores --top-n 100
 ```
 
 **Options:**
+
 - `--top-n`: Number of top matches to store per user (default: 100)
 - `--user-id`: Compute matches for specific user (optional)
 - `--batch-size`: Users per batch (default: 50)
 
 **What it does:**
+
 1. For each user with ability profile:
    - Fetches candidate quizzes (filtered by preferences)
    - Computes match score based on:
@@ -199,6 +212,7 @@ All endpoints require authentication.
 Returns user's ability profile with rankings.
 
 **Response:**
+
 ```json
 {
   "username": "john_doe",
@@ -224,9 +238,11 @@ Returns user's ability profile with rankings.
 Returns optimized sequence of next quizzes.
 
 **Query Params:**
+
 - `limit` (default: 20, max: 50)
 
 **Response:**
+
 ```json
 {
   "path": [
@@ -240,7 +256,7 @@ Returns optimized sequence of next quizzes.
       "why": "Perfect match for your level 🎯",
       "estimated_time_minutes": 12,
       "permalink": "teacher/math/2025-11-15/algebra-basics"
-    },
+    }
     // ... more items
   ],
   "total_items": 20
@@ -254,6 +270,7 @@ Returns optimized sequence of next quizzes.
 Returns trend analysis, strengths, weaknesses, achievements.
 
 **Response:**
+
 ```json
 {
   "overall_trend": "Great progress!",
@@ -302,6 +319,7 @@ Returns trend analysis, strengths, weaknesses, achievements.
 Suggests new subjects to explore.
 
 **Response:**
+
 ```json
 {
   "recommended_subjects": [
@@ -370,6 +388,7 @@ CREATE INDEX idx_profile_ability ON users_profile(overall_ability_score) WHERE o
 ### Query Patterns
 
 Feed queries use:
+
 ```python
 # Fast: index-only scan
 MatchScore.objects.filter(user=user).order_by('-match_score')[:50]
@@ -386,6 +405,7 @@ Quiz.objects.filter(computed_difficulty_score__gte=400, computed_difficulty_scor
 
 1. **Add app to INSTALLED_APPS** (✓ Already done)
 2. **Run migrations:**
+
    ```bash
    python manage.py makemigrations intelligence
    python manage.py makemigrations quizzes
@@ -401,11 +421,13 @@ Quiz.objects.filter(computed_difficulty_score__gte=400, computed_difficulty_scor
 ### First-Time Data Population
 
 1. **Compute content difficulty:**
+
    ```bash
    python manage.py compute_content_difficulty --days 180
    ```
 
 2. **Compute user abilities:**
+
    ```bash
    python manage.py compute_user_abilities --days 180
    ```
@@ -437,11 +459,13 @@ Add to crontab or use Celery Beat:
 ### Key Metrics to Track
 
 1. **Coverage:**
+
    - % of users with UserAbilityProfile
    - % of quizzes with ContentDifficultyProfile
    - Avg MatchScore count per user
 
 2. **Performance:**
+
    - Management command execution time
    - API endpoint response times (<20ms target)
    - Feed generation time (<50ms target)
@@ -480,11 +504,13 @@ print(f"Stale match scores: {stale_match_scores}")
 ### Issue: Users not getting AI recommendations
 
 **Check:**
+
 1. Does user have UserAbilityProfile? (`user.ability_profile`)
 2. Does user have MatchScore entries? (`MatchScore.objects.filter(user=user).count()`)
 3. Has user attempted enough quizzes? (min 5 for ability profiling)
 
 **Fix:**
+
 ```bash
 # Recompute for specific user
 python manage.py compute_user_abilities --user-id 123
@@ -496,12 +522,14 @@ python manage.py compute_match_scores --user-id 123
 ### Issue: Management commands taking too long
 
 **Optimize:**
+
 1. Reduce `--days` parameter (analyze less history)
 2. Increase `--batch-size` for compute_match_scores
 3. Use `--content-type quiz` to skip questions
 4. Run during low-traffic hours
 
 **Scale:**
+
 - Split by user cohorts (e.g., active users first)
 - Use separate worker machines
 - Consider Celery for distributed processing
@@ -511,12 +539,15 @@ python manage.py compute_match_scores --user-id 123
 ### Issue: AI recommendations seem poor quality
 
 **Debug:**
+
 1. Check difficulty score distribution:
+
    ```python
    ContentDifficultyProfile.objects.aggregate(Avg('computed_difficulty_score'))
    ```
 
 2. Check ability score distribution:
+
    ```python
    UserAbilityProfile.objects.aggregate(Avg('overall_ability_score'))
    ```
@@ -527,6 +558,7 @@ python manage.py compute_match_scores --user-id 123
    ```
 
 **Tune:**
+
 - Adjust weights in `compute_match_score()` function (in `intelligence/utils.py`)
 - Adjust ZPD optimal range (default: -50 to +50)
 - Increase min_attempts threshold for more confident scores
@@ -548,11 +580,13 @@ python manage.py compute_match_scores --user-id 123
 To enable semantic matching with embeddings:
 
 1. Install sentence-transformers:
+
    ```bash
    pip install sentence-transformers
    ```
 
 2. Run embedding generation:
+
    ```bash
    python manage.py generate_content_embeddings
    ```
@@ -565,6 +599,7 @@ To enable semantic matching with embeddings:
 ## Support
 
 For questions or issues:
+
 - Check logs: `tail -f logs/intelligence.log`
 - Django admin: `/administration-zporta-repersentiivie/intelligence/`
 - Code: `intelligence/` directory

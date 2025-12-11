@@ -1,0 +1,249 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% static 'dailycast/js/llm_model_selector.js' %}"></script>
+    <style>
+        /* ===== READABILITY FIX ===== */
+        body, .module {
+            background-color: #ffffff !important;
+        }
+        
+        .module {
+            border: 1px solid #ddd;
+            background-color: #ffffff;
+        }
+        
+        /* ===== FORM FIELD STYLING ===== */
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        
+        select {
+            min-width: 300px;
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .llm-provider-select,
+        .openai-model-select {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #0066cc;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .llm-provider-select:hover,
+        .openai-model-select:hover {
+            border-color: #004499;
+            box-shadow: 0 0 5px rgba(0, 102, 204, 0.3);
+        }
+        
+        .llm-provider-select:focus,
+        .openai-model-select:focus {
+            outline: none;
+            border-color: #004499;
+            box-shadow: 0 0 8px rgba(0, 102, 204, 0.5);
+            background-color: #f0f8ff;
+        }
+        
+        /* ===== LABEL STYLING ===== */
+        label {
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            display: block !important;
+            margin-bottom: 8px !important;
+            text-shadow: none !important;
+        }
+        
+        /* Force label text to be visible in all contexts */
+        .form-row label,
+        .form-row > label,
+        .fieldset-row label,
+        fieldset label {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        
+        /* ===== HELP TEXT STYLING ===== */
+        .helptext {
+            display: block !important;
+            font-size: 12px !important;
+            color: #333333 !important;
+            margin-top: 5px !important;
+            padding: 8px 10px !important;
+            background-color: #f5f5f5 !important;
+            border-left: 4px solid #0066cc !important;
+            border-radius: 3px !important;
+            line-height: 1.4 !important;
+        }
+        
+        /* Ensure helptext is always dark/readable */
+        .helptext, .helptext * {
+            color: #333333 !important;
+            text-shadow: none !important;
+        }
+        
+        /* ===== FIELDSET STYLING ===== */
+        fieldset {
+            border: 1px solid #eaeaea !important;
+            background-color: #fafafa;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        
+        fieldset > legend {
+            color: #000000 !important;
+            font-weight: 600;
+            padding: 0 10px;
+            background-color: #ffffff;
+            border: none;
+            font-size: 14px;
+        }
+        
+        /* ===== TOOLTIP STYLING ===== */
+        .llm-tooltip-notification {
+            animation: slideIn 0.3s ease-in-out;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .llm-tooltip-notification > div {
+            background-color: #e8f4f8 !important;
+            border: 2px solid #0066cc !important;
+            color: #000000 !important;
+        }
+        
+        .llm-error-notification > div {
+            background-color: #ffe8e8 !important;
+            border: 2px solid #cc0000 !important;
+            color: #cc0000 !important;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* ===== FIELDSET DESCRIPTION ===== */
+        div.description {
+            color: #99D5D9 !important;
+            font-size: 13px !important;
+            line-height: 1.5 !important;
+            margin-bottom: 10px !important;
+            padding: 10px !important;
+            background-color: #f0f0f0 !important;
+            border-left: 4px solid #666666 !important;
+            border-radius: 3px !important;
+        }
+        
+        /* Extra strong rule to override base styles */
+        .description {
+            color: #99D5D9 !important;
+        }
+        
+        div.description * {
+            color: #99D5D9 !important;
+        }
+        
+        /* ===== SUBMIT BUTTON ===== */
+        input[type="submit"] {
+            background-color: #417690 !important;
+            color: #ffffff !important;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        input[type="submit"]:hover {
+            background-color: #205067 !important;
+        }
+        
+        /* ===== READONLY FIELDS ===== */
+        .readonly {
+            background-color: #f9f9f9;
+            color: #333333;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        /* ===== SECTION HEADERS ===== */
+        .module h2 {
+            background-color: #417690 !important;
+            color: #ffffff !important;
+            padding: 10px 15px;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 0;
+        }
+        
+        /* ===== INLINE FORMSET ===== */
+        .inline-group {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* ===== ENSURE TEXT IS READABLE ===== */
+        body, p, td, th, div, span, li, dt, dd {
+            color: #000000 !important;
+        }
+        
+        /* Force all text in form containers to be visible */
+        .form-row, .fieldset-row {
+            color: #000000 !important;
+        }
+        
+        .form-row > * {
+            color: #000000 !important;
+        }
+        
+        /* Specific fix for LLM provider and model fields */
+        [id*="llm_provider"],
+        [id*="openai_model"],
+        [name*="llm_provider"],
+        [name*="openai_model"] {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }
+        
+        /* Label text inside fieldsets */
+        fieldset label,
+        .field-default_llm_provider label,
+        .field-default_openai_model label {
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+        
+        /* ===== FIX FOR DJANGO ADMIN BACKGROUND ===== */
+        #content {
+            background-color: #ffffff !important;
+        }
+        
+        .container {
+            background-color: #ffffff !important;
+        }
+    </style>
+{% endblock %}
+

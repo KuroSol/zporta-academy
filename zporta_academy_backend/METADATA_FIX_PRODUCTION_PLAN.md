@@ -11,11 +11,13 @@ This document outlines the exact steps to safely diagnose and fix metadata corru
 ### What We Did Locally
 
 1. **Identified the Problem**
+
    - Error: `TypeError: the JSON object must be str, bytes or bytearray, not float`
    - Location: `compute_content_difficulty` management command
    - Root cause: Numeric JSON values in `analytics_activityevent.metadata`
 
 2. **Developed Solutions**
+
    - Refactored command to use raw SQL (bypasses JSONField decoder)
    - Added model validation to prevent future corruption
    - Created diagnostic and cleanup tools
@@ -26,6 +28,7 @@ This document outlines the exact steps to safely diagnose and fix metadata corru
    - ✅ Management commands: All working
 
 ### Local Test Results
+
 ```bash
 Database: 4,288 total rows, 0 corrupted
 Validation: All 7 tests pass
@@ -53,6 +56,7 @@ mysqldump -u [username] -p [database_name] analytics_activityevent > backup_acti
 ### Step 2: Deploy Diagnostic Tools Only
 
 **Files to deploy** (read-only, no changes):
+
 1. `intelligence/management/commands/cleanup_invalid_metadata.py`
 2. `diagnose_metadata_corruption.sql` (optional, for manual SQL)
 
@@ -80,24 +84,27 @@ python manage.py cleanup_invalid_metadata --dry-run --limit 200
 
 **Document the findings:**
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Total rows | ? | |
-| Corrupted rows | ? | |
-| NULL metadata | ? | |
-| Valid OBJECT metadata | ? | |
-| INTEGER metadata | ? | |
-| DOUBLE metadata | ? | |
-| STRING metadata | ? | |
-| ARRAY metadata | ? | |
+| Metric                | Value | Notes |
+| --------------------- | ----- | ----- |
+| Total rows            | ?     |       |
+| Corrupted rows        | ?     |       |
+| NULL metadata         | ?     |       |
+| Valid OBJECT metadata | ?     |       |
+| INTEGER metadata      | ?     |       |
+| DOUBLE metadata       | ?     |       |
+| STRING metadata       | ?     |       |
+| ARRAY metadata        | ?     |       |
 
 **Critical questions:**
+
 1. How many rows are corrupted?
+
    - 0-10: Safe to proceed
    - 11-100: Review impact
    - 100+: Investigate source before cleanup
 
 2. Which event types are affected?
+
    - `quiz_answer_submitted`: HIGH PRIORITY (impacts AI)
    - `quiz_completed`: HIGH PRIORITY (impacts completion tracking)
    - `content_viewed`: LOW PRIORITY (analytics only)
@@ -108,6 +115,7 @@ python manage.py cleanup_invalid_metadata --dry-run --limit 200
    - Specific users affected?
 
 **Example output to document:**
+
 ```
 METADATA CORRUPTION DIAGNOSTIC
 ================================================================================
@@ -128,24 +136,28 @@ Corrupted metadata by event type:
 **Based on production findings, choose strategy:**
 
 #### Strategy A: ZERO Corrupted Rows (Like Local)
+
 - ✅ **Action**: Deploy model validation only
 - ✅ **Risk**: None
 - ✅ **Downtime**: None
 - ✅ **Rollback**: Easy (just revert code)
 
 #### Strategy B: 1-50 Corrupted Rows
+
 - ⚠️ **Action**: Deploy fixes + run cleanup
 - ⚠️ **Risk**: Low (minimal data affected)
 - ⚠️ **Downtime**: 5-10 minutes recommended
 - ⚠️ **Rollback**: Medium (need to restore backup if issues)
 
 #### Strategy C: 50-500 Corrupted Rows
+
 - ⚠️ **Action**: Investigate source first, then cleanup
 - ⚠️ **Risk**: Medium (significant data affected)
 - ⚠️ **Downtime**: 15-30 minutes recommended
 - ⚠️ **Rollback**: Required backup
 
 #### Strategy D: 500+ Corrupted Rows
+
 - 🛑 **Action**: STOP - investigate deeply before any changes
 - 🛑 **Risk**: High (systemic issue)
 - 🛑 **Downtime**: Schedule maintenance window
@@ -158,6 +170,7 @@ Corrupted metadata by event type:
 ### Deployment Checklist
 
 **Pre-deployment:**
+
 - [ ] Production diagnosis complete (Phase 2)
 - [ ] Backup created and verified
 - [ ] Decision strategy chosen (A/B/C/D)
@@ -172,16 +185,18 @@ Corrupted metadata by event type:
 **Deploy model validation only:**
 
 1. **Deploy code changes**
+
    ```bash
    # Pull latest code
    git pull origin main
-   
+
    # Files changed:
    # - analytics/models.py (added validation)
    # - intelligence/management/commands/compute_content_difficulty.py (raw SQL)
    ```
 
 2. **Restart application**
+
    ```bash
    # Restart Django/Gunicorn
    sudo systemctl restart gunicorn
@@ -190,6 +205,7 @@ Corrupted metadata by event type:
    ```
 
 3. **Verify deployment**
+
    ```bash
    # Test that management commands work
    python manage.py compute_content_difficulty
@@ -208,6 +224,7 @@ Corrupted metadata by event type:
 #### For Strategy B (1-50 Corrupted Rows)
 
 1. **Enable maintenance mode** (optional but recommended)
+
    ```bash
    # Create maintenance page
    touch /var/www/maintenance.flag
@@ -215,27 +232,31 @@ Corrupted metadata by event type:
    ```
 
 2. **Deploy code changes**
+
    ```bash
    git pull origin main
    sudo systemctl restart gunicorn
    ```
 
 3. **Run cleanup command**
+
    ```bash
    python manage.py cleanup_invalid_metadata
    # Type 'yes' when prompted
    ```
 
 4. **Verify cleanup**
+
    ```bash
    # Re-run diagnostic to confirm 0 corrupted rows
    python manage.py cleanup_invalid_metadata --dry-run
-   
+
    # Should show:
    # "✓ Database is healthy. No metadata corruption detected."
    ```
 
 5. **Test management commands**
+
    ```bash
    python manage.py compute_content_difficulty
    python manage.py compute_user_abilities
@@ -243,6 +264,7 @@ Corrupted metadata by event type:
    ```
 
 6. **Disable maintenance mode**
+
    ```bash
    rm /var/www/maintenance.flag
    ```
@@ -261,23 +283,24 @@ Corrupted metadata by event type:
 **Additional steps before cleanup:**
 
 1. **Investigate corruption source**
+
    ```sql
    -- In MySQL, check when corrupted data was created
-   SELECT 
+   SELECT
        DATE(created_at) as date,
        COUNT(*) as corrupted_count
    FROM analytics_activityevent
-   WHERE metadata IS NOT NULL 
+   WHERE metadata IS NOT NULL
      AND JSON_TYPE(metadata) != 'OBJECT'
    GROUP BY DATE(created_at)
    ORDER BY date DESC;
-   
+
    -- Check which users are affected
-   SELECT 
+   SELECT
        user_id,
        COUNT(*) as corrupted_count
    FROM analytics_activityevent
-   WHERE metadata IS NOT NULL 
+   WHERE metadata IS NOT NULL
      AND JSON_TYPE(metadata) != 'OBJECT'
    GROUP BY user_id
    ORDER BY corrupted_count DESC
@@ -285,19 +308,21 @@ Corrupted metadata by event type:
    ```
 
 2. **Export corrupted rows for analysis**
+
    ```sql
    -- Save to CSV for review
-   SELECT * 
+   SELECT *
    FROM analytics_activityevent
-   WHERE metadata IS NOT NULL 
+   WHERE metadata IS NOT NULL
      AND JSON_TYPE(metadata) != 'OBJECT'
    INTO OUTFILE '/tmp/corrupted_metadata.csv'
-   FIELDS TERMINATED BY ',' 
+   FIELDS TERMINATED BY ','
    ENCLOSED BY '"'
    LINES TERMINATED BY '\n';
    ```
 
 3. **Assess data loss impact**
+
    - Can we recover the original data?
    - Will setting metadata=NULL break anything?
    - Are there dependent systems using this data?
@@ -307,6 +332,7 @@ Corrupted metadata by event type:
 #### For Strategy D (500+ Rows)
 
 🛑 **DO NOT PROCEED WITHOUT:**
+
 - Root cause analysis complete
 - Development team consultation
 - Stakeholder approval
@@ -323,21 +349,24 @@ Corrupted metadata by event type:
 ### Immediate Checks (First 30 minutes)
 
 1. **Application health**
+
    ```bash
    # Check error logs
    tail -f /var/log/django/error.log | grep -i "error\|exception\|traceback"
-   
+
    # Check response times
    # Monitor APM dashboard (if available)
    ```
 
 2. **Database integrity**
+
    ```bash
    python manage.py cleanup_invalid_metadata --dry-run
    # Should show: "✓ Database is healthy"
    ```
 
 3. **Management commands**
+
    ```bash
    python manage.py compute_content_difficulty
    python manage.py compute_user_abilities
@@ -354,11 +383,13 @@ Corrupted metadata by event type:
 ### Extended Monitoring (First 24 hours)
 
 **Watch for:**
+
 - ValidationErrors in logs (indicates something trying to write bad metadata)
 - Performance issues with ActivityEvent queries
 - User reports of broken features
 
 **Set up alerts for:**
+
 ```python
 # In your logging config, alert on:
 - ValidationError on ActivityEvent
@@ -369,6 +400,7 @@ Corrupted metadata by event type:
 ### Weekly Maintenance (Ongoing)
 
 Add to weekly maintenance checklist:
+
 ```bash
 # Check for new corruption (should always be 0)
 python manage.py cleanup_invalid_metadata --dry-run
@@ -381,6 +413,7 @@ python manage.py cleanup_invalid_metadata --dry-run
 ### If Deployment Fails (Strategy A)
 
 **Simple code revert:**
+
 ```bash
 # Revert to previous commit
 git revert HEAD
@@ -396,6 +429,7 @@ sudo systemctl restart gunicorn
 ### If Cleanup Fails (Strategy B/C)
 
 **Restore from backup:**
+
 ```bash
 # Stop application
 sudo systemctl stop gunicorn
@@ -415,6 +449,7 @@ python manage.py cleanup_invalid_metadata --dry-run
 ### If Production Broken After Cleanup
 
 **Emergency procedure:**
+
 ```bash
 # 1. Enable maintenance mode
 touch /var/www/maintenance.flag
@@ -445,6 +480,7 @@ rm /var/www/maintenance.flag
 **Subject**: [Scheduled Maintenance] Metadata Integrity Fix - [Date] [Time]
 
 **Body**:
+
 ```
 Hi Team,
 
@@ -471,6 +507,7 @@ Thank you,
 **Subject**: [Complete] Metadata Integrity Fix Successfully Deployed
 
 **Body**:
+
 ```
 Hi Team,
 
@@ -499,6 +536,7 @@ Thank you,
 **Subject**: [Alert] Metadata Fix Rollback Required
 
 **Body**:
+
 ```
 Hi Team,
 
@@ -524,6 +562,7 @@ Thank you,
 ## Checklist: Production Deployment
 
 **Phase 1: Preparation**
+
 - [ ] Local fix verified working
 - [ ] Documentation reviewed
 - [ ] Team notified of planned work
@@ -531,6 +570,7 @@ Thank you,
 - [ ] Rollback plan prepared
 
 **Phase 2: Diagnosis**
+
 - [ ] Production backup created
 - [ ] Backup verified (can be restored)
 - [ ] Diagnostic command deployed
@@ -540,6 +580,7 @@ Thank you,
 - [ ] Stakeholders approve plan
 
 **Phase 3: Deployment**
+
 - [ ] Maintenance mode enabled (if required)
 - [ ] Code deployed
 - [ ] Application restarted
@@ -548,6 +589,7 @@ Thank you,
 - [ ] Maintenance mode disabled
 
 **Phase 4: Verification**
+
 - [ ] Error logs clean (30 min)
 - [ ] Management commands tested
 - [ ] User features verified
@@ -555,6 +597,7 @@ Thank you,
 - [ ] 24-hour monitoring setup
 
 **Phase 5: Documentation**
+
 - [ ] Deployment notes saved
 - [ ] Team notified of success
 - [ ] Monitoring dashboard updated
@@ -565,16 +608,17 @@ Thank you,
 
 ## Summary: LOCAL vs PRODUCTION Workflow
 
-| Phase | Local (Development) | Production |
-|-------|---------------------|------------|
-| **Discovery** | ✅ Found issue via error logs | 🔍 Run diagnostic first |
-| **Diagnosis** | ✅ Scanned database (0 corrupted) | 🔍 Must scan production DB |
-| **Solution** | ✅ Developed & tested fixes | ⏳ Deploy based on findings |
-| **Testing** | ✅ Verified all commands work | ⏳ Test after deployment |
-| **Cleanup** | ✅ Not needed (0 corrupted) | ❓ TBD based on scan |
-| **Risk** | None (dev environment) | Variable (depends on corruption) |
+| Phase         | Local (Development)               | Production                       |
+| ------------- | --------------------------------- | -------------------------------- |
+| **Discovery** | ✅ Found issue via error logs     | 🔍 Run diagnostic first          |
+| **Diagnosis** | ✅ Scanned database (0 corrupted) | 🔍 Must scan production DB       |
+| **Solution**  | ✅ Developed & tested fixes       | ⏳ Deploy based on findings      |
+| **Testing**   | ✅ Verified all commands work     | ⏳ Test after deployment         |
+| **Cleanup**   | ✅ Not needed (0 corrupted)       | ❓ TBD based on scan             |
+| **Risk**      | None (dev environment)            | Variable (depends on corruption) |
 
-**Key Principle**: 
+**Key Principle**:
+
 > **Never assume production matches local!**  
 > Always diagnose production first, then act based on actual findings.
 
@@ -583,17 +627,20 @@ Thank you,
 ## Contact & Escalation
 
 **For deployment questions:**
+
 - Development Team: [Contact]
 - DevOps Team: [Contact]
 - Database Admin: [Contact]
 
 **Escalation path:**
+
 1. First: Check this document
 2. Then: Run diagnostic to gather data
 3. Then: Contact development team with findings
 4. Finally: Escalate to senior engineer if Strategy D
 
 **Emergency contacts** (if production broken):
+
 - On-call Engineer: [Phone/Slack]
 - Database Emergency: [Phone/Slack]
 - Management: [Phone/Slack]

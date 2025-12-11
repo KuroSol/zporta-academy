@@ -199,16 +199,16 @@ User Views Quiz Card
 
 ```
 FUNCTION compute_quiz_difficulty(quiz):
-  
+
   1. GET question difficulty data
      avg_q_difficulty = AVG(question.difficulty for each question)
-  
+
   2. GET success rate
      success_rate = (correct_attempts / total_attempts) * 100
-  
+
   3. DETERMINE DIFFICULTY SCORE
      base_score = avg_q_difficulty  // Start with avg question difficulty
-     
+
      // Adjust based on success rate (inverse)
      IF success_rate < 30%:
          difficulty_score = base_score * 1.2  // Even harder
@@ -218,7 +218,7 @@ FUNCTION compute_quiz_difficulty(quiz):
          difficulty_score = base_score * 0.9  // Easier
      ELSE:
          difficulty_score = base_score        // As is
-  
+
   4. CALCULATE CONFIDENCE
      IF attempt_count >= 30:
          confidence = 95%
@@ -226,7 +226,7 @@ FUNCTION compute_quiz_difficulty(quiz):
          confidence = 75%
      ELSE:
          confidence = 40%
-  
+
   5. CATEGORIZE INTO 5 LEVELS
      IF difficulty_score < 320:
          level_5 = "Beginner" (🟢)
@@ -238,20 +238,20 @@ FUNCTION compute_quiz_difficulty(quiz):
          level_5 = "Medium ➜ Hard" (🔶)
      ELSE:
          level_5 = "Hard/Expert" (🔴)
-  
+
   6. GENERATE EXPLANATION
      explanation = "This quiz is rated as '{level_5}' difficulty. "
-     
+
      IF success_rate < 30%:
          explanation += "Very few users answer correctly..."
      ELSE IF success_rate < 70%:
          explanation += "Moderate success rate ({success_rate}%)..."
      ELSE:
          explanation += "Most users answer correctly..."
-     
+
      explanation += "Questions are {adj} (avg {avg_q_difficulty}). "
      explanation += "Based on {attempt_count} attempts..."
-  
+
   RETURN {
     difficulty_score,
     difficulty_level,

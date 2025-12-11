@@ -50,6 +50,9 @@ class CourseSerializer(serializers.ModelSerializer):
     # Course-level quizzes (attached directly to this course)
     quizzes = serializers.SerializerMethodField()
     
+    # Enrolled users list (for course introduction/detail view)
+    enrolled_users = serializers.SerializerMethodField()
+    
     class Meta:
         model = Course
         fields = [
@@ -59,7 +62,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'seo_title', 'seo_description', 'focus_keyword', 'canonical_url',
             'og_title', 'og_description', 'og_image',
             'lesson_count', 'is_owner', 'is_draft', 'allowed_testers',
-            'enrolled_count', 'completed_count',
+            'enrolled_count', 'completed_count', 'enrolled_users',
             'selling_points',
             'publish',
             'quizzes',
@@ -203,7 +206,8 @@ class CourseSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request:
             return request.build_absolute_uri(f"/courses/{obj.permalink}/")
-        return f"{settings.SITE_URL}/courses/{obj.permalink}/"
+        site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+        return f"{site_url}/courses/{obj.permalink}/"
     
     def get_created_by(self, obj):
         return obj.created_by.username
@@ -241,6 +245,85 @@ class CourseSerializer(serializers.ModelSerializer):
         # Get lesson-level quizzes (from lessons attached to this course)
         lesson_quizzes = Quiz.objects.filter(lesson__course=obj)
         # Combine both (avoid duplicates if a quiz is attached at both levels)
+        all_quizzes = course_quizzes.union(lesson_quizzes)
+        return LightweightQuizSerializer(all_quizzes, many=True).data
+
+    def get_enrolled_users(self, obj):
+        """Return list of enrolled users for this course with their details.
+        
+        Includes user profile info (name, avatar, progress) in course introduction.
+        """
+        from enrollment.models import Enrollment
+        from django.contrib.auth.models import User
+        
+        try:
+            # Get all users enrolled in this course
+            enrollments = Enrollment.objects.filter(
+                enrollment_type='course',
+                object_id=obj.id
+            ).select_related('user')
+            
+            enrolled_user_list = []
+            for enrollment in enrollments:
+                user = enrollment.user
+                user_data = {
+                    'id': user.id,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'enrolled_at': enrollment.created_at.isoformat() if hasattr(enrollment, 'created_at') else None,
+                }
+                
+                # Include user avatar if available
+                try:
+                    from user_media.models import UserMedia
+                    avatar = UserMedia.objects.filter(
+                        user=user,
+                        media_category='avatar'
+                    ).first()
+                    if avatar and avatar.file:
+                        request = self.context.get('request')
+                        user_data['avatar_url'] = request.build_absolute_uri(avatar.file.url) if request else avatar.file.url
+                except:
+                    user_data['avatar_url'] = None
+                
+                # Include user's progress in this course
+                try:
+                    from analytics.models import ActivityEvent
+                    from datetime import timedelta
+                    from django.utils import timezone
+                    
+                    lessons_completed = ActivityEvent.objects.filter(
+                        user=user,
+                        event_type='lesson_completed',
+                        # Associated with this course's lessons
+                    ).count()
+                    
+                    quizzes_taken = ActivityEvent.objects.filter(
+                        user=user,
+                        event_type='quiz_completed'
+                    ).count()
+                    
+                    user_data['progress'] = {
+                        'lessons_completed': lessons_completed,
+                        'quizzes_taken': quizzes_taken,
+                    }
+                except:
+                    user_data['progress'] = {
+                        'lessons_completed': 0,
+                        'quizzes_taken': 0,
+                    }
+                
+                enrolled_user_list.append(user_data)
+            
+            return enrolled_user_list
+        except Exception as e:
+            # Log error but don't fail the entire serialization
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error fetching enrolled users for course {obj.id}: {e}")
+            return []
         all_quizzes = (course_quizzes | lesson_quizzes).distinct()
         # Return lightweight serialized data
         return LightweightQuizSerializer(all_quizzes, many=True).data

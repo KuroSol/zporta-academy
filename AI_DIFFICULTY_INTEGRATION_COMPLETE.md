@@ -1,6 +1,7 @@
 # AI Difficulty Integration Complete ✅
 
 ## Overview
+
 You now have a complete, integrated system for AI-powered quiz difficulty ranking with detailed explanations on quiz cards and throughout the application.
 
 ---
@@ -8,6 +9,7 @@ You now have a complete, integrated system for AI-powered quiz difficulty rankin
 ## What's Working Now
 
 ### 1. **API Serializer Enhancement** ✅
+
 The `QuizSerializer` now includes a new `difficulty_explanation` field that provides:
 
 ```json
@@ -41,6 +43,7 @@ The `QuizSerializer` now includes a new `difficulty_explanation` field that prov
 **Location**: `quizzes/serializers.py` (lines 211-230)
 
 ### 2. **Difficulty Explanation Module** ✅
+
 New module that generates comprehensive difficulty rankings with AI factor breakdown.
 
 **File**: `quizzes/difficulty_explanation.py`
@@ -48,6 +51,7 @@ New module that generates comprehensive difficulty rankings with AI factor break
 **Function**: `get_difficulty_explanation(quiz_obj)`
 
 Returns dictionary with:
+
 - Difficulty score (0-1000 scale)
 - Human-readable difficulty level (Very Easy → Expert)
 - 5-level categorization with emoji indicators
@@ -59,14 +63,17 @@ Returns dictionary with:
   - Attempt volume confidence (high if >30 attempts)
 
 ### 3. **Management Command for Debugging** ✅
+
 `show_quiz_predictions` command displays detailed breakdown for all quizzes.
 
 **Usage**:
+
 ```bash
 python manage.py show_quiz_predictions
 ```
 
 **Output**:
+
 - Per-quiz difficulty metrics (score, level, success rate, attempt count)
 - Quiz composition (question count, average difficulty)
 - How AI ranked the quiz (ranking methodology)
@@ -75,6 +82,7 @@ python manage.py show_quiz_predictions
 - Final score calculation with confidence metrics
 
 **Example Output**:
+
 ```
 📝 QUIZ #4: Quiz 1: Prepositions of Place
 ════════════════════════════════════════════════════════════════
@@ -111,19 +119,20 @@ python manage.py show_quiz_predictions
 
 The system uses a standardized 5-level difficulty scale with color coding:
 
-| Level | Score Range | Emoji | Description |
-|-------|-------------|-------|-------------|
-| 1 | < 320 | 🟢 | Beginner |
-| 2 | 320-420 | 🟡 | Beginner ➜ Medium |
-| 3 | 420-520 | 🟠 | Medium |
-| 4 | 520-620 | 🔶 | Medium ➜ Hard |
-| 5 | 620+ | 🔴 | Hard/Expert |
+| Level | Score Range | Emoji | Description       |
+| ----- | ----------- | ----- | ----------------- |
+| 1     | < 320       | 🟢    | Beginner          |
+| 2     | 320-420     | 🟡    | Beginner ➜ Medium |
+| 3     | 420-520     | 🟠    | Medium            |
+| 4     | 520-620     | 🔶    | Medium ➜ Hard     |
+| 5     | 620+        | 🔴    | Hard/Expert       |
 
 ---
 
 ## How to Use in Frontend
 
 ### Option 1: Quiz Card Component
+
 Display the difficulty explanation on quiz cards:
 
 ```jsx
@@ -138,17 +147,20 @@ Display the difficulty explanation on quiz cards:
     <details>
       <summary>Why this difficulty?</summary>
       <ul>
-        {quiz.difficulty_explanation.factors.reasons.map(reason => (
+        {quiz.difficulty_explanation.factors.reasons.map((reason) => (
           <li key={reason}>{reason}</li>
         ))}
       </ul>
-      <p>Based on {quiz.difficulty_explanation.factors.attempt_count} attempts</p>
+      <p>
+        Based on {quiz.difficulty_explanation.factors.attempt_count} attempts
+      </p>
     </details>
   </div>
 </QuizCard>
 ```
 
 ### Option 2: Quiz Detail Page
+
 Show comprehensive AI prediction explanation:
 
 ```jsx
@@ -157,18 +169,20 @@ Show comprehensive AI prediction explanation:
   <div className="score">
     <span className="emoji">{quiz.difficulty_explanation.emoji}</span>
     <span className="level">{quiz.difficulty_explanation.level_5}</span>
-    <span className="score">{quiz.difficulty_explanation.difficulty_score}/1000</span>
+    <span className="score">
+      {quiz.difficulty_explanation.difficulty_score}/1000
+    </span>
   </div>
-  
+
   <div className="explanation">
     <p>{quiz.difficulty_explanation.explanation}</p>
   </div>
-  
+
   <div className="confidence">
     <p>AI Confidence: {quiz.difficulty_explanation.confidence}%</p>
     <p>Reason: {quiz.difficulty_explanation.confidence_level}</p>
   </div>
-  
+
   <div className="ai-factors">
     <h3>AI Ranking Factors</h3>
     {Object.entries(quiz.difficulty_explanation.factors).map(([key, value]) => (
@@ -185,6 +199,7 @@ Show comprehensive AI prediction explanation:
 ## API Endpoint Usage
 
 ### Get Quiz with Difficulty Explanation
+
 ```
 GET /api/quizzes/<quiz_id>/
 ```
@@ -192,6 +207,7 @@ GET /api/quizzes/<quiz_id>/
 Response includes `difficulty_explanation` field with complete breakdown.
 
 ### Example cURL:
+
 ```bash
 curl "http://localhost:8000/api/quizzes/4/" \
   -H "Authorization: Bearer <token>"
@@ -202,12 +218,14 @@ curl "http://localhost:8000/api/quizzes/4/" \
 ## Files Modified
 
 1. **quizzes/serializers.py**
+
    - Added import: `from .difficulty_explanation import get_difficulty_explanation`
    - Added field: `difficulty_explanation = serializers.SerializerMethodField()`
    - Added method: `get_difficulty_explanation(self, obj)`
    - Updated fields list to include `difficulty_explanation`
 
 2. **quizzes/difficulty_explanation.py** (NEW)
+
    - Function: `get_difficulty_explanation(quiz_obj)`
    - Returns comprehensive explanation dict with 5-level categorization
 
@@ -219,16 +237,19 @@ curl "http://localhost:8000/api/quizzes/4/" \
 ## AI Factors Explained
 
 ### 1. Question Difficulty Component
+
 - **What it measures**: Average difficulty of questions in the quiz
 - **Impact**: Higher average question difficulty = Higher quiz difficulty
 - **Range**: Usually 40-60% of total difficulty score
 
 ### 2. Success Rate Component
+
 - **What it measures**: Percentage of attempts that resulted in correct answers
 - **Inverse relationship**: Lower success rate = Higher difficulty
 - **Range**: Usually 5-25% of difficulty modifier
 
 ### 3. Attempt Volume (Confidence)
+
 - **What it measures**: How many users attempted the quiz
 - **Confidence levels**:
   - High: ≥30 attempts (95% confidence)
@@ -241,6 +262,7 @@ curl "http://localhost:8000/api/quizzes/4/" \
 ## Example Data Points
 
 ### Quiz #4: "Prepositions of Place" (Hard/Expert 🔴)
+
 - Score: 672.2/1000
 - Level: Hard/Expert (5-level)
 - Success Rate: 60.6% (moderate difficulty)
@@ -250,6 +272,7 @@ curl "http://localhost:8000/api/quizzes/4/" \
 - **Confidence**: 95% (based on 71 attempts)
 
 ### Quiz #5: "Prepositions of Time" (Medium ➜ Hard 🔶)
+
 - Score: 545.4/1000
 - Level: Medium ➜ Hard (4-level)
 - Success Rate: 72.4% (easier than Quiz #4)
@@ -259,6 +282,7 @@ curl "http://localhost:8000/api/quizzes/4/" \
 - **Confidence**: 95% (based on 58 attempts)
 
 ### Quiz #6: "From (Cause)" (Medium 🟠)
+
 - Score: 482.5/1000
 - Level: Medium (3-level)
 - Success Rate: 85.0% (high success = easier)
@@ -272,12 +296,14 @@ curl "http://localhost:8000/api/quizzes/4/" \
 ## Testing Verification
 
 ✅ **API Test**: Quiz serializer includes difficulty_explanation field
+
 ```
 Quiz ID 4: computed_difficulty_score = 672.18, difficulty_level = "Very Hard"
 difficulty_explanation includes all factors and explanation text
 ```
 
 ✅ **Management Command**: show_quiz_predictions executes successfully
+
 ```
 All 29 quizzes display with complete breakdown
 Success rate analysis working
@@ -287,6 +313,7 @@ Confidence percentages calculated based on attempt counts
 ```
 
 ✅ **5-Level Categorization**: Correct emoji and text for each level
+
 ```
 🟢 Beginner (< 320)
 🟡 Beginner ➜ Medium (320-420)
@@ -300,16 +327,19 @@ Confidence percentages calculated based on attempt counts
 ## Next Steps
 
 ### For Frontend Integration:
+
 1. Update quiz card component to display `difficulty_explanation.emoji` and `difficulty_explanation.level_5`
 2. Add tooltip showing `difficulty_explanation.explanation`
 3. Optional: Add expandable section showing `difficulty_explanation.factors.reasons`
 
 ### For Admin Dashboard:
+
 1. Use `show_quiz_predictions` command output to verify AI rankings
 2. Monitor confidence levels to identify quizzes that need more data
 3. Track success rates to identify problematic quizzes
 
 ### For User Education:
+
 1. Show "Why is this quiz Hard?" explanation on quiz detail pages
 2. Display success rate comparison ("You scored better than 73% of users")
 3. Show attempt count to indicate reliability ("Based on 71 attempts")
@@ -340,6 +370,7 @@ When ready to deploy to production:
 5. Monitor API performance (each quiz serialization computes explanation)
 
 **Optional optimization**: Cache difficulty explanations if serialization becomes slow
+
 ```python
 # In difficulty_explanation.py
 @cache.cached(timeout=3600, key_prefix="quiz_explanation_")

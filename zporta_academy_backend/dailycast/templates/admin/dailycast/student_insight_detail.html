@@ -1,0 +1,356 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .insight-container {
+            margin: 20px;
+            max-width: 1200px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #417690;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .student-header {
+            background: linear-gradient(135deg, #417690 0%, #2e5568 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .student-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+        .student-header .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .section-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #417690;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 4px solid #417690;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #417690;
+            display: block;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .courses-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .course-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #4caf50;
+        }
+        .course-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        .course-meta {
+            color: #666;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        .weak-topics, .strong-topics {
+            list-style: none;
+            padding: 0;
+        }
+        .weak-topics li {
+            background: #fff3e0;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #ff9800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .strong-topics li {
+            background: #e8f5e9;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #4caf50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topic-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .topic-score {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .weak-topics .topic-score {
+            color: #f57c00;
+        }
+        .strong-topics .topic-score {
+            color: #2e7d32;
+        }
+        .recommendations-list {
+            list-style: none;
+            padding: 0;
+        }
+        .recommendations-list li {
+            background: #f3e5f5;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #9c27b0;
+            position: relative;
+            padding-left: 45px;
+        }
+        .recommendations-list li:before {
+            content: "🎯";
+            position: absolute;
+            left: 15px;
+            font-size: 20px;
+        }
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+        .error-message {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            border-radius: 6px;
+            padding: 20px;
+            color: #c62828;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .badge-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .badge-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="insight-container">
+    <a href="{% url 'admin:dailycast_studentlearninginsight_changelist' %}" class="back-link">
+        ← Back to All Students
+    </a>
+
+    <div class="student-header">
+        <h1>{{ user.get_full_name|default:user.username }}</h1>
+        <div class="subtitle">
+            @{{ user.username }} • Member since {{ user.date_joined|date:"F d, Y" }}
+        </div>
+    </div>
+
+    {% if not success %}
+        <div class="section">
+            <div class="error-message">
+                <strong>⚠️ Error analyzing student data:</strong><br>
+                {{ error }}
+            </div>
+        </div>
+    {% else %}
+
+    <!-- Learning Summary -->
+    <div class="section">
+        <h2 class="section-title">📊 Learning Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.total_courses }}</span>
+                <span class="stat-label">📚 Enrolled Courses</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.lessons_completed }}</span>
+                <span class="stat-label">✅ Lessons Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.quizzes_completed }}</span>
+                <span class="stat-label">📝 Quizzes Taken</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.quiz_accuracy|floatformat:1 }}%</span>
+                <span class="stat-label">🎯 Quiz Accuracy</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.study_streak }}</span>
+                <span class="stat-label">🔥 Study Streak (days)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.active_days }}</span>
+                <span class="stat-label">📅 Active Days (30d)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Courses -->
+    {% if analysis.enrolled_courses %}
+    <div class="section">
+        <h2 class="section-title">📚 Enrolled Courses</h2>
+        <ul class="courses-list">
+            {% for course in analysis.enrolled_courses %}
+            <li class="course-item">
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-meta">
+                    📖 {{ course.subject }} • Enrolled: {{ course.enrollment_date|date:"M d, Y" }}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Weak Areas -->
+    {% if analysis.weak_topics %}
+    <div class="section">
+        <h2 class="section-title">⚠️ Areas for Improvement</h2>
+        <p style="color: #666; margin-bottom: 15px;">
+            These topics need more practice. Scoring below 70% indicates room for growth.
+        </p>
+        <ul class="weak-topics">
+            {% for topic in analysis.weak_topics %}
+            <li>
+                <span class="topic-name">{{ topic.topic }}</span>
+                <span class="topic-score">{{ topic.avg_score }}%</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Strong Areas -->
+    {% if analysis.strong_topics %}
+    <div class="section">
+        <h2 class="section-title">💪 Strong Areas</h2>
+        <p style="color: #666; margin-bottom: 15px;">
+            Excellent mastery! Scoring above 85% shows strong understanding.
+        </p>
+        <ul class="strong-topics">
+            {% for topic in analysis.strong_topics %}
+            <li>
+                <span class="topic-name">{{ topic.topic }}</span>
+                <span class="topic-score">{{ topic.avg_score }}%</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- AI Recommendations -->
+    <div class="section">
+        <h2 class="section-title">🎯 AI Recommendations</h2>
+        
+        {% if recommendations.priority_actions %}
+        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Priority Actions</h3>
+        <ul class="recommendations-list">
+            {% for action in recommendations.priority_actions %}
+            <li>{{ action }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if recommendations.study_tips %}
+        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Study Tips</h3>
+        <ul class="recommendations-list">
+            {% for tip in recommendations.study_tips %}
+            <li>
+                <strong>{{ tip.type|title }}:</strong> {{ tip.message }}<br>
+                <em style="color: #666; font-size: 13px;">💡 {{ tip.suggestion }}</em>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if recommendations.next_steps %}
+        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Next Steps</h3>
+        <ul class="recommendations-list">
+            {% for step in recommendations.next_steps %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if not recommendations.priority_actions and not recommendations.study_tips and not recommendations.next_steps %}
+        <div class="no-data-message">
+            <p>🎉 Great start! Complete more activities to get personalized recommendations.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Activity -->
+    {% if analysis.recent_activity %}
+    <div class="section">
+        <h2 class="section-title">📈 Recent Activity</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.recent_activity.last_7_days.total_events }}</span>
+                <span class="stat-label">Events (Last 7 Days)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.recent_activity.last_30_days.total_events }}</span>
+                <span class="stat-label">Events (Last 30 Days)</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}

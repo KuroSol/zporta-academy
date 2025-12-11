@@ -1,6 +1,7 @@
 # Frontend Integration Task - AI Quiz Difficulty Explanations
 
 ## Overview
+
 The backend API now returns detailed AI difficulty explanations for each quiz. This document describes what needs to be built in the frontend.
 
 ## What the API Provides
@@ -9,24 +10,25 @@ Every quiz returned by the API includes a `difficulty_explanation` object:
 
 ```javascript
 quiz.difficulty_explanation = {
-  difficulty_score: 672.18,           // 0-1000 scale
-  difficulty_level: "Very Hard",      // 5-category text
-  level_5: "Hard/Expert",             // 5-level label with arrow
-  emoji: "🔴",                        // Visual indicator
-  confidence: 95,                     // 40-95%
-  confidence_level: "Very High",      // Text description
+  difficulty_score: 672.18, // 0-1000 scale
+  difficulty_level: "Very Hard", // 5-category text
+  level_5: "Hard/Expert", // 5-level label with arrow
+  emoji: "🔴", // Visual indicator
+  confidence: 95, // 40-95%
+  confidence_level: "Very High", // Text description
   explanation: "This quiz is rated...", // User-friendly explanation
   factors: {
-    success_rate: 60.6,               // % of users who answer correctly
-    attempt_count: 71,                // Total attempts
-    avg_question_difficulty: 569.8,   // Average question score
-    reasons: [                        // List of factors
+    success_rate: 60.6, // % of users who answer correctly
+    attempt_count: 71, // Total attempts
+    avg_question_difficulty: 569.8, // Average question score
+    reasons: [
+      // List of factors
       "Moderate success rate (60.6%) - Balanced difficulty for most users",
       "Questions are challenging (avg 569.8)",
-      "Based on 71 attempts - highly reliable ranking"
-    ]
-  }
-}
+      "Based on 71 attempts - highly reliable ranking",
+    ],
+  },
+};
 ```
 
 ## Frontend Tasks
@@ -36,11 +38,13 @@ quiz.difficulty_explanation = {
 **Location**: Quiz card component (likely in Next.js `components/` folder)
 
 **What to display**:
+
 - Emoji indicator: `difficulty_explanation.emoji`
 - Difficulty level text: `difficulty_explanation.level_5`
 - Optional: Confidence percentage: `difficulty_explanation.confidence`
 
 **Styling**:
+
 ```css
 /* Color scheme for difficulty levels */
 .difficulty-badge {
@@ -53,40 +57,56 @@ quiz.difficulty_explanation = {
 }
 
 /* Green for easy */
-.difficulty-badge.level-1 { background-color: #10B981; color: white; }
+.difficulty-badge.level-1 {
+  background-color: #10b981;
+  color: white;
+}
 /* Yellow for beginner-medium */
-.difficulty-badge.level-2 { background-color: #F59E0B; color: white; }
+.difficulty-badge.level-2 {
+  background-color: #f59e0b;
+  color: white;
+}
 /* Orange for medium */
-.difficulty-badge.level-3 { background-color: #F97316; color: white; }
+.difficulty-badge.level-3 {
+  background-color: #f97316;
+  color: white;
+}
 /* Red-orange for medium-hard */
-.difficulty-badge.level-4 { background-color: #EF4444; color: white; }
+.difficulty-badge.level-4 {
+  background-color: #ef4444;
+  color: white;
+}
 /* Dark red for hard */
-.difficulty-badge.level-5 { background-color: #DC2626; color: white; }
+.difficulty-badge.level-5 {
+  background-color: #dc2626;
+  color: white;
+}
 ```
 
 **Example implementation (React)**:
+
 ```jsx
 function QuizCard({ quiz }) {
   const exp = quiz.difficulty_explanation;
-  
+
   const getDifficultyColor = (level_5) => {
     const levelMap = {
-      'Beginner': 'level-1',
-      'Beginner ➜ Medium': 'level-2',
-      'Medium': 'level-3',
-      'Medium ➜ Hard': 'level-4',
-      'Hard/Expert': 'level-5'
+      Beginner: "level-1",
+      "Beginner ➜ Medium": "level-2",
+      Medium: "level-3",
+      "Medium ➜ Hard": "level-4",
+      "Hard/Expert": "level-5",
     };
-    return levelMap[level_5] || 'level-3';
+    return levelMap[level_5] || "level-3";
   };
-  
+
   return (
     <div className="quiz-card">
       <div className={`difficulty-badge ${getDifficultyColor(exp.level_5)}`}>
         <span className="emoji">{exp.emoji}</span>
         <span className="level-text">{exp.level_5}</span>
       </div>
-      
+
       <h3>{quiz.title}</h3>
       <p>{quiz.content?.slice(0, 100)}...</p>
     </div>
@@ -95,6 +115,7 @@ function QuizCard({ quiz }) {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Badge displays emoji + level_5 text
 - [ ] Color changes based on difficulty level
 - [ ] Responsive on mobile (emoji + short text visible)
@@ -106,15 +127,17 @@ function QuizCard({ quiz }) {
 ### Task 2: Show Explanation Text on Hover/Tooltip
 
 **What to display**:
+
 - Show `difficulty_explanation.explanation` in a tooltip/popover on hover
 
 **Example**:
+
 ```jsx
-import { Tooltip } from '@radix-ui/react-tooltip'; // or your UI library
+import { Tooltip } from "@radix-ui/react-tooltip"; // or your UI library
 
 function QuizCardWithTooltip({ quiz }) {
   const exp = quiz.difficulty_explanation;
-  
+
   return (
     <Tooltip.Root>
       <Tooltip.Trigger>
@@ -135,6 +158,7 @@ function QuizCardWithTooltip({ quiz }) {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Tooltip appears on hover
 - [ ] Shows explanation text clearly
 - [ ] Shows confidence and attempt count
@@ -148,6 +172,7 @@ function QuizCardWithTooltip({ quiz }) {
 **Location**: Quiz detail page (single quiz view)
 
 **What to display**:
+
 - Main explanation: `difficulty_explanation.explanation`
 - AI factors: `difficulty_explanation.factors.reasons` (list)
 - Success rate: `difficulty_explanation.factors.success_rate`
@@ -155,18 +180,19 @@ function QuizCardWithTooltip({ quiz }) {
 - Confidence: `difficulty_explanation.confidence`
 
 **Example HTML structure**:
+
 ```jsx
 function QuizDetailPage({ quiz }) {
   const exp = quiz.difficulty_explanation;
-  
+
   return (
     <div className="quiz-detail">
       <h1>{quiz.title}</h1>
-      
+
       {/* Difficulty Section */}
       <section className="difficulty-analysis">
         <h2>Difficulty Analysis</h2>
-        
+
         <div className="difficulty-header">
           <span className="emoji">{exp.emoji}</span>
           <div>
@@ -177,9 +203,9 @@ function QuizDetailPage({ quiz }) {
             </p>
           </div>
         </div>
-        
+
         <p className="explanation">{exp.explanation}</p>
-        
+
         <details className="why-difficulty">
           <summary>Why this difficulty?</summary>
           <div className="details-content">
@@ -189,30 +215,32 @@ function QuizDetailPage({ quiz }) {
                 <li key={idx}>{reason}</li>
               ))}
             </ul>
-            
+
             <div className="metrics">
               <div className="metric">
                 <label>Success Rate</label>
                 <div className="progress-bar">
-                  <div 
+                  <div
                     className="progress-fill"
-                    style={{width: `${exp.factors.success_rate}%`}}
+                    style={{ width: `${exp.factors.success_rate}%` }}
                   ></div>
                 </div>
                 <span>{exp.factors.success_rate.toFixed(1)}%</span>
               </div>
-              
+
               <div className="metric">
                 <label>Total Attempts</label>
                 <strong>{exp.factors.attempt_count}</strong>
               </div>
-              
+
               <div className="metric">
                 <label>Question Difficulty</label>
-                <strong>{exp.factors.avg_question_difficulty.toFixed(1)}/1000</strong>
+                <strong>
+                  {exp.factors.avg_question_difficulty.toFixed(1)}/1000
+                </strong>
               </div>
             </div>
-            
+
             <p className="note">
               Based on data from {exp.factors.attempt_count} user attempts
             </p>
@@ -225,6 +253,7 @@ function QuizDetailPage({ quiz }) {
 ```
 
 **Styling Example**:
+
 ```css
 .difficulty-analysis {
   background: #f9fafb;
@@ -322,6 +351,7 @@ function QuizDetailPage({ quiz }) {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Explanation text displays clearly
 - [ ] Details section expands/collapses smoothly
 - [ ] All AI factors listed with checkmarks
@@ -335,59 +365,74 @@ function QuizDetailPage({ quiz }) {
 ### Task 4: Quiz Listing/Browse Page with Difficulty Filter
 
 **What to display**:
+
 - All quizzes with difficulty badges
 - Filter by difficulty level
 - Sort by difficulty
 - Show success rate as additional info
 
 **Example**:
+
 ```jsx
 function QuizBrowse() {
   const [quizzes, setQuizzes] = useState([]);
-  const [filterLevel, setFilterLevel] = useState('all');
-  const [sortBy, setSortBy] = useState('title');
-  
+  const [filterLevel, setFilterLevel] = useState("all");
+  const [sortBy, setSortBy] = useState("title");
+
   const difficultyLevels = [
-    { value: 'all', label: 'All Difficulties' },
-    { value: 'Beginner', label: '🟢 Beginner' },
-    { value: 'Beginner ➜ Medium', label: '🟡 Beginner ➜ Medium' },
-    { value: 'Medium', label: '🟠 Medium' },
-    { value: 'Medium ➜ Hard', label: '🔶 Medium ➜ Hard' },
-    { value: 'Hard/Expert', label: '🔴 Hard/Expert' }
+    { value: "all", label: "All Difficulties" },
+    { value: "Beginner", label: "🟢 Beginner" },
+    { value: "Beginner ➜ Medium", label: "🟡 Beginner ➜ Medium" },
+    { value: "Medium", label: "🟠 Medium" },
+    { value: "Medium ➜ Hard", label: "🔶 Medium ➜ Hard" },
+    { value: "Hard/Expert", label: "🔴 Hard/Expert" },
   ];
-  
-  const filteredQuizzes = filterLevel === 'all'
-    ? quizzes
-    : quizzes.filter(q => q.difficulty_explanation.level_5 === filterLevel);
-  
+
+  const filteredQuizzes =
+    filterLevel === "all"
+      ? quizzes
+      : quizzes.filter((q) => q.difficulty_explanation.level_5 === filterLevel);
+
   const sortedQuizzes = filteredQuizzes.sort((a, b) => {
-    switch(sortBy) {
-      case 'difficulty':
-        return b.difficulty_explanation.difficulty_score - a.difficulty_explanation.difficulty_score;
-      case 'easiest':
-        return a.difficulty_explanation.difficulty_score - b.difficulty_explanation.difficulty_score;
-      case 'popular':
-        return b.difficulty_explanation.factors.attempt_count - a.difficulty_explanation.factors.attempt_count;
+    switch (sortBy) {
+      case "difficulty":
+        return (
+          b.difficulty_explanation.difficulty_score -
+          a.difficulty_explanation.difficulty_score
+        );
+      case "easiest":
+        return (
+          a.difficulty_explanation.difficulty_score -
+          b.difficulty_explanation.difficulty_score
+        );
+      case "popular":
+        return (
+          b.difficulty_explanation.factors.attempt_count -
+          a.difficulty_explanation.factors.attempt_count
+        );
       default:
         return a.title.localeCompare(b.title);
     }
   });
-  
+
   return (
     <div className="quiz-browse">
       <h1>Browse Quizzes</h1>
-      
+
       {/* Filters */}
       <div className="filters">
         <label>Filter by Difficulty:</label>
-        <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)}>
-          {difficultyLevels.map(level => (
+        <select
+          value={filterLevel}
+          onChange={(e) => setFilterLevel(e.target.value)}
+        >
+          {difficultyLevels.map((level) => (
             <option key={level.value} value={level.value}>
               {level.label}
             </option>
           ))}
         </select>
-        
+
         <label>Sort by:</label>
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
           <option value="title">Title (A-Z)</option>
@@ -396,10 +441,10 @@ function QuizBrowse() {
           <option value="popular">Most Attempted</option>
         </select>
       </div>
-      
+
       {/* Quiz Grid */}
       <div className="quiz-grid">
-        {sortedQuizzes.map(quiz => (
+        {sortedQuizzes.map((quiz) => (
           <QuizCard key={quiz.id} quiz={quiz} />
         ))}
       </div>
@@ -409,6 +454,7 @@ function QuizBrowse() {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Filter by all 5 difficulty levels
 - [ ] Sort by difficulty (hardest/easiest)
 - [ ] Sort by popularity (attempt count)
@@ -422,35 +468,44 @@ function QuizBrowse() {
 ### Task 5: User Dashboard - Recommended Quizzes by Difficulty
 
 **What to display**:
+
 - Show recommended quizzes at appropriate difficulty for user's level
 - Show progress within difficulty tiers
 - Suggest next difficulty level
 
 **Example**:
+
 ```jsx
 function UserDashboard({ userProfile, quizzes }) {
   const userAbility = userProfile.overall_ability_score; // e.g., 506.4
-  
+
   // Categorize quizzes relative to user ability
-  const tooEasy = quizzes.filter(q => q.difficulty_explanation.difficulty_score < userAbility - 100);
-  const justRight = quizzes.filter(q => {
+  const tooEasy = quizzes.filter(
+    (q) => q.difficulty_explanation.difficulty_score < userAbility - 100
+  );
+  const justRight = quizzes.filter((q) => {
     const diff = q.difficulty_explanation.difficulty_score;
     return diff >= userAbility - 100 && diff <= userAbility + 100;
   });
-  const tooHard = quizzes.filter(q => q.difficulty_explanation.difficulty_score > userAbility + 100);
-  
+  const tooHard = quizzes.filter(
+    (q) => q.difficulty_explanation.difficulty_score > userAbility + 100
+  );
+
   return (
     <div className="dashboard">
       <h1>Welcome, {userProfile.name}!</h1>
-      
+
       <div className="ability-section">
         <h2>Your Ability Level: {userAbility.toFixed(0)}</h2>
-        
+
         <section className="recommended">
           <h3>🎯 Recommended for You</h3>
-          <p>These quizzes match your current level ({justRight.length} available)</p>
+          <p>
+            These quizzes match your current level ({justRight.length}{" "}
+            available)
+          </p>
           <div className="quiz-list">
-            {justRight.slice(0, 5).map(quiz => (
+            {justRight.slice(0, 5).map((quiz) => (
               <div key={quiz.id} className="quiz-item">
                 <div className="difficulty-badge">
                   {quiz.difficulty_explanation.emoji}
@@ -462,7 +517,7 @@ function UserDashboard({ userProfile, quizzes }) {
             ))}
           </div>
         </section>
-        
+
         <section className="progression">
           <h3>📈 Your Progression</h3>
           <div className="tier-progress">
@@ -490,6 +545,7 @@ function UserDashboard({ userProfile, quizzes }) {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Show user's ability level
 - [ ] Filter quizzes into 3 tiers: Too Easy, Just Right, Too Hard
 - [ ] Display recommended quizzes prominently
@@ -502,21 +558,20 @@ function UserDashboard({ userProfile, quizzes }) {
 ## Implementation Priority
 
 **Phase 1 (Essential)** - Start here:
+
 1. Task 1: Difficulty badge on quiz cards ⭐⭐⭐
 2. Task 2: Explanation tooltip on hover ⭐⭐
 
-**Phase 2 (Important)** - Do after Phase 1:
-3. Task 3: Expandable details section ⭐⭐⭐
-4. Task 4: Filter/sort on browse page ⭐⭐
+**Phase 2 (Important)** - Do after Phase 1: 3. Task 3: Expandable details section ⭐⭐⭐ 4. Task 4: Filter/sort on browse page ⭐⭐
 
-**Phase 3 (Nice to have)** - Polish features:
-5. Task 5: Dashboard recommendations ⭐
+**Phase 3 (Nice to have)** - Polish features: 5. Task 5: Dashboard recommendations ⭐
 
 ---
 
 ## Testing Checklist
 
 For each task, verify:
+
 - [ ] Data loads from API correctly
 - [ ] All 5 difficulty levels display with correct colors/emojis
 - [ ] Confidence percentages show correct values
@@ -534,19 +589,19 @@ For each task, verify:
 
 ```typescript
 interface DifficultyExplanation {
-  difficulty_score: number;              // 0-1000
-  difficulty_level: string;              // "Very Easy" | "Easy" | "Medium" | "Hard" | "Very Hard" | "Expert"
-  level_5: string;                       // "Beginner" | "Beginner ➜ Medium" | "Medium" | "Medium ➜ Hard" | "Hard/Expert"
-  emoji: string;                         // "🟢" | "🟡" | "🟠" | "🔶" | "🔴"
-  confidence: number;                    // 40-95
-  confidence_level: string;              // "Low" | "Medium" | "High" | "Very High"
-  explanation: string;                   // User-friendly explanation text
+  difficulty_score: number; // 0-1000
+  difficulty_level: string; // "Very Easy" | "Easy" | "Medium" | "Hard" | "Very Hard" | "Expert"
+  level_5: string; // "Beginner" | "Beginner ➜ Medium" | "Medium" | "Medium ➜ Hard" | "Hard/Expert"
+  emoji: string; // "🟢" | "🟡" | "🟠" | "🔶" | "🔴"
+  confidence: number; // 40-95
+  confidence_level: string; // "Low" | "Medium" | "High" | "Very High"
+  explanation: string; // User-friendly explanation text
   factors: {
-    success_rate: number;                // 0-100%
-    attempt_count: number;               // Number of attempts
-    avg_question_difficulty: number;     // 0-1000
-    unique_users?: number;               // Number of users who attempted
-    reasons: string[];                   // List of factors
+    success_rate: number; // 0-100%
+    attempt_count: number; // Number of attempts
+    avg_question_difficulty: number; // 0-1000
+    unique_users?: number; // Number of users who attempted
+    reasons: string[]; // List of factors
   };
 }
 ```

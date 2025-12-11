@@ -1,0 +1,1405 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .ajax-loading {
+            display: none;
+            color: #999;
+            font-size: 12px;
+        }
+        .ajax-loading.active {
+            display: inline-block;
+        }
+        .course-info-container {
+            background: #ffffff;
+            border: 3px solid #1e90ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            min-height: 50px;
+        }
+        .course-info-container h3 {
+            margin-top: 0;
+            color: #000000;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .course-info-container ul {
+            margin: 8px 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+        .course-info-container li {
+            margin: 6px 0;
+            font-size: 13px;
+            padding: 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f9f9f9;
+            border-left: 3px solid transparent;
+            color: #000000;
+        }
+        .course-info-container li:hover {
+            background: #e8f4f8;
+            border-left-color: #417690;
+            padding-left: 12px;
+        }
+        .course-info-container li.selected {
+            background: #d4e7f0;
+            border-left-color: #417690;
+            font-weight: bold;
+        }
+        .no-data {
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Selected Items Display */
+        .selected-items-box {
+            background: #e8f4f8;
+            border: 1px solid #79aec8;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 15px;
+            display: none;
+        }
+        .selected-items-box.active {
+            display: block;
+        }
+        .selected-items-box h4 {
+            margin-top: 0;
+            color: #000000;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .selected-item-tag {
+            display: inline-block;
+            background: white;
+            color: #000;
+            border: 2px solid #1e90ff;
+            padding: 6px 10px;
+            border-radius: 20px;
+            margin: 3px 3px 3px 0;
+            font-size: 12px;
+        }
+        .selected-item-tag .remove {
+            cursor: pointer;
+            margin-left: 6px;
+            font-weight: bold;
+        }
+        .selected-item-tag .remove:hover {
+            opacity: 0.7;
+        }
+        
+        /* Analytics Info */
+        .analytics-info {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .analytics-info h5 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .analytics-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .analytics-row:last-child {
+            border-bottom: none;
+        }
+        .analytics-label {
+            color: #666;
+        }
+        .analytics-value {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        /* No Selection Message */
+        .no-selection-message {
+            background: #d9edf7;
+            border: 1px solid #bce8f1;
+            color: #31708f;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        /* Customization Form Styles */
+        .customization-form-container {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        .customization-form-container.active {
+            display: block;
+        }
+        .customization-form-container h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #333;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        /* Button Styles */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        .generate-text-btn {
+            background-color: #417690;
+            color: white;
+        }
+        .generate-text-btn:hover:not(:disabled) {
+            background-color: #205067;
+        }
+        .regenerate-audio-btn {
+            background-color: #79aec8;
+            color: white;
+        }
+        .regenerate-audio-btn:hover:not(:disabled) {
+            background-color: #417690;
+        }
+        .cancel-btn {
+            background-color: #ccc;
+            color: #333;
+        }
+        .cancel-btn:hover {
+            background-color: #999;
+        }
+        .action-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status-message.success {
+            background: #dff0d8;
+            color: #3c763d;
+            display: block;
+            border: 1px solid #d6e9c6;
+        }
+        .status-message.error {
+            background: #f2dede;
+            color: #a94442;
+            display: block;
+            border: 1px solid #ebccd1;
+        }
+        .status-message.loading {
+            background: #d9edf7;
+            color: #31708f;
+            display: block;
+            border: 1px solid #bce8f1;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        {{ block.super }}
+    </div>
+
+    <script>
+        (function() {
+            // Wait for DOM to be ready
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('✅ DOMContentLoaded - Setting up admin form functions');
+                setupAJAXCourseLoader();
+                setupAudioRegenerationButton();
+                setupScriptRegenerationButton(); // NEW: Setup script regeneration
+                setupGenerateTextButton();
+            });
+
+            /**
+             * Setup AJAX course loader for user selection
+             */
+            function setupAJAXCourseLoader() {
+                const userSelect = document.getElementById('id_user');
+                if (!userSelect) return;
+
+                userSelect.addEventListener('change', function() {
+                    const userId = this.value;
+                    if (!userId) {
+                        clearCourseInfo();
+                        return;
+                    }
+
+                    loadUserCourses(userId);
+                });
+            }
+
+            /**
+             * Load user's courses via AJAX
+             */
+            function loadUserCourses(userId) {
+                const spinner = showLoadingSpinner();
+                
+                fetch(`/api/admin/ajax/user-courses/?user_id=${userId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        hideLoadingSpinner(spinner);
+                        
+                        if (data.success) {
+                            displayCourseInfo(data);
+                        } else {
+                            showError('Failed to load courses: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        hideLoadingSpinner(spinner);
+                        console.error('Error loading courses:', error);
+                        showError('Error loading courses: ' + error.message);
+                    });
+            }
+
+            /**
+             * Display course information on the form with selection capability
+             */
+            function displayCourseInfo(data) {
+                // Create container if it doesn't exist
+                let container = document.getElementById('course-info-display');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'course-info-display';
+                    container.className = 'course-info-container';
+                    
+                    // Insert after User & Configuration fieldset
+                    const userFieldset = document.querySelector('fieldset');
+                    if (userFieldset && userFieldset.parentNode) {
+                        userFieldset.parentNode.insertBefore(container, userFieldset.nextSibling);
+                    }
+                }
+
+                let html = '<h3>📚 ' + escapeHtml(data.user.username) + ' - Courses</h3>';
+                
+                if (data.courses && data.courses.length > 0) {
+                    html += '<p><strong>Enrolled Courses (' + data.courses.length + '):</strong></p>';
+                    html += '<ul id="courses-list">';
+                    data.courses.forEach(course => {
+                        html += '<li class="course-item" data-type="course" data-id="' + course.id + '" data-name="' + escapeHtml(course.title) + '">' + 
+                                '<strong>' + escapeHtml(course.title) + '</strong> (' + 
+                                course.lessons_count + ' lessons, ' + course.quizzes_count + ' quizzes)</li>';
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p class="no-data">No enrolled courses</p>';
+                }
+
+                if (data.lessons && data.lessons.length > 0) {
+                    html += '<p><strong>Lessons (' + data.lessons.length + '):</strong></p>';
+                    html += '<ul id="lessons-list">';
+                    data.lessons.forEach(lesson => {
+                        const courseName = data.courses.find(c => c.id === lesson.course_id)?.title || 'Unknown';
+                        html += '<li class="lesson-item" data-type="lesson" data-id="' + lesson.id + '" data-name="' + escapeHtml(lesson.title) + '" data-course="' + escapeHtml(courseName) + '">' + 
+                                '📖 ' + escapeHtml(lesson.title) + ' (' + escapeHtml(courseName) + ')</li>';
+                    });
+                    html += '</ul>';
+                }
+
+                if (data.quizzes && data.quizzes.length > 0) {
+                    html += '<p><strong>Quizzes (' + data.quizzes.length + '):</strong></p>';
+                    html += '<ul id="quizzes-list">';
+                    data.quizzes.forEach(quiz => {
+                        const courseName = data.courses.find(c => c.id === quiz.course_id)?.title || 'Unknown';
+                        html += '<li class="quiz-item" data-type="quiz" data-id="' + quiz.id + '" data-name="' + escapeHtml(quiz.title) + '" data-course="' + escapeHtml(courseName) + '">' + 
+                                '✓ ' + escapeHtml(quiz.title) + ' (' + escapeHtml(courseName) + ')</li>';
+                    });
+                    html += '</ul>';
+                }
+
+                container.innerHTML = html;
+
+                // Add click handlers to make items selectable
+                attachCourseSelectionHandlers();
+            }
+
+            /**
+             * Attach click handlers to course/lesson/quiz items (multi-select)
+             */
+            function attachCourseSelectionHandlers() {
+                const items = document.querySelectorAll('.course-item, .lesson-item, .quiz-item');
+                items.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        // Toggle selection (allow multiple)
+                        this.classList.toggle('selected');
+                        
+                        // Update selected items display
+                        updateSelectedItemsDisplay();
+                    });
+                });
+            }
+            
+            /**
+             * Update display of selected items with analytics
+             */
+            function updateSelectedItemsDisplay() {
+                const selectedItems = document.querySelectorAll('.course-item.selected, .lesson-item.selected, .quiz-item.selected');
+                const selectedItemsBox = document.getElementById('selected-items-box') || createSelectedItemsBox();
+                
+                if (selectedItems.length === 0) {
+                    selectedItemsBox.classList.remove('active');
+                    return;
+                }
+                
+                selectedItemsBox.classList.add('active');
+                
+                let html = '<h4>✓ Selected Items (' + selectedItems.length + ')</h4>';
+                
+                selectedItems.forEach(item => {
+                    const itemType = item.dataset.type;
+                    const itemId = item.dataset.id;
+                    const itemName = item.dataset.name;
+                    const courseName = item.dataset.course || itemName;
+                    const icon = {
+                        'course': '📚',
+                        'lesson': '📖',
+                        'quiz': '✓'
+                    }[itemType] || '○';
+                    
+                    html += '<div class="selected-item-tag">' + 
+                            icon + ' ' + escapeHtml(itemName) + 
+                            '<span class="remove" onclick="removeSelectedItem(\'' + itemType + '\', ' + itemId + ')">×</span>' +
+                            '</div>';
+                });
+                
+                // Add analytics summary
+                html += '<div class="analytics-info">';
+                html += '<h5>📊 Selected Content Summary</h5>';
+                html += '<div class="analytics-row">';
+                html += '<span class="analytics-label">Total Items:</span>';
+                html += '<span class="analytics-value">' + selectedItems.length + '</span>';
+                html += '</div>';
+                
+                const courseCount = document.querySelectorAll('.course-item.selected').length;
+                const lessonCount = document.querySelectorAll('.lesson-item.selected').length;
+                const quizCount = document.querySelectorAll('.quiz-item.selected').length;
+                
+                if (courseCount > 0) {
+                    html += '<div class="analytics-row">';
+                    html += '<span class="analytics-label">📚 Courses:</span>';
+                    html += '<span class="analytics-value">' + courseCount + '</span>';
+                    html += '</div>';
+                }
+                if (lessonCount > 0) {
+                    html += '<div class="analytics-row">';
+                    html += '<span class="analytics-label">📖 Lessons:</span>';
+                    html += '<span class="analytics-value">' + lessonCount + '</span>';
+                    html += '</div>';
+                }
+                if (quizCount > 0) {
+                    html += '<div class="analytics-row">';
+                    html += '<span class="analytics-label">✓ Quizzes:</span>';
+                    html += '<span class="analytics-value">' + quizCount + '</span>';
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                
+                html += '<div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">';
+                html += '<button type="button" id="analyze-user-btn" class="action-btn" style="padding: 10px 16px; cursor: pointer; background-color: #9c27b0; color: white;">🔍 AI Analysis & Recommendations</button>';
+                html += '<button type="button" id="open-customization-btn" class="generate-text-btn" style="padding: 10px 16px; cursor: pointer;">✏️ Generate Script Text</button>';
+                html += '</div>';
+                
+                html += '<div id="ai-analysis-results" style="margin-top: 10px;"></div>';
+                
+                selectedItemsBox.innerHTML = html;
+                
+                // Add event listeners
+                const generateBtn = document.getElementById('open-customization-btn');
+                if (generateBtn) {
+                    generateBtn.addEventListener('click', showCustomizationForm);
+                }
+                
+                const analyzeBtn = document.getElementById('analyze-user-btn');
+                if (analyzeBtn) {
+                    analyzeBtn.addEventListener('click', analyzeUserWithAI);
+                }
+            }
+            
+            /**
+             * Create the selected items display box
+             */
+            function createSelectedItemsBox() {
+                const box = document.createElement('div');
+                box.id = 'selected-items-box';
+                box.className = 'selected-items-box';
+                
+                const courseContainer = document.getElementById('course-info-display');
+                if (courseContainer && courseContainer.parentNode) {
+                    courseContainer.parentNode.insertBefore(box, courseContainer.nextSibling);
+                }
+                
+                return box;
+            }
+            
+            /**
+             * Remove a selected item
+             */
+            function removeSelectedItem(itemType, itemId) {
+                const itemClass = itemType + '-item';
+                const item = document.querySelector('.' + itemClass + '[data-id="' + itemId + '"]');
+                if (item) {
+                    item.classList.remove('selected');
+                    updateSelectedItemsDisplay();
+                }
+            }
+
+
+            /**
+             * Show customization form when items are selected
+             */
+            function showCustomizationForm() {
+                const selectedItems = document.querySelectorAll('.course-item.selected, .lesson-item.selected, .quiz-item.selected');
+                
+                if (selectedItems.length === 0) {
+                    showStatus('error', '❌ Please select at least one course, lesson, or quiz');
+                    return;
+                }
+                
+                let formContainer = document.getElementById('customization-form');
+                
+                if (!formContainer) {
+                    formContainer = document.createElement('div');
+                    formContainer.id = 'customization-form';
+                    formContainer.className = 'customization-form-container';
+                    
+                    // Insert after selected items box
+                    const selectedItemsBox = document.getElementById('selected-items-box');
+                    if (selectedItemsBox && selectedItemsBox.parentNode) {
+                        selectedItemsBox.parentNode.insertBefore(formContainer, selectedItemsBox.nextSibling);
+                    }
+                }
+
+                // Get list of selected items for display
+                let selectedList = '';
+                selectedItems.forEach(item => {
+                    const icon = {
+                        'course': '📚',
+                        'lesson': '📖',
+                        'quiz': '✓'
+                    }[item.dataset.type] || '○';
+                    selectedList += '<li>' + icon + ' ' + escapeHtml(item.dataset.name) + '</li>';
+                });
+
+                formContainer.innerHTML = `
+                    <h4>✏️ Customize Your Podcast Script</h4>
+                    <p style="color: #666; font-size: 12px; margin-bottom: 10px;">
+                        <strong>Selected ${selectedItems.length} item(s):</strong>
+                    </p>
+                    <ul style="margin: 8px 0; padding-left: 20px; font-size: 12px;">
+                        ${selectedList}
+                    </ul>
+                    
+                    <div class="form-group">
+                        <label>📂 Category / Subject (e.g., "Business English", "Hair Styling")*</label>
+                        <input type="text" id="form-category" placeholder="e.g., Business English, Hair Styling, Math Basics" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🎯 Specific Topic (e.g., "Negotiation tactics", "Curly hair care")</label>
+                        <input type="text" id="form-topic" placeholder="e.g., Advanced negotiation, Curly hair techniques" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>👤 Your Profession / Context (e.g., "Marketing manager in tech", "Hair stylist in Germany")</label>
+                        <input type="text" id="form-profession" placeholder="e.g., Hair stylist in Germany, Marketing manager at startup" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🗣️ Preferred Language</label>
+                        <select id="form-language">
+                            <option value="en">English</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="fr">French (Français)</option>
+                            <option value="de">German (Deutsch)</option>
+                            <option value="ja">Japanese (日本語)</option>
+                            <option value="it">Italian (Italiano)</option>
+                            <option value="pt">Portuguese (Português)</option>
+                            <option value="ru">Russian (Русский)</option>
+                            <option value="ko">Korean (한국어)</option>
+                        </select>
+                    </div>
+                        <div class="form-group">
+                            <label>🌐 Secondary Language (optional - for comparison/bilingual content)</label>
+                            <select id="form-language-secondary">
+                                <option value="">None - Single language only</option>
+                                <option value="en">English</option>
+                                <option value="es">Spanish (Español)</option>
+                                <option value="fr">French (Français)</option>
+                                <option value="de">German (Deutsch)</option>
+                                <option value="ja">Japanese (日本語)</option>
+                                <option value="it">Italian (Italiano)</option>
+                                <option value="pt">Portuguese (Português)</option>
+                                <option value="ru">Russian (Русский)</option>
+                                <option value="ko">Korean (한국어)</option>
+                            </select>
+                        </div>
+
+                    <div class="form-group">
+                        <label>🤖 LLM Model (Script Generation)</label>
+                        <select id="form-llm-model">
+                            <optgroup label="OpenAI">
+                                <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+                                <option value="gpt-4o">GPT-4o (High Quality)</option>
+                                <option value="gpt-4.1">GPT-4.1 (Preview/Future)</option>
+                            </optgroup>
+                            <optgroup label="Google Gemini">
+                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast)</option>
+                                <option value="gemini-2.0-pro">Gemini 2.0 Pro (Balanced)</option>
+                                <option value="gemini-3.0-pro">Gemini 3.0 Pro (Future)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📝 Additional Notes / Style Guide (optional)</label>
+                        <textarea id="form-notes" placeholder="e.g., Keep it casual and friendly, Include industry examples, Make it beginner-friendly"></textarea>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="action-btn generate-text-btn" id="generate-text-btn">
+                            ✏️ Generate Script Text
+                        </button>
+                        <button type="button" class="action-btn cancel-btn" id="cancel-customization-btn">
+                            Cancel
+                        </button>
+                    </div>
+                    
+                    <div id="generate-status" class="status-message"></div>
+                `;
+
+                formContainer.classList.add('active');
+
+                // Add event listeners
+                document.getElementById('generate-text-btn').addEventListener('click', function() {
+                    generateScriptTextFromSelection();
+                });
+
+                document.getElementById('cancel-customization-btn').addEventListener('click', function() {
+                    formContainer.classList.remove('active');
+                    // Deselect items
+                    document.querySelectorAll('.course-item, .lesson-item, .quiz-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    updateSelectedItemsDisplay();
+                });
+                
+                // Scroll to form
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            /**
+             * Generate script text from multiple selected items
+             */
+            function generateScriptTextFromSelection() {
+                const selectedItems = document.querySelectorAll('.course-item.selected, .lesson-item.selected, .quiz-item.selected');
+                
+                if (selectedItems.length === 0) {
+                    showStatus('error', '❌ Please select at least one course, lesson, or quiz');
+                    return;
+                }
+                
+                const category = document.getElementById('form-category').value;
+                const topic = document.getElementById('form-topic').value;
+                const profession = document.getElementById('form-profession').value;
+                const language = document.getElementById('form-language').value;
+                    const languageSecondary = document.getElementById('form-language-secondary').value;
+                const notes = document.getElementById('form-notes').value;
+                const llmModel = document.getElementById('form-llm-model').value;
+
+                if (!category.trim()) {
+                    showStatus('error', '❌ Please enter a Category/Subject');
+                    return;
+                }
+
+                // Build selected items data
+                const items = [];
+                selectedItems.forEach(item => {
+                    items.push({
+                        type: item.dataset.type,
+                        id: item.dataset.id,
+                        name: item.dataset.name,
+                        course: item.dataset.course || item.dataset.name
+                    });
+                });
+
+                const btn = document.getElementById('generate-text-btn');
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Generating script...';
+                showStatus('loading', '⏳ Generating script based on your inputs and ' + selectedItems.length + ' selected item(s)...');
+
+                // Get user ID for personalization
+                const userSelect = document.getElementById('id_user');
+                const userId = userSelect ? userSelect.value : null;
+
+                // Send request to backend with all selected items
+                fetch('/api/admin/ajax/generate-script/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,  // Include for AI personalization
+                        items: items,
+                        category: category,
+                        topic: topic,
+                        profession: profession,
+                        language: language,
+                            language_secondary: languageSecondary,
+                        notes: notes,
+                        llm_model: llmModel
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '✏️ Generate Script Text';
+
+                    if (data.success) {
+                        // Insert script into the script_text field
+                        const scriptField = document.querySelector('textarea[name="script_text"]');
+                        if (scriptField) {
+                            scriptField.value = data.script;
+                            
+                            // Populate Django form fields with request data (Added for tracking)
+                            const categoryField = document.getElementById('id_category');
+                            if (categoryField) categoryField.value = category;
+                            
+                            const topicField = document.getElementById('id_topic');
+                            if (topicField) topicField.value = topic;
+                            
+                            const professionField = document.getElementById('id_profession');
+                            if (professionField) professionField.value = profession;
+                            
+                            const notesField = document.getElementById('id_notes');
+                            if (notesField) notesField.value = notes;
+                            
+                            const requestDataField = document.getElementById('id_request_data');
+                            if (requestDataField) {
+                                const requestData = {
+                                    items: items,
+                                    category: category,
+                                    topic: topic,
+                                    profession: profession,
+                                    language: language,
+                                    language_secondary: languageSecondary,
+                                    notes: notes,
+                                    llm_model: llmModel
+                                };
+                                requestDataField.value = JSON.stringify(requestData, null, 2);
+                            }
+                            
+                            // Populate included_courses (for backward compatibility)
+                            const includedCoursesField = document.getElementById('id_included_courses');
+                            if (includedCoursesField) {
+                                // Extract just the IDs or names for included_courses
+                                const courseList = items.map(item => item.course || item.name);
+                                includedCoursesField.value = JSON.stringify(courseList, null, 2);
+                            }
+                            
+                            // Also update primary/secondary language fields if they exist
+                            const primaryLangField = document.getElementById('id_primary_language');
+                            if (primaryLangField) primaryLangField.value = language;
+                            
+                            const secondaryLangField = document.getElementById('id_secondary_language');
+                            if (secondaryLangField) secondaryLangField.value = languageSecondary;
+
+                            scriptField.focus();
+                            showStatus('success', '✅ ' + data.message);
+                            
+                            // Scroll to script field
+                            setTimeout(() => {
+                                scriptField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 500);
+                        } else {
+                            showStatus('error', '❌ Could not find script text field');
+                        }
+                    } else {
+                        showStatus('error', '❌ ' + (data.error || 'Failed to generate script'));
+                    }
+                })
+                .catch(error => {
+                    btn.disabled = false;
+                    btn.innerHTML = '✏️ Generate Script Text';
+                    console.error('Error:', error);
+                    showStatus('error', '❌ Error: ' + error.message);
+                });
+            }
+
+            /**
+             * Setup script regeneration button (for edit form only)
+             */
+            function setupScriptRegenerationButton() {
+                const podcastId = getPodcastIdFromUrl();
+                if (!podcastId) return;
+
+                const scriptField = document.querySelector('textarea[name="script_text"]');
+                if (!scriptField) return;
+
+                // Create LLM model selector
+                const llmSelect = document.createElement('select');
+                llmSelect.id = 'regenerate-llm-model';
+                llmSelect.style.marginRight = '10px';
+                llmSelect.style.padding = '6px';
+                llmSelect.style.borderRadius = '4px';
+                llmSelect.innerHTML = `
+                    <optgroup label="OpenAI">
+                        <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+                        <option value="gpt-4o" selected>GPT-4o (High Quality)</option>
+                        <option value="gpt-4.1">GPT-4.1 (Preview)</option>
+                    </optgroup>
+                    <optgroup label="Google Gemini">
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                        <option value="gemini-3.0-pro">Gemini 3.0 Pro</option>
+                    </optgroup>
+                `;
+                
+                // Try to set from request_data if available
+                const requestDataField = document.getElementById('id_request_data');
+                if (requestDataField && requestDataField.value) {
+                    try {
+                        const requestData = JSON.parse(requestDataField.value);
+                        if (requestData.llm_model) {
+                            llmSelect.value = requestData.llm_model;
+                        }
+                    } catch (e) {
+                        console.log('Could not parse request_data for LLM model');
+                    }
+                }
+                
+                // Create button
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'action-btn generate-text-btn';
+                btn.innerHTML = '✏️ Regenerate Script from Form Data';
+                btn.style.marginBottom = '10px';
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    regenerateScriptFromFormData(podcastId, btn);
+                };
+
+                // Insert before the script field
+                const container = document.createElement('div');
+                container.style.marginBottom = '10px';
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.style.flexWrap = 'wrap';
+                container.style.gap = '10px';
+                
+                // Add label
+                const label = document.createElement('label');
+                label.innerHTML = '🤖 LLM Model:';
+                label.style.marginRight = '5px';
+                label.style.fontWeight = 'bold';
+                container.appendChild(label);
+                container.appendChild(llmSelect);
+                container.appendChild(btn);
+                
+                // Add status div
+                const status = document.createElement('div');
+                status.id = 'regenerate-script-status';
+                status.className = 'status-message';
+                status.style.width = '100%';
+                container.appendChild(status);
+
+                scriptField.parentNode.insertBefore(container, scriptField);
+            }
+
+            /**
+             * Regenerate script from standard Django form data
+             */
+            function regenerateScriptFromFormData(podcastId, button) {
+                const statusDiv = document.getElementById('regenerate-script-status');
+                
+                // Get values from Django form fields
+                const category = document.getElementById('id_category')?.value || '';
+                const topic = document.getElementById('id_topic')?.value || '';
+                const profession = document.getElementById('id_profession')?.value || '';
+                const notes = document.getElementById('id_notes')?.value || '';
+                
+                // Get languages - handle radio buttons for primary
+                let language = 'en';
+                const primaryLangRadios = document.querySelectorAll('input[name="primary_language"]');
+                primaryLangRadios.forEach(radio => {
+                    if (radio.checked) language = radio.value;
+                });
+                
+                const languageSecondary = document.getElementById('id_secondary_language')?.value || '';
+                
+                // Get LLM model from regenerate form if exists, otherwise from request_data
+                let llmModel = document.getElementById('regenerate-llm-model')?.value || 'gpt-4o';
+                
+                // Get request data to find items and previous llm_model
+                let items = [];
+                const requestDataField = document.getElementById('id_request_data');
+                if (requestDataField && requestDataField.value) {
+                    try {
+                        const requestData = JSON.parse(requestDataField.value);
+                        if (requestData.items) {
+                            items = requestData.items;
+                        }
+                        // Use previous LLM model if regenerate field doesn't exist
+                        if (!document.getElementById('regenerate-llm-model') && requestData.llm_model) {
+                            llmModel = requestData.llm_model;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing request_data:', e);
+                    }
+                }
+
+                if (!category.trim()) {
+                    showRegenerateScriptStatus('error', '❌ Please enter a Category/Subject in the form above');
+                    return;
+                }
+
+                // Disable button
+                button.disabled = true;
+                button.innerHTML = '⏳ Generating...';
+                showRegenerateScriptStatus('loading', '⏳ Regenerating script based on form inputs...');
+
+                // Send request to backend
+                fetch('/api/admin/ajax/generate-script/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: items, // Use existing items
+                        category: category,
+                        topic: topic,
+                        profession: profession,
+                        language: language,
+                        language_secondary: languageSecondary,
+                        notes: notes,
+                        llm_model: llmModel // Use selected or previous model
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    button.disabled = false;
+                    button.innerHTML = '✏️ Regenerate Script from Form Data';
+
+                    if (data.success) {
+                        // Update script text
+                        const scriptField = document.querySelector('textarea[name="script_text"]');
+                        if (scriptField) {
+                            scriptField.value = data.script;
+                            
+                            // Update request_data with the new parameters
+                            const requestDataField = document.getElementById('id_request_data');
+                            if (requestDataField) {
+                                const requestData = {
+                                    items: items,
+                                    category: category,
+                                    topic: topic,
+                                    profession: profession,
+                                    language: language,
+                                    language_secondary: languageSecondary,
+                                    notes: notes,
+                                    llm_model: llmModel
+                                };
+                                requestDataField.value = JSON.stringify(requestData, null, 2);
+                            }
+                            
+                            showRegenerateScriptStatus('success', '✅ ' + data.message);
+                        }
+                    } else {
+                        showRegenerateScriptStatus('error', '❌ ' + (data.error || 'Regeneration failed'));
+                    }
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    button.innerHTML = '✏️ Regenerate Script from Form Data';
+                    showRegenerateScriptStatus('error', '❌ Error: ' + error.message);
+                });
+            }
+
+            /**
+             * Show regenerate script status message
+             */
+            function showRegenerateScriptStatus(type, message) {
+                const statusDiv = document.getElementById('regenerate-script-status');
+                if (!statusDiv) return;
+                
+                statusDiv.className = 'status-message ' + type;
+                statusDiv.innerHTML = message;
+            }
+
+            /**
+             * Old function for backward compatibility
+             */
+            function generateScriptText(itemType, itemId, itemName, courseName) {
+                const category = document.getElementById('form-category').value;
+                const topic = document.getElementById('form-topic').value;
+                const profession = document.getElementById('form-profession').value;
+                const language = document.getElementById('form-language').value;
+                const notes = document.getElementById('form-notes').value;
+
+                if (!category.trim()) {
+                    showStatus('error', '❌ Please enter a Category/Subject');
+                    return;
+                }
+
+                const statusDiv = document.getElementById('generate-status');
+                const btn = document.getElementById('generate-text-btn');
+
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Generating script...';
+                showStatus('loading', '⏳ Generating script based on your inputs...');
+
+                // Send request to backend
+                fetch('/api/admin/ajax/generate-script/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        item_type: itemType,
+                        item_id: itemId,
+                        item_name: itemName,
+                        course_name: courseName,
+                        category: category,
+                        topic: topic,
+                        profession: profession,
+                        language: language,
+                        notes: notes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '✏️ Generate Script Text';
+
+                    if (data.success) {
+                        // Insert script into the script_text field
+                        const scriptField = document.querySelector('textarea[name="script_text"]');
+                        if (scriptField) {
+                            scriptField.value = data.script;
+                            scriptField.focus();
+                            showStatus('success', '✅ ' + data.message);
+                            
+                            // Scroll to script field
+                            setTimeout(() => {
+                                scriptField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 500);
+                        } else {
+                            showStatus('error', '❌ Could not find script text field');
+                        }
+                    } else {
+                        showStatus('error', '❌ ' + (data.error || 'Failed to generate script'));
+                    }
+                })
+                .catch(error => {
+                    btn.disabled = false;
+                    btn.innerHTML = '✏️ Generate Script Text';
+                    console.error('Error:', error);
+                    showStatus('error', '❌ Error: ' + error.message);
+                });
+            }
+
+            /**
+             * Show status message
+             */
+            function showStatus(type, message) {
+                const statusDiv = document.getElementById('generate-status');
+                if (!statusDiv) return;
+                
+                statusDiv.className = 'status-message ' + type;
+                statusDiv.innerHTML = message;
+            }
+
+            /**
+             * Setup audio regeneration button (for edit form only)
+             */
+            function setupAudioRegenerationButton() {
+                // Only show on edit form (when podcast ID exists in URL)
+                const podcastId = getPodcastIdFromUrl();
+                console.log('🎧 Audio Button Setup - Podcast ID:', podcastId);
+                if (!podcastId) {
+                    console.log('🎧 No podcast ID found - skipping audio button setup');
+                    return;
+                }
+
+                // Find the script_text field
+                const scriptField = document.querySelector('textarea[name="script_text"]');
+                console.log('🎧 Script field found:', scriptField ? 'YES' : 'NO');
+                if (!scriptField) {
+                    console.log('🎧 No script_text field found - skipping audio button setup');
+                    return;
+                }
+
+                // Create TTS provider dropdown
+                const ttsSelect = document.createElement('select');
+                ttsSelect.id = 'tts-provider-select';
+                ttsSelect.className = 'action-select';
+                ttsSelect.style.marginRight = '10px';
+                ttsSelect.style.padding = '5px';
+                
+                const ttsOptions = [
+                    { value: 'elevenlabs', text: 'ElevenLabs (Best Quality)' },
+                    { value: 'google', text: 'Google TTS (Standard)' },
+                    { value: 'openai', text: 'OpenAI TTS (Natural)' },
+                    { value: 'gemini', text: 'Gemini TTS (Journey Voice)' },
+                    { value: 'google_chirp', text: 'Google AI Studio (Chirp 3)' }
+                ];
+                
+                ttsOptions.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.text = opt.text;
+                    if (opt.disabled) option.disabled = true;
+                    ttsSelect.appendChild(option);
+                });
+                
+                // Insert dropdown before button
+                scriptField.parentNode.insertBefore(ttsSelect, scriptField.nextSibling);
+
+                // Create button
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'action-btn regenerate-audio-btn';
+                btn.innerHTML = '🎧 Regenerate Audio from Script';
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    regenerateAudio(podcastId, btn);
+                };
+
+                // Insert after dropdown
+                ttsSelect.parentNode.insertBefore(btn, ttsSelect.nextSibling);
+                console.log('🎧 Audio regeneration button created and inserted');
+
+                // Create status div
+                const status = document.createElement('div');
+                status.id = 'regenerate-status';
+                status.className = 'status-message';
+                btn.parentNode.insertBefore(status, btn.nextSibling);
+                console.log('🎧 Status message div created');
+            }
+
+            /**
+             * Setup generate text button placeholder (will be shown when course is selected)
+             */
+            function setupGenerateTextButton() {
+                // This is now handled by showCustomizationForm()
+                // Keep this function for consistency
+            }
+
+            /**
+             * Analyze user with AI and show recommendations
+             */
+            function analyzeUserWithAI() {
+                const userSelect = document.getElementById('id_user');
+                if (!userSelect || !userSelect.value) {
+                    alert('❌ Please select a user first');
+                    return;
+                }
+                
+                const userId = userSelect.value;
+                const analyzeBtn = document.getElementById('analyze-user-btn');
+                const resultsDiv = document.getElementById('ai-analysis-results');
+                
+                // Disable button and show loading
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '⏳ Analyzing...';
+                resultsDiv.innerHTML = '<div class="status-message loading">🔍 Analyzing user learning data with AI...</div>';
+                
+                // Call API
+                fetch(`/api/admin/ajax/analyze-user/?user_id=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = '🔍 AI Analysis & Recommendations';
+                        
+                        if (data.success) {
+                            displayAIAnalysis(data);
+                        } else {
+                            resultsDiv.innerHTML = '<div class="status-message error">❌ ' + (data.error || 'Analysis failed') + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = '🔍 AI Analysis & Recommendations';
+                        resultsDiv.innerHTML = '<div class="status-message error">❌ Error: ' + error.message + '</div>';
+                    });
+            }
+            
+            /**
+             * Display AI analysis results in a nice format
+             */
+            function displayAIAnalysis(data) {
+                const resultsDiv = document.getElementById('ai-analysis-results');
+                const analysis = data.analysis;
+                const recommendations = data.recommendations;
+                
+                let html = '<div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 16px; margin: 10px 0;">';
+                html += '<h3 style="margin-top: 0; color: #2e7d32;">✅ AI Analysis Complete</h3>';
+                
+                // Learning Summary
+                html += '<div style="margin-bottom: 16px;">';
+                html += '<h4 style="color: #1976d2;">📊 Learning Summary</h4>';
+                html += '<ul style="list-style: none; padding-left: 0;">';
+                html += '<li>📚 <strong>Courses:</strong> ' + analysis.total_courses + ' enrolled</li>';
+                html += '<li>✅ <strong>Progress:</strong> ' + analysis.lessons_completed + ' lessons, ' + analysis.quizzes_completed + ' quizzes completed</li>';
+                html += '<li>🎯 <strong>Quiz Accuracy:</strong> ' + analysis.quiz_accuracy.toFixed(1) + '%</li>';
+                html += '<li>🔥 <strong>Study Streak:</strong> ' + analysis.study_streak + ' days</li>';
+                html += '<li>📅 <strong>Active Days (30d):</strong> ' + analysis.active_days + ' days</li>';
+                html += '</ul>';
+                html += '</div>';
+                
+                // Weak Areas
+                if (analysis.weak_topics && analysis.weak_topics.length > 0) {
+                    html += '<div style="margin-bottom: 16px; background: #fff3e0; padding: 12px; border-radius: 4px;">';
+                    html += '<h4 style="color: #f57c00; margin-top: 0;">⚠️ Areas for Improvement</h4>';
+                    html += '<ul>';
+                    analysis.weak_topics.forEach(topic => {
+                        html += '<li>' + topic.topic + ' - ' + topic.avg_score + '% (needs practice)</li>';
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+                
+                // Strong Areas
+                if (analysis.strong_topics && analysis.strong_topics.length > 0) {
+                    html += '<div style="margin-bottom: 16px; background: #e3f2fd; padding: 12px; border-radius: 4px;">';
+                    html += '<h4 style="color: #1976d2; margin-top: 0;">💪 Strong Areas</h4>';
+                    html += '<ul>';
+                    analysis.strong_topics.forEach(topic => {
+                        html += '<li>' + topic.topic + ' - ' + topic.avg_score + '% mastery!</li>';
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+                
+                // AI Recommendations
+                if (recommendations.next_steps && recommendations.next_steps.length > 0) {
+                    html += '<div style="margin-bottom: 16px; background: #f3e5f5; padding: 12px; border-radius: 4px;">';
+                    html += '<h4 style="color: #7b1fa2; margin-top: 0;">🎯 Next Steps</h4>';
+                    html += '<ul>';
+                    recommendations.next_steps.forEach(step => {
+                        html += '<li>' + step + '</li>';
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+                
+                // Report saved notice
+                html += '<div style="margin-top: 12px; color: #666; font-size: 12px;">';
+                html += '📁 <strong>Full report saved to:</strong><br>' + data.report_path;
+                html += '<br><em>(Admin can review detailed analytics in the saved JSON file)</em>';
+                html += '</div>';
+                
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+            }
+
+            /**
+             * Regenerate audio for the current podcast
+             */
+            function regenerateAudio(podcastId, button) {
+                const statusDiv = document.getElementById('regenerate-status');
+                const ttsProvider = document.getElementById('tts-provider-select').value;
+                const scriptField = document.querySelector('textarea[name="script_text"]');
+                const scriptText = scriptField ? scriptField.value : '';
+                
+                // Disable button
+                button.disabled = true;
+                button.innerHTML = '⏳ Regenerating...';
+                showRegenerateStatus('loading', '⏳ Regenerating audio using ' + ttsProvider + '...');
+
+                // Send request to backend
+                fetch('/api/admin/ajax/regenerate-audio/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        podcast_id: podcastId,
+                        tts_provider: ttsProvider,
+                        script_text: scriptText // use current edited script from the textarea
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    button.disabled = false;
+                    button.innerHTML = '🎧 Regenerate Audio from Script';
+
+                    if (data.success) {
+                        showRegenerateStatus('success', '✅ ' + data.message);
+                        console.log('✅ Audio regenerated successfully');
+                        
+                        // Show message and reload after 2 seconds to display new audio
+                        setTimeout(() => {
+                            console.log('🔄 Reloading page to display new audio...');
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        showRegenerateStatus('error', '❌ ' + (data.error || 'Regeneration failed'));
+                        console.error('❌ Regeneration error:', data.error);
+                    }
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    button.innerHTML = '🎧 Regenerate Audio from Script';
+                    showRegenerateStatus('error', '❌ Error: ' + error.message);
+                    console.error('❌ Fetch error:', error);
+                });
+            }
+
+            /**
+             * Show regenerate status message
+             */
+            function showRegenerateStatus(type, message) {
+                const statusDiv = document.getElementById('regenerate-status');
+                if (!statusDiv) return;
+                
+                statusDiv.className = 'status-message ' + type;
+                statusDiv.innerHTML = message;
+            }
+
+            /**
+             * Extract podcast ID from URL
+             */
+            function getPodcastIdFromUrl() {
+                const match = window.location.pathname.match(/\/(\d+)\/change\//);
+                const result = match ? match[1] : null;
+                console.log('📍 URL pathname:', window.location.pathname);
+                console.log('📍 Extracted podcast ID:', result);
+                return result;
+            }
+
+            /**
+             * Show loading spinner
+             */
+            function showLoadingSpinner() {
+                const spinner = document.createElement('span');
+                spinner.className = 'ajax-loading active';
+                spinner.innerHTML = ' Loading courses...';
+                document.getElementById('id_user').parentNode.appendChild(spinner);
+                return spinner;
+            }
+
+            /**
+             * Hide loading spinner
+             */
+            function hideLoadingSpinner(spinner) {
+                if (spinner) {
+                    spinner.remove();
+                }
+            }
+
+            /**
+             * Show error message
+             */
+            function showError(message) {
+                alert('Error: ' + message);
+            }
+
+            /**
+             * Clear course information display
+             */
+            function clearCourseInfo() {
+                const container = document.getElementById('course-info-display');
+                if (container) {
+                    container.innerHTML = '';
+                }
+                const formContainer = document.getElementById('customization-form');
+                if (formContainer) {
+                    formContainer.classList.remove('active');
+                }
+            }
+
+            /**
+             * Get CSRF token from cookies
+             */
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            /**
+             * Escape HTML to prevent XSS
+             */
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        })();
+    </script>
+{% endblock %}
+
