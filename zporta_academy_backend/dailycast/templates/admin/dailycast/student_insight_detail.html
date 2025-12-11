@@ -72,6 +72,62 @@
             color: #666;
             margin-top: 8px;
         }
+        .refresh-controls {
+            background: #f8f9fa;
+            border: 2px solid #417690;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .refresh-controls h3 {
+            margin: 0 0 15px 0;
+            color: #417690;
+            font-size: 18px;
+        }
+        .refresh-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .refresh-form label {
+            font-weight: bold;
+            color: #333;
+        }
+        .refresh-form select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .refresh-btn {
+            background: #417690;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .refresh-btn:hover {
+            background: #2e5568;
+        }
+        .refresh-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .loading-indicator {
+            display: none;
+            color: #417690;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        .loading-indicator.active {
+            display: inline-block;
+        }
         .courses-list {
             list-style: none;
             padding: 0;
@@ -200,6 +256,34 @@
         </div>
     </div>
 
+    <!-- AI Refresh Controls -->
+    <div class="refresh-controls">
+        <h3>🤖 AI Analysis Controls</h3>
+        <div class="refresh-form">
+            <label for="ai-model">Select AI Model:</label>
+            <select id="ai-model" name="ai_model">
+                <optgroup label="Google Gemini">
+                    <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Fast & Cheap)</option>
+                    <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro (Best Quality)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                </optgroup>
+                <optgroup label="OpenAI GPT">
+                    <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+                    <option value="gpt-4o">GPT-4o (Balanced)</option>
+                    <option value="gpt-4-turbo">GPT-4 Turbo (High Quality)</option>
+                </optgroup>
+            </select>
+            <button type="button" class="refresh-btn" id="refresh-analysis-btn" onclick="refreshAnalysis()">
+                🔄 Refresh AI Analysis
+            </button>
+            <span class="loading-indicator" id="loading-indicator">⏳ Analyzing...</span>
+        </div>
+        <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
+            💡 This will analyze enrollment, quiz scores, notes, and all user activity to provide personalized insights about English level and learning recommendations.
+        </p>
+    </div>
+
     {% if not success %}
         <div class="section">
             <div class="error-message">
@@ -297,6 +381,50 @@
     <div class="section">
         <h2 class="section-title">🎯 AI Recommendations</h2>
         
+        {% if recommendations.ai_insights %}
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 6px; margin-bottom: 25px; border-left: 4px solid #2196f3;">
+            <h3 style="color: #1976d2; font-size: 18px; margin: 0 0 15px 0;">🤖 AI Deep Analysis</h3>
+            
+            {% if recommendations.ai_insights.error %}
+            <p style="color: #d32f2f;">⚠️ {{ recommendations.ai_insights.message }}</p>
+            {% else %}
+            <p><strong>English Level:</strong> {{ recommendations.ai_insights.english_level }} - {{ recommendations.ai_insights.english_level_reasoning }}</p>
+            <p><strong>Learning Style:</strong> {{ recommendations.ai_insights.learning_style }}</p>
+            
+            {% if recommendations.ai_insights.strengths %}
+            <p><strong>💪 Strengths:</strong></p>
+            <ul>
+                {% for strength in recommendations.ai_insights.strengths %}
+                <li>{{ strength }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            {% if recommendations.ai_insights.areas_for_improvement %}
+            <p><strong>📈 Areas for Improvement:</strong></p>
+            <ul>
+                {% for area in recommendations.ai_insights.areas_for_improvement %}
+                <li>{{ area }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            {% if recommendations.ai_insights.recommendations %}
+            <p><strong>💡 AI Recommendations:</strong></p>
+            <ul>
+                {% for rec in recommendations.ai_insights.recommendations %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            {% if recommendations.ai_insights.study_schedule_suggestion %}
+            <p><strong>📅 Suggested Study Schedule:</strong> {{ recommendations.ai_insights.study_schedule_suggestion }}</p>
+            {% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
+        
         {% if recommendations.priority_actions %}
         <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Priority Actions</h3>
         <ul class="recommendations-list">
@@ -353,4 +481,44 @@
 
     {% endif %}
 </div>
+
+<script>
+function refreshAnalysis() {
+    const btn = document.getElementById('refresh-analysis-btn');
+    const loading = document.getElementById('loading-indicator');
+    const model = document.getElementById('ai-model').value;
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    loading.classList.add('active');
+    
+    // Make AJAX request
+    fetch('{% url "admin:refresh_student_analysis" user.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            ai_model: model
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to show updated analysis
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            btn.disabled = false;
+            loading.classList.remove('active');
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error);
+        btn.disabled = false;
+        loading.classList.remove('active');
+    });
+}
+</script>
 {% endblock %}

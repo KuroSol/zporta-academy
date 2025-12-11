@@ -571,18 +571,38 @@ class UserLearningAnalyzer:
         return str(filepath)
 
 
-def analyze_user_and_generate_feedback(user) -> Dict:
+def analyze_user_and_generate_feedback(user, ai_model: str = None) -> Dict:
     """
     Main function to analyze user and generate comprehensive feedback.
+    
+    Args:
+        user: User object to analyze
+        ai_model: Optional AI model to use for deeper analysis
+                 (e.g., 'gemini-2.0-flash-exp', 'gpt-4o-mini')
+    
     Returns both analysis data and recommendations.
     """
     analyzer = UserLearningAnalyzer(user)
     
-    # Collect all data
+    # Collect all data (including notes)
     analysis_data = analyzer.collect_user_learning_data()
     
     # Generate recommendations locally (no API calls)
     recommendations = analyzer.generate_recommendations()
+    
+    # If AI model specified, enhance with AI analysis
+    if ai_model:
+        try:
+            logger.info(f"🤖 Running AI analysis with model: {ai_model}")
+            ai_insights = _run_ai_deep_analysis(user, analysis_data, ai_model)
+            recommendations['ai_insights'] = ai_insights
+            logger.info(f"✅ AI analysis complete")
+        except Exception as e:
+            logger.exception(f"AI analysis failed: {e}")
+            recommendations['ai_insights'] = {
+                'error': str(e),
+                'message': 'AI analysis unavailable - using local analysis only'
+            }
     
     # Save report for admin review
     report_path = analyzer.save_analysis_report(include_recommendations=True)
@@ -594,6 +614,89 @@ def analyze_user_and_generate_feedback(user) -> Dict:
         'report_path': report_path,
         'message': 'Analysis complete - report saved for admin review'
     }
+
+
+def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str) -> Dict:
+    """
+    Use AI to provide deep insights about user's English level, 
+    learning patterns, and personalized recommendations.
+    
+    Analyzes: enrollment, quiz scores, notes content, activity patterns
+    """
+    import google.generativeai as genai
+    from django.conf import settings
+    
+    # Gather user notes
+    from notes.models import Note
+    user_notes = Note.objects.filter(user=user).order_by('-created_at')[:20]
+    notes_text = "\n".join([f"- {note.content[:200]}" for note in user_notes])
+    
+    # Build comprehensive prompt
+    prompt = f"""Analyze this student's learning profile and provide detailed insights:
+
+STUDENT PROFILE:
+- Name: {user.get_full_name() or user.username}
+- Enrolled Courses: {analysis_data.get('total_courses', 0)}
+- Lessons Completed: {analysis_data.get('lessons_completed', 0)}
+- Quizzes Taken: {analysis_data.get('quizzes_completed', 0)}
+- Quiz Accuracy: {analysis_data.get('quiz_accuracy', 0):.1f}%
+- Study Streak: {analysis_data.get('study_streak', 0)} days
+- Active Days (30d): {analysis_data.get('active_days', 0)}
+
+WEAK TOPICS:
+{chr(10).join([f"- {t['topic']}: {t['avg_score']}%" for t in analysis_data.get('weak_topics', [])[:5]])}
+
+STRONG TOPICS:
+{chr(10).join([f"- {t['topic']}: {t['avg_score']}%" for t in analysis_data.get('strong_topics', [])[:5]])}
+
+RECENT NOTES (last 20):
+{notes_text if notes_text else "No notes yet"}
+
+TASK:
+1. Estimate their English proficiency level (A1-C2)
+2. Identify learning style and patterns
+3. Provide 3-5 specific, actionable recommendations
+4. Suggest optimal study schedule based on their activity
+
+Return JSON format:
+{{
+    "english_level": "B1",
+    "english_level_reasoning": "...",
+    "learning_style": "...",
+    "strengths": ["...", "..."],
+    "areas_for_improvement": ["...", "..."],
+    "recommendations": ["...", "...", "..."],
+    "study_schedule_suggestion": "..."
+}}"""
+    
+    # Call AI model
+    if ai_model.startswith('gemini'):
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel(ai_model)
+        response = model.generate_content(prompt)
+        result_text = response.text
+    elif ai_model.startswith('gpt'):
+        import openai
+        openai.api_key = settings.OPENAI_API_KEY
+        response = openai.ChatCompletion.create(
+            model=ai_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        result_text = response.choices[0].message.content
+    else:
+        raise ValueError(f"Unsupported AI model: {ai_model}")
+    
+    # Parse JSON response
+    import json
+    import re
+    # Extract JSON from markdown code blocks if present
+    json_match = re.search(r'```json\s*(.*?)\s*```', result_text, re.DOTALL)
+    if json_match:
+        result_text = json_match.group(1)
+    
+    ai_insights = json.loads(result_text)
+    return ai_insights
 
 
 def generate_personalized_script_with_ai_context(user, selected_items: List[Dict], form_data: Dict) -> str:

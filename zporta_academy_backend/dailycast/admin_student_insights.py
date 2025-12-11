@@ -82,6 +82,11 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.student_detail_view),
                 name='student_insight_detail',
             ),
+            path(
+                '<int:user_id>/refresh/',
+                self.admin_site.admin_view(self.refresh_analysis_view),
+                name='refresh_student_analysis',
+            ),
         ]
         return custom_urls + urls
     
@@ -120,3 +125,39 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
         }
         
         return render(request, 'admin/dailycast/student_insight_detail.html', context)
+    
+    def refresh_analysis_view(self, request, user_id):
+        """AJAX endpoint to refresh AI analysis with selected model."""
+        import json
+        from django.http import JsonResponse
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+        
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+        
+        try:
+            # Parse request body
+            data = json.loads(request.body)
+            ai_model = data.get('ai_model', 'gemini-2.0-flash-exp')
+            
+            logger.info(f"🤖 Refreshing analysis for user {user_id} with model {ai_model}")
+            
+            # Run AI analysis with selected model
+            result = analyze_user_and_generate_feedback(user, ai_model=ai_model)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Analysis refreshed successfully',
+                'model_used': ai_model
+            })
+            
+        except Exception as e:
+            logger.exception(f"Error refreshing analysis for user {user_id}: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
