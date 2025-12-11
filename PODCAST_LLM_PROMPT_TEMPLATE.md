@@ -10,6 +10,7 @@
 ## 🎯 HOW TO USE THIS TEMPLATE
 
 1. **Gather user data** from your Django models:
+
    ```python
    user_data = {
        'username': user.username,
@@ -40,9 +41,10 @@
 ## 📝 COMPLETE SYSTEM PROMPT + USER PROMPT
 
 ### SYSTEM PROMPT
+
 ```
-You are a friendly, encouraging English language coach creating personalized 
-daily podcast scripts for Japanese learners of English. Your goal is to help 
+You are a friendly, encouraging English language coach creating personalized
+daily podcast scripts for Japanese learners of English. Your goal is to help
 them improve in areas where they struggle while celebrating their progress.
 
 Your tone should be:
@@ -226,7 +228,7 @@ It's like they're rebels! They refuse to follow the new rule.
 
 The good news? Once you memorize the ten most common irregular verbs,
 you're golden. [PAUSE]
-They are: go-went, see-saw, eat-ate, come-came, make-made, 
+They are: go-went, see-saw, eat-ate, come-came, make-made,
 get-got, know-knew, think-thought, take-took, run-ran.
 [PAUSE]
 That's 80% of what you'll hear in English!
@@ -263,22 +265,22 @@ Now generate the actual podcast script for {username} following the guidelines a
 ```python
 def build_podcast_prompt(user_data: dict) -> str:
     """Build complete prompt with user data substituted."""
-    
+
     template = """[THE FULL PROMPT ABOVE]"""
-    
+
     # Format ability_by_subject as readable list
     ability_by_subject_formatted = "\n".join([
         f"  - {subject.name}: {score}/1000"
         for subject_id, score in user_data['ability_by_subject'].items()
         for subject in [Subject.objects.get(id=subject_id)]
     ])
-    
+
     # Format items_to_review as readable list
     items_to_review_list = "\n".join([
         f"  - {item.get_item_name()}"
         for item in user_data['items_to_review'][:5]  # Top 5
     ])
-    
+
     # Replace all placeholders
     prompt = template.format(
         username=user_data['username'],
@@ -302,22 +304,22 @@ def build_podcast_prompt(user_data: dict) -> str:
         items_to_review_list=items_to_review_list,
         special_notes_or_context=user_data.get('special_notes', ''),
     )
-    
+
     return prompt
 ```
 
 ### Calling OpenAI GPT-4o Mini
 
-```python
+````python
 import openai
 
 def generate_podcast_script(user_data: dict) -> str:
     """Generate podcast script using GPT-4o Mini."""
-    
+
     prompt = build_podcast_prompt(user_data)
-    
+
     client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    
+
     response = client.chat.completions.create(
         model='gpt-4o-mini',
         messages=[
@@ -329,18 +331,18 @@ def generate_podcast_script(user_data: dict) -> str:
         temperature=0.7,  # Some creativity, but consistent
         max_tokens=1200,   # ~4-6 minute script
     )
-    
+
     script_text = response.choices[0].message.content
-    
+
     # Clean up any markdown or extra formatting
     script_text = script_text.strip()
     if script_text.startswith('```'):
         script_text = script_text[3:]  # Remove opening ```
     if script_text.endswith('```'):
         script_text = script_text[:-3]  # Remove closing ```
-    
+
     return script_text
-```
+````
 
 ### Calling Google Gemini Flash
 
@@ -349,12 +351,12 @@ import google.generativeai as genai
 
 def generate_podcast_script_gemini(user_data: dict) -> str:
     """Generate podcast script using Gemini Flash."""
-    
+
     prompt = build_podcast_prompt(user_data)
-    
+
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
     model = genai.GenerativeModel('gemini-1.5-flash')
-    
+
     response = model.generate_content(
         prompt,
         generation_config=genai.types.GenerationConfig(
@@ -362,7 +364,7 @@ def generate_podcast_script_gemini(user_data: dict) -> str:
             max_output_tokens=1200,
         )
     )
-    
+
     return response.text.strip()
 ```
 
@@ -372,23 +374,23 @@ def generate_podcast_script_gemini(user_data: dict) -> str:
 
 **Where to get each variable from your Django models:**
 
-| Variable | Source | Example |
-|----------|--------|---------|
-| `username` | `user.username` | "sarah_chen" |
-| `ability_level` | Compute from `user.ability_profile.overall_ability_score` | "Intermediate" |
-| `overall_score` | `user.ability_profile.overall_ability_score` | 520.5 |
-| `ability_by_subject` | `user.ability_profile.ability_by_subject` | {1: 450, 2: 580} |
-| `quiz_count_this_week` | `ActivityEvent.objects.filter(user=user, event_type='quiz_completed', timestamp__gte=last_7_days).count()` | 7 |
-| `correct_count_this_week` | `QuizAttempt.objects.filter(user=user, is_correct=True, attempted_at__gte=last_7_days).count()` | 5 |
-| `success_rate` | `correct_count / quiz_count * 100` | 71.4 |
-| `weakest_subject` | `user.ability_profile.ability_by_subject` → min value | "Past Tense Verbs" |
-| `weakest_concept` | Query `MemoryStat` for lowest retention items | "Irregular Past Tense" |
-| `example_mistake` | Latest incorrect `QuizAttempt` | "She goed home" |
-| `strongest_subject` | `ability_by_subject` → max value | "Present Tense" |
-| `example_success` | Latest correct `QuizAttempt` | "They eat breakfast" |
-| `recommended_quiz_title` | `MatchScore.objects.filter(user=user).order_by('-score').first().content_object.title` | "Irregular Verbs Challenge" |
-| `items_to_review` | `MemoryStat.objects.filter(user=user, next_review_at__lte=now).order_by('next_review_at')[:5]` | [Quiz1, Quiz2, ...] |
-| `performance_trend` | Compare last 7 days vs previous 7 days | "improving" |
+| Variable                  | Source                                                                                                     | Example                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `username`                | `user.username`                                                                                            | "sarah_chen"                |
+| `ability_level`           | Compute from `user.ability_profile.overall_ability_score`                                                  | "Intermediate"              |
+| `overall_score`           | `user.ability_profile.overall_ability_score`                                                               | 520.5                       |
+| `ability_by_subject`      | `user.ability_profile.ability_by_subject`                                                                  | {1: 450, 2: 580}            |
+| `quiz_count_this_week`    | `ActivityEvent.objects.filter(user=user, event_type='quiz_completed', timestamp__gte=last_7_days).count()` | 7                           |
+| `correct_count_this_week` | `QuizAttempt.objects.filter(user=user, is_correct=True, attempted_at__gte=last_7_days).count()`            | 5                           |
+| `success_rate`            | `correct_count / quiz_count * 100`                                                                         | 71.4                        |
+| `weakest_subject`         | `user.ability_profile.ability_by_subject` → min value                                                      | "Past Tense Verbs"          |
+| `weakest_concept`         | Query `MemoryStat` for lowest retention items                                                              | "Irregular Past Tense"      |
+| `example_mistake`         | Latest incorrect `QuizAttempt`                                                                             | "She goed home"             |
+| `strongest_subject`       | `ability_by_subject` → max value                                                                           | "Present Tense"             |
+| `example_success`         | Latest correct `QuizAttempt`                                                                               | "They eat breakfast"        |
+| `recommended_quiz_title`  | `MatchScore.objects.filter(user=user).order_by('-score').first().content_object.title`                     | "Irregular Verbs Challenge" |
+| `items_to_review`         | `MemoryStat.objects.filter(user=user, next_review_at__lte=now).order_by('next_review_at')[:5]`             | [Quiz1, Quiz2, ...]         |
+| `performance_trend`       | Compare last 7 days vs previous 7 days                                                                     | "improving"                 |
 
 ---
 
@@ -399,7 +401,7 @@ Before sending the generated script to TTS:
 ```python
 def validate_podcast_script(script: str) -> bool:
     """Validate podcast script meets requirements."""
-    
+
     checks = {
         'has_greeting': '[0:00]' in script or '[greeting]' in script.lower(),
         'has_focus': '[focus]' in script.lower() or '[0:30]' in script,
@@ -411,13 +413,13 @@ def validate_podcast_script(script: str) -> bool:
         'has_emphasis': '[EMPHASIS]' in script,
         'not_repetitive': script.count(script.split()[0]) < 20,  # First word repeated <20x
     }
-    
+
     all_passed = all(checks.values())
-    
+
     if not all_passed:
         failed = [k for k, v in checks.items() if not v]
         logger.warning(f"Script validation failed: {failed}")
-    
+
     return all_passed
 ```
 
@@ -460,6 +462,5 @@ print(script)
 
 ---
 
-**This template is production-ready and can be used immediately with any of the three LLMs 
+**This template is production-ready and can be used immediately with any of the three LLMs
 (GPT-4o Mini, Gemini Flash, or Claude Haiku) with minimal modification.**
-

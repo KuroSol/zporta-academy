@@ -5,6 +5,7 @@
 You can now organize users into **categories/groups** and give each group **different configurations**!
 
 For example:
+
 - **Teachers** group → Premium features, longer podcasts
 - **Students** group → Basic features, limited daily generations
 - **Trial Users** group → Very limited features, short podcasts
@@ -35,6 +36,7 @@ When Alex generates a podcast → Uses Teachers config!
 ### Step 1: Create a Category
 
 Go to Django admin:
+
 ```
 http://localhost:8000/admin/
 ```
@@ -42,6 +44,7 @@ http://localhost:8000/admin/
 Click: **Dailycast** → **User Categories** → **Add User Category**
 
 Fill form:
+
 ```
 Name: Teachers
 Description: Premium teacher accounts with full features
@@ -91,6 +94,7 @@ Fill in the configuration fields and click **Save**
 ## 👥 Example Categories to Create
 
 ### 1. Teachers
+
 ```
 Name: Teachers
 Description: Premium accounts for active teachers
@@ -102,6 +106,7 @@ Description: Premium accounts for active teachers
 ```
 
 ### 2. Students
+
 ```
 Name: Students
 Description: Student accounts with limited features
@@ -113,6 +118,7 @@ Description: Student accounts with limited features
 ```
 
 ### 3. Trial Users
+
 ```
 Name: Trial Users
 Description: New users on trial
@@ -124,6 +130,7 @@ Description: New users on trial
 ```
 
 ### 4. VIP Users
+
 ```
 Name: VIP Users
 Description: Premium VIP customers
@@ -199,6 +206,7 @@ add_user_to_category(user, 'Teachers')
 Go to: **Dailycast** → **User Categories**
 
 You'll see a list:
+
 ```
 Name            | Users | Config Status | Created
 ─────────────────────────────────────────────────
@@ -215,6 +223,7 @@ Click any category to edit it and manage users/settings.
 Go to: **Dailycast** → **User Category Configurations**
 
 You'll see:
+
 ```
 Category   | Enabled | Language | LLM        | TTS        | Cooldown | Cost
 ──────────────────────────────────────────────────────────────────────────
@@ -229,6 +238,7 @@ VIP        | ✓       | English  | GPT-4      | ElevenLabs | None     | $5.00
 ## 🎯 Use Cases
 
 ### Case 1: Different Features by User Type
+
 ```python
 # Teacher gets premium features
 teacher_config = get_category_config(teacher_user)
@@ -242,6 +252,7 @@ print(student_config.max_generations_per_day)  # 3
 ```
 
 ### Case 2: Different Languages per Group
+
 ```python
 # Japan-based teachers default to Japanese
 japan_teachers_config = get_category_config(user)  # Category: Japan Teachers
@@ -253,6 +264,7 @@ print(us_teachers_config.default_language)  # "en"
 ```
 
 ### Case 3: Pricing Based on Category
+
 ```python
 cost = get_cost_per_generation_for_user(user)
 # Teacher: $2.00
@@ -266,6 +278,7 @@ cost = get_cost_per_generation_for_user(user)
 ## 🚀 Database Schema
 
 ### UserCategory Table
+
 ```
 id | name        | description        | is_active | created_at
 ────────────────────────────────────────────────────────────────
@@ -275,6 +288,7 @@ id | name        | description        | is_active | created_at
 ```
 
 ### UserCategoryConfig Table
+
 ```
 id | category_id | enabled | llm_provider | tts_provider | cooldown_hours | cost
 ───────────────────────────────────────────────────────────────────────────────
@@ -284,6 +298,7 @@ id | category_id | enabled | llm_provider | tts_provider | cooldown_hours | cost
 ```
 
 ### UserCategory_users Junction Table
+
 ```
 usercategory_id | user_id
 ─────────────────────────
@@ -356,14 +371,14 @@ get_category_stats(category)
 
 ## ✅ Status
 
-| Component | Status |
-|-----------|--------|
-| UserCategory model | ✅ Created |
-| UserCategoryConfig model | ✅ Created |
-| Admin interface | ✅ Complete |
-| Helper functions | ✅ 20+ helpers |
-| Migration | ✅ Applied (0007) |
-| Database tables | ✅ Created |
+| Component                | Status            |
+| ------------------------ | ----------------- |
+| UserCategory model       | ✅ Created        |
+| UserCategoryConfig model | ✅ Created        |
+| Admin interface          | ✅ Complete       |
+| Helper functions         | ✅ 20+ helpers    |
+| Migration                | ✅ Applied (0007) |
+| Database tables          | ✅ Created        |
 
 ---
 

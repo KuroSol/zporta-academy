@@ -11,15 +11,18 @@
 Django is already running. Now let's verify the fix works:
 
 ### Step 1: Open Django Admin
+
 1. Go to: http://localhost:8000/admin/
 2. Login with your admin account
 
 ### Step 2: Navigate to Student Groups
+
 1. Click: **Dailycast** in the left menu
 2. Click: **Student Groups**
 3. Click: Any existing group (or create a new one)
 
 ### Step 3: TEST THE DROPDOWN
+
 1. **Look at**: "Default LLM Provider" field (should be a dropdown)
 2. **Change it**: Select "Gemini" instead of current
 3. **Watch**: The "LLM Model" dropdown below it
@@ -31,6 +34,7 @@ Django is already running. Now let's verify the fix works:
    - gemini-pro
 
 ### Step 4: Verify Each Provider
+
 Try changing to each provider:
 
 ```
@@ -57,6 +61,7 @@ Try changing to each provider:
 ```
 
 ### Step 5: Save and Reload
+
 1. Select a different provider (e.g., Claude)
 2. Select a model (e.g., claude-3-5-sonnet)
 3. Click: **Save**
@@ -68,6 +73,7 @@ Try changing to each provider:
 ## 🎉 IF YOU SEE THIS:
 
 ### ✅ SUCCESS!
+
 ```
 Default LLM Provider: [Gemini ▼]
 LLM Model: [gemini-2.0-pro-exp ▼]
@@ -77,11 +83,13 @@ LLM Model: [claude-3-5-sonnet ▼]  ← Auto-updated!
 ```
 
 ### ❌ IF DROPDOWN DOESN'T UPDATE:
+
 1. Hard refresh browser: **Ctrl+Shift+R** (or Cmd+Shift+R on Mac)
 2. Clear browser cache
 3. Try again
 
 ### ❌ IF YOU SEE ERRORS:
+
 1. Check browser console: **F12**
 2. Check Django logs
 3. Look for JavaScript errors
@@ -101,7 +109,7 @@ LLM Model: [claude-3-5-sonnet ▼]  ← Auto-updated!
 - [ ] Data persists after reload
 - [ ] All 4 providers have correct models
 
-**Score: ___ / 10** 
+**Score: \_\_\_ / 10**
 
 (Ideally all 10 ✅)
 
@@ -109,22 +117,24 @@ LLM Model: [claude-3-5-sonnet ▼]  ← Auto-updated!
 
 ## 🚀 DEPLOYMENT SUMMARY
 
-| Step | What | Status |
-|------|------|--------|
-| 1 | Backup created | ✅ |
-| 2 | Code deployed | ✅ |
-| 3 | Static collected | ✅ |
-| 4 | Django running | ✅ |
-| 5 | Test in admin | 👈 Do this now! |
+| Step | What             | Status          |
+| ---- | ---------------- | --------------- |
+| 1    | Backup created   | ✅              |
+| 2    | Code deployed    | ✅              |
+| 3    | Static collected | ✅              |
+| 4    | Django running   | ✅              |
+| 5    | Test in admin    | 👈 Do this now! |
 
 ---
 
 ## 📞 WHAT TO DO
 
 ### If Everything Works ✅
+
 Congratulations! The fix is live!
 
 ### If Something Breaks ❌
+
 Don't worry! You have a backup:
 
 ```bash

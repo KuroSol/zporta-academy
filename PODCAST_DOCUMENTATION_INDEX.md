@@ -11,6 +11,7 @@
 **Follow this order to understand the full project:**
 
 ### 1️⃣ START HERE (5 min read)
+
 **📄 [`PODCAST_EXECUTIVE_SUMMARY.md`](PODCAST_EXECUTIVE_SUMMARY.md)**
 
 - What are we building? (high-level overview)
@@ -24,9 +25,11 @@
 ---
 
 ### 2️⃣ UNDERSTAND THE PLAN (15 min read)
+
 **📄 [`DAILY_PODCAST_PLAN.md`](DAILY_PODCAST_PLAN.md)**
 
 Complete technical specification:
+
 - System analysis of current Zporta code
 - New Django models to create
 - Provider selection strategy (cost-optimized)
@@ -41,9 +44,11 @@ Complete technical specification:
 ---
 
 ### 3️⃣ LLM PROMPT TEMPLATE (10 min read)
+
 **📄 [`PODCAST_LLM_PROMPT_TEMPLATE.md`](PODCAST_LLM_PROMPT_TEMPLATE.md)**
 
 Production-ready LLM prompt:
+
 - System prompt (instructions for AI)
 - User prompt (parameterized with user variables)
 - How to substitute variables (Python code)
@@ -59,9 +64,11 @@ Production-ready LLM prompt:
 ---
 
 ### 4️⃣ VISUAL ARCHITECTURE (20 min read/review)
+
 **📄 [`PODCAST_ARCHITECTURE_VISUAL.md`](PODCAST_ARCHITECTURE_VISUAL.md)**
 
 Diagrams and detailed flows:
+
 - Full system architecture (all components + their relationships)
 - Sequence diagram (what happens at 3 AM step-by-step)
 - Database schema (DailyPodcast model relationships)
@@ -77,9 +84,11 @@ Diagrams and detailed flows:
 ---
 
 ### 5️⃣ IMPLEMENTATION REFERENCE (3 min read)
+
 **📄 [`PODCAST_QUICK_REFERENCE.md`](PODCAST_QUICK_REFERENCE.md)**
 
 Quick lookup guide:
+
 - Files you'll create (folder structure)
 - Database model code (copy-paste ready)
 - API endpoint code (copy-paste ready)
@@ -97,9 +106,11 @@ Quick lookup guide:
 ---
 
 ### 6️⃣ ANALYSIS & FINDINGS (10 min read)
+
 **📄 [`ANALYSIS_FINDINGS_REPORT.md`](ANALYSIS_FINDINGS_REPORT.md)**
 
 Deep analysis of Zporta codebase:
+
 - What already exists (intelligence, analytics, feed apps)
 - Why this feature fits perfectly (existing patterns)
 - Data availability assessment (where to get user data)
@@ -117,26 +128,32 @@ Deep analysis of Zporta codebase:
 ## 🎯 READING PATHS BY ROLE
 
 ### If you're a **Manager/Product Owner**
+
 → Read order: **Executive Summary** → **Quick Reference**  
 (15 minutes total, understand project scope and timeline)
 
 ### If you're a **Backend Developer** implementing this
+
 → Read order: **Executive Summary** → **Daily Podcast Plan** → **LLM Prompt Template** → **Quick Reference**  
 (Use Quick Reference as bookmark during coding, refer to other docs as questions arise)
 
 ### If you're a **Frontend Developer** adding the UI
+
 → Read order: **Executive Summary** → **Quick Reference**  
 (Specific section: "API Endpoint" and "Frontend Component")
 
 ### If you're **DevOps/Infrastructure** setting it up
+
 → Read order: **Quick Reference** → **Settings section** → **Architecture Visual**  
 (Focus on Celery setup, S3 credentials, provider API keys)
 
 ### If you're doing a **Code Review**
+
 → Read order: **Analysis Findings Report** → **Daily Podcast Plan** → **Architecture Visual**  
 (Understand design rationale, check against spec, validate with diagrams)
 
 ### If you're **Troubleshooting Issues**
+
 → Read: **Quick Reference** → **Architecture Visual** (Fallback section)  
 (Quick fixes table, then understand error flows)
 
@@ -144,14 +161,14 @@ Deep analysis of Zporta codebase:
 
 ## 📊 DOCUMENT COMPARISON TABLE
 
-| Document | Length | Time | Best For | Format |
-|----------|--------|------|----------|--------|
-| **Executive Summary** | 5 pages | 5 min | Overview, decisions, timeline | Narrative |
-| **Daily Podcast Plan** | 20 pages | 15 min | Complete technical spec | Detailed spec |
-| **LLM Prompt Template** | 15 pages | 10 min | How to use LLM for generation | Code + docs |
-| **Architecture Visual** | 25 pages | 20 min | System design, diagrams, flows | Diagrams + tables |
-| **Quick Reference** | 10 pages | 3 min | Code snippets, quick lookup | Checklists + code |
-| **Analysis Findings** | 12 pages | 10 min | Why this design works | Technical analysis |
+| Document                | Length   | Time   | Best For                       | Format             |
+| ----------------------- | -------- | ------ | ------------------------------ | ------------------ |
+| **Executive Summary**   | 5 pages  | 5 min  | Overview, decisions, timeline  | Narrative          |
+| **Daily Podcast Plan**  | 20 pages | 15 min | Complete technical spec        | Detailed spec      |
+| **LLM Prompt Template** | 15 pages | 10 min | How to use LLM for generation  | Code + docs        |
+| **Architecture Visual** | 25 pages | 20 min | System design, diagrams, flows | Diagrams + tables  |
+| **Quick Reference**     | 10 pages | 3 min  | Code snippets, quick lookup    | Checklists + code  |
+| **Analysis Findings**   | 12 pages | 10 min | Why this design works          | Technical analysis |
 
 **Total Documentation:** ~87 pages (but designed for skimming)
 
@@ -160,6 +177,7 @@ Deep analysis of Zporta codebase:
 ## ✅ WHAT YOU HAVE NOW
 
 **Complete, production-ready specification for:**
+
 - ✅ Architecture (system design)
 - ✅ Database (schema, relationships)
 - ✅ API (endpoints, responses)
@@ -188,7 +206,6 @@ Deep analysis of Zporta codebase:
 
 ---
 
-*Project Status: ANALYSIS COMPLETE ✅ → READY FOR IMPLEMENTATION 🚀*
+_Project Status: ANALYSIS COMPLETE ✅ → READY FOR IMPLEMENTATION 🚀_
 
 **You have everything needed to build this feature with confidence and speed.**
-

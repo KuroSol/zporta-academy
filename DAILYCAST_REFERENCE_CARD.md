@@ -7,11 +7,13 @@ Quick reference for all commands and features.
 ## 📋 Quick Commands
 
 ### Generate Podcast (CLI)
+
 ```bash
 python manage.py generate_test_podcast --language en
 ```
 
 ### Generate for Different User
+
 ```bash
 # Edit .env first:
 DAILYCAST_TEST_USER_ID=17
@@ -21,6 +23,7 @@ python manage.py generate_test_podcast
 ```
 
 ### View in Django Shell
+
 ```bash
 python manage.py shell
 
@@ -42,6 +45,7 @@ exit()
 ```
 
 ### Start Django Admin
+
 ```bash
 python manage.py runserver 8000 --settings=zporta.settings.local
 # Then: http://localhost:8000/admin/
@@ -51,13 +55,13 @@ python manage.py runserver 8000 --settings=zporta.settings.local
 
 ## 🎯 Access Points
 
-| Access | URL | How |
-|--------|-----|-----|
-| Admin | http://localhost:8000/admin/ | Web UI |
-| Podcasts List | .../admin/dailycast/dailypodcast/ | List view |
-| Add New | .../admin/dailycast/dailypodcast/add/ | Create form |
-| View One | .../admin/dailycast/dailypodcast/[ID]/change/ | Detail view |
-| Generate Button | .../generate-test/ | Trigger button |
+| Access          | URL                                           | How            |
+| --------------- | --------------------------------------------- | -------------- |
+| Admin           | http://localhost:8000/admin/                  | Web UI         |
+| Podcasts List   | .../admin/dailycast/dailypodcast/             | List view      |
+| Add New         | .../admin/dailycast/dailypodcast/add/         | Create form    |
+| View One        | .../admin/dailycast/dailypodcast/[ID]/change/ | Detail view    |
+| Generate Button | .../generate-test/                            | Trigger button |
 
 ---
 
@@ -85,6 +89,7 @@ Files: MEDIA_ROOT/podcasts/*.mp3           (when audio enabled)
 ## 🔧 Config Reference
 
 ### `.env` Settings
+
 ```
 # Your API Keys
 OPENAI_API_KEY=sk-proj-...                          ✅ Required
@@ -99,6 +104,7 @@ DAILYCAST_DEFAULT_LANGUAGE=en                      ✅ Required
 ```
 
 ### Django Settings Added
+
 ```python
 # In zporta/settings/base.py:
 INSTALLED_APPS += ['dailycast.apps.DailycastConfig']
@@ -116,20 +122,21 @@ DAILYCAST_DEFAULT_LANGUAGE = config('DAILYCAST_DEFAULT_LANGUAGE', default='en')
 
 ## 🎵 Feature Matrix
 
-| Feature | CLI | Admin | Shell | Celery |
-|---------|-----|-------|-------|--------|
-| Generate | ✅ | ✅ | ✅ | ✅ |
-| View | ❌ | ✅ | ✅ | ❌ |
-| Delete | ❌ | ✅ | ✅ | ❌ |
-| Filter | ❌ | ✅ | ✅ | ❌ |
-| Async | ❌ | ✅ | ❌ | ✅ |
-| Audio Player | ❌ | ✅ | ❌ | ❌ |
+| Feature      | CLI | Admin | Shell | Celery |
+| ------------ | --- | ----- | ----- | ------ |
+| Generate     | ✅  | ✅    | ✅    | ✅     |
+| View         | ❌  | ✅    | ✅    | ❌     |
+| Delete       | ❌  | ✅    | ✅    | ❌     |
+| Filter       | ❌  | ✅    | ✅    | ❌     |
+| Async        | ❌  | ✅    | ❌    | ✅     |
+| Audio Player | ❌  | ✅    | ❌    | ❌     |
 
 ---
 
 ## 📊 Data Model
 
 ### DailyPodcast Fields
+
 ```
 ┌─ Relationships ─────────────────┐
 │ user → auth.User (FK)           │
@@ -160,15 +167,18 @@ DAILYCAST_DEFAULT_LANGUAGE = config('DAILYCAST_DEFAULT_LANGUAGE', default='en')
 ## 🔄 Provider Priority
 
 ### LLM (Script Generation)
+
 1. OpenAI gpt-4o-mini (primary)
 2. Google Gemini 2.5 flash-lite (fallback)
 3. Template string (fallback)
 
 ### TTS (Audio Synthesis)
+
 1. Amazon Polly neural (if AWS credentials set)
 2. Skip audio (graceful degradation)
 
 ### Voice Selection (Language)
+
 ```
 en → Joanna (neural)
 ja → Mizuki (neural)
@@ -182,26 +192,26 @@ default → Joanna
 
 ## 📈 Performance
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Script generation | 10-30s | OpenAI API call |
-| Audio synthesis | 30-60s | Polly processing |
-| DB save | <1s | Index lookups |
-| Admin button | 1-2s | Page redirect |
-| CLI command | 15-90s | Full generation |
+| Operation         | Time   | Notes            |
+| ----------------- | ------ | ---------------- |
+| Script generation | 10-30s | OpenAI API call  |
+| Audio synthesis   | 30-60s | Polly processing |
+| DB save           | <1s    | Index lookups    |
+| Admin button      | 1-2s   | Page redirect    |
+| CLI command       | 15-90s | Full generation  |
 
 ---
 
 ## 💰 Cost Breakdown
 
-| Component | Per Request | Notes |
-|-----------|-------------|-------|
-| OpenAI gpt-4o-mini | $0.001 | ~4K tokens |
-| Google Gemini | Free | Fallback only |
-| Amazon Polly | $0.008-0.015/min | ~4min audio = $0.10 |
-| S3 storage | <$0.001 | 1 file/user = negligible |
-| **Total (script only)** | **$0.001** | No audio |
-| **Total (with audio)** | **$0.10-0.11** | Full podcast |
+| Component               | Per Request      | Notes                    |
+| ----------------------- | ---------------- | ------------------------ |
+| OpenAI gpt-4o-mini      | $0.001           | ~4K tokens               |
+| Google Gemini           | Free             | Fallback only            |
+| Amazon Polly            | $0.008-0.015/min | ~4min audio = $0.10      |
+| S3 storage              | <$0.001          | 1 file/user = negligible |
+| **Total (script only)** | **$0.001**       | No audio                 |
+| **Total (with audio)**  | **$0.10-0.11**   | Full podcast             |
 
 ---
 
@@ -256,11 +266,13 @@ default → Joanna
 ## 📝 Model Admin Actions
 
 ### List View Columns
+
 ```
 User | Created At | Language | LLM Provider | TTS Provider | Status
 ```
 
 ### Detail View Sections
+
 ```
 User               [dropdown]
 Language           [select]
@@ -277,6 +289,7 @@ Updated At        [readonly]
 ```
 
 ### Admin Actions
+
 ```
 Save podcast
 Delete podcast
@@ -288,6 +301,7 @@ Generate Test Podcast Now [custom action button]
 ## 🔗 Integration Points
 
 ### With Existing Apps
+
 ```
 intelligence/
 ├── UserAbilityProfile
@@ -303,6 +317,7 @@ auth/
 ```
 
 ### For Future Integration
+
 ```
 API Gateway → /api/dailycast/...
 Frontend → React component

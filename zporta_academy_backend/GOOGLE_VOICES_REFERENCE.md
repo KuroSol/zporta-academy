@@ -4,82 +4,83 @@
 
 ### English (en-US)
 
-| Voice | Type | Quality | Speed | Best For |
-|-------|------|---------|-------|----------|
-| en-US-Standard-F | Standard | 6/10 | Fast ⚡ | Quick generation |
-| en-US-Standard-A | Standard | 6/10 | Fast ⚡ | Alternative female |
-| en-US-Neural2-F | Neural2 | 8/10 | Medium 🚀 | **Default choice** |
-| en-US-Neural2-A | Neural2 | 8/10 | Medium 🚀 | Alternative female |
-| en-US-Wavenet-F | Wavenet | 10/10 | Slow ⏱️ | **Premium choice** ⭐ |
-| en-US-Wavenet-A | Wavenet | 10/10 | Slow ⏱️ | Premium alternative |
+| Voice            | Type     | Quality | Speed     | Best For              |
+| ---------------- | -------- | ------- | --------- | --------------------- |
+| en-US-Standard-F | Standard | 6/10    | Fast ⚡   | Quick generation      |
+| en-US-Standard-A | Standard | 6/10    | Fast ⚡   | Alternative female    |
+| en-US-Neural2-F  | Neural2  | 8/10    | Medium 🚀 | **Default choice**    |
+| en-US-Neural2-A  | Neural2  | 8/10    | Medium 🚀 | Alternative female    |
+| en-US-Wavenet-F  | Wavenet  | 10/10   | Slow ⏱️   | **Premium choice** ⭐ |
+| en-US-Wavenet-A  | Wavenet  | 10/10   | Slow ⏱️   | Premium alternative   |
 
 ### Japanese (ja-JP)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| ja-JP-Standard-A | Standard | 6/10 | Quick generation |
-| ja-JP-Neural2-B | Neural2 | 8/10 | **Default choice** |
-| ja-JP-Wavenet-B | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| ja-JP-Standard-A | Standard | 6/10    | Quick generation      |
+| ja-JP-Neural2-B  | Neural2  | 8/10    | **Default choice**    |
+| ja-JP-Wavenet-B  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### Spanish (es-ES)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| es-ES-Standard-A | Standard | 6/10 | Quick generation |
-| es-ES-Neural2-A | Neural2 | 8/10 | **Default choice** |
-| es-ES-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| es-ES-Standard-A | Standard | 6/10    | Quick generation      |
+| es-ES-Neural2-A  | Neural2  | 8/10    | **Default choice**    |
+| es-ES-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### French (fr-FR)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| fr-FR-Standard-A | Standard | 6/10 | Quick generation |
-| fr-FR-Neural2-A | Neural2 | 8/10 | **Default choice** |
-| fr-FR-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| fr-FR-Standard-A | Standard | 6/10    | Quick generation      |
+| fr-FR-Neural2-A  | Neural2  | 8/10    | **Default choice**    |
+| fr-FR-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### German (de-DE)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| de-DE-Standard-A | Standard | 6/10 | Quick generation |
-| de-DE-Neural2-A | Neural2 | 8/10 | **Default choice** |
-| de-DE-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| de-DE-Standard-A | Standard | 6/10    | Quick generation      |
+| de-DE-Neural2-A  | Neural2  | 8/10    | **Default choice**    |
+| de-DE-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### Portuguese (pt-BR)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| pt-BR-Standard-A | Standard | 6/10 | Quick generation |
-| pt-BR-Neural2-A | Neural2 | 8/10 | **Default choice** |
-| pt-BR-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| pt-BR-Standard-A | Standard | 6/10    | Quick generation      |
+| pt-BR-Neural2-A  | Neural2  | 8/10    | **Default choice**    |
+| pt-BR-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### Russian (ru-RU)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| ru-RU-Standard-A | Standard | 6/10 | Quick generation |
-| ru-RU-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| ru-RU-Standard-A | Standard | 6/10    | Quick generation      |
+| ru-RU-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ### Korean (ko-KR)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| ko-KR-Standard-A | Standard | 6/10 | Quick generation |
-| ko-KR-Neural2-A | Neural2 | 8/10 | **Default choice** |
+| Voice            | Type     | Quality | Best For           |
+| ---------------- | -------- | ------- | ------------------ |
+| ko-KR-Standard-A | Standard | 6/10    | Quick generation   |
+| ko-KR-Neural2-A  | Neural2  | 8/10    | **Default choice** |
 
 ### Italian (it-IT)
 
-| Voice | Type | Quality | Best For |
-|-------|------|---------|----------|
-| it-IT-Standard-A | Standard | 6/10 | Quick generation |
-| it-IT-Neural2-A | Neural2 | 8/10 | **Default choice** |
-| it-IT-Wavenet-A | Wavenet | 10/10 | **Premium choice** ⭐ |
+| Voice            | Type     | Quality | Best For              |
+| ---------------- | -------- | ------- | --------------------- |
+| it-IT-Standard-A | Standard | 6/10    | Quick generation      |
+| it-IT-Neural2-A  | Neural2  | 8/10    | **Default choice**    |
+| it-IT-Wavenet-A  | Wavenet  | 10/10   | **Premium choice** ⭐ |
 
 ---
 
 ## ❌ Voices That DON'T Exist (Chirp, Journey)
 
 ### Non-Existent Voices
+
 ```
 en-US-Chirp-HD-F        ❌ DOES NOT EXIST
 en-US-Journey-F         ❌ DOES NOT EXIST
@@ -88,11 +89,13 @@ ja-JP-Journey-B         ❌ DOES NOT EXIST
 ```
 
 **What happens if you request them:**
+
 1. API returns 400 error
 2. System falls back to Neural2
 3. You get same output as default
 
 **Our fix:** Map them to Wavenet instead
+
 - Chirp request → Uses Wavenet (better than Neural2!)
 - Journey request → Uses Wavenet (better than Neural2!)
 
@@ -101,6 +104,7 @@ ja-JP-Journey-B         ❌ DOES NOT EXIST
 ## 🎯 Recommended Setup
 
 ### For Fast & Cheap Podcasts
+
 ```
 Provider: "🎤 Google TTS (Standard Quality)"
 Voice: en-US-Standard-F
@@ -110,6 +114,7 @@ Quality: Good, clear
 ```
 
 ### For Most Users (Balanced)
+
 ```
 Provider: "🎧 Google Standard (Fast & Good)"
 Voice: en-US-Neural2-F
@@ -119,6 +124,7 @@ Quality: Very good, natural
 ```
 
 ### For Premium/Professional
+
 ```
 Provider: "✨ Google Wavenet Premium (Highest Quality)"
 Voice: en-US-Wavenet-F
@@ -134,18 +140,21 @@ Quality: Best available, most expressive
 ### Speaking Sample: "Hey everyone, welcome back!"
 
 **Standard:**
+
 - Speed: 1.0x (natural speed)
 - Tone: Professional but slightly mechanical
 - Naturalness: 6/10
 - Cost: Cheapest
 
 **Neural2:**
+
 - Speed: 1.0x (natural speed)
 - Tone: Natural, professional
 - Naturalness: 8/10
 - Cost: Medium
 
 **Wavenet:**
+
 - Speed: 0.95x (slightly slower)
 - Tone: Very natural, expressive, premium
 - Naturalness: 10/10
@@ -158,18 +167,21 @@ Quality: Best available, most expressive
 ### Voice Types in Google Cloud
 
 **Standard Voices:**
+
 - Basic TTS engine
 - Good pronunciation
 - Slightly robotic
 - Lowest cost
 
 **Neural2 Voices:**
+
 - Deep learning based
 - Much more natural
 - Better prosody (rhythm, intonation)
 - Medium cost
 
 **Wavenet Voices:**
+
 - Most advanced TTS
 - Sounds human-like
 - Best emotional expression
@@ -186,7 +198,7 @@ Option 1: "Google Standard"
 → Uses en-US-Standard-F
 → Fast, cheap, clear
 
-Option 2: "Google Neural2" 
+Option 2: "Google Neural2"
 → Uses en-US-Neural2-F
 → Better quality, slightly slower
 

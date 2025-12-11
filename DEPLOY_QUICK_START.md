@@ -2,7 +2,7 @@
 
 **Time to Deploy**: 5 minutes  
 **Risk Level**: Very Low (backward compatible)  
-**Downtime Required**: None (zero downtime deploy)  
+**Downtime Required**: None (zero downtime deploy)
 
 ---
 
@@ -35,6 +35,7 @@ supervisorctl restart zporta_academy
 ## 📋 PRE-DEPLOYMENT CHECKLIST
 
 ### Code
+
 - [x] Files modified: models.py, admin.py, JavaScript
 - [x] Syntax checked: No errors
 - [x] Backward compatible: Yes
@@ -42,12 +43,14 @@ supervisorctl restart zporta_academy
 - [x] Data migration needed: No
 
 ### Testing
+
 - [x] Ran locally: Verified working
 - [x] Form save tested: Works correctly
 - [x] Provider switching tested: AJAX works
 - [x] Database mapping tested: Saves to correct field
 
 ### Deployment
+
 - [ ] Backup created
 - [ ] Code reviewed
 - [ ] Deployment plan approved
@@ -58,6 +61,7 @@ supervisorctl restart zporta_academy
 ## 🎯 DEPLOYMENT STEPS
 
 ### Step 1: Create Backup (Recommended)
+
 ```bash
 cd /path/to/zporta_academy_backend
 python manage.py dumpdata dailycast > ../backup_before_llm_fix.json
@@ -65,6 +69,7 @@ echo "Backup created: backup_before_llm_fix.json"
 ```
 
 ### Step 2: Pull Latest Code
+
 ```bash
 cd /path/to/zporta_academy_backend
 git pull origin main
@@ -72,6 +77,7 @@ git pull origin main
 ```
 
 ### Step 3: Collect Static Files (IMPORTANT!)
+
 ```bash
 # This ensures JavaScript changes are deployed
 python manage.py collectstatic --noinput --clear
@@ -86,6 +92,7 @@ python manage.py collectstatic --noinput --clear
 ### Step 4: Restart Django
 
 **Option A: Using Supervisor**
+
 ```bash
 supervisorctl restart zporta_academy
 # or
@@ -93,11 +100,13 @@ supervisorctl restart all
 ```
 
 **Option B: Using Systemd**
+
 ```bash
 systemctl restart zporta_academy
 ```
 
 **Option C: Manual (Development)**
+
 ```bash
 # Kill existing process
 pkill -f "python manage.py runserver"
@@ -122,11 +131,13 @@ curl http://localhost:8000/static/dailycast/js/llm_model_selector.js
 ## ✅ POST-DEPLOYMENT TESTING
 
 ### Test 1: Admin Access (1 min)
+
 1. Open Django admin: `http://your-domain/admin/`
 2. Navigate: Dailycast → Student Groups
 3. Should load without errors ✅
 
 ### Test 2: Create New Group (2 min)
+
 1. Click "Add Student Group" button
 2. Fill in:
    - Name: "Test Group"
@@ -135,6 +146,7 @@ curl http://localhost:8000/static/dailycast/js/llm_model_selector.js
 4. Click Save ✅
 
 ### Test 3: Provider Switching (1 min)
+
 1. Edit the "Test Group" you just created
 2. Change Provider from "OpenAI" to "Gemini"
 3. **Watch the Model dropdown update instantly** ✅
@@ -142,12 +154,14 @@ curl http://localhost:8000/static/dailycast/js/llm_model_selector.js
 5. Click Save ✅
 
 ### Test 4: Data Persistence (1 min)
+
 1. Reload the group page
 2. Provider still shows "Gemini" ✅
 3. Model still shows the one you selected ✅
 4. Database saved correctly ✅
 
 ### Test 5: All Providers (1 min)
+
 Quick test each provider:
 
 ```
@@ -165,9 +179,11 @@ Template (template) ✅
 ## 🆘 TROUBLESHOOTING
 
 ### Issue: Dropdown Not Updating
+
 **Symptoms**: Change provider but model dropdown doesn't update
 
 **Solution**:
+
 1. Clear browser cache: `Ctrl+Shift+Delete`
 2. Hard refresh page: `Ctrl+Shift+R`
 3. Check browser console for JavaScript errors
@@ -175,9 +191,11 @@ Template (template) ✅
 5. Restart Django
 
 ### Issue: JavaScript File Not Found (404)
+
 **Symptoms**: Console shows `GET /static/dailycast/js/llm_model_selector.js 404`
 
 **Solution**:
+
 ```bash
 # 1. Verify file exists
 ls -la dailycast/static/dailycast/js/llm_model_selector.js
@@ -192,18 +210,22 @@ supervisorctl restart zporta_academy
 ```
 
 ### Issue: Form Doesn't Save
+
 **Symptoms**: Click Save but form re-renders with errors
 
 **Solution**:
+
 1. Check Django logs: `tail -f logs/django.log`
 2. Check browser console for JavaScript errors
 3. Verify provider selection is a valid choice
 4. Verify model selection is a valid choice for that provider
 
 ### Issue: Need to Rollback
+
 **Symptoms**: Something went very wrong
 
 **Solution**:
+
 ```bash
 # 1. Restore backup
 python manage.py loaddata backup_before_llm_fix.json
@@ -221,15 +243,15 @@ supervisorctl restart zporta_academy
 
 ## 📊 DEPLOYMENT STATISTICS
 
-| Metric | Value |
-|--------|-------|
-| Files Changed | 3 |
-| Lines Changed | ~40 |
-| Database Migrations | 0 |
-| Downtime Required | 0 minutes |
-| Rollback Time | 2 minutes |
-| Expected Issues | 0 (backward compatible) |
-| Deployment Risk | Very Low |
+| Metric              | Value                   |
+| ------------------- | ----------------------- |
+| Files Changed       | 3                       |
+| Lines Changed       | ~40                     |
+| Database Migrations | 0                       |
+| Downtime Required   | 0 minutes               |
+| Rollback Time       | 2 minutes               |
+| Expected Issues     | 0 (backward compatible) |
+| Deployment Risk     | Very Low                |
 
 ---
 
@@ -247,13 +269,15 @@ After deployment, read these for details:
 ## 🎓 WHAT WAS FIXED
 
 ### Problem
+
 ```
-"why only openai model why not gimini as well 
-also why its not drop down menue base on user 
+"why only openai model why not gimini as well
+also why its not drop down menue base on user
 choosen engine ist make a mistake and mis speel"
 ```
 
 ### Solution
+
 ✅ Now supports OpenAI, Gemini, Claude, Template
 ✅ Dynamic dropdown that auto-updates on provider change
 ✅ Prevents typos via dropdown validation
@@ -311,6 +335,7 @@ If something goes wrong:
 ## ✨ FINAL NOTES
 
 ✅ **This is a safe deployment**
+
 - No data loss possible
 - No data migration needed
 - Fully backward compatible
@@ -318,6 +343,7 @@ If something goes wrong:
 - Zero expected issues
 
 ✅ **All changes tested**
+
 - No syntax errors
 - No breaking changes
 - All 4 providers work

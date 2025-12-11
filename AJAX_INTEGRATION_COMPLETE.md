@@ -3,9 +3,11 @@
 ## What's Been Implemented
 
 ### 1. ✅ AJAX Course Lookup in Admin Form
+
 When you create/edit a Daily Podcast in Django Admin, selecting a user will **automatically load and display their courses, lessons, and quizzes** below the form.
 
 **Features**:
+
 - Click on "User" dropdown and select a user
 - AJAX automatically fetches that user's enrolled data
 - Displays:
@@ -15,9 +17,11 @@ When you create/edit a Daily Podcast in Django Admin, selecting a user will **au
 - All updated without page refresh!
 
 ### 2. ✅ Regenerate Audio Button in Edit Form
+
 When editing an existing podcast (on the form), there's now a **"🔄 Regenerate Audio from Script"** button below the script text field.
 
 **Features**:
+
 - Only appears when editing an existing podcast (not on create)
 - Regenerates audio from the current script
 - Works for both primary and secondary language audio
@@ -25,7 +29,9 @@ When editing an existing podcast (on the form), there's now a **"🔄 Regenerate
 - Auto-refreshes the page when complete
 
 ### 3. ✅ Admin Batch Actions (still there)
+
 In the DailyPodcast list view, you can still:
+
 - Select multiple podcasts
 - Choose action: "🎧 Add audio to selected text-only podcasts"
 - Choose action: "🔄 Regenerate audio from existing scripts"
@@ -35,6 +41,7 @@ In the DailyPodcast list view, you can still:
 ## How to Test
 
 ### Test 1: AJAX Course Lookup (CREATE Form)
+
 1. Go to Django Admin
 2. Login as admin user
 3. Navigate to: **Administration → Dailycast → DailyPodcasts**
@@ -47,8 +54,9 @@ In the DailyPodcast list view, you can still:
      - **Quizzes** section listing all quizzes
 
 ### Test 2: Regenerate Audio Button (EDIT Form)
+
 1. Go to Django Admin
-2. Login as admin user  
+2. Login as admin user
 3. Navigate to: **Administration → Dailycast → DailyPodcasts**
 4. Click on an **existing podcast** to edit it
 5. Scroll down to the **"Generated Content"** section
@@ -63,6 +71,7 @@ In the DailyPodcast list view, you can still:
    - Page auto-refreshes to show new audio players
 
 ### Test 3: Batch Actions (LIST View)
+
 1. Go to Django Admin → DailyPodcast list
 2. Select one or more podcasts (checkboxes on left)
 3. Scroll to "Action:" dropdown at bottom left
@@ -96,14 +105,17 @@ dailycast/
 ## Template Features
 
 ### change_form.html (NEW FILE)
+
 This template adds JavaScript that:
 
 1. **Hooks into user selection change event**:
+
    - When user selects a different user in the dropdown
    - AJAX GET request to `/api/admin/ajax/user-courses/?user_id={id}`
    - Displays results in a formatted box below the form
 
 2. **Adds regenerate button to script field**:
+
    - Only on edit forms (detects podcast ID in URL)
    - Button click triggers AJAX POST to `/api/admin/ajax/regenerate-audio/`
    - Sends podcast_id in JSON body
@@ -120,18 +132,23 @@ This template adds JavaScript that:
 ## AJAX Endpoints
 
 ### 1. Get User Courses (Already Working)
+
 ```
 GET /api/admin/ajax/user-courses/?user_id=1
 ```
+
 Returns courses, lessons, quizzes for a user
 
 ### 2. Get Course Details (Already Working)
+
 ```
 GET /api/admin/ajax/course-details/?course_id=1
 ```
+
 Returns course structure (lessons, quizzes)
 
 ### 3. Regenerate Audio (NEW)
+
 ```
 POST /api/admin/ajax/regenerate-audio/
 Content-Type: application/json
@@ -140,6 +157,7 @@ Content-Type: application/json
     "podcast_id": 5
 }
 ```
+
 Regenerates audio from script for one podcast
 
 ---
@@ -147,6 +165,7 @@ Regenerates audio from script for one podcast
 ## Expected Behavior
 
 ### When Creating a New Podcast:
+
 ```
 ┌─────────────────────────────────────┐
 │ Add Daily Podcast                   │
@@ -179,6 +198,7 @@ Regenerates audio from script for one podcast
 ```
 
 ### When Editing a Podcast:
+
 ```
 ┌─────────────────────────────────────┐
 │ Edit Daily Podcast (ID: 5)          │
@@ -205,6 +225,7 @@ Regenerates audio from script for one podcast
 ## Technical Details
 
 ### JavaScript Features
+
 - **No jQuery required** - Uses vanilla JavaScript Fetch API
 - **CSRF Protection** - Automatically extracts CSRF token from cookies
 - **Error Handling** - Shows user-friendly error messages
@@ -212,6 +233,7 @@ Regenerates audio from script for one podcast
 - **XSS Prevention** - Escapes HTML output
 
 ### Django Decorators (views_admin_ajax.py)
+
 ```python
 @require_POST              # Only accept POST requests
 @login_required            # User must be logged in
@@ -221,9 +243,11 @@ def regenerate_audio_ajax(request):
 ```
 
 ### Template Inheritance
+
 ```django
 {% extends "admin/change_form.html" %}
 ```
+
 - Extends Django's default admin form template
 - Adds custom styles and JavaScript
 - Doesn't override existing functionality
@@ -233,17 +257,20 @@ def regenerate_audio_ajax(request):
 ## What You Should See Now
 
 ### ✅ On DailyPodcast List View:
+
 - Two admin actions in dropdown:
   - "🎧 Add audio to selected text-only podcasts"
   - "🔄 Regenerate audio from existing scripts"
 
 ### ✅ On "Add Daily Podcast" Form:
+
 - When you select a user, a box appears showing:
   - Enrolled courses with lesson/quiz counts
   - List of lessons
   - List of quizzes
 
 ### ✅ On "Edit Daily Podcast" Form:
+
 - Blue button below script field:
   - "🔄 Regenerate Audio from Script"
 - Click it to regenerate audio instantly
@@ -254,21 +281,25 @@ def regenerate_audio_ajax(request):
 ## Troubleshooting
 
 ### Form changes not appearing?
+
 1. **Clear browser cache** (Ctrl+Shift+Delete)
 2. **Hard refresh** the page (Ctrl+F5)
 3. **Check console** for JavaScript errors (F12)
 
 ### AJAX requests failing?
+
 1. **Check you're logged in** as staff/admin
 2. **Check browser console** (F12) for error messages
 3. **Check server logs** for backend errors
 
 ### Regenerate button not showing?
+
 1. **Make sure you're EDITING** an existing podcast (not creating)
 2. **Look below the "Script text" field** (might need to scroll)
 3. **Check page source** (Ctrl+U) for button HTML
 
 ### Audio not regenerating?
+
 1. **Check script has text** (empty script = error)
 2. **Check TTS provider credentials** (OpenAI/ElevenLabs/Google)
 3. **Check server logs** for TTS errors
@@ -278,6 +309,7 @@ def regenerate_audio_ajax(request):
 ## Browser Compatibility
 
 Works on:
+
 - ✅ Chrome 90+
 - ✅ Firefox 88+
 - ✅ Safari 14+
@@ -308,11 +340,13 @@ Works on:
 ## Next Steps
 
 1. **Test in your Django Admin**:
+
    - Create a podcast and select a user (watch AJAX load data)
    - Edit a podcast and click regenerate button
    - Select batch and use admin actions
 
 2. **Verify audio is generated**:
+
    - Check audio player appears after regeneration
    - Listen to audio to verify quality
 
@@ -325,4 +359,4 @@ Works on:
 
 ---
 
-*AJAX integration complete! Forms and buttons are now functional.*
+_AJAX integration complete! Forms and buttons are now functional._

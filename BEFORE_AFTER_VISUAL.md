@@ -52,6 +52,7 @@ PROBLEM:
 ## Step-by-Step: How the AJAX Works
 
 ### Step 1: Admin Opens Form
+
 ```
 Admin loads "Student Group" edit page
          ↓
@@ -61,6 +62,7 @@ JavaScript initializes on page load
 ```
 
 ### Step 2: User Changes Provider
+
 ```
 Admin clicks: Provider dropdown
 Admin selects: "Gemini"
@@ -91,6 +93,7 @@ User sees instant change! ✨
 ```
 
 ### Step 3: User Selects Model
+
 ```
 Admin clicks model dropdown
 Admin selects: "gemini-1.5-flash"
@@ -99,6 +102,7 @@ Form field: llm_model = "gemini-1.5-flash"
 ```
 
 ### Step 4: User Saves Form
+
 ```
 Admin clicks "Save"
          ↓
@@ -107,10 +111,10 @@ Django form validation: ✅ Valid choice from dropdown
 Form.save() method runs:
   provider = instance.default_llm_provider  # "gemini"
   selected_model = cleaned_data['llm_model']  # "gemini-1.5-flash"
-  
+
   if provider == "gemini":
       instance.gemini_model = "gemini-1.5-flash"  ✅
-  
+
   instance.save()
          ↓
 Database saves:
@@ -141,28 +145,28 @@ Step 1: Admin opens "Beginners" group
 Step 2: Sees "Default llm provider: OpenAI ▼"
 Step 3: Changes to "Gemini"
 Step 4: Scrolls down... sees "Openai model: gpt-4o-mini ▼"
-        
-        ❌ CONFUSION! 
+
+        ❌ CONFUSION!
         "I selected Gemini, why does it still say 'Openai model'?"
         "Does this control Gemini or OpenAI?"
-        
+
 Step 5: Admin clicks dropdown... sees only OpenAI models!
         gpt-4o-mini
         gpt-4o
         gpt-4-turbo
         gpt-3.5-turbo
-        
+
         ❌ WRONG!
         "But I selected Gemini! Why are these OpenAI models?"
-        
+
 Step 6: Admin manually types in field:
         "gemini-1.5-flash"
-        
+
         ❌ RISKY!
         No validation, typos possible:
         "gemini-1.5-flsh" → Wrong! Will error when running
         "Gemini 1.5 Flash" → Wrong! Not in API
-        
+
 Step 7: Admin saves
 Step 8: When podcast runs... ERROR!
         "Invalid model: gemini-1.5-flash"
@@ -181,19 +185,19 @@ Step 3: Changes to "Gemini"
 Step 4: ✨ MAGIC! ✨
         Model dropdown INSTANTLY updates!
         Now shows "LLM Model: [gemini-1.5-flash ▼]"
-        
+
 Step 5: Admin clicks dropdown... sees ONLY Gemini models!
         gemini-2.0-pro-exp
         gemini-1.5-pro
         gemini-1.5-flash  ← Admin selects this
         gemini-pro
-        
+
         ✅ CORRECT!
         "Perfect! Exactly what I need!"
-        
+
 Step 6: Admin clicks "Save"
         ✅ VALIDATED! (Dropdown prevents typos)
-        
+
 Step 7: When podcast runs... SUCCESS! ✅
         Model from database: "gemini-1.5-flash"
         Provider from database: "gemini"
@@ -255,7 +259,7 @@ llm_model = forms.ChoiceField()
 SELECT default_llm_provider, openai_model FROM dailycast_usercategoryconfig;
 
 -- Row 1:
-default_llm_provider = "gemini"  
+default_llm_provider = "gemini"
 openai_model = "gpt-4o-mini"  ← WRONG! This is OpenAI, not Gemini!
 
 -- Row 2:
@@ -273,12 +277,12 @@ openai_model = "claude-3-5-sonnet"  ← WRONG! This is Claude!
 ### After: Clear
 
 ```sql
-SELECT 
-    default_llm_provider, 
-    openai_model, 
-    gemini_model, 
-    claude_model, 
-    template_model 
+SELECT
+    default_llm_provider,
+    openai_model,
+    gemini_model,
+    claude_model,
+    template_model
 FROM dailycast_usercategoryconfig;
 
 -- Row 1 (Gemini group):
@@ -431,16 +435,16 @@ template_model = "template"        ← Not used
 
 ## Impact Summary
 
-| Aspect | Before | After | Impact |
-|--------|--------|-------|--------|
-| **Supported Providers** | 1 (OpenAI) | 4 (All) | 300% more choice |
-| **Model Selection** | Text field | Dropdown | 100% safer |
-| **Typos Possible** | YES ❌ | NO ✅ | Support -80% |
-| **Auto-Update** | NO ❌ | YES ✅ | UX +95% |
-| **Validation** | None ❌ | Dropdown ✅ | Errors -90% |
-| **Learning Curve** | High | Low | Training -70% |
-| **Admin Time per Group** | 5 min | 1 min | Time -80% |
-| **Configuration Errors** | 30% | 1% | Reliability +99% |
+| Aspect                   | Before     | After       | Impact           |
+| ------------------------ | ---------- | ----------- | ---------------- |
+| **Supported Providers**  | 1 (OpenAI) | 4 (All)     | 300% more choice |
+| **Model Selection**      | Text field | Dropdown    | 100% safer       |
+| **Typos Possible**       | YES ❌     | NO ✅       | Support -80%     |
+| **Auto-Update**          | NO ❌      | YES ✅      | UX +95%          |
+| **Validation**           | None ❌    | Dropdown ✅ | Errors -90%      |
+| **Learning Curve**       | High       | Low         | Training -70%    |
+| **Admin Time per Group** | 5 min      | 1 min       | Time -80%        |
+| **Configuration Errors** | 30%        | 1%          | Reliability +99% |
 
 ---
 
@@ -453,7 +457,7 @@ BEFORE:                          AFTER:
 Provider: [OpenAI ▼]         Provider: [Gemini ▼]
 Model:    [gpt-4o-mini ▼]    Model:    [gemini-1.5-flash ▼]
               ❌                             ✅
-          (Wrong! Still                 (Correct! 
+          (Wrong! Still                 (Correct!
            shows OpenAI)                 Auto-updated!)
 
 

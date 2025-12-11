@@ -10,7 +10,7 @@ The interactive multilingual podcast system is a complete backend implementation
 ✅ **Flexible Output** - Text only, audio only, or both  
 ✅ **Admin Interface** - Simple form to select user, languages, and format  
 ✅ **API Endpoints** - For accuracy checking and progress tracking  
-✅ **Async Generation** - Celery task for background processing  
+✅ **Async Generation** - Celery task for background processing
 
 ---
 
@@ -19,6 +19,7 @@ The interactive multilingual podcast system is a complete backend implementation
 ### New Files
 
 1. **`dailycast/services_interactive.py`** (200+ lines)
+
    - Core business logic for interactive podcast generation
    - Course personalization via Enrollment model
    - 8-language support with language-specific variations
@@ -27,6 +28,7 @@ The interactive multilingual podcast system is a complete backend implementation
    - Teacher-style feedback generation
 
 2. **`dailycast/views_api.py`** (250+ lines)
+
    - REST API ViewSet for podcast management
    - Endpoints:
      - `GET /api/podcasts/` - List user's podcasts
@@ -37,6 +39,7 @@ The interactive multilingual podcast system is a complete backend implementation
      - `PUT /api/podcasts/{id}/answers/` - Submit student answers
 
 3. **`dailycast/serializers.py`** (90+ lines)
+
    - JSON serialization for API responses
    - Formatted display fields (duration, status, languages)
    - Audio URL generation
@@ -53,6 +56,7 @@ The interactive multilingual podcast system is a complete backend implementation
 ### Modified Files
 
 1. **`dailycast/models.py`**
+
    - Added 11 new fields to DailyPodcast:
      - `primary_language` - Main language
      - `secondary_language` - Optional second language
@@ -66,6 +70,7 @@ The interactive multilingual podcast system is a complete backend implementation
    - Backward compatible with existing `language` field
 
 2. **`dailycast/admin.py`**
+
    - Enhanced with interactive admin interface
    - Backward compatible with existing admin interface
    - New methods for interactive podcast generation
@@ -80,6 +85,7 @@ The interactive multilingual podcast system is a complete backend implementation
 ### Migration File (Not Yet Applied)
 
 **`dailycast/migrations/0002_interactive_multilingual.py`**
+
 - Adds 11 fields to DailyPodcast table
 - Creates indexes for performance
 - Safe migration with proper defaults
@@ -233,17 +239,17 @@ print(task.result)    # Result dict when complete
 
 ### Supported Languages
 
-| Code | Language | Polly Voice | Q&A Support |
-|------|----------|-------------|------------|
-| en | English | Joanna | ✅ |
-| ja | Japanese | Mizuki | ✅ |
-| es | Spanish | Lucia | ✅ |
-| fr | French | Celine | ✅ |
-| de | German | Vicki | ✅ |
-| it | Italian | Carla | ✅ |
-| pt | Portuguese | Vitoria | ✅ |
-| ru | Russian | Tatyana | ✅ |
-| ko | Korean | Seoyeon | ✅ |
+| Code | Language   | Polly Voice | Q&A Support |
+| ---- | ---------- | ----------- | ----------- |
+| en   | English    | Joanna      | ✅          |
+| ja   | Japanese   | Mizuki      | ✅          |
+| es   | Spanish    | Lucia       | ✅          |
+| fr   | French     | Celine      | ✅          |
+| de   | German     | Vicki       | ✅          |
+| it   | Italian    | Carla       | ✅          |
+| pt   | Portuguese | Vitoria     | ✅          |
+| ru   | Russian    | Tatyana     | ✅          |
+| ko   | Korean     | Seoyeon     | ✅          |
 
 ### Adding New Languages
 
@@ -270,20 +276,23 @@ Also add Q&A translations in `build_interactive_qa_script()`.
 ### Course Personalization
 
 The system automatically:
+
 1. Queries user's enrolled courses via `Enrollment` model
 2. Extracts course titles and subjects
 3. Mentions them in the generated script
 4. Tailors questions to user's courses
 
 Example output:
+
 ```
-"Based on your enrollment in Django Fundamentals and Python Advanced, 
+"Based on your enrollment in Django Fundamentals and Python Advanced,
 today's podcast covers..."
 ```
 
 ### Interactive Q&A
 
 Each podcast includes:
+
 1. **3 Interactive Questions** - Course-specific, teacher-style
 2. **Built-in Pauses** - Time for user to think/answer
 3. **Answer Storage** - Via `/answers/` endpoint
@@ -292,6 +301,7 @@ Each podcast includes:
 ### Multi-Language Support
 
 Users can select:
+
 - **Primary Language** - Main podcast language
 - **Secondary Language** (optional) - For bilingual learners
   - Each language generates separate audio
@@ -301,6 +311,7 @@ Users can select:
 ### Flexible Output
 
 Three output formats:
+
 - **Text Only** (📄) - Just the script, no audio
 - **Audio Only** (🎧) - Just audio files, no script
 - **Text & Audio** (📄+🎧) - Both provided
@@ -318,7 +329,7 @@ secondary_language = CharField(max_length=5, blank=True)
 
 # Output Configuration
 output_format = CharField(
-    max_length=10, 
+    max_length=10,
     choices=[('text', 'Text'), ('audio', 'Audio'), ('both', 'Both')],
     default='both'
 )
@@ -380,6 +391,7 @@ for enrollment in enrollments:
 **Problem:** Podcast script doesn't mention user's courses
 
 **Solution:** Check user's enrollment:
+
 ```python
 from enrollment.models import Enrollment
 from django.contrib.auth.models import User
@@ -396,6 +408,7 @@ for e in enrollments:
 **Problem:** `audio_file` or `audio_file_secondary` is empty
 
 **Solution:** Check AWS credentials and Polly setup:
+
 ```python
 import boto3
 client = boto3.client('polly', region_name='us-east-1')
@@ -407,6 +420,7 @@ client = boto3.client('polly', region_name='us-east-1')
 **Problem:** `questions_asked` is empty
 
 **Solution:** Check if LLM is available:
+
 - OpenAI API key configured?
 - Gemini API key as fallback?
 - If both missing, template fallback used
@@ -418,12 +432,14 @@ client = boto3.client('polly', region_name='us-east-1')
 ### Indexes
 
 New indexes added for:
+
 - `(user, created_at)` - Fast user podcast queries
 - `(status, created_at)` - Fast status filtering
 
 ### Caching
 
 Consider caching course list:
+
 ```python
 from django.core.cache import cache
 
@@ -440,6 +456,7 @@ def get_user_courses_cached(user_id):
 ### Async Generation
 
 Always use Celery for production:
+
 ```python
 from dailycast.tasks import generate_podcast_async
 
@@ -484,9 +501,7 @@ task = generate_podcast_async.delay(
   "status": "success",
   "accuracy_score": 0.95,
   "issues": [],
-  "warnings": [
-    "⚠️ Podcast slightly long (6:45 min, target ~6:00)"
-  ],
+  "warnings": ["⚠️ Podcast slightly long (6:45 min, target ~6:00)"],
   "content_checks": {
     "script_length": 1250,
     "courses_mentioned": 3,

@@ -199,6 +199,7 @@
 ## Step-by-Step Breakdown
 
 ### STEP 1: Select User & Items
+
 ```
 STATE: Course list is visible
 WHAT HAPPENED: User selected user dropdown
@@ -226,6 +227,7 @@ RESULT: 3 items selected ✓
 ```
 
 ### STEP 2: Selected Items Display
+
 ```
 STATE: Items selected, display appears
 WHAT HAPPENED: JavaScript detected selection
@@ -245,6 +247,7 @@ RESULT: Button visible and ready ✓
 ```
 
 ### STEP 3: Click Generate Button
+
 ```
 STATE: Button visible
 ACTION: User clicks "✏️ Generate Script Text"
@@ -255,6 +258,7 @@ RESULT: Customization form appears below ✓
 ```
 
 ### STEP 4: Fill Customization Form
+
 ```
 STATE: Form visible
 ACTION: User fills in fields:
@@ -275,6 +279,7 @@ RESULT: Ready to generate ✓
 ```
 
 ### STEP 5: Generate Script
+
 ```
 STATE: Form filled
 ACTION: User clicks "✏️ Generate Script Text" in form
@@ -328,6 +333,7 @@ RESULT: Script generated! ✓
 ## What Gets Sent to Backend
 
 ### Request Data (JSON)
+
 ```json
 {
   "items": [
@@ -360,6 +366,7 @@ RESULT: Script generated! ✓
 ```
 
 ### Backend Processing
+
 ```
 1. Parse JSON
 2. Extract values
@@ -370,6 +377,7 @@ RESULT: Script generated! ✓
 ```
 
 ### LLM Prompt Includes
+
 ```
 - "Generate a comprehensive podcast script"
 - "Selected Learning Items (1 course, 1 lesson, 1 quiz)"
@@ -387,6 +395,7 @@ RESULT: Script generated! ✓
 ## Final Output
 
 ### Generated Script Characteristics
+
 ✅ **Content Coverage**: All 3 selected items integrated
 ✅ **Subject Focus**: Business English (specific)
 ✅ **Topic Focus**: Email writing (narrowed)
@@ -397,6 +406,7 @@ RESULT: Script generated! ✓
 ✅ **Format**: Podcast-ready (text-to-speech compatible)
 
 ### Where Script Appears
+
 ```
 Django Admin Form
     ↓
@@ -414,6 +424,7 @@ Can generate audio
 ## User Actions After Generation
 
 ### Option 1: Use As-Is
+
 ```
 1. Script generated ✓
 2. Click [Save] button
@@ -424,6 +435,7 @@ Can generate audio
 ```
 
 ### Option 2: Edit First
+
 ```
 1. Script generated ✓
 2. Click in Script Text field
@@ -435,6 +447,7 @@ Can generate audio
 ```
 
 ### Option 3: Try Different Settings
+
 ```
 1. Script generated
 2. Click "Generate Script Text" again
@@ -452,6 +465,7 @@ Can generate audio
 ## Visual Elements
 
 ### Colors Used
+
 - **Black text**: #000000 (high contrast, very readable)
 - **Blue borders**: #1e90ff (3px, bright and clear)
 - **Gray background**: #f5f5f5 (form area, easy on eyes)
@@ -459,6 +473,7 @@ Can generate audio
 - **Light blue**: #e8f4f8 (selected items area)
 
 ### Interactive Elements
+
 - **Buttons**: Dark teal with white text (clear calls to action)
 - **Tags**: White background with blue border (visible and removable)
 - **Dropdowns**: Standard select elements (familiar UI)
@@ -469,6 +484,7 @@ Can generate audio
 ## Summary
 
 The complete flow is:
+
 1. **Select** user and items
 2. **See** selected items with analytics
 3. **Click** Generate button
@@ -479,4 +495,3 @@ The complete flow is:
 8. **Done!** Podcast is ready 🎉
 
 All information flows through the form, making it easy to customize podcast scripts for any subject, audience, and language combination!
-

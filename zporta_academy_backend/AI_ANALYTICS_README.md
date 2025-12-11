@@ -7,23 +7,27 @@ This system analyzes user learning data locally using Python libraries (NumPy, P
 ## Features
 
 ### 1. **Local Data Analysis (Zero API Cost)**
+
 - Collects comprehensive learning data from all app sources
 - Analyzes patterns using Python libraries (NumPy, Pandas)
 - No expensive LLM calls for data processing
 
 ### 2. **Intelligent Recommendations**
+
 - Identifies weak areas needing practice
 - Suggests related courses based on strong areas
 - Generates actionable next steps
 - Tracks study consistency and streaks
 
 ### 3. **Admin Reports**
+
 - Saves detailed JSON reports for every analysis
 - Stored in: `media/ai_analytics_reports/`
 - Format: `user_{id}_{username}_{timestamp}.json`
 - Includes full analysis + recommendations
 
 ### 4. **Personalized Script Generation**
+
 - Injects user learning context into podcast scripts
 - Mentions specific courses user is studying
 - Addresses weak areas identified by AI
@@ -32,6 +36,7 @@ This system analyzes user learning data locally using Python libraries (NumPy, P
 ## How It Works
 
 ### Step 1: User Analysis
+
 ```python
 from dailycast.ai_analyzer import analyze_user_and_generate_feedback
 
@@ -40,6 +45,7 @@ result = analyze_user_and_generate_feedback(user)
 ```
 
 ### Step 2: Local Analytics (No API Calls)
+
 - **Course Progress**: Calculate completion rates for each course
 - **Quiz Performance**: Identify topics with <70% accuracy (weak areas)
 - **Study Patterns**: Detect preferred study time, calculate streaks
@@ -47,6 +53,7 @@ result = analyze_user_and_generate_feedback(user)
 - **Performance Trends**: Find strong areas (>85% accuracy)
 
 ### Step 3: Generate Recommendations
+
 ```python
 analyzer = UserLearningAnalyzer(user)
 analysis = analyzer.collect_user_learning_data()  # Local processing
@@ -55,7 +62,9 @@ report_path = analyzer.save_analysis_report()  # Save for admin
 ```
 
 ### Step 4: Save Report
+
 JSON report includes:
+
 ```json
 {
   "metadata": {
@@ -88,6 +97,7 @@ JSON report includes:
 ## Usage in Admin
 
 ### 1. AI Analysis Button
+
 1. Select a user in the podcast form
 2. Click **"🔍 AI Analysis & Recommendations"**
 3. View instant analysis results with:
@@ -97,7 +107,9 @@ JSON report includes:
    - Actionable next steps
 
 ### 2. Personalized Script Generation
+
 When generating podcast scripts, the system automatically:
+
 - Loads user's learning context
 - Mentions enrolled courses
 - Addresses weak areas needing practice
@@ -105,16 +117,19 @@ When generating podcast scripts, the system automatically:
 - Suggests next steps based on AI analysis
 
 Example script excerpt:
+
 ```
-Hey Alex! I noticed you've been crushing it with Vocabulary (92% mastery!), 
+Hey Alex! I noticed you've been crushing it with Vocabulary (92% mastery!),
 but Grammar needs some practice at 65%. Let's focus on...
 
-You're currently working through 3 courses, and you're so close to finishing 
+You're currently working through 3 courses, and you're so close to finishing
 "Business English" - only 4 lessons left! Let's tackle...
 ```
 
 ### 3. Admin Report Review
+
 Access saved reports:
+
 ```bash
 media/ai_analytics_reports/
 ├── user_1_alex_20251210_143022.json
@@ -125,6 +140,7 @@ media/ai_analytics_reports/
 ## API Endpoints
 
 ### Analyze User
+
 ```
 GET /api/admin/ajax/analyze-user/?user_id=1
 
@@ -139,6 +155,7 @@ Response:
 ```
 
 ### List Reports
+
 ```
 GET /api/admin/ajax/ai-reports/
 GET /api/admin/ajax/ai-reports/?user_id=1
@@ -163,25 +180,28 @@ Response:
 ## Cost Savings
 
 ### Traditional Approach (Expensive)
+
 1. Load user data
 2. Call LLM API to analyze ($$)
 3. Call LLM API for recommendations ($$)
 4. Parse response
-**Total: 2-3 API calls per analysis (~$0.10-0.50)**
+   **Total: 2-3 API calls per analysis (~$0.10-0.50)**
 
 ### Our Approach (Efficient)
+
 1. Load user data
 2. **Analyze locally** with Python (FREE)
 3. **Generate recommendations** with algorithms (FREE)
 4. Save report
 5. Only use LLM for final script generation (1 call)
-**Total: 1 API call (~$0.05-0.15)**
+   **Total: 1 API call (~$0.05-0.15)**
 
 **Savings: 60-80% on analytics processing**
 
 ## Data Sources
 
 The analyzer collects from:
+
 - ✅ **Enrollment**: Courses enrolled, completion rates
 - ✅ **Lessons**: Completed lessons, progress per course
 - ✅ **Quizzes**: Scores, accuracy by topic
@@ -192,10 +212,12 @@ The analyzer collects from:
 ## Dependencies
 
 ### Required
+
 - Django (included)
 - Python 3.8+ (included)
 
 ### Optional (for advanced analytics)
+
 ```bash
 pip install numpy pandas
 ```
@@ -205,6 +227,7 @@ If not installed, basic analytics still work without advanced features.
 ## Configuration
 
 No configuration needed! The system automatically:
+
 - Creates report directory on first use
 - Uses existing database models
 - Falls back gracefully if optional dependencies missing
@@ -212,6 +235,7 @@ No configuration needed! The system automatically:
 ## Example Use Cases
 
 ### 1. Identify Struggling Students
+
 ```python
 # Admin can review all reports to find users needing help
 reports = get_all_user_reports()
@@ -219,6 +243,7 @@ struggling = [r for r in reports if r['analysis']['quiz_accuracy'] < 60]
 ```
 
 ### 2. Send Personalized Encouragement
+
 ```python
 analyzer = UserLearningAnalyzer(user)
 analysis = analyzer.collect_user_learning_data()
@@ -228,6 +253,7 @@ if analysis['study_streak'] > 7:
 ```
 
 ### 3. Course Recommendations
+
 ```python
 analyzer = UserLearningAnalyzer(user)
 recs = analyzer.generate_recommendations()
@@ -249,14 +275,17 @@ for course in recs['suggested_courses']:
 ## Troubleshooting
 
 ### "No activity found"
+
 - User hasn't completed any lessons/quizzes yet
 - Check that ActivityEvent tracking is enabled
 
 ### "Report not saved"
+
 - Check media directory permissions
 - Verify `MEDIA_ROOT` is configured in settings
 
 ### "Analysis incomplete"
+
 - Some app models may not be available
 - System degrades gracefully and uses available data
 

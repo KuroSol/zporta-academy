@@ -127,16 +127,33 @@ class UserLearningAnalyzer:
             return {'last_7_days': {}, 'last_30_days': {}}
     
     def _calculate_quiz_accuracy(self) -> float:
-        """Calculate average quiz score."""
+        """Calculate average quiz score (percentage of correct answers)."""
         try:
-            from quizzes.models import QuizAttempt
+            from analytics.models import QuizAttempt, QuizSessionProgress
             
-            attempts = QuizAttempt.objects.filter(user=self.user)
-            if not attempts.exists():
+            # Try to calculate from QuizSessionProgress (more accurate)
+            sessions = QuizSessionProgress.objects.filter(
+                user=self.user,
+                status='completed'
+            )
+            
+            if sessions.exists():
+                accuracies = []
+                for session in sessions:
+                    if session.total_questions > 0:
+                        accuracy = (session.correct_count / session.total_questions) * 100
+                        accuracies.append(accuracy)
+                
+                if accuracies:
+                    return sum(accuracies) / len(accuracies)
+            
+            # Fallback: count correct attempts
+            total_attempts = QuizAttempt.objects.filter(user=self.user).count()
+            if total_attempts == 0:
                 return 0.0
             
-            scores = [a.score_percentage for a in attempts if hasattr(a, 'score_percentage')]
-            return sum(scores) / len(scores) if scores else 0.0
+            correct_attempts = QuizAttempt.objects.filter(user=self.user, is_correct=True).count()
+            return (correct_attempts / total_attempts) * 100 if total_attempts > 0 else 0.0
             
         except Exception as e:
             logger.warning(f"Could not calculate quiz accuracy: {e}")
@@ -152,7 +169,7 @@ class UserLearningAnalyzer:
                 return 0.0
             
             total = enrollments.count()
-            completed = enrollments.filter(completed=True).count()
+            completed = enrollments.filter(status='completed').count()
             
             return (completed / total * 100) if total > 0 else 0.0
             
@@ -237,28 +254,35 @@ class UserLearningAnalyzer:
     def _identify_weak_topics(self) -> List[Dict]:
         """Identify topics where user struggles."""
         try:
-            from quizzes.models import QuizAttempt
+            from analytics.models import QuizSessionProgress
+            from courses.models import Course
             
-            attempts = QuizAttempt.objects.filter(user=self.user).select_related('quiz')
+            # Get completed quiz sessions
+            sessions = QuizSessionProgress.objects.filter(
+                user=self.user,
+                status='completed'
+            ).select_related('quiz')
             
             # Group by course/topic and calculate average scores
             topic_scores = defaultdict(list)
             
-            for attempt in attempts:
-                if hasattr(attempt, 'score_percentage'):
-                    topic = attempt.quiz.course.title if hasattr(attempt.quiz, 'course') else 'Unknown'
-                    topic_scores[topic].append(attempt.score_percentage)
+            for session in sessions:
+                if session.total_questions > 0:
+                    accuracy = (session.correct_count / session.total_questions) * 100
+                    topic_name = session.quiz.course.title if hasattr(session.quiz, 'course') else 'Unknown'
+                    topic_scores[topic_name].append(accuracy)
             
             # Find topics with scores below 70%
             weak_topics = []
             for topic, scores in topic_scores.items():
-                avg_score = sum(scores) / len(scores)
-                if avg_score < 70:
-                    weak_topics.append({
-                        'topic': topic,
-                        'avg_score': round(avg_score, 1),
-                        'attempts': len(scores)
-                    })
+                if scores:
+                    avg_score = sum(scores) / len(scores)
+                    if avg_score < 70:
+                        weak_topics.append({
+                            'topic': topic,
+                            'avg_score': round(avg_score, 1),
+                            'attempts': len(scores)
+                        })
             
             # Sort by score (weakest first)
             weak_topics.sort(key=lambda x: x['avg_score'])
@@ -271,27 +295,34 @@ class UserLearningAnalyzer:
     def _identify_strong_topics(self) -> List[Dict]:
         """Identify topics where user excels."""
         try:
-            from quizzes.models import QuizAttempt
+            from analytics.models import QuizSessionProgress
+            from courses.models import Course
             
-            attempts = QuizAttempt.objects.filter(user=self.user).select_related('quiz')
+            # Get completed quiz sessions
+            sessions = QuizSessionProgress.objects.filter(
+                user=self.user,
+                status='completed'
+            ).select_related('quiz')
             
             topic_scores = defaultdict(list)
             
-            for attempt in attempts:
-                if hasattr(attempt, 'score_percentage'):
-                    topic = attempt.quiz.course.title if hasattr(attempt.quiz, 'course') else 'Unknown'
-                    topic_scores[topic].append(attempt.score_percentage)
+            for session in sessions:
+                if session.total_questions > 0:
+                    accuracy = (session.correct_count / session.total_questions) * 100
+                    topic_name = session.quiz.course.title if hasattr(session.quiz, 'course') else 'Unknown'
+                    topic_scores[topic_name].append(accuracy)
             
             # Find topics with scores above 85%
             strong_topics = []
             for topic, scores in topic_scores.items():
-                avg_score = sum(scores) / len(scores)
-                if avg_score >= 85:
-                    strong_topics.append({
-                        'topic': topic,
-                        'avg_score': round(avg_score, 1),
-                        'attempts': len(scores)
-                    })
+                if scores:
+                    avg_score = sum(scores) / len(scores)
+                    if avg_score >= 85:
+                        strong_topics.append({
+                            'topic': topic,
+                            'avg_score': round(avg_score, 1),
+                            'attempts': len(scores)
+                        })
             
             # Sort by score (strongest first)
             strong_topics.sort(key=lambda x: x['avg_score'], reverse=True)
@@ -305,33 +336,37 @@ class UserLearningAnalyzer:
         """Get detailed progress for each enrolled course."""
         try:
             from enrollment.models import Enrollment
-            from lessons.models import LessonProgress
+            from lessons.models import LessonCompletion
             
-            enrollments = Enrollment.objects.filter(user=self.user).select_related('course')
+            enrollments = Enrollment.objects.filter(user=self.user)
             
             progress_list = []
             for enrollment in enrollments:
-                course = enrollment.course
+                # Get the course from the generic foreign key
+                course = enrollment.content_object
+                
+                # Only process if this is a course enrollment
+                if not hasattr(course, 'lessons'):
+                    continue
                 
                 # Count lessons in course
-                total_lessons = course.lessons.count() if hasattr(course, 'lessons') else 0
+                total_lessons = course.lessons.count()
                 
                 # Count completed lessons
-                completed_lessons = LessonProgress.objects.filter(
+                completed_lessons = LessonCompletion.objects.filter(
                     user=self.user,
-                    lesson__course=course,
-                    completed=True
+                    lesson__course=course
                 ).count() if total_lessons > 0 else 0
                 
                 progress_pct = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
                 
                 progress_list.append({
                     'course_id': course.id,
-                    'course_title': course.title,
+                    'course_title': getattr(course, 'title', str(course)),
                     'total_lessons': total_lessons,
                     'completed_lessons': completed_lessons,
                     'progress_percent': round(progress_pct, 1),
-                    'enrollment_date': enrollment.enrolled_at.isoformat() if hasattr(enrollment, 'enrolled_at') else None
+                    'enrollment_date': enrollment.enrollment_date.isoformat() if enrollment.enrollment_date else None
                 })
             
             return progress_list
@@ -617,87 +652,250 @@ def analyze_user_and_generate_feedback(user, ai_model: str = None) -> Dict:
     }
 
 
-def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str) -> Dict:
+def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str = '') -> Dict:
     """
-    Use AI to provide deep insights about user's English level, 
-    learning patterns, and personalized recommendations.
+    Use AI to provide COMPREHENSIVE, DETAILED insights about user's learning patterns.
     
-    Analyzes: enrollment, quiz scores, notes content, activity patterns
+    Analyzes: quiz difficulty distribution, vocabulary gaps, grammar weaknesses,
+    specific question types user struggles with, and provides detailed actionable guidance.
+    
+    Args:
+        user: User object to analyze
+        analysis_data: Dictionary containing user analytics
+        ai_model: AI model to use (e.g., 'gemini-2.0-flash-exp', 'gpt-4o-mini')
+        subject: Optional subject to focus analysis on (e.g., 'Math', 'English')
+    
+    Returns:
+        Dictionary with detailed guidance, resources, and quiz recommendations
     """
     import google.generativeai as genai
     from django.conf import settings
+    from users.models import UserPreference
+    from users.activity_models import UserActivity
     
-    # Gather user notes
+    logger.info(f"Starting comprehensive AI analysis for user {user.id} with model {ai_model}, subject={subject}")
+    
+    # Gather user notes (for vocabulary and language patterns)
     from notes.models import Note
-    user_notes = Note.objects.filter(user=user).order_by('-created_at')[:20]
-    notes_text = "\n".join([f"- {note.content[:200]}" for note in user_notes])
+    user_notes = Note.objects.filter(user=user).order_by('-created_at')[:50]
+    notes_text = "\n".join([f"- {note.text[:300]}" for note in user_notes if note.text])
+    notes_summary = f"User has written {len(user_notes)} notes" if user_notes else "No notes"
     
-    # Build comprehensive prompt
-    prompt = f"""Analyze this student's learning profile and provide detailed insights:
+    # Gather quiz difficulty analysis
+    try:
+        from analytics.models import QuizSessionProgress
+        
+        difficulty_distribution = defaultdict(list)
+        for session in QuizSessionProgress.objects.filter(user=user, status='completed')[:50]:
+            if session.total_questions > 0:
+                accuracy = (session.correct_count / session.total_questions) * 100
+                difficulty = getattr(session.quiz, 'difficulty', 'unknown')
+                difficulty_distribution[difficulty].append({
+                    'accuracy': accuracy,
+                    'total_questions': session.total_questions,
+                    'correct_count': session.correct_count
+                })
+        
+        difficulty_analysis = {}
+        for level, attempts in difficulty_distribution.items():
+            avg_acc = sum([a['accuracy'] for a in attempts]) / len(attempts)
+            difficulty_analysis[level] = {
+                'attempts': len(attempts),
+                'average_accuracy': round(avg_acc, 1),
+                'status': 'Strong' if avg_acc >= 80 else 'Developing' if avg_acc >= 60 else 'Needs Work'
+            }
+    except Exception as e:
+        logger.warning(f"Could not analyze difficulty distribution: {e}")
+        difficulty_analysis = {}
+    
+    # Gather user preferences
+    interested_subjects_str = ""
+    interested_tags_str = ""
+    try:
+        user_pref = UserPreference.objects.prefetch_related(
+            'interested_subjects', 
+            'interested_tags'
+        ).get(user=user)
+        interested_subjects = user_pref.interested_subjects.all()
+        interested_tags = user_pref.interested_tags.all()
+        
+        if interested_subjects.exists():
+            interested_subjects_str = ", ".join([s.name for s in interested_subjects])
+        if interested_tags.exists():
+            interested_tags_str = ", ".join([t.name for t in interested_tags])
+    except:
+        interested_subjects_str = "Not specified"
+        interested_tags_str = "Not specified"
+    
+    # Gather recent user activity
+    activity_summary = ""
+    try:
+        recent_activities = UserActivity.objects.filter(user=user).order_by('-created_at')[:10]
+        if recent_activities.exists():
+            activity_lines = []
+            for activity in recent_activities:
+                activity_label = activity.get_activity_type_display() if hasattr(activity, 'get_activity_type_display') else activity.activity_type
+                activity_lines.append(f"- {activity_label} ({activity.created_at.strftime('%Y-%m-%d')})")
+            activity_summary = "\n".join(activity_lines)
+        else:
+            activity_summary = "No recent activity recorded"
+    except Exception as e:
+        activity_summary = "Activity data unavailable"
+    
+    # Filter analysis data by subject if specified
+    weak_topics = analysis_data.get('weak_topics', [])
+    strong_topics = analysis_data.get('strong_topics', [])
+    
+    if subject:
+        weak_topics = [t for t in weak_topics if subject.lower() in t.get('topic', '').lower()]
+        strong_topics = [t for t in strong_topics if subject.lower() in t.get('topic', '').lower()]
+        subject_focus = f"FOCUS AREA: {subject}"
+    else:
+        subject_focus = "Analyze all subjects and areas"
+    
+    # Build COMPREHENSIVE analysis prompt
+    prompt = f"""You are an expert educational psychologist and learning specialist. Analyze this student's learning profile comprehensively and provide DETAILED, ACTIONABLE guidance.
 
-STUDENT PROFILE:
-- Name: {user.get_full_name() or user.username}
-- Enrolled Courses: {analysis_data.get('total_courses', 0)}
+{subject_focus}
+
+=== STUDENT PROFILE ===
+Name: {user.get_full_name() or user.username}
+Email: {user.email}
+Interested Subjects: {interested_subjects_str}
+Learning Interests/Tags: {interested_tags_str}
+
+=== LEARNING STATISTICS ===
+📊 Overall Performance:
+- Total Courses Enrolled: {analysis_data.get('total_courses', 0)}
 - Lessons Completed: {analysis_data.get('lessons_completed', 0)}
-- Quizzes Taken: {analysis_data.get('quizzes_completed', 0)}
-- Quiz Accuracy: {analysis_data.get('quiz_accuracy', 0):.1f}%
-- Study Streak: {analysis_data.get('study_streak', 0)} days
-- Active Days (30d): {analysis_data.get('active_days', 0)}
+- Total Quizzes Taken: {analysis_data.get('quizzes_completed', 0)}
+- Overall Quiz Accuracy: {analysis_data.get('quiz_accuracy', 0):.1f}%
+- Study Streak: {analysis_data.get('study_streak', 0)} consecutive days
+- Active Days (Last 30): {analysis_data.get('active_days', 0)} days
+- Notes Written: {analysis_data.get('notes_count', 0)} notes
+{notes_summary}
 
-WEAK TOPICS:
-{chr(10).join([f"- {t['topic']}: {t['avg_score']}%" for t in analysis_data.get('weak_topics', [])[:5]])}
+=== DIFFICULTY LEVEL ANALYSIS ===
+{chr(10).join([f"Level '{level}': {data['attempts']} attempts, {data['average_accuracy']:.1f}% accuracy ({data['status']})" for level, data in difficulty_analysis.items()]) if difficulty_analysis else "No difficulty data available"}
 
-STRONG TOPICS:
-{chr(10).join([f"- {t['topic']}: {t['avg_score']}%" for t in analysis_data.get('strong_topics', [])[:5]])}
+=== WEAK AREAS (NEEDS FOCUS) ===
+{chr(10).join([f"- {t['topic']}: {t['avg_score']}% (attempted {t['attempts']} times)" for t in weak_topics[:5]]) if weak_topics else "- No significant weak areas identified"}
 
-RECENT NOTES (last 20):
-{notes_text if notes_text else "No notes yet"}
+=== STRONG AREAS (MASTERY) ===
+{chr(10).join([f"- {t['topic']}: {t['avg_score']}% accuracy (attempted {t['attempts']} times)" for t in strong_topics[:5]]) if strong_topics else "- Continue building strong foundations"}
 
-TASK:
-1. Estimate their English proficiency level (A1-C2)
-2. Identify learning style and patterns
-3. Provide 3-5 specific, actionable recommendations
-4. Suggest optimal study schedule based on their activity
+=== RECENT LEARNING ACTIVITY ===
+{activity_summary}
 
-Return JSON format:
+=== SAMPLE LEARNING NOTES ===
+{notes_text if notes_text else "No sample notes available"}
+
+=== YOUR TASK: PROVIDE COMPREHENSIVE LEARNING GUIDE ===
+
+Analyze this student deeply and provide a JSON response with ALL of the following sections:
+
+1. **assessment**: Current learning level, strengths/weaknesses summary
+2. **vocabulary_gaps**: Specific vocabulary weaknesses (with examples of unknown words they might encounter at their level)
+3. **grammar_analysis**: 
+   - Weak grammar areas (with 2-3 examples and explanations)
+   - Strong grammar areas (with examples)
+4. **quiz_recommendations**: Specific quiz titles/topics they should practice next
+5. **difficulty_progression**: What difficulty level they should focus on next and why
+6. **external_resources**: 
+   - Book recommendations (specific titles, authors, why suitable)
+   - Movie/show recommendations (with subtitle watching strategies)
+   - Grammar guides and websites (specific resources)
+   - Practice websites (specific tools)
+7. **study_guide**: 
+   - Exact weekly study plan (breakdown by topic)
+   - Daily practice recommendations
+   - Time needed per week
+8. **learning_journey**: 
+   - Current stage
+   - Next 3 milestones
+   - Long-term progression path
+9. **specific_actions**: 
+   - Today's action (15 min)
+   - This week's focus (5-7 days)
+   - This month's goals
+10. **potential_struggles**: What might they NOT know at their current level and why?
+
+CRITICAL: Make this HIGHLY SPECIFIC to this student's profile, subject interests ({interested_subjects_str}), and performance data. Include:
+- Exact quiz names/topics to practice
+- Specific books/movies that match their level and interests
+- Grammar rules with concrete examples from their difficulty level
+- Clear progression path with measurable milestones
+- Vocabulary you estimate they DON'T know yet at this level
+
+Return ONLY valid JSON with these keys:
 {{
-    "english_level": "B1",
-    "english_level_reasoning": "...",
-    "learning_style": "...",
-    "strengths": ["...", "..."],
-    "areas_for_improvement": ["...", "..."],
-    "recommendations": ["...", "...", "..."],
-    "study_schedule_suggestion": "..."
-}}"""
+  "assessment": {{...}},
+  "vocabulary_gaps": {{...}},
+  "grammar_analysis": {{...}},
+  "quiz_recommendations": [...],
+  "difficulty_progression": {{...}},
+  "external_resources": {{...}},
+  "study_guide": {{...}},
+  "learning_journey": {{...}},
+  "specific_actions": {{...}},
+  "potential_struggles": {{...}},
+  "summary": "2-3 paragraph executive summary"
+}}
+"""
     
     # Call AI model
-    if ai_model.startswith('gemini'):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel(ai_model)
-        response = model.generate_content(prompt)
-        result_text = response.text
-    elif ai_model.startswith('gpt'):
-        import openai
-        openai.api_key = settings.OPENAI_API_KEY
-        response = openai.ChatCompletion.create(
-            model=ai_model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
-        )
-        result_text = response.choices[0].message.content
-    else:
-        raise ValueError(f"Unsupported AI model: {ai_model}")
-    
-    # Parse JSON response
-    import json
-    import re
-    # Extract JSON from markdown code blocks if present
-    json_match = re.search(r'```json\s*(.*?)\s*```', result_text, re.DOTALL)
-    if json_match:
-        result_text = json_match.group(1)
-    
-    ai_insights = json.loads(result_text)
-    return ai_insights
+    try:
+        if ai_model.startswith('gemini'):
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel(ai_model)
+            logger.info(f"Calling Gemini model: {ai_model}")
+            response = model.generate_content(prompt)
+            result_text = response.text
+        elif ai_model.startswith('gpt'):
+            from openai import OpenAI
+            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            logger.info(f"Calling OpenAI model: {ai_model}")
+            response = client.chat.completions.create(
+                model=ai_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=4000  # Increased for comprehensive response
+            )
+            result_text = response.choices[0].message.content
+        else:
+            raise ValueError(f"Unsupported AI model: {ai_model}")
+        
+        logger.info(f"AI response received, length: {len(result_text)} characters")
+        
+        # Parse JSON response
+        import json
+        import re
+        # Extract JSON from markdown code blocks if present
+        json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', result_text, re.DOTALL)
+        if json_match:
+            result_text = json_match.group(1)
+        
+        ai_insights = json.loads(result_text)
+        logger.info(f"Successfully parsed comprehensive AI insights with {len(ai_insights)} sections")
+        return ai_insights
+        
+    except Exception as e:
+        logger.exception(f"Error during comprehensive AI analysis with model {ai_model}: {e}")
+        # Return a safe fallback response
+        return {
+            'summary': 'Unable to generate detailed AI insights at this time.',
+            'assessment': {'error': str(e)},
+            'vocabulary_gaps': [],
+            'grammar_analysis': {},
+            'quiz_recommendations': [],
+            'difficulty_progression': {},
+            'external_resources': {},
+            'study_guide': {},
+            'learning_journey': {},
+            'specific_actions': {},
+            'potential_struggles': [],
+            'error': str(e)
+        }
 
 
 def generate_personalized_script_with_ai_context(user, selected_items: List[Dict], form_data: Dict) -> str:

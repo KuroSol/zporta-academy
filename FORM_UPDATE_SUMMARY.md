@@ -53,32 +53,37 @@ Your podcast generation form now has **2 new settings** you can customize:
 ## 🚀 How to Test It
 
 ### 1. Go to Admin
+
 ```
 http://localhost:8000/admin/
 ```
 
 ### 2. Navigate to Daily Podcasts
+
 ```
 Dailycast → Daily Podcasts
 ```
 
 ### 3. Add New or Edit Existing
+
 - Click "Add Podcast" button
 - OR click an existing podcast to edit
 
 ### 4. You'll See the New Fields!
+
 ```
 Form Fields:
   □ User: [Select]
   □ Primary Language: ○ English ○ Japanese ○ Spanish ...
   □ Secondary Language: [Dropdown]
   □ Output Format: ○ Text ○ Audio ○ Both
-  
+
   NEW → Month Range: ○ Current ○ Last 3 ○ Last 6 ○ Year ○ All
   NEW → Reply Size: ○ Short ○ Medium ○ Long ○ Detailed
 ```
 
 ### 5. Fill & Generate
+
 - Select your preferences
 - Click "Generate"
 - Podcast will save with your chosen settings!
@@ -88,8 +93,9 @@ Form Fields:
 ## 💾 Database Changes
 
 **New Fields Added**:
+
 ```sql
-ALTER TABLE dailycast_dailypodcast 
+ALTER TABLE dailycast_dailypodcast
 ADD COLUMN month_range VARCHAR(20) DEFAULT 'current',
 ADD COLUMN reply_size VARCHAR(20) DEFAULT 'medium';
 ```
@@ -119,14 +125,18 @@ DailyPodcast Record:
 
 ## 🎯 What These Settings Will Do
 
-### `month_range` 
+### `month_range`
+
 Will control what **time period** of student activity is included:
+
 - Include lessons from the selected period
 - Mention progress/achievements from that timeframe
 - Reference recent activities (if "current") or long-term growth (if "all")
 
 ### `reply_size`
+
 Will control **how long** and **how detailed** the podcast is:
+
 - Short: Brief review, essential points only
 - Medium: Standard review with examples
 - Long: Comprehensive with questions
@@ -167,15 +177,15 @@ reply_size = forms.ChoiceField(
 
 ## ✅ Status
 
-| Task | Status |
-|------|--------|
-| Form fields added | ✅ Done |
-| Database fields added | ✅ Done |
-| Migration created | ✅ Done (0006) |
-| Migration applied | ✅ Done |
-| Service updated | ✅ Done |
-| Admin view updated | ✅ Done |
-| Django check passed | ✅ Done (no errors) |
+| Task                  | Status              |
+| --------------------- | ------------------- |
+| Form fields added     | ✅ Done             |
+| Database fields added | ✅ Done             |
+| Migration created     | ✅ Done (0006)      |
+| Migration applied     | ✅ Done             |
+| Service updated       | ✅ Done             |
+| Admin view updated    | ✅ Done             |
+| Django check passed   | ✅ Done (no errors) |
 
 ---
 

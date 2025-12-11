@@ -138,7 +138,7 @@ GLOBAL DEFAULTS:
 
     BEGINNER GROUP        ADVANCED GROUP
     (150 students)        (50 students)
-    
+
     Overrides:            Overrides:
     • Cost: $0.25         • AI Model: gpt-4-turbo
       (cheaper)           (smarter)
@@ -161,7 +161,7 @@ OTHER STUDENTS (30):
 ├─ Cooldown: 48 hours ← Less frequent (group override)
 ├─ AI Model: gpt-4o-mini ← Fast enough (global)
 └─ Script length: 1000 words ← Standard (global)
-   
+
    RESULT: Maria pays less, can generate less often
 
 👨‍💼 ADVANCED STUDENT (e.g., Bob)
@@ -169,7 +169,7 @@ OTHER STUDENTS (30):
 ├─ Cooldown: 0 hours ← Unlimited (group override)
 ├─ AI Model: gpt-4-turbo ← Smart (group override)
 └─ Script length: 1000 words ← Standard (global)
-   
+
    RESULT: Bob pays more, but gets premium AI and unlimited access
 
 👤 NO GROUP STUDENT (e.g., Anonymous)
@@ -177,7 +177,7 @@ OTHER STUDENTS (30):
 ├─ Cooldown: 24 hours ← Standard (global)
 ├─ AI Model: gpt-4o-mini ← Standard (global)
 └─ Script length: 1000 words ← Standard (global)
-   
+
    RESULT: Anonymous user gets default experience
 ```
 
@@ -267,7 +267,7 @@ Podcast         ┌──┴──┬──────┬─────┐
 Defaults        │     │      │     │
                 ▼     ▼      ▼     ▼
              Beg   Int   Adv  Custom
-             
+
 Go to: Student Groups → Click group → Edit
 ```
 
@@ -276,6 +276,7 @@ Go to: Student Groups → Click group → Edit
 ## 📋 COMMON QUESTIONS
 
 ### Q: "Can I use different settings for different users?"
+
 ```
 A: YES! Use Student Groups.
    ├─ Create "Group A" → Add users → Set overrides
@@ -290,6 +291,7 @@ This lets you:
 ```
 
 ### Q: "What happens if I leave a field blank?"
+
 ```
 A: It uses the GLOBAL DEFAULT for that field.
 
@@ -303,26 +305,29 @@ Result:
 ```
 
 ### Q: "Can I change settings for just one user?"
+
 ```
 A: Not directly, but you can:
    ├─ Create a group with 1 user, set custom overrides
    └─ Or ask developer for custom SQL query
-   
+
 Better: Use broad groups (Beginners, Advanced, etc)
 ```
 
 ### Q: "What if I accidentally set wrong values?"
+
 ```
 A: Don't worry! Just:
    ├─ Go back to the group/global settings
    ├─ Fix the value
    ├─ Save
    └─ Changes apply immediately
-   
+
 No restart needed, no data loss.
 ```
 
 ### Q: "Can I see which users will be affected?"
+
 ```
 A: YES!
    1. Go to: Student Groups
@@ -338,6 +343,7 @@ A: YES!
 ## 🎯 TYPICAL ADMIN WORKFLOW
 
 ### Week 1: Initial Setup
+
 ```
 1. Go to: Global Podcast Defaults
    └─ Set defaults that make sense
@@ -361,6 +367,7 @@ A: YES!
 ```
 
 ### Week 2+: Monitor & Adjust
+
 ```
 1. Check: How many podcasts are users generating?
 2. Monitor: Are costs what you expected?
@@ -411,7 +418,8 @@ HOW IT WORKS:
 Next step: Log in to Django admin and try it!
 ```
 
-**Remember**: 
+**Remember**:
+
 - 🌍 Global = Everyone
 - 👥 Groups = Specific users
 - ✏️ Overrides = What's different

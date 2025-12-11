@@ -604,3 +604,127 @@ class TeacherContentConfig(models.Model):
         config, _ = cls.objects.get_or_create(pk=1)
         return config
 
+
+# ============================================================================
+# CACHE MODELS - Store AI Insights & Analytics to Reduce Token Usage
+# ============================================================================
+
+class CachedAIInsight(models.Model):
+    """
+    Stores AI-generated insights to avoid re-generating for same student+subject+engine.
+    This significantly reduces token usage and API costs.
+    """
+    
+    ENGINE_CHOICES = [
+        ('gemini-2.0-flash-exp', '⚡ Gemini 2.0 Flash'),
+        ('gemini-2.0-pro-exp', '✨ Gemini 2.0 Pro'),
+        ('gemini-1.5-pro', '🔧 Gemini 1.5 Pro'),
+        ('gpt-4o-mini', '⚡ GPT-4o Mini'),
+        ('gpt-4o', '🎯 GPT-4o'),
+        ('gpt-4-turbo', '🚀 GPT-4 Turbo'),
+    ]
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cached_ai_insights',
+        db_index=True,
+    )
+    
+    subject = models.CharField(
+        max_length=50,
+        default='',
+        blank=True,
+        db_index=True,
+        help_text="Subject focus (empty = all subjects)"
+    )
+    
+    engine = models.CharField(
+        max_length=50,
+        default='gemini-2.0-flash-exp',
+        choices=ENGINE_CHOICES,
+    )
+    
+    ai_insights = models.JSONField(
+        help_text="Cached AI analysis (11 sections)"
+    )
+    
+    tokens_used = models.IntegerField(default=0)
+    tokens_saved = models.IntegerField(default=0)
+    hits = models.IntegerField(default=0, help_text="Times this cache was reused")
+    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    
+    class Meta:
+        verbose_name = "Cached AI Insight"
+        verbose_name_plural = "💾 Cached AI Insights"
+        unique_together = ['user', 'subject', 'engine']
+        indexes = [
+            models.Index(fields=['user', 'subject', 'engine']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.subject or 'All'} - {self.engine} ({self.hits} hits)"
+
+
+class CachedUserAnalytics(models.Model):
+    """
+    Stores collected user learning analytics to avoid re-querying database.
+    Improves page load speed and reduces database queries.
+    """
+    
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cached_analytics',
+        primary_key=True,
+    )
+    
+    analytics_data = models.JSONField(
+        help_text="Collected learning data snapshot"
+    )
+    
+    reads = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    
+    class Meta:
+        verbose_name = "Cached User Analytics"
+        verbose_name_plural = "📊 Cached User Analytics"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.reads} reads"
+
+
+class CacheStatistics(models.Model):
+    """
+    Tracks overall cache performance and token savings.
+    """
+    
+    date = models.DateField(auto_now_add=True, unique=True, db_index=True)
+    
+    ai_insights_generated = models.IntegerField(default=0)
+    ai_insights_cached = models.IntegerField(default=0)
+    ai_insights_hits = models.IntegerField(default=0)
+    ai_tokens_used = models.IntegerField(default=0)
+    ai_tokens_saved = models.IntegerField(default=0)
+    
+    analytics_generated = models.IntegerField(default=0)
+    analytics_cached = models.IntegerField(default=0)
+    
+    class Meta:
+        verbose_name = "Cache Statistics"
+        verbose_name_plural = "📈 Cache Statistics"
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"Cache Stats - {self.date}"
+    
+    def cache_hit_rate(self):
+        """Calculate cache hit rate percentage."""
+        total = self.ai_insights_generated + self.ai_insights_cached
+        if total == 0:
+            return 0
+        return round((self.ai_insights_cached / total) * 100, 2)

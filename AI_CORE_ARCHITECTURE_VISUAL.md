@@ -140,7 +140,8 @@
        └─► Total savings: $0.05 per cache hit!
 ```
 
-**Result**: 
+**Result**:
+
 - First request: $0.05 (850ms)
 - Second request: $0.00 (5ms)
 - **Savings: 100% cost, 99% latency!**
@@ -216,6 +217,7 @@
 ```
 
 **Result**:
+
 - First request: $0.003 (1500ms)
 - Second request: $0.00 (3ms)
 - **Savings: 100% cost, 99.8% latency!**
@@ -412,6 +414,7 @@ Annual savings: $5,832
 ## 🎯 Key Decision Points
 
 ### When to Use Cache?
+
 - ✅ **Always check** (default behavior)
 - ❌ **Skip** (`force_refresh=True`) only when:
   - User explicitly requests "regenerate"
@@ -419,23 +422,27 @@ Annual savings: $5,832
   - Testing new prompts
 
 ### When to Use Auto Mode?
+
 - ✅ **Default** for all routine content
 - ✅ When cost efficiency matters
 - ✅ For most users (they don't care about model)
 
 ### When to Use Manual Mode?
+
 - ✅ Power users who know models
 - ✅ A/B testing different providers
 - ✅ Debugging quality issues
 - ✅ Special requirements (e.g., "must use Claude")
 
 ### When to Mark for Training?
+
 - ✅ Content rated 4.5+ stars by users
 - ✅ Admin manually verified as high quality
 - ✅ Representative of "Zporta style"
 - ✅ No personal/sensitive data
 
 ### When to Fine-Tune?
+
 - ✅ After 1,000+ verified examples
 - ✅ Every 3-6 months (incremental)
 - ✅ When cost savings justify $50-100 training cost

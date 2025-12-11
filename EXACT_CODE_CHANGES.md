@@ -7,9 +7,11 @@ This document shows exactly what was changed in each file.
 ## File 1: `dailycast/models.py` - UserCategoryConfig
 
 ### What Was Changed
+
 Added support for all LLM provider models (not just OpenAI)
 
 ### Before
+
 ```python
 # ===== LLM SETTINGS =====
 default_llm_provider = models.CharField(
@@ -26,6 +28,7 @@ openai_model = models.CharField(
 ```
 
 ### After
+
 ```python
 # ===== LLM SETTINGS =====
 default_llm_provider = models.CharField(
@@ -65,15 +68,17 @@ template_model = models.CharField(  # ✅ Added
 ## File 2: `dailycast/admin.py` - UserCategoryConfigForm
 
 ### What Was Changed
+
 1. Renamed form field from `openai_model` to `llm_model` (generic)
 2. Added smart `save()` method to map to correct provider field
 3. Updated `__init__()` to set correct initial values
 
 ### Before
+
 ```python
 class UserCategoryConfigForm(forms.ModelForm):
     """Custom form for UserCategoryConfig with dropdown for OpenAI models and tooltips."""
-    
+
     default_llm_provider = forms.ChoiceField(
         choices=DailyPodcast.LLM_PROVIDER_CHOICES,
         widget=forms.Select(attrs={
@@ -82,7 +87,7 @@ class UserCategoryConfigForm(forms.ModelForm):
         }),
         help_text="Choose your AI provider"
     )
-    
+
     openai_model = forms.ChoiceField(  # ❌ Hardcoded to OpenAI
         choices=LLM_PROVIDER_MODELS["template"],  # Default to template
         widget=forms.Select(attrs={
@@ -91,7 +96,7 @@ class UserCategoryConfigForm(forms.ModelForm):
         }),
         help_text="Select the model for your chosen provider"
     )
-    
+
     class Meta:
         model = UserCategoryConfig
         fields = [
@@ -109,25 +114,26 @@ class UserCategoryConfigForm(forms.ModelForm):
             'cost_per_generation',
         ]
         # ... widgets ...
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # If editing existing object, set the correct models for the selected provider
         if self.instance and self.instance.pk:
             provider = self.instance.default_llm_provider
             self.fields['openai_model'].choices = LLM_PROVIDER_MODELS.get(
-                provider, 
+                provider,
                 LLM_PROVIDER_MODELS["template"]
             )
             # ❌ Doesn't set initial value for editing
 ```
 
 ### After
+
 ```python
 class UserCategoryConfigForm(forms.ModelForm):
     """Custom form for UserCategoryConfig with dynamic model dropdown based on provider."""
-    
+
     default_llm_provider = forms.ChoiceField(
         choices=DailyPodcast.LLM_PROVIDER_CHOICES,
         widget=forms.Select(attrs={
@@ -136,7 +142,7 @@ class UserCategoryConfigForm(forms.ModelForm):
         }),
         help_text="Choose your AI provider (OpenAI, Gemini, Claude, or Template)"  # ✅ Updated
     )
-    
+
     llm_model = forms.ChoiceField(  # ✅ Renamed: generic name
         choices=LLM_PROVIDER_MODELS["template"],  # Default to template
         widget=forms.Select(attrs={
@@ -146,7 +152,7 @@ class UserCategoryConfigForm(forms.ModelForm):
         help_text="Select the model for your chosen provider. Will auto-update when you change provider.",  # ✅ Better help
         required=False  # ✅ Can be optional for override
     )
-    
+
     class Meta:
         model = UserCategoryConfig
         fields = [
@@ -164,18 +170,18 @@ class UserCategoryConfigForm(forms.ModelForm):
             'cost_per_generation',
         ]
         # ... widgets ...
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # If editing existing object, set the correct models for the selected provider
         if self.instance and self.instance.pk:
             provider = self.instance.default_llm_provider
             self.fields['llm_model'].choices = LLM_PROVIDER_MODELS.get(  # ✅ Changed
-                provider, 
+                provider,
                 LLM_PROVIDER_MODELS["template"]
             )
-            
+
             # ✅ NEW: Set the initial value for llm_model based on provider
             if provider == "openai":
                 self.fields['llm_model'].initial = self.instance.openai_model
@@ -185,15 +191,15 @@ class UserCategoryConfigForm(forms.ModelForm):
                 self.fields['llm_model'].initial = self.instance.claude_model
             else:
                 self.fields['llm_model'].initial = self.instance.template_model
-    
+
     def save(self, commit=True):  # ✅ NEW: Smart mapping method
         """Save the form and map llm_model to the correct provider-specific field."""
         instance = super().save(commit=False)
-        
+
         # Map the selected model back to the provider-specific field
         provider = instance.default_llm_provider
         selected_model = self.cleaned_data.get('llm_model', '')
-        
+
         if provider == "openai":
             instance.openai_model = selected_model
         elif provider == "gemini":
@@ -202,7 +208,7 @@ class UserCategoryConfigForm(forms.ModelForm):
             instance.claude_model = selected_model
         else:
             instance.template_model = selected_model
-        
+
         if commit:
             instance.save()
         return instance
@@ -215,6 +221,7 @@ class UserCategoryConfigForm(forms.ModelForm):
 ### Change 1: UserCategoryConfigInline
 
 **Before:**
+
 ```python
 class UserCategoryConfigInline(admin.StackedInline):
     """Inline admin for category configuration."""
@@ -222,7 +229,7 @@ class UserCategoryConfigInline(admin.StackedInline):
     model = UserCategoryConfig
     extra = 0
     form = UserCategoryConfigForm
-    
+
     fieldsets = (
         ("Basic Settings", {
             "fields": ("enabled", "default_language", "default_output_format")
@@ -238,6 +245,7 @@ class UserCategoryConfigInline(admin.StackedInline):
 ```
 
 **After:**
+
 ```python
 class UserCategoryConfigInline(admin.StackedInline):
     """Inline admin for category configuration."""
@@ -245,7 +253,7 @@ class UserCategoryConfigInline(admin.StackedInline):
     model = UserCategoryConfig
     extra = 0
     form = UserCategoryConfigForm
-    
+
     fieldsets = (
         ("Basic Settings", {
             "fields": ("enabled", "default_language", "default_output_format")
@@ -258,7 +266,7 @@ class UserCategoryConfigInline(admin.StackedInline):
         }),
         # ... other fieldsets ...
     )
-    
+
     class Media:  # ✅ Added
         js = ('dailycast/js/llm_model_selector.js',)
 ```
@@ -268,13 +276,14 @@ class UserCategoryConfigInline(admin.StackedInline):
 ### Change 2: StudentGroupAdmin
 
 **Before:**
+
 ```python
 class StudentGroupAdmin(admin.ModelAdmin):
     """Manage Student Groups and their settings overrides."""
-    
+
     class Media:
         js = ('dailycast/js/llm_model_selector.js',)
-    
+
     list_display = (
         "name",
         "user_count",
@@ -282,9 +291,9 @@ class StudentGroupAdmin(admin.ModelAdmin):
         "config_status",
         "created_date",
     )
-    
+
     # ... list_filter, search_fields, filter_horizontal ...
-    
+
     fieldsets = (
         ("🎓 Group Information", { ... }),
         ("👥 Users", { ... }),
@@ -301,15 +310,16 @@ class StudentGroupAdmin(admin.ModelAdmin):
 ```
 
 **After:**
+
 ```python
 class StudentGroupAdmin(admin.ModelAdmin):
     """Manage Student Groups and their settings overrides."""
-    
+
     class Media:
         js = ('dailycast/js/llm_model_selector.js',)
-    
+
     form = UserCategoryConfigForm  # ✅ Added form
-    
+
     list_display = (
         "name",
         "user_count",
@@ -317,9 +327,9 @@ class StudentGroupAdmin(admin.ModelAdmin):
         "config_status",
         "created_date",
     )
-    
+
     # ... list_filter, search_fields, filter_horizontal ...
-    
+
     fieldsets = (
         ("🎓 Group Information", { ... }),
         ("👥 Users", { ... }),
@@ -340,10 +350,11 @@ class StudentGroupAdmin(admin.ModelAdmin):
 ### Change 3: PerCategoryOverrideAdmin
 
 **Before:**
+
 ```python
 class PerCategoryOverrideAdmin(admin.ModelAdmin):
     """Settings overrides for specific student groups."""
-    
+
     list_display = (
         "category",
         "user_count",
@@ -351,7 +362,7 @@ class PerCategoryOverrideAdmin(admin.ModelAdmin):
         "cost_display",
         "cooldown_display",
     )
-    
+
     fieldsets = (
         ("Settings Override", {
             "fields": (
@@ -364,18 +375,19 @@ class PerCategoryOverrideAdmin(admin.ModelAdmin):
             # ...
         }),
     )
-    
+
     def user_count(self, obj):
         # ...
 ```
 
 **After:**
+
 ```python
 class PerCategoryOverrideAdmin(admin.ModelAdmin):
     """Settings overrides for specific student groups."""
-    
+
     form = UserCategoryConfigForm  # ✅ Added
-    
+
     list_display = (
         "category",
         "user_count",
@@ -383,7 +395,7 @@ class PerCategoryOverrideAdmin(admin.ModelAdmin):
         "cost_display",
         "cooldown_display",
     )
-    
+
     fieldsets = (
         ("Settings Override", {
             "fields": (
@@ -396,10 +408,10 @@ class PerCategoryOverrideAdmin(admin.ModelAdmin):
             # ...
         }),
     )
-    
+
     class Media:  # ✅ Added
         js = ('dailycast/js/llm_model_selector.js',)
-    
+
     def user_count(self, obj):
         # ...
 ```
@@ -409,47 +421,60 @@ class PerCategoryOverrideAdmin(admin.ModelAdmin):
 ## File 4: `llm_model_selector.js` - JavaScript
 
 ### What Was Changed
+
 Updated JavaScript to look for new generic field ID
 
 ### Before
+
 ```javascript
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ LLM Model Selector initialized');
-    
-    // Find the LLM provider dropdown
-    const providerSelect = document.querySelector('.llm-provider-select');
-    const modelSelect = document.getElementById('openai_model_select') ||   // ❌ Hardcoded
-               document.querySelector('select[name="openai_model"]');  // ❌ Hardcoded
-    const priceInput = document.querySelector('input[name="cost_per_generation"]');
-    const wordLimitInput = document.querySelector('input[name="script_word_limit"]');
-    
-    if (!providerSelect || !modelSelect) {
-        console.warn('⚠️ LLM provider or model selector not found');
-        return;
-    }
-    
-    // ... rest of code ...
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("✅ LLM Model Selector initialized");
+
+  // Find the LLM provider dropdown
+  const providerSelect = document.querySelector(".llm-provider-select");
+  const modelSelect =
+    document.getElementById("openai_model_select") || // ❌ Hardcoded
+    document.querySelector('select[name="openai_model"]'); // ❌ Hardcoded
+  const priceInput = document.querySelector(
+    'input[name="cost_per_generation"]'
+  );
+  const wordLimitInput = document.querySelector(
+    'input[name="script_word_limit"]'
+  );
+
+  if (!providerSelect || !modelSelect) {
+    console.warn("⚠️ LLM provider or model selector not found");
+    return;
+  }
+
+  // ... rest of code ...
 });
 ```
 
 ### After
+
 ```javascript
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ LLM Model Selector initialized');
-    
-    // Find the LLM provider dropdown
-    const providerSelect = document.querySelector('.llm-provider-select');
-    const modelSelect = document.getElementById('llm_model_select') ||      // ✅ Generic
-               document.querySelector('select[name="llm_model"]');   // ✅ Generic
-    const priceInput = document.querySelector('input[name="cost_per_generation"]');
-    const wordLimitInput = document.querySelector('input[name="script_word_limit"]');
-    
-    if (!providerSelect || !modelSelect) {
-        console.warn('⚠️ LLM provider or model selector not found');
-        return;
-    }
-    
-    // ... rest of code (unchanged) ...
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("✅ LLM Model Selector initialized");
+
+  // Find the LLM provider dropdown
+  const providerSelect = document.querySelector(".llm-provider-select");
+  const modelSelect =
+    document.getElementById("llm_model_select") || // ✅ Generic
+    document.querySelector('select[name="llm_model"]'); // ✅ Generic
+  const priceInput = document.querySelector(
+    'input[name="cost_per_generation"]'
+  );
+  const wordLimitInput = document.querySelector(
+    'input[name="script_word_limit"]'
+  );
+
+  if (!providerSelect || !modelSelect) {
+    console.warn("⚠️ LLM provider or model selector not found");
+    return;
+  }
+
+  // ... rest of code (unchanged) ...
 });
 ```
 
@@ -457,14 +482,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ## Summary of All Changes
 
-| File | Type | Changes | Status |
-|------|------|---------|--------|
-| `models.py` | Model | Added 3 provider-specific model fields | ✅ |
-| `admin.py` | Form | Renamed field, added save() method | ✅ |
-| `admin.py` | Inline | Updated field reference, added Media | ✅ |
-| `admin.py` | Admin 1 | Added form, updated field reference | ✅ |
-| `admin.py` | Admin 2 | Updated field reference, added Media | ✅ |
-| `llm_model_selector.js` | JavaScript | Updated field ID reference | ✅ |
+| File                    | Type       | Changes                                | Status |
+| ----------------------- | ---------- | -------------------------------------- | ------ |
+| `models.py`             | Model      | Added 3 provider-specific model fields | ✅     |
+| `admin.py`              | Form       | Renamed field, added save() method     | ✅     |
+| `admin.py`              | Inline     | Updated field reference, added Media   | ✅     |
+| `admin.py`              | Admin 1    | Added form, updated field reference    | ✅     |
+| `admin.py`              | Admin 2    | Updated field reference, added Media   | ✅     |
+| `llm_model_selector.js` | JavaScript | Updated field ID reference             | ✅     |
 
 **Total changes: 6 areas, 0 syntax errors, 100% backward compatible**
 
@@ -509,8 +534,8 @@ assert config.openai_model == "gpt-4o-mini"       ✅ (default)
 ### Test 3: Check Database Directly
 
 ```sql
-SELECT 
-    id, 
+SELECT
+    id,
     default_llm_provider,
     openai_model,
     gemini_model,
@@ -541,4 +566,3 @@ LIMIT 5;
   - [ ] Save and reload
   - [ ] Verify correct models saved
 - [ ] Done! ✅
-

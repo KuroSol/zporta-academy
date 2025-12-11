@@ -12,7 +12,9 @@
 ## 📦 What Was Implemented
 
 ### 1. Database Model (`dailycast/models.py`)
+
 ✅ **DailyPodcast** model with fields:
+
 - `user` (FK to auth user)
 - `language` (BCP-47 code: en, ja, es, etc.)
 - `script_text` (generated content via LLM)
@@ -29,17 +31,21 @@
 ---
 
 ### 2. Services (`dailycast/services.py`)
+
 ✅ **Provider Chain (Failover):**
+
 1. Try OpenAI gpt-4o-mini (`OPENAI_API_KEY`)
 2. Fallback to Google Gemini 2.5 flash-lite (`GEMINI_API_KEY`)
 3. Fallback to template string (always works)
 
 ✅ **Audio Synthesis:**
+
 - Amazon Polly TTS (gracefully skipped if AWS credentials missing)
 - Language-aware voice selection (Joanna for EN, Mizuki for JA, etc.)
 - MP3 output to `MEDIA_ROOT/podcasts/`
 
 ✅ **User Stats Collection:**
+
 - Extracts ability level from `intelligence.UserAbilityProfile`
 - Finds weak subjects
 - Gets recent quiz activity from `analytics.ActivityEvent`
@@ -48,7 +54,9 @@
 ---
 
 ### 3. Orchestration (`dailycast/services.py`)
+
 ✅ **`create_podcast_for_user(user, language="en")`**
+
 - Validates user is the configured test user
 - Collects user stats
 - Generates script via LLM provider chain
@@ -60,7 +68,9 @@
 ---
 
 ### 4. Async Task (`dailycast/tasks.py`)
+
 ✅ **Celery Task:** `dailycast.generate_podcast_for_test_user(language)`
+
 - Can be queued via admin button
 - Runs in background worker
 - Admin falls back to sync if Celery not running
@@ -68,7 +78,9 @@
 ---
 
 ### 5. Management Command (`dailycast/management/commands/generate_test_podcast.py`)
+
 ✅ **CLI:** `python manage.py generate_test_podcast --language en`
+
 - Simple command-line way to trigger generation
 - Perfect for testing without admin
 - Supports language parameter
@@ -76,7 +88,9 @@
 ---
 
 ### 6. Django Admin (`dailycast/admin.py`)
+
 ✅ **Admin Interface:**
+
 - **List View:** Shows user, date, language, LLM provider, TTS provider, status
 - **Detail View:**
   - Large textarea for script text
@@ -91,7 +105,9 @@
 ---
 
 ### 7. Settings & Environment (`zporta/settings/base.py`, `.env`)
+
 ✅ **Configuration:**
+
 ```python
 # API Keys
 OPENAI_API_KEY = "sk-proj-..."
@@ -134,14 +150,15 @@ Dailycast: AWS credentials not configured, skipping audio generation
    Audio File: (empty, as expected)
 
 📝 Script preview (first 200 chars):
-   Hello, dear learners! Welcome back to another episode of Daily Learning. 
+   Hello, dear learners! Welcome back to another episode of Daily Learning.
    I'm so glad you're here.
 
-First, let's take a moment to celebrate your progress. You've just completed Quiz 73. 
+First, let's take a moment to celebrate your progress. You've just completed Quiz 73.
 That's a fanta...
 ```
 
 **Analysis:**
+
 - ✅ OpenAI API successfully called
 - ✅ Script generated with personalization (mentions "Quiz 73")
 - ✅ Saved to database
@@ -153,6 +170,7 @@ That's a fanta...
 ## 🚀 How to Use Now
 
 ### Option 1: Command Line (Quickest)
+
 ```bash
 cd zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -160,6 +178,7 @@ python manage.py generate_test_podcast --language en
 ```
 
 ### Option 2: Django Admin (Web UI)
+
 ```bash
 cd zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -198,14 +217,17 @@ dailycast/
 ## 🔧 Configuration Changes
 
 **`zporta/settings/base.py`:**
+
 - Added `'dailycast.apps.DailycastConfig'` to `INSTALLED_APPS`
 - Added API key settings (OPENAI, GEMINI, AWS)
 - Added DAILYCAST_TEST_USER_ID setting
 
 **`requirements.txt`:**
+
 - Added `boto3==1.35.46` for Amazon Polly support
 
 **.env:**
+
 - Configured with your real OpenAI and Gemini API keys
 - AWS keys left empty (optional for now)
 
@@ -214,6 +236,7 @@ dailycast/
 ## ⏭️ Next Phases
 
 ### Phase 2: Enable Audio (When Ready)
+
 1. Get AWS credentials
 2. Add to `.env`:
    ```
@@ -225,6 +248,7 @@ dailycast/
 5. Admin will show playable audio player
 
 ### Phase 3: Frontend API Endpoints (After Audio Works)
+
 ```
 GET  /api/dailycast/can-request/      → Check 24h cooldown
 POST /api/dailycast/generate/          → User triggers generation
@@ -232,6 +256,7 @@ GET  /api/dailycast/today/             → Get latest podcast
 ```
 
 ### Phase 4: Production Deployment
+
 - Deploy to Lightsail
 - Use persistent MEDIA_ROOT directory
 - Configure Celery with Redis
@@ -242,16 +267,19 @@ GET  /api/dailycast/today/             → Get latest podcast
 ## 💡 Design Highlights
 
 ### ✅ Safety First
+
 - User restriction: Only configured test user can request
 - Graceful degradation: Works without AWS credentials
 - Error messages: Detailed logging for debugging
 
 ### ✅ Failure Resilience
+
 - Provider fallback chain (OpenAI → Gemini → Template)
 - Partial success: Script saves even if audio fails
 - Database errors are caught and stored
 
 ### ✅ Django Patterns
+
 - Uses standard Django models, migrations, admin
 - Celery integration (async-ready)
 - Settings from environment (decouple)
@@ -259,6 +287,7 @@ GET  /api/dailycast/today/             → Get latest podcast
 - Type hints (Python 3.10+)
 
 ### ✅ Scalability Ready
+
 - DB indexes on frequently queried fields
 - Async task support for long operations
 - File storage to disk (can add S3 later)
@@ -268,13 +297,14 @@ GET  /api/dailycast/today/             → Get latest podcast
 
 ## 📊 Cost Analysis (Actual)
 
-| Per Podcast | Cost |
-|-------------|------|
-| OpenAI gpt-4o-mini | ~$0.001 |
-| Amazon Polly | $0.008-0.015/min (~$0.10 for 4min) |
-| **Total** | **~$0.10-0.11 per podcast** |
+| Per Podcast        | Cost                               |
+| ------------------ | ---------------------------------- |
+| OpenAI gpt-4o-mini | ~$0.001                            |
+| Amazon Polly       | $0.008-0.015/min (~$0.10 for 4min) |
+| **Total**          | **~$0.10-0.11 per podcast**        |
 
 **For 1000 users:**
+
 - 1 podcast/day = $3,000-3,300/month (all users)
 - On-demand (20% adopt) = $60-66/month
 
@@ -282,17 +312,17 @@ GET  /api/dailycast/today/             → Get latest podcast
 
 ## 🎯 Key Features
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Script generation | ✅ Working | OpenAI + Gemini fallback |
-| Audio synthesis | ✅ Ready | Requires AWS credentials |
-| Admin interface | ✅ Working | Full CRUD + generate button |
-| CLI tool | ✅ Working | management command |
-| Celery async | ✅ Ready | Needs Redis + worker |
+| Feature              | Status     | Notes                        |
+| -------------------- | ---------- | ---------------------------- |
+| Script generation    | ✅ Working | OpenAI + Gemini fallback     |
+| Audio synthesis      | ✅ Ready   | Requires AWS credentials     |
+| Admin interface      | ✅ Working | Full CRUD + generate button  |
+| CLI tool             | ✅ Working | management command           |
+| Celery async         | ✅ Ready   | Needs Redis + worker         |
 | User personalization | ✅ Working | Uses ability profile + stats |
-| Error handling | ✅ Working | Graceful degradation |
-| Multi-language | ✅ Ready | Language parameter supported |
-| Database | ✅ Working | Migrations applied |
+| Error handling       | ✅ Working | Graceful degradation         |
+| Multi-language       | ✅ Ready   | Language parameter supported |
+| Database             | ✅ Working | Migrations applied           |
 
 ---
 
@@ -302,6 +332,7 @@ GET  /api/dailycast/today/             → Get latest podcast
 **This Version:** On-demand generation, test user only, manual trigger
 
 **Why:** You asked to test locally with real APIs first, so this prototype:
+
 - Works NOW with your real keys
 - Doesn't auto-generate (saves cost)
 - Restricted to one user for safety
@@ -332,14 +363,19 @@ GET  /api/dailycast/today/             → Get latest podcast
 ## 📞 Support
 
 ### If you see "OpenAI API: ✗ Missing"
+
 Check `.env` has:
+
 ```
 OPENAI_API_KEY=sk-proj-...your-actual-key...
 ```
+
 (No quotes, no comments)
 
 ### If generation fails
+
 Check logs:
+
 ```bash
 python manage.py shell
 >>> from dailycast.models import DailyPodcast
@@ -348,6 +384,7 @@ python manage.py shell
 ```
 
 ### If you want to test with a different user
+
 1. Find user ID: `python manage.py shell -c "from django.contrib.auth import get_user_model; print([(u.id, u.username) for u in get_user_model().objects.all()[:20]])"`
 2. Edit `.env`: `DAILYCAST_TEST_USER_ID=17` (for alex_sol)
 3. Run: `python manage.py generate_test_podcast`

@@ -1,7 +1,9 @@
 # Visual Guide: Month Range & Reply Size Form Update
 
 ## 🎯 The Challenge
+
 You wanted to add controls for:
+
 1. **WHEN** to include content (month range)
 2. **HOW LONG** the podcast should be (reply size)
 
@@ -95,6 +97,7 @@ You wanted to add controls for:
 ## 🔄 Form → Database → Service
 
 ### Step 1: Form Input
+
 ```python
 # User selects from the form
 month_range = "last_6"      # User chooses "Last 6 Months"
@@ -102,6 +105,7 @@ reply_size = "long"         # User chooses "Long (6-8 min)"
 ```
 
 ### Step 2: Saved to Database
+
 ```python
 podcast = DailyPodcast(
     user=request.user,
@@ -115,6 +119,7 @@ podcast.save()
 ```
 
 ### Step 3: Used in Service
+
 ```python
 new_podcast = create_multilingual_podcast_for_user(
     user=podcast.user,
@@ -131,6 +136,7 @@ new_podcast = create_multilingual_podcast_for_user(
 ## 🎯 Use Case Examples
 
 ### Example 1: Daily Quick Review
+
 ```
 ┌─ Daily Quick Check ──────┐
 │                          │
@@ -142,6 +148,7 @@ Result: Quick 2-minute review of today's progress
 ```
 
 ### Example 2: Weekly Progress Check
+
 ```
 ┌─ Weekly Review ──────────┐
 │                          │
@@ -153,6 +160,7 @@ Result: 4-5 minute weekly summary of recent learning
 ```
 
 ### Example 3: Semester Evaluation
+
 ```
 ┌─ Semester Eval ──────────┐
 │                          │
@@ -164,6 +172,7 @@ Result: Comprehensive 6-8 minute semester review
 ```
 
 ### Example 4: Annual Review
+
 ```
 ┌─ Annual Review ──────────┐
 │                          │
@@ -228,12 +237,12 @@ Columns:
   primary_language VARCHAR(12)
   secondary_language VARCHAR(12)
   output_format VARCHAR(10)
-  
+
   ┌─── NEW COLUMNS ───┐
   │ month_range VARCHAR(20)    │ Stores: current|last_3|last_6|last_12|all
   │ reply_size VARCHAR(20)     │ Stores: short|medium|long|detailed
   └────────────────────┘
-  
+
   status VARCHAR(20)
   created_at DATETIME
   ...
@@ -243,30 +252,33 @@ Columns:
 
 ## ✅ Status
 
-| Component | Status | Location |
-|-----------|--------|----------|
-| Form Fields | ✅ Added | `admin_interactive.py` line ~61-91 |
-| DB Model | ✅ Added | `models.py` line ~87-113 |
-| Migration | ✅ Applied | `migrations/0006_*.py` |
-| Service | ✅ Updated | `services_interactive.py` line ~2019-2091 |
-| Admin View | ✅ Updated | `admin_interactive.py` line ~198-220 |
+| Component   | Status     | Location                                  |
+| ----------- | ---------- | ----------------------------------------- |
+| Form Fields | ✅ Added   | `admin_interactive.py` line ~61-91        |
+| DB Model    | ✅ Added   | `models.py` line ~87-113                  |
+| Migration   | ✅ Applied | `migrations/0006_*.py`                    |
+| Service     | ✅ Updated | `services_interactive.py` line ~2019-2091 |
+| Admin View  | ✅ Updated | `admin_interactive.py` line ~198-220      |
 
 ---
 
 ## 🚀 How to See It in Action
 
 ### Step 1: Access Admin
+
 ```
 URL: http://localhost:8000/admin/
 Login: your admin credentials
 ```
 
 ### Step 2: Navigate
+
 ```
 Sidebar → Dailycast → Daily Podcasts
 ```
 
 ### Step 3: Add/Edit
+
 ```
 Click "Add Podcast" button
 OR
@@ -274,6 +286,7 @@ Click existing podcast to edit
 ```
 
 ### Step 4: Find New Fields
+
 ```
 Scroll down past "Output Format"
 ↓
@@ -283,6 +296,7 @@ See "Reply Size" (radio buttons)
 ```
 
 ### Step 5: Select & Save
+
 ```
 Choose your preferred options
 Click "Save"
@@ -294,14 +308,16 @@ Values are now stored in database!
 ## 🎉 You're All Set!
 
 The form now has:
+
 - ✅ Month Range selector
-- ✅ Reply Size selector  
+- ✅ Reply Size selector
 - ✅ Database storage
 - ✅ Service integration
 
 **Everything is ready to use!**
 
 For more details:
+
 - See `HOW_TO_USE_MONTH_REPLY_SIZE.md` for user guide
 - See `FORM_MONTH_REPLY_SIZE_GUIDE.md` for technical details
 - See `FORM_UPDATE_SUMMARY.md` for quick reference

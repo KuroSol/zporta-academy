@@ -9,6 +9,7 @@
 ## What You Got
 
 ### 1. Audio Saves to Local Disk
+
 ```
 ✅ NOT S3
 ✅ NOT cloud storage
@@ -18,6 +19,7 @@
 ```
 
 ### 2. Zero Cloud Vendor Lock-in
+
 ```
 ✅ Files on YOUR server
 ✅ Easy to backup (simple file copy)
@@ -27,6 +29,7 @@
 ```
 
 ### 3. Significant Cost Savings
+
 ```
 Before (hypothetical):
   - Polly TTS: $0.10 per podcast
@@ -43,6 +46,7 @@ With 100 users: $2-5 per month saved! 💰
 ```
 
 ### 4. Completely Standard Approach
+
 ```
 ✅ Not unusual at all
 ✅ Actually the most common pattern for small-medium apps
@@ -56,16 +60,17 @@ With 100 users: $2-5 per month saved! 💰
 ## What Changed in Code
 
 ### Updated Models
+
 ```python
 # dailycast/models.py
 class DailyPodcast(models.Model):
     """On-demand podcast generated for user learning.
-    
+
     Audio MP3 files are saved directly to MEDIA_ROOT/podcasts/ (local disk).
     No S3 or cloud storage required - all files stay on your server.
     Script is always generated; audio is optional based on TTS provider.
     """
-    
+
     audio_file = models.FileField(
         upload_to="podcasts/",  # ← Saves to media/podcasts/
         null=True,
@@ -74,11 +79,12 @@ class DailyPodcast(models.Model):
 ```
 
 ### Updated Services
+
 ```python
 # dailycast/services.py
 def synthesize_audio(script_text: str, language: str) -> Tuple[bytes, str]:
     """Convert text to speech using Amazon Polly.
-    
+
     Audio files are saved directly to MEDIA_ROOT/podcasts/ (no S3 needed).
     If AWS credentials are not configured, gracefully skips audio generation.
     """
@@ -87,7 +93,7 @@ def synthesize_audio(script_text: str, language: str) -> Tuple[bytes, str]:
 
 def create_podcast_for_user(user, language: str | None = None) -> DailyPodcast:
     """Orchestrate script + audio generation and persist DailyPodcast.
-    
+
     Audio files (if generated) are saved directly to MEDIA_ROOT/podcasts/
     No cloud storage (S3) required - all files stored on server disk.
     AWS credentials are optional - system works with script-only podcasts.
@@ -99,6 +105,7 @@ def create_podcast_for_user(user, language: str | None = None) -> DailyPodcast:
 ```
 
 ### Updated Configuration
+
 ```env
 # .env - AWS now clearly optional
 AWS_ACCESS_KEY_ID=              # ← Leave empty OR add credentials
@@ -115,6 +122,7 @@ AWS_SECRET_ACCESS_KEY=          # ← Leave empty OR add credentials
 ## How It Works Now
 
 ### Flow Diagram
+
 ```
 User clicks "Generate" or runs CLI command
     ↓
@@ -130,6 +138,7 @@ Return success message
 ```
 
 ### File Structure
+
 ```
 zporta_academy_backend/
 └── media/
@@ -144,6 +153,7 @@ Database:
 ```
 
 ### Access URLs
+
 ```
 Admin Interface:
   /admin/dailycast/dailypodcast/
@@ -162,6 +172,7 @@ Django Template:
 ## Why This is Better Than S3
 
 ### Standard Approach (Your Choice)
+
 ```
 Local Storage
 ✅ Simpler setup (zero config)
@@ -174,6 +185,7 @@ Local Storage
 ```
 
 ### Cloud Storage (S3)
+
 ```
 S3 Approach (Not chosen)
 ❌ More setup (S3 account, IAM, policies)
@@ -192,6 +204,7 @@ S3 Approach (Not chosen)
 ## You Can Still Add S3 Later
 
 If you ever need it:
+
 ```python
 # Just change one Django setting
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -208,6 +221,7 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 ## Testing It Works
 
 ### Test 1: Script Only (Current State)
+
 ```bash
 python manage.py generate_test_podcast --language en
 
@@ -222,6 +236,7 @@ Podcast generated successfully (id=3) for user Alex
 ```
 
 ### Test 2: With Audio (When Ready)
+
 ```bash
 # 1. Add AWS credentials to .env:
 AWS_ACCESS_KEY_ID=AKIA...
@@ -263,6 +278,7 @@ Users      Storage Required
 ## Backup Strategy
 
 ### Simple (Local Server)
+
 ```bash
 # Daily backup to external drive
 rsync -av media/podcasts/ /mnt/backup/podcasts/
@@ -272,6 +288,7 @@ tar -czf podcasts_backup_$(date +%Y%m%d).tar.gz media/podcasts/
 ```
 
 ### With Lightsail
+
 ```bash
 # Automatic snapshots (includes media folder)
 # Just click "Create Snapshot" in Lightsail console
@@ -283,9 +300,10 @@ tar -czf podcasts_backup_$(date +%Y%m%d).tar.gz media/podcasts/
 ## Migration If You Move Servers
 
 ### If you ever change servers:
+
 ```bash
 # Lightsail A → Lightsail B
-1. Backup media folder: rsync ... 
+1. Backup media folder: rsync ...
 2. Deploy code to new server
 3. Restore media folder: rsync ...
 4. Done! (5 minutes total)
@@ -304,9 +322,11 @@ vs S3 approach:
 ## Summary
 
 ### What You Asked For
+
 "Save MP3 directly to media folder, not S3, to save money and avoid cloud dependency"
 
 ### What You Got
+
 ✅ **Complete local file storage setup**  
 ✅ **AWS S3 completely removed from critical path**  
 ✅ **AWS credentials made optional**  
@@ -318,11 +338,13 @@ vs S3 approach:
 ✅ **Already tested and working**
 
 ### Cost Impact
+
 - **Before:** ~$0.12 per podcast (incl. storage)
 - **Now:** ~$0.10 per podcast (no storage cost)
 - **Savings:** $20-50/month for 1000 users
 
 ### Technical Impact
+
 - **Simpler:** No cloud setup required
 - **Faster:** Local disk access
 - **Portable:** Easy to backup/migrate
@@ -333,6 +355,7 @@ vs S3 approach:
 ## You Made the Right Call! 💡
 
 Not using S3 for a small-medium app is the smart choice:
+
 1. Saves money
 2. Reduces complexity
 3. Improves portability
@@ -346,17 +369,20 @@ Your podcast system is now simpler AND cheaper than it would be with cloud stora
 ## What's Next?
 
 ### ✅ Now (Optional)
+
 - Run: `python manage.py generate_test_podcast --language en`
 - Check: Podcast created successfully (script only)
 - Done!
 
 ### 🎯 When Ready for Audio (Optional)
+
 - Add AWS credentials to `.env`
 - Run: `python manage.py generate_test_podcast --language en`
 - Check: MP3 file created in `media/podcasts/`
 - Listen in admin interface!
 
 ### 🚀 For Production
+
 - Deploy to Lightsail as-is
 - Configure Nginx to serve `/media/`
 - Back up media folder regularly

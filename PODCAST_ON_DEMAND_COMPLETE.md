@@ -12,12 +12,14 @@
 ### What Changed from Original Plan?
 
 **ORIGINAL PLAN (Version 1.0):**
+
 - ❌ Automatic generation for all users daily (3 AM UTC)
 - ❌ Generate even if user doesn't use it
 - ❌ Cost: $0.55/user/month × 1000 users = $550/month
 - ❌ 70% waste (users who never listen still cost money)
 
 **NEW PLAN (Version 2.0 - This Document):**
+
 - ✅ On-demand generation (user clicks button)
 - ✅ 24-hour cooldown (prevent spam)
 - ✅ Two options: Text-only (cheap) or Text+Audio (normal)
@@ -190,17 +192,17 @@ User = get_user_model()
 class DailyPodcast(models.Model):
     """
     On-demand personalized podcast system.
-    
+
     User triggers generation (not automatic).
     Can request once per 24 hours.
     Can choose text-only (cheap) or text+audio (normal cost).
     """
-    
+
     CONTENT_TYPE_CHOICES = [
         ('text_only', 'Text Only (No Audio)'),
         ('text_audio', 'Text + Audio'),
     ]
-    
+
     STATUS_CHOICES = [
         ('pending', 'Pending Generation'),
         ('generating_script', 'Generating Script'),
@@ -208,38 +210,38 @@ class DailyPodcast(models.Model):
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
-    
+
     # Core fields
     user = models.ForeignKey(
-        User, 
+        User,
         on_delete=models.CASCADE,
         related_name='daily_podcasts',
         db_index=True
     )
-    
+
     date = models.DateField(
         auto_now_add=True,
         db_index=True,
         help_text="Date when podcast was generated"
     )
-    
+
     # Content
     script_text = models.TextField(
         help_text="Generated podcast script (always created)"
     )
-    
+
     audio_url = models.URLField(
         max_length=500,
         null=True,
         blank=True,
         help_text="S3 URL to MP3 (null if text-only)"
     )
-    
+
     duration_seconds = models.PositiveIntegerField(
         default=0,
         help_text="Audio duration (0 if text-only)"
     )
-    
+
     # NEW: On-demand tracking
     content_type = models.CharField(
         max_length=20,
@@ -247,23 +249,23 @@ class DailyPodcast(models.Model):
         default='text_audio',
         help_text="What user requested"
     )
-    
+
     requested_by_user = models.BooleanField(
         default=True,
         help_text="True = user clicked button (not automatic)"
     )
-    
+
     user_requested_at = models.DateTimeField(
         auto_now_add=True,
         db_index=True,
         help_text="When user clicked generate button"
     )
-    
+
     next_available_at = models.DateTimeField(
         db_index=True,
         help_text="When user can request next podcast (24h cooldown)"
     )
-    
+
     # Generation metadata
     ai_model_used = models.CharField(
         max_length=50,
@@ -274,7 +276,7 @@ class DailyPodcast(models.Model):
         ],
         default='gpt-4o-mini'
     )
-    
+
     tts_provider = models.CharField(
         max_length=50,
         choices=[
@@ -285,25 +287,25 @@ class DailyPodcast(models.Model):
         ],
         default='none'
     )
-    
+
     metadata = models.JSONField(
         default=dict,
         blank=True,
         help_text="Generation details, weak areas, cost tracking"
     )
-    
+
     status = models.CharField(
         max_length=30,
         choices=STATUS_CHOICES,
         default='pending',
         db_index=True
     )
-    
+
     error_message = models.TextField(
         blank=True,
         null=True
     )
-    
+
     # Cost tracking (optional, for analytics)
     llm_cost = models.DecimalField(
         max_digits=6,
@@ -311,28 +313,28 @@ class DailyPodcast(models.Model):
         default=0.0000,
         help_text="Cost in USD for LLM generation"
     )
-    
+
     tts_cost = models.DecimalField(
         max_digits=6,
         decimal_places=4,
         default=0.0000,
         help_text="Cost in USD for TTS conversion"
     )
-    
+
     storage_cost = models.DecimalField(
         max_digits=6,
         decimal_places=4,
         default=0.0000,
         help_text="Cost in USD for S3 storage"
     )
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    
+
     is_active = models.BooleanField(default=True)
-    
+
     class Meta:
         ordering = ['-user_requested_at']
         indexes = [
@@ -342,21 +344,21 @@ class DailyPodcast(models.Model):
         ]
         verbose_name = "Daily Podcast"
         verbose_name_plural = "Daily Podcasts"
-    
+
     def __str__(self):
         return f"Podcast for {self.user.username} on {self.date} ({self.content_type})"
-    
+
     def save(self, *args, **kwargs):
         # Auto-set next_available_at if not set
         if not self.next_available_at:
             self.next_available_at = timezone.now() + timedelta(hours=24)
         super().save(*args, **kwargs)
-    
+
     @property
     def total_cost(self):
         """Total cost in USD"""
         return float(self.llm_cost + self.tts_cost + self.storage_cost)
-    
+
     @property
     def can_user_request_again(self):
         """Check if 24h cooldown has passed"""
@@ -383,17 +385,17 @@ from .models import DailyPodcast
 class CanRequestPodcastView(APIView):
     """
     GET /api/dailycast/can-request/
-    
+
     Check if user can request a new podcast (24h cooldown).
     """
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         # Get user's most recent podcast
         last_podcast = DailyPodcast.objects.filter(
             user=request.user
         ).order_by('-user_requested_at').first()
-        
+
         if not last_podcast:
             # Never requested before
             return Response({
@@ -402,7 +404,7 @@ class CanRequestPodcastView(APIView):
                 'next_available_at': None,
                 'seconds_until_available': 0
             })
-        
+
         # Check if cooldown passed
         now = timezone.now()
         if now >= last_podcast.next_available_at:
@@ -417,7 +419,7 @@ class CanRequestPodcastView(APIView):
             seconds_left = (last_podcast.next_available_at - now).total_seconds()
             hours_left = int(seconds_left / 3600)
             minutes_left = int((seconds_left % 3600) / 60)
-            
+
             return Response({
                 'can_request': False,
                 'message': f'Next podcast available in {hours_left}h {minutes_left}m',
@@ -434,25 +436,25 @@ class CanRequestPodcastView(APIView):
 class RequestPodcastView(APIView):
     """
     POST /api/dailycast/generate/
-    
+
     User requests podcast generation.
     Body: { "content_type": "text_only" | "text_audio" }
     """
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         content_type = request.data.get('content_type', 'text_audio')
-        
+
         if content_type not in ['text_only', 'text_audio']:
             return Response({
                 'error': 'Invalid content_type. Must be "text_only" or "text_audio"'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Check if user can request (24h cooldown)
         last_podcast = DailyPodcast.objects.filter(
             user=request.user
         ).order_by('-user_requested_at').first()
-        
+
         if last_podcast and timezone.now() < last_podcast.next_available_at:
             seconds_left = (last_podcast.next_available_at - timezone.now()).total_seconds()
             return Response({
@@ -461,7 +463,7 @@ class RequestPodcastView(APIView):
                 'next_available_at': last_podcast.next_available_at.isoformat(),
                 'seconds_until_available': int(seconds_left)
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
-        
+
         # Create pending podcast
         podcast = DailyPodcast.objects.create(
             user=request.user,
@@ -470,11 +472,11 @@ class RequestPodcastView(APIView):
             requested_by_user=True,
             # next_available_at auto-set in save()
         )
-        
+
         # Queue generation task (async)
         from .tasks import generate_podcast_task
         generate_podcast_task.delay(podcast.id)
-        
+
         return Response({
             'status': 'queued',
             'message': 'Your podcast is being generated',
@@ -491,26 +493,26 @@ class RequestPodcastView(APIView):
 class TodayPodcastView(APIView):
     """
     GET /api/dailycast/today/
-    
+
     Get user's most recent podcast (if exists).
     """
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         podcast = DailyPodcast.objects.filter(
             user=request.user,
             is_active=True
         ).order_by('-user_requested_at').first()
-        
+
         if not podcast:
             return Response({
                 'podcast': None,
                 'message': 'No podcast generated yet. Click "Generate" to create one!'
             }, status=status.HTTP_200_OK)
-        
+
         from .serializers import DailyPodcastSerializer
         serializer = DailyPodcastSerializer(podcast)
-        
+
         return Response({
             'podcast': serializer.data,
             'can_request_new': podcast.can_user_request_again
@@ -566,43 +568,43 @@ def generate_podcast_task(podcast_id):
         convert_text_to_audio,
         upload_audio_to_s3
     )
-    
+
     try:
         podcast = DailyPodcast.objects.get(id=podcast_id)
         user = podcast.user
-        
+
         logger.info(f"Starting podcast generation for user {user.id} (type: {podcast.content_type})")
-        
+
         # 1. Collect user data
         podcast.status = 'generating_script'
         podcast.save()
-        
+
         user_data = collect_user_data(user)
-        
+
         # 2. Generate script
         script, llm_provider = generate_script_with_llm(user_data)
         podcast.script_text = script
         podcast.ai_model_used = llm_provider
         podcast.llm_cost = 0.0015  # Approx GPT-4o mini cost
         podcast.save()
-        
+
         logger.info(f"Script generated for user {user.id} using {llm_provider}")
-        
+
         # 3. Generate audio (if requested)
         if podcast.content_type == 'text_audio':
             podcast.status = 'generating_audio'
             podcast.save()
-            
+
             audio_bytes, tts_provider = convert_text_to_audio(script, user)
             podcast.tts_provider = tts_provider
             podcast.tts_cost = 0.15  # Approx TTS cost
-            
+
             # Upload to S3
             audio_url = upload_audio_to_s3(audio_bytes, user.id, podcast.id)
             podcast.audio_url = audio_url
             podcast.storage_cost = 0.001  # S3 cost
             podcast.duration_seconds = estimate_audio_duration(script)
-            
+
             logger.info(f"Audio generated for user {user.id} using {tts_provider}")
         else:
             # Text only - no audio
@@ -610,22 +612,22 @@ def generate_podcast_task(podcast_id):
             podcast.tts_cost = 0.0
             podcast.audio_url = None
             podcast.duration_seconds = 0
-        
+
         # 4. Mark complete
         podcast.status = 'completed'
         podcast.completed_at = timezone.now()
         podcast.save()
-        
+
         logger.info(f"✓ Podcast completed for user {user.id} (total cost: ${podcast.total_cost:.4f})")
-        
+
         # 5. Notify user (optional)
         # send_notification(user, "Your podcast is ready!")
-        
+
         return f"Success: Podcast {podcast.id} generated"
-        
+
     except Exception as e:
         logger.error(f"✗ Error generating podcast {podcast_id}: {e}", exc_info=True)
-        
+
         try:
             podcast = DailyPodcast.objects.get(id=podcast_id)
             podcast.status = 'failed'
@@ -633,7 +635,7 @@ def generate_podcast_task(podcast_id):
             podcast.save()
         except:
             pass
-        
+
         return f"Failed: {e}"
 
 
@@ -654,49 +656,49 @@ def estimate_audio_duration(script_text):
 ```jsx
 // components/DailyPodcastWidget.js
 
-import React, { useState, useEffect } from 'react';
-import apiClient from '@/api';
-import styles from '@/styles/DailyPodcast.module.css';
+import React, { useState, useEffect } from "react";
+import apiClient from "@/api";
+import styles from "@/styles/DailyPodcast.module.css";
 
 export default function DailyPodcastWidget() {
   const [podcast, setPodcast] = useState(null);
   const [canRequest, setCanRequest] = useState(false);
   const [cooldownInfo, setCooldownInfo] = useState(null);
-  const [contentType, setContentType] = useState('text_audio');
+  const [contentType, setContentType] = useState("text_audio");
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Check if user can request
   useEffect(() => {
     checkCanRequest();
     loadExistingPodcast();
-    
+
     // Poll every 10 seconds if generating
     const interval = setInterval(() => {
       if (generating) {
         loadExistingPodcast();
       }
     }, 10000);
-    
+
     return () => clearInterval(interval);
   }, [generating]);
 
   const checkCanRequest = async () => {
     try {
-      const { data } = await apiClient.get('/api/dailycast/can-request/');
+      const { data } = await apiClient.get("/api/dailycast/can-request/");
       setCanRequest(data.can_request);
       setCooldownInfo(data);
     } catch (err) {
-      console.error('Error checking request status:', err);
+      console.error("Error checking request status:", err);
     }
   };
 
   const loadExistingPodcast = async () => {
     try {
-      const { data } = await apiClient.get('/api/dailycast/today/');
+      const { data } = await apiClient.get("/api/dailycast/today/");
       if (data.podcast) {
         setPodcast(data.podcast);
-        setGenerating(data.podcast.status !== 'completed');
+        setGenerating(data.podcast.status !== "completed");
       }
     } catch (err) {
       // No podcast yet, that's OK
@@ -704,63 +706,75 @@ export default function DailyPodcastWidget() {
   };
 
   const handleGenerateClick = async () => {
-    setError('');
+    setError("");
     setGenerating(true);
-    
+
     try {
-      const { data } = await apiClient.post('/api/dailycast/generate/', {
-        content_type: contentType
+      const { data } = await apiClient.post("/api/dailycast/generate/", {
+        content_type: contentType,
       });
-      
+
       // Success - start polling
       setTimeout(loadExistingPodcast, 5000);
-      
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to generate podcast');
+      setError(err.response?.data?.message || "Failed to generate podcast");
       setGenerating(false);
     }
   };
 
   // Show existing podcast
-  if (podcast && podcast.status === 'completed') {
+  if (podcast && podcast.status === "completed") {
     return (
       <div className={styles.podcastCard}>
         <h3>🎧 Your Daily Podcast</h3>
-        
+
         <div className={styles.podcastInfo}>
-          <span className={styles.badge}>{podcast.content_type === 'text_only' ? '📝 Text Only' : '🎵 Audio'}</span>
-          <span className={styles.date}>Generated {formatRelativeTime(podcast.user_requested_at)}</span>
+          <span className={styles.badge}>
+            {podcast.content_type === "text_only" ? "📝 Text Only" : "🎵 Audio"}
+          </span>
+          <span className={styles.date}>
+            Generated {formatRelativeTime(podcast.user_requested_at)}
+          </span>
         </div>
-        
+
         {/* Audio Player (if has audio) */}
         {podcast.audio_url && (
           <div className={styles.audioPlayer}>
             <audio controls src={podcast.audio_url} className={styles.audio}>
               Your browser does not support audio playback.
             </audio>
-            <p className={styles.duration}>{formatDuration(podcast.duration_seconds)}</p>
+            <p className={styles.duration}>
+              {formatDuration(podcast.duration_seconds)}
+            </p>
           </div>
         )}
-        
+
         {/* Script Text */}
         <div className={styles.transcript}>
           <h4>Transcript</h4>
           <p className={styles.scriptText}>{podcast.script_text}</p>
         </div>
-        
+
         {/* Next Available */}
         <div className={styles.cooldown}>
           {canRequest ? (
-            <button onClick={() => { setPodcast(null); setCanRequest(true); }} className={styles.btnNew}>
+            <button
+              onClick={() => {
+                setPodcast(null);
+                setCanRequest(true);
+              }}
+              className={styles.btnNew}
+            >
               🔄 Generate New Podcast
             </button>
           ) : (
             <p className={styles.cooldownText}>
-              ⏰ Next podcast available {formatRelativeTime(podcast.next_available_at)}
+              ⏰ Next podcast available{" "}
+              {formatRelativeTime(podcast.next_available_at)}
             </p>
           )}
         </div>
-        
+
         {/* Cost Info (optional, for transparency) */}
         {podcast.total_cost > 0 && (
           <p className={styles.costInfo}>
@@ -772,16 +786,14 @@ export default function DailyPodcastWidget() {
   }
 
   // Show generating state
-  if (generating || (podcast && podcast.status !== 'completed')) {
+  if (generating || (podcast && podcast.status !== "completed")) {
     return (
       <div className={styles.podcastCard}>
         <div className={styles.generating}>
           <div className={styles.spinner}></div>
           <h3>🎙️ Generating Your Podcast...</h3>
           <p>This will take 30-120 seconds depending on your choice</p>
-          {podcast && (
-            <p className={styles.status}>Status: {podcast.status}</p>
-          )}
+          {podcast && <p className={styles.status}>Status: {podcast.status}</p>}
         </div>
       </div>
     );
@@ -794,9 +806,9 @@ export default function DailyPodcastWidget() {
       <p className={styles.description}>
         Get a personalized 3-6 minute podcast about your weak areas and progress
       </p>
-      
+
       {error && <p className={styles.error}>❌ {error}</p>}
-      
+
       {/* Content Type Selection */}
       <div className={styles.options}>
         <label className={styles.optionLabel}>
@@ -804,20 +816,20 @@ export default function DailyPodcastWidget() {
             type="radio"
             name="contentType"
             value="text_only"
-            checked={contentType === 'text_only'}
+            checked={contentType === "text_only"}
             onChange={(e) => setContentType(e.target.value)}
           />
           <span className={styles.optionText}>
             📝 <strong>Text Only</strong> (Free, ready in 30 seconds)
           </span>
         </label>
-        
+
         <label className={styles.optionLabel}>
           <input
             type="radio"
             name="contentType"
             value="text_audio"
-            checked={contentType === 'text_audio'}
+            checked={contentType === "text_audio"}
             onChange={(e) => setContentType(e.target.value)}
           />
           <span className={styles.optionText}>
@@ -825,7 +837,7 @@ export default function DailyPodcastWidget() {
           </span>
         </label>
       </div>
-      
+
       {/* Generate Button */}
       <button
         onClick={handleGenerateClick}
@@ -835,10 +847,13 @@ export default function DailyPodcastWidget() {
         {canRequest ? (
           <>🎬 Generate Podcast</>
         ) : (
-          <>⏰ Available in {cooldownInfo?.hours_until_available || 0}h {cooldownInfo?.minutes_until_available || 0}m</>
+          <>
+            ⏰ Available in {cooldownInfo?.hours_until_available || 0}h{" "}
+            {cooldownInfo?.minutes_until_available || 0}m
+          </>
         )}
       </button>
-      
+
       {!canRequest && cooldownInfo && (
         <p className={styles.cooldownHint}>
           You can request one podcast every 24 hours to keep costs low
@@ -855,7 +870,7 @@ function formatRelativeTime(isoString) {
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
-  
+
   if (diffMins < 60) return `${diffMins} minutes ago`;
   if (diffHours < 24) return `${diffHours} hours ago`;
   return date.toLocaleDateString();
@@ -864,7 +879,7 @@ function formatRelativeTime(isoString) {
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 ```
 
@@ -878,7 +893,7 @@ function formatDuration(seconds) {
   border-radius: 16px;
   padding: 24px;
   color: white;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   margin-bottom: 24px;
 }
 
@@ -904,14 +919,14 @@ function formatDuration(seconds) {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .optionLabel:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .optionLabel input[type="radio"] {
@@ -934,7 +949,7 @@ function formatDuration(seconds) {
 
 .btnGenerate:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btnGenerate:disabled {
@@ -952,7 +967,7 @@ function formatDuration(seconds) {
 }
 
 .transcript {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   padding: 16px;
   border-radius: 8px;
   margin-top: 16px;
@@ -973,7 +988,7 @@ function formatDuration(seconds) {
 }
 
 .spinner {
-  border: 4px solid rgba(255,255,255,0.3);
+  border: 4px solid rgba(255, 255, 255, 0.3);
   border-top: 4px solid white;
   border-radius: 50%;
   width: 50px;
@@ -983,8 +998,12 @@ function formatDuration(seconds) {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .cooldownText {
@@ -994,7 +1013,7 @@ function formatDuration(seconds) {
 }
 
 .error {
-  background: rgba(255,0,0,0.3);
+  background: rgba(255, 0, 0, 0.3);
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -1006,6 +1025,7 @@ function formatDuration(seconds) {
 ## 🎯 IMPLEMENTATION PHASES
 
 ### Phase 1: Database & Models (1 day)
+
 ```bash
 ☐ Create dailycast app
 ☐ Create DailyPodcast model with new fields
@@ -1015,6 +1035,7 @@ function formatDuration(seconds) {
 ```
 
 ### Phase 2: API Endpoints (1 day)
+
 ```bash
 ☐ Implement CanRequestPodcastView
 ☐ Implement RequestPodcastView
@@ -1025,6 +1046,7 @@ function formatDuration(seconds) {
 ```
 
 ### Phase 3: Generation Service (2 days)
+
 ```bash
 ☐ Create services.py (LLM, TTS, S3)
 ☐ Create tasks.py (Celery task)
@@ -1035,6 +1057,7 @@ function formatDuration(seconds) {
 ```
 
 ### Phase 4: Frontend (2 days)
+
 ```bash
 ☐ Create DailyPodcastWidget component
 ☐ Add to StudyDashboard
@@ -1044,6 +1067,7 @@ function formatDuration(seconds) {
 ```
 
 ### Phase 5: Testing & Deploy (1 day)
+
 ```bash
 ☐ Test complete flow
 ☐ Test 24h cooldown
@@ -1059,6 +1083,7 @@ function formatDuration(seconds) {
 ## 💡 TIER STRATEGY (MONETIZATION)
 
 ### Free Tier
+
 ```
 ✓ 1 podcast per week (7-day cooldown)
 ✓ Text-only (no audio)
@@ -1067,6 +1092,7 @@ function formatDuration(seconds) {
 ```
 
 ### Premium Tier ($9.99/month)
+
 ```
 ✓ Unlimited podcasts (24h cooldown)
 ✓ Text + Audio
@@ -1076,6 +1102,7 @@ function formatDuration(seconds) {
 ```
 
 ### Enterprise Tier ($29.99/month)
+
 ```
 ✓ Unlimited podcasts (12h cooldown)
 ✓ Text + Audio + Custom voices
@@ -1134,14 +1161,14 @@ After 1 week in production:
 
 ## 🆘 TROUBLESHOOTING
 
-| Issue | Solution |
-|-------|----------|
+| Issue                          | Solution                                                      |
+| ------------------------------ | ------------------------------------------------------------- |
 | "Can't request" but 24h passed | Check next_available_at timezone, ensure using timezone.now() |
-| Script generated but no audio | Check content_type field, ensure 'text_audio' |
-| Cost too high | Monitor usage, ensure free tier limits enforced |
-| Generation takes too long | Check Celery worker load, add more workers |
-| Users spam requests | Verify 24h cooldown in API, add rate limiting |
-| Audio quality poor | Switch to premium TTS (Google/Azure) |
+| Script generated but no audio  | Check content_type field, ensure 'text_audio'                 |
+| Cost too high                  | Monitor usage, ensure free tier limits enforced               |
+| Generation takes too long      | Check Celery worker load, add more workers                    |
+| Users spam requests            | Verify 24h cooldown in API, add rate limiting                 |
+| Audio quality poor             | Switch to premium TTS (Google/Azure)                          |
 
 ---
 
@@ -1156,15 +1183,18 @@ After 1 week in production:
 ✅ **Tier system ready** (free/premium/enterprise)  
 ✅ **Complete working code** (copy-paste ready)  
 ✅ **Frontend component** (React + CSS)  
-✅ **Cost tracking** (per request analytics)  
+✅ **Cost tracking** (per request analytics)
 
 ### Implementation Time
+
 **7 days (1 week)** with 1 backend developer
 
 ### Cost
+
 **$150-300/month** for 1000 active users (vs. $550 automatic)
 
 ### Next Steps
+
 1. Review this document
 2. Approve the on-demand approach
 3. Start Phase 1 (database models)
@@ -1174,4 +1204,3 @@ After 1 week in production:
 
 **This is the COMPLETE specification for the cost-optimized on-demand podcast system.  
 Everything you need is in this single document.** 🚀
-

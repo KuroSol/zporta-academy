@@ -3,23 +3,27 @@
 ## Phase 1: Foundation (✅ COMPLETE)
 
 - ✅ Created `TeacherContentConfig` Django model
+
   - Location: `dailycast/models.py`
   - 25+ configurable fields
   - Singleton pattern with `get_config()` method
 
 - ✅ Created Django Admin Interface
+
   - Location: `dailycast/admin.py`
   - 10 organized fieldsets
   - Help text for every field
   - Direct access to config
 
 - ✅ Created Config Helper Functions
+
   - Location: `dailycast/config_helpers.py`
   - 30+ helper functions
   - Consistent API
   - Safe defaults
 
 - ✅ Created Database Migration
+
   - Location: `dailycast/migrations/0005_*.py`
   - Applied to database ✅
   - TeacherContentConfig table ready
@@ -40,6 +44,7 @@
 **Goal:** Use config for TTS provider and settings
 
 **What to do:**
+
 ```python
 # Add at top of file
 from dailycast.config_helpers import (
@@ -60,12 +65,14 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/services_interactive.py`
   - Function: `synthesize_audio_for_language()`
   - Function: `synthesize_single_language_audio()`
   - Function: `synthesize_bilingual_audio()`
 
 **Testing:**
+
 - [ ] Generate content and verify it uses configured TTS provider
 - [ ] Check logs for `[CONFIG_DEBUG]` messages
 - [ ] Try different TTS providers in admin, test each
@@ -77,6 +84,7 @@ from dailycast.config_helpers import (
 **Goal:** Use config for prompt word limits and generation settings
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -94,11 +102,13 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/views_admin_ajax.py`
   - Function: `build_prompt_for_script_generation()`
   - Any place with hardcoded word limits or question counts
 
 **Testing:**
+
 - [ ] Generate script with "short" note
 - [ ] Verify it uses `script_word_limit_short` from config
 - [ ] Generate normal script
@@ -112,6 +122,7 @@ from dailycast.config_helpers import (
 **Goal:** Use config for LLM provider and model selection
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -129,10 +140,12 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/services.py`
   - Any place with hardcoded LLM models or providers
 
 **Testing:**
+
 - [ ] Change `default_llm_provider` in admin
 - [ ] Generate content and verify correct provider used
 - [ ] Try different models (gpt-4, gpt-4o-mini, etc)
@@ -144,6 +157,7 @@ from dailycast.config_helpers import (
 **Goal:** Use custom prompts from config instead of hardcoded ones
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -162,10 +176,12 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/views_admin_ajax.py` or similar
   - Any functions building LLM prompts
 
 **Testing:**
+
 - [ ] Modify prompts in admin
 - [ ] Generate content and verify new prompts used
 - [ ] Verify tone/style changes affect output
@@ -177,6 +193,7 @@ from dailycast.config_helpers import (
 **Goal:** Use config for cooldown and quota checking
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -193,10 +210,12 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/services_interactive.py`
   - Function: `can_generate_podcast()`
 
 **Testing:**
+
 - [ ] Set cooldown to 0 (unlimited) and test rapid generation
 - [ ] Set cooldown to 24 hours and test rate limiting
 - [ ] Set max_per_day to 3 and verify limit enforced
@@ -208,6 +227,7 @@ from dailycast.config_helpers import (
 **Goal:** Use config for cost per generation
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -224,10 +244,12 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] Any place handling credits/payment
 - [ ] Generation cost calculation
 
 **Testing:**
+
 - [ ] Enable credit system with cost 1.00
 - [ ] Verify generation deducts 1.00 credits
 - [ ] Change cost in admin, verify new cost used
@@ -239,6 +261,7 @@ from dailycast.config_helpers import (
 **Goal:** Use config for bilingual settings
 
 **What to do:**
+
 ```python
 # Add at top
 from dailycast.config_helpers import (
@@ -256,10 +279,12 @@ from dailycast.config_helpers import (
 ```
 
 **Files to modify:**
+
 - [ ] `dailycast/services_interactive.py`
   - Bilingual generation logic
 
 **Testing:**
+
 - [ ] Enable bilingual with EN+JA pair
 - [ ] Generate bilingual content
 - [ ] Try different pairs in config
@@ -270,6 +295,7 @@ from dailycast.config_helpers import (
 ## Phase 3: Testing (🔄 TODO)
 
 - [ ] Test 1: Verify config reads from database
+
   ```bash
   python manage.py shell
   from dailycast.config_helpers import get_tts_provider
@@ -277,24 +303,28 @@ from dailycast.config_helpers import (
   ```
 
 - [ ] Test 2: Change one setting in admin
+
   - Change `default_tts_provider` to "google"
   - Generate content
   - Verify it uses Google TTS
   - Check logs for confirmation
 
 - [ ] Test 3: Change script word limit
+
   - Set `script_word_limit_normal` to 200
   - Generate content
   - Verify script is ~200 words
   - Set back to 700, verify longer script
 
 - [ ] Test 4: Change LLM provider
+
   - Set `default_llm_provider` to "gemini"
   - Generate content
   - Verify it uses Gemini
   - Try switching between providers
 
 - [ ] Test 5: Test all helpers
+
   - Run each helper function
   - Verify they return expected values
   - Test with different config settings
@@ -389,21 +419,25 @@ from dailycast.config_helpers import (
 ## Next Immediate Steps
 
 1. **Choose a file to update first**
+
    - I recommend starting with `services_interactive.py`
    - Most straightforward changes
    - Most impact on functionality
 
 2. **Make changes**
+
    - Add imports for config helpers
    - Replace hardcoded values with helper function calls
    - Test the specific function
 
 3. **Move to next file**
+
    - Follow the same pattern
    - Test as you go
    - Commit regularly
 
 4. **Run end-to-end test**
+
    - Generate content with new config
    - Verify custom settings are used
    - Try changing settings in admin
@@ -417,14 +451,14 @@ from dailycast.config_helpers import (
 
 ## Estimated Time per Phase
 
-| Phase | Estimated Time | Status |
-|-------|----------------|--------|
-| Phase 1: Foundation | 30 min | ✅ DONE |
-| Phase 2: Integration | 2-3 hours | 🔄 TODO |
-| Phase 3: Testing | 1-2 hours | 🔄 TODO |
-| Phase 4: Docs | 1 hour | ✅ DONE |
-| Phase 5: Deploy | 30 min | 🔄 TODO |
-| **TOTAL** | **~5-7 hours** | |
+| Phase                | Estimated Time | Status  |
+| -------------------- | -------------- | ------- |
+| Phase 1: Foundation  | 30 min         | ✅ DONE |
+| Phase 2: Integration | 2-3 hours      | 🔄 TODO |
+| Phase 3: Testing     | 1-2 hours      | 🔄 TODO |
+| Phase 4: Docs        | 1 hour         | ✅ DONE |
+| Phase 5: Deploy      | 30 min         | 🔄 TODO |
+| **TOTAL**            | **~5-7 hours** |         |
 
 ---
 
@@ -442,6 +476,7 @@ from dailycast.config_helpers import (
 ## Questions?
 
 Refer to:
+
 - `TEACHER_CONFIG_GUIDE.md` - Detailed feature guide
 - `QUICK_REFERENCE_CONFIG.md` - Quick answers
 - `CONFIG_ARCHITECTURE.md` - How it works

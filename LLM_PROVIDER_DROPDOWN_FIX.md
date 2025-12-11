@@ -15,6 +15,7 @@ You were right! The form had three issues:
 3. **Misspelling risk**: If you typed in the wrong model name, it would save as-is with no validation
 
 ### What Users Experienced
+
 - Select "Gemini" as provider
 - Model dropdown still shows "OpenAI GPT-4o Mini"
 - Users accidentally select wrong models
@@ -27,6 +28,7 @@ You were right! The form had three issues:
 Completely redesigned the form field system:
 
 ### 1. **Model Structure** (UserCategoryConfig)
+
 ```python
 # BEFORE: Only OpenAI
 openai_model = models.CharField(max_length=50, default="gpt-4o-mini")
@@ -39,6 +41,7 @@ template_model = models.CharField(max_length=50, default="template", blank=True)
 ```
 
 ### 2. **Form Field** (UserCategoryConfigForm)
+
 ```python
 # BEFORE: Hardcoded to openai
 openai_model = forms.ChoiceField(
@@ -56,16 +59,17 @@ llm_model = forms.ChoiceField(
 ```
 
 ### 3. **Form Save Logic**
+
 New `save()` method that maps the selected model to the correct provider field:
 
 ```python
 def save(self, commit=True):
     """Save the form and map llm_model to the correct provider-specific field."""
     instance = super().save(commit=False)
-    
+
     provider = instance.default_llm_provider
     selected_model = self.cleaned_data.get('llm_model', '')
-    
+
     # Map to correct field based on provider
     if provider == "openai":
         instance.openai_model = selected_model
@@ -75,36 +79,41 @@ def save(self, commit=True):
         instance.claude_model = selected_model
     else:
         instance.template_model = selected_model
-    
+
     if commit:
         instance.save()
     return instance
 ```
 
 ### 4. **JavaScript Updates**
+
 ```javascript
 // BEFORE: Looking for hardcoded ID
-const modelSelect = document.getElementById('openai_model_select');
+const modelSelect = document.getElementById("openai_model_select");
 
 // AFTER: Generic ID that works for all providers
-const modelSelect = document.getElementById('llm_model_select');
+const modelSelect = document.getElementById("llm_model_select");
 ```
 
 ### 5. **Admin Classes Updated**
+
 Updated all 3 admin interfaces to use the new field:
 
 **UserCategoryConfigInline** (when editing groups)
+
 ```python
 "fields": ("default_llm_provider", "llm_model"),  # ✅ Changed
 ```
 
 **StudentGroupAdmin** (main group editing page)
+
 ```python
 "fields": ("default_llm_provider", "llm_model"),  # ✅ Changed
 form = UserCategoryConfigForm  # ✅ Added
 ```
 
 **PerCategoryOverrideAdmin** (standalone override editor)
+
 ```python
 "fields": ("default_llm_provider", "llm_model"),  # ✅ Changed
 form = UserCategoryConfigForm  # ✅ Added
@@ -117,12 +126,14 @@ form = UserCategoryConfigForm  # ✅ Added
 ### Files Modified
 
 1. **`dailycast/models.py`**
+
    - Added `gemini_model` field
-   - Added `claude_model` field  
+   - Added `claude_model` field
    - Added `template_model` field
    - Made all model fields optional (blank=True)
 
 2. **`dailycast/admin.py`**
+
    - Renamed form field from `openai_model` to `llm_model`
    - Added new `save()` method to map models
    - Updated `UserCategoryConfigForm.__init__()` to set correct initial values
@@ -142,17 +153,21 @@ form = UserCategoryConfigForm  # ✅ Added
 ### User Flow
 
 1. **Admin opens Student Group page**
+
    - See "Default LLM Provider" dropdown
 
 2. **Admin selects provider** (e.g., "gemini")
+
    - JavaScript intercepts the change
    - Calls AJAX to get available models for Gemini
    - Dropdown updates to show: gemini-2.0-pro-exp, gemini-1.5-pro, etc.
 
 3. **Admin selects model** (e.g., "gemini-1.5-flash")
+
    - JavaScript validates it's a real model
 
 4. **Admin saves the form**
+
    - Form's `save()` method runs
    - Maps "gemini-1.5-flash" to `instance.gemini_model`
    - Also maps to `instance.default_llm_provider = "gemini"`
@@ -193,16 +208,16 @@ form = UserCategoryConfigForm  # ✅ Added
 
 ## 📊 COMPARISON: BEFORE vs AFTER
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Provider Support** | OpenAI only | All 4 providers ✅ |
-| **Model Selection** | Manual typing (risky) | Dropdown (safe) ✅ |
-| **Dynamic Updates** | Not at all | AJAX updates instantly ✅ |
-| **Typo Prevention** | None (misspellings saved) | Validation via dropdown ✅ |
-| **Form Field** | `openai_model` | `llm_model` (generic) ✅ |
-| **Database Mapping** | Hardcoded | Smart mapping to correct field ✅ |
-| **User Experience** | Confusing | Intuitive ✅ |
-| **Support Issues** | High (wrong models) | Low (dropdown enforces correct models) ✅ |
+| Aspect               | Before                    | After                                     |
+| -------------------- | ------------------------- | ----------------------------------------- |
+| **Provider Support** | OpenAI only               | All 4 providers ✅                        |
+| **Model Selection**  | Manual typing (risky)     | Dropdown (safe) ✅                        |
+| **Dynamic Updates**  | Not at all                | AJAX updates instantly ✅                 |
+| **Typo Prevention**  | None (misspellings saved) | Validation via dropdown ✅                |
+| **Form Field**       | `openai_model`            | `llm_model` (generic) ✅                  |
+| **Database Mapping** | Hardcoded                 | Smart mapping to correct field ✅         |
+| **User Experience**  | Confusing                 | Intuitive ✅                              |
+| **Support Issues**   | High (wrong models)       | Low (dropdown enforces correct models) ✅ |
 
 ---
 
@@ -250,21 +265,25 @@ else:
 ### Steps to Deploy
 
 1. **Backup database** (just in case)
+
    ```bash
    python manage.py dumpdata dailycast > backup.json
    ```
 
 2. **Run migrations** (if any - there shouldn't be any new ones)
+
    ```bash
    python manage.py migrate
    ```
 
 3. **Collect static files** (for JavaScript changes)
+
    ```bash
    python manage.py collectstatic --noinput
    ```
 
 4. **Restart Django**
+
    ```bash
    # Via supervisor, systemd, or manual restart
    ```
@@ -276,7 +295,9 @@ else:
    - Verify models change dynamically
 
 ### Zero Downtime?
+
 ✅ **YES** - This is backward compatible:
+
 - Existing data is unchanged
 - Old `openai_model` values still work
 - New code reads the correct field based on provider
@@ -298,6 +319,7 @@ else:
 ## 🎓 ADMIN SCREENSHOTS
 
 ### Before
+
 ```
 Default llm provider:     [OpenAI ▼]
 OpenAI model:            [gpt-4o-mini ▼]
@@ -305,6 +327,7 @@ OpenAI model:            [gpt-4o-mini ▼]
 ```
 
 ### After
+
 ```
 Default llm provider:     [Gemini ▼]
 OpenAI model:            [gemini-2.0-pro-exp ▼]

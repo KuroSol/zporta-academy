@@ -24,7 +24,8 @@ if (Test-Path $settingsFile) {
     $content = Get-Content $settingsFile -Raw
     if ($content -match "'ai_core'") {
         Write-Host "  ✓ ai_core already in INSTALLED_APPS" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  ⚠️  ai_core NOT in INSTALLED_APPS" -ForegroundColor Yellow
         Write-Host "  Please add 'ai_core' to INSTALLED_APPS in $settingsFile" -ForegroundColor Yellow
         Write-Host "  Example:" -ForegroundColor Gray
@@ -44,12 +45,14 @@ if (Test-Path $settingsFile) {
             $content = $content -replace "('dailycast',)", "`$1`n    'ai_core',"
             Set-Content $settingsFile $content
             Write-Host "  ✓ Added ai_core to INSTALLED_APPS" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  Please add manually and run this script again." -ForegroundColor Red
             exit
         }
     }
-} else {
+}
+else {
     Write-Host "  ✗ Could not find $settingsFile" -ForegroundColor Red
     exit
 }
@@ -62,7 +65,8 @@ cd zporta_academy_backend
 if (Test-Path "env\Scripts\Activate.ps1") {
     Write-Host "  Activating virtual environment..." -ForegroundColor Gray
     & ".\env\Scripts\Activate.ps1"
-} else {
+}
+else {
     Write-Host "  ⚠️  Virtual environment not found, continuing anyway..." -ForegroundColor Yellow
 }
 

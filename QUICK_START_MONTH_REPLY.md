@@ -1,9 +1,11 @@
 # ⚡ QUICK START: Month Range & Reply Size
 
 ## Your Question
+
 > "the form is still same and how i can set a month or size of reply??"
 
 ## The Answer
+
 ✅ **The form is now updated!** Both options are now in the admin form.
 
 ---
@@ -23,24 +25,24 @@
 
 ## 📅 Month Range Options
 
-| Option | What It Means |
-|--------|--------------|
-| **Current Month** | Only this month's activities |
-| **Last 3 Months** | Past 90 days of learning |
-| **Last 6 Months** | Past 6 months (semester) |
-| **Last Year** | Full 12 months |
-| **All Time** | Everything from account creation |
+| Option            | What It Means                    |
+| ----------------- | -------------------------------- |
+| **Current Month** | Only this month's activities     |
+| **Last 3 Months** | Past 90 days of learning         |
+| **Last 6 Months** | Past 6 months (semester)         |
+| **Last Year**     | Full 12 months                   |
+| **All Time**      | Everything from account creation |
 
 ---
 
 ## ⏱️ Reply Size Options
 
-| Option | Duration | Use For |
-|--------|----------|---------|
-| **Short** | 2-3 min | Quick daily check-in |
-| **Medium** | 4-5 min | Weekly review (DEFAULT) |
-| **Long** | 6-8 min | Comprehensive review |
-| **Detailed** | 10+ min | Deep annual review |
+| Option       | Duration | Use For                 |
+| ------------ | -------- | ----------------------- |
+| **Short**    | 2-3 min  | Quick daily check-in    |
+| **Medium**   | 4-5 min  | Weekly review (DEFAULT) |
+| **Long**     | 6-8 min  | Comprehensive review    |
+| **Detailed** | 10+ min  | Deep annual review      |
 
 ---
 
@@ -71,12 +73,12 @@
 
 ## ✨ What's New
 
-| Before | After |
-|--------|-------|
+| Before            | After                 |
+| ----------------- | --------------------- |
 | Form had 3 fields | Form has **5 fields** |
-| No time control | Choose time period ✅ |
-| No length control | Choose length ✅ |
-| Basic podcasts | **Flexible podcasts** |
+| No time control   | Choose time period ✅ |
+| No length control | Choose length ✅      |
+| Basic podcasts    | **Flexible podcasts** |
 
 ---
 
@@ -90,11 +92,11 @@
    - User: (select)
    - Language: English
    - Output: Text & Audio
-   
+
    NEW! ↓
    - Month Range: Last 6 Months
    - Reply Size: Long
-   
+
 5. Click: "Save"
 6. Done! Values saved to database
 ```
@@ -104,6 +106,7 @@
 ## 📊 Examples
 
 ### Quick Daily Review
+
 ```
 Month Range: Current Month
 Reply Size: Short
@@ -111,6 +114,7 @@ Reply Size: Short
 ```
 
 ### Weekly Summary
+
 ```
 Month Range: Last 3 Months
 Reply Size: Medium
@@ -118,6 +122,7 @@ Reply Size: Medium
 ```
 
 ### Semester Review
+
 ```
 Month Range: Last 6 Months
 Reply Size: Long
@@ -125,6 +130,7 @@ Reply Size: Long
 ```
 
 ### Annual Performance
+
 ```
 Month Range: All Time
 Reply Size: Detailed
@@ -156,4 +162,3 @@ Reply Size: Detailed
 The form now has both options!
 
 **Next step**: Go to admin and try it out! 👉 http://localhost:8000/admin/
-

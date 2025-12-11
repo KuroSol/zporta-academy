@@ -3,17 +3,20 @@
 ## The 5-Step Process
 
 ### Step 1: Open Django Admin
+
 ```
 Go to: http://localhost:8000/admin/dailycast/dailypodcast/
 ```
 
 ### Step 2: Select a User
+
 ```
 ▼ User: [alice_johnson ▼]
         (Select from dropdown)
 ```
 
 ### Step 3: Select Items (Courses/Lessons/Quizzes)
+
 ```
 Course list appears with blue border:
 
@@ -37,6 +40,7 @@ Quizzes:
 ```
 
 ### Step 4: Click "Generate Script Text" Button
+
 ```
 Once you select items, you'll see:
 
@@ -55,6 +59,7 @@ Total Items: 3
 ```
 
 ### Step 5: Fill in Customization Form & Generate
+
 ```
 FORM APPEARS:
 
@@ -91,20 +96,21 @@ FORM APPEARS:
 
 ## Form Fields (Detailed)
 
-| Field | Required | Example | Purpose |
-|-------|----------|---------|---------|
-| **Category/Subject** | ✅ YES | "Business English" | What the podcast is about |
-| **Specific Topic** | ❌ No | "Email writing" | Narrow down the focus |
-| **Your Profession** | ❌ No | "Sales manager" | Tailor examples to you |
-| **Primary Language** | ✅ YES | "English" | Language for script |
-| **Secondary Language** | ❌ No | "Spanish" | 2nd language for learning |
-| **Additional Notes** | ❌ No | "Casual tone" | Style preferences |
+| Field                  | Required | Example            | Purpose                   |
+| ---------------------- | -------- | ------------------ | ------------------------- |
+| **Category/Subject**   | ✅ YES   | "Business English" | What the podcast is about |
+| **Specific Topic**     | ❌ No    | "Email writing"    | Narrow down the focus     |
+| **Your Profession**    | ❌ No    | "Sales manager"    | Tailor examples to you    |
+| **Primary Language**   | ✅ YES   | "English"          | Language for script       |
+| **Secondary Language** | ❌ No    | "Spanish"          | 2nd language for learning |
+| **Additional Notes**   | ❌ No    | "Casual tone"      | Style preferences         |
 
 ---
 
 ## What Gets Generated
 
 The AI creates a script that includes:
+
 - ✅ All your selected courses/lessons/quizzes
 - ✅ Focused on your category/subject
 - ✅ In your primary language
@@ -119,6 +125,7 @@ The AI creates a script that includes:
 ## Example Results
 
 ### Input:
+
 ```
 Selected Items:  English Mastery (course) + Grammar Basics (lesson)
 Category:        Business English
@@ -130,6 +137,7 @@ Notes:           Include real email examples, casual tone
 ```
 
 ### Output Script:
+
 ```
 ═══════════════════════════════════════════════════════
 BUSINESS ENGLISH FOR SALES PROFESSIONALS
@@ -169,6 +177,7 @@ Spanish equivalents provided for language learning:
 ## Where Everything Is
 
 ### Form Fields on Page
+
 ```
 ┌─────────────────────────────────────────────────┐
 │ Django Admin - DailyPodcast Form                │
@@ -222,20 +231,21 @@ Spanish equivalents provided for language learning:
 
 ## Colors & Visibility
 
-| Element | Color | Visibility |
-|---------|-------|------------|
-| **Title** (📚 Courses) | Black text | ✅ Very clear |
-| **Course border** | 3px Bright Blue | ✅ Very clear |
-| **List items** | Black text | ✅ Very clear |
-| **Selected tag** | White bg, blue border | ✅ Very clear |
-| **Button** | Dark teal bg | ✅ Very clear |
-| **Form background** | Light gray | ✅ Easy to read |
+| Element                | Color                 | Visibility      |
+| ---------------------- | --------------------- | --------------- |
+| **Title** (📚 Courses) | Black text            | ✅ Very clear   |
+| **Course border**      | 3px Bright Blue       | ✅ Very clear   |
+| **List items**         | Black text            | ✅ Very clear   |
+| **Selected tag**       | White bg, blue border | ✅ Very clear   |
+| **Button**             | Dark teal bg          | ✅ Very clear   |
+| **Form background**    | Light gray            | ✅ Easy to read |
 
 ---
 
 ## Language Support
 
 **Available languages for Primary Language:**
+
 - English
 - Spanish
 - French
@@ -247,6 +257,7 @@ Spanish equivalents provided for language learning:
 - Korean
 
 **Secondary Language Options** (NEW!):
+
 - Any of the above
 - Or "None - Single language only"
 
@@ -255,6 +266,7 @@ Spanish equivalents provided for language learning:
 ## Tips for Best Results
 
 ### ✅ DO
+
 - ✅ Fill in Category field (required)
 - ✅ Be specific with Topic ("Email writing" not just "Writing")
 - ✅ Add Profession for better examples ("Sales manager" not "Worker")
@@ -262,6 +274,7 @@ Spanish equivalents provided for language learning:
 - ✅ Select Secondary Language if learning a language
 
 ### ❌ DON'T
+
 - ❌ Leave Category blank
 - ❌ Make Topic too similar to Category
 - ❌ Skip Profession if you want tailored examples
@@ -271,13 +284,13 @@ Spanish equivalents provided for language learning:
 
 ## Common Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| Form doesn't appear | Select at least 1 item first |
-| Button not visible | Hard refresh (Ctrl+Shift+R) |
-| Can't see course list | Browser zoom too high, or cache issue |
+| Issue                   | Solution                               |
+| ----------------------- | -------------------------------------- |
+| Form doesn't appear     | Select at least 1 item first           |
+| Button not visible      | Hard refresh (Ctrl+Shift+R)            |
+| Can't see course list   | Browser zoom too high, or cache issue  |
 | Script generation fails | Fill in Category field (it's required) |
-| Want different script | Change Topic/Notes and generate again |
+| Want different script   | Change Topic/Notes and generate again  |
 
 ---
 
@@ -299,4 +312,3 @@ Spanish equivalents provided for language learning:
 ---
 
 **That's it! Your podcast is customized and ready to go!** 🎉
-

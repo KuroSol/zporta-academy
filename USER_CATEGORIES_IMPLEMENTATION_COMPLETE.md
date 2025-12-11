@@ -9,11 +9,13 @@ A complete **user categories/groups system** where each group can have **differe
 ## What This Enables
 
 ### Before
+
 ```
 All users → Same global config
 ```
 
 ### After
+
 ```
 Teachers Group → Teachers Config (GPT-4, ElevenLabs, unlimited)
 Students Group → Students Config (Template, Google TTS, 3/day)
@@ -28,11 +30,13 @@ VIP Users → VIP Config (GPT-4, ElevenLabs, unlimited, $5 cost)
 ### 📊 Database Models (3 new models)
 
 1. **UserCategory**
+
    - Groups of users
    - Each can have different settings
    - Example: "Teachers", "Students", "Trial Users"
 
 2. **UserCategoryConfig**
+
    - Specific settings for each category
    - LLM provider, TTS provider, limits, pricing
    - Example: Teachers get GPT-4, ElevenLabs
@@ -53,6 +57,7 @@ VIP Users → VIP Config (GPT-4, ElevenLabs, unlimited, $5 cost)
 ### 📁 Helper Module
 
 **File**: `dailycast/category_helpers.py`
+
 - 20+ helper functions
 - Get config for any user
 - Manage categories and users
@@ -99,6 +104,7 @@ VIP Users → VIP Config (GPT-4, ElevenLabs, unlimited, $5 cost)
 ## 🚀 Start Using It Now
 
 ### Step 1: Create a Category
+
 ```
 Go to: http://localhost:8000/admin/
 Click: Dailycast → User Categories → Add User Category
@@ -111,6 +117,7 @@ Fill:
 ```
 
 ### Step 2: Configure the Category
+
 ```
 You'll see configuration form:
 - Default LLM: gpt-4o-mini
@@ -121,6 +128,7 @@ You'll see configuration form:
 ```
 
 ### Step 3: Done!
+
 ```
 Teachers now have different config than other users!
 ```
@@ -130,6 +138,7 @@ Teachers now have different config than other users!
 ## 📊 Example Setup
 
 ### Teachers Category
+
 ```
 LLM Provider: openai (gpt-4o-mini)
 TTS Provider: elevenlabs (natural voice)
@@ -141,6 +150,7 @@ Cost: $2.00 per generation
 ```
 
 ### Students Category
+
 ```
 LLM Provider: template (no API cost)
 TTS Provider: google (fast, cheap)
@@ -152,6 +162,7 @@ Cost: $0.10 per generation
 ```
 
 ### Trial Users Category
+
 ```
 LLM Provider: template
 TTS Provider: google
@@ -167,6 +178,7 @@ Cost: Free ($0.00)
 ## 💻 In Your Code
 
 ### Get User's Config
+
 ```python
 from dailycast.category_helpers import get_category_config
 
@@ -181,6 +193,7 @@ print(config.cost_per_generation)       # 2.00
 ```
 
 ### Get Specific Settings
+
 ```python
 from dailycast.category_helpers import (
     get_tts_provider_for_user,
@@ -192,6 +205,7 @@ limit = get_max_generations_per_day_for_user(user)
 ```
 
 ### Manage Categories
+
 ```python
 from dailycast.category_helpers import (
     add_user_to_category,
@@ -215,14 +229,14 @@ create_category('VIP Users', 'Premium customers')
 ```python
 def calculate_cost_for_user(user):
     from dailycast.category_helpers import get_cost_per_generation_for_user
-    
+
     cost = get_cost_per_generation_for_user(user)
-    
+
     # Teacher: $2.00
     # Student: $0.10
     # Trial: $0.00
     # VIP: $5.00
-    
+
     return cost
 ```
 
@@ -231,19 +245,19 @@ def calculate_cost_for_user(user):
 ```python
 def can_generate_podcast(user):
     from dailycast.category_helpers import get_max_generations_per_day_for_user
-    
+
     limit = get_max_generations_per_day_for_user(user)
-    
+
     if limit == 0:  # Unlimited
         return True
-    
+
     # Check today's count
     today = timezone.now().date()
     count = DailyPodcast.objects.filter(
         user=user,
         created_at__date=today
     ).count()
-    
+
     return count < limit
 ```
 
@@ -286,15 +300,15 @@ get_all_active_categories()
 
 ## ✅ What's Done
 
-| Component | Status |
-|-----------|--------|
-| UserCategory model | ✅ Created |
-| UserCategoryConfig model | ✅ Created |
-| Database migration | ✅ Applied (0007) |
-| Admin interface | ✅ Complete |
-| Helper functions | ✅ 20+ functions |
-| Documentation | ✅ Complete |
-| Django check | ✅ PASSED |
+| Component                | Status            |
+| ------------------------ | ----------------- |
+| UserCategory model       | ✅ Created        |
+| UserCategoryConfig model | ✅ Created        |
+| Database migration       | ✅ Applied (0007) |
+| Admin interface          | ✅ Complete       |
+| Helper functions         | ✅ 20+ functions  |
+| Documentation            | ✅ Complete       |
+| Django check             | ✅ PASSED         |
 
 ---
 
@@ -315,7 +329,7 @@ get_all_active_categories()
 ✅ Different generation limits per group  
 ✅ Different pricing per group  
 ✅ Easy admin interface to manage everything  
-✅ 20+ helper functions for easy code integration  
+✅ 20+ helper functions for easy code integration
 
 ---
 

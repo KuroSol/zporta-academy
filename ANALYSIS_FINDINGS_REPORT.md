@@ -11,9 +11,11 @@
 ### Current AI/Intelligence System (Already Exists)
 
 #### `intelligence` App
+
 **Purpose:** AI-driven ranking & personalization system
 
 **Key Models:**
+
 ```
 ✓ UserAbilityProfile (ELO-style user ratings)
   - overall_ability_score (0-1000)
@@ -21,25 +23,27 @@
   - total_quizzes_attempted
   - recent_performance_trend
   - global_rank, percentile
-  
+
 ✓ ContentDifficultyProfile (difficulty scoring)
   - difficulty_score (0-1000)
   - success_rate
   - avg_time_spent_ms
-  
+
 ✓ MatchScore (personalized recommendation matching)
   - user + content match score (0-100)
-  
+
 ✓ RecommendationCache (denormalized feed cache)
 ```
 
 **API Endpoints (Already Implemented):**
+
 - `GET /api/intelligence/my-ability/` → User ability profile
 - `GET /api/intelligence/learning-path/` → Personalized quiz sequence
 - `GET /api/intelligence/progress-insights/` → Trends & weaknesses
 - `GET /api/intelligence/recommended-subjects/` → Subject suggestions
 
 **Why This Is Perfect for Daily Podcast:**
+
 - ✅ Contains user ability/weakness data (what to teach)
 - ✅ Contains recommended quiz for today (what to focus on)
 - ✅ Already computed offline (we can use cached data)
@@ -48,26 +52,29 @@
 ---
 
 #### `analytics` App
+
 **Purpose:** Track user activity & performance
 
 **Key Models:**
+
 ```
 ✓ ActivityEvent (every user action)
   - user, event_type, timestamp, metadata
   - ~50+ events tracked (quiz_started, quiz_completed, etc.)
-  
+
 ✓ MemoryStat (spaced-repetition tracking)
   - user + learnable_item (quiz/question)
   - interval_days (review interval)
   - current_retention_estimate (0-1.0)
   - last_reviewed_at, next_review_at
   - (Perfect for "what to review today")
-  
+
 ✓ QuizAttempt (quiz performance)
   - user + quiz + is_correct + attempted_at
 ```
 
 **Why This Is Perfect for Daily Podcast:**
+
 - ✅ Shows recent quiz performance (7-day accuracy %)
 - ✅ Shows items due for review (spaced repetition)
 - ✅ Contains actual mistakes user made
@@ -76,9 +83,11 @@
 ---
 
 #### `feed` App
+
 **Purpose:** Quiz feed personalization
 
 **Key Patterns:**
+
 ```
 ✓ _base_pool() → Filter quizzes by user's interested_subjects
 ✓ _language_bucket_selection() → 80% primary lang, 15% English, 5% other
@@ -89,6 +98,7 @@
 ```
 
 **Why This Is Perfect for Daily Podcast:**
+
 - ✅ Already knows user's preferences (languages, subjects, location)
 - ✅ Already selects "next quiz to recommend"
 - ✅ Already has AI-enhanced logic we can piggyback on
@@ -98,6 +108,7 @@
 ### Task Scheduling Infrastructure (Already Exists)
 
 #### `analytics/tasks.py` (Celery Tasks)
+
 ```python
 @shared_task(name="analytics.update_daily_memory_stats_retention_decay")
 # Updates spaced-repetition retention daily
@@ -107,12 +118,14 @@
 ```
 
 **CRITICAL FINDING:**
+
 - ✅ Celery already configured and running
 - ✅ Celery Beat already configured for daily tasks
 - ✅ Can see exact pattern to follow for daily generation
 - ✅ Redis already set up for task queue
 
 **Example Schedule (from settings):**
+
 ```python
 CELERY_BEAT_SCHEDULE = {
     'update-daily-retention': {
@@ -129,30 +142,37 @@ CELERY_BEAT_SCHEDULE = {
 #### Lessons Learned from Existing Code:
 
 **1. JSONField for Flexible Metadata**
+
 ```python
 # ✓ Already widely used in Zporta
 ability_by_subject = models.JSONField(default=dict)
 metadata = models.JSONField(null=True, blank=True)
 ```
+
 → **We should store `metadata` with podcast generation details**
 
 **2. GenericForeignKey for Polymorphic Content**
+
 ```python
 # ✓ Used in MemoryStat and ActivityEvent
 content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
 object_id = models.PositiveIntegerField()
 learnable_item = GenericForeignKey('content_type', 'object_id')
 ```
+
 → **Not needed for daily podcast (podcast is unique model)**
 
 **3. Nullable Fields + Defaults for Safety**
+
 ```python
 # ✓ Every new field is nullable or has default
 ai_insights = models.JSONField(null=True, blank=True, help_text="...")
 ```
+
 → **We follow this pattern in DailyPodcast model**
 
 **4. Comprehensive Indexing**
+
 ```python
 class Meta:
     indexes = [
@@ -160,13 +180,16 @@ class Meta:
         models.Index(fields=['user', 'content_type', 'object_id']),
     ]
 ```
+
 → **We index (user, date) since that's the main query**
 
 **5. Auto-timestamping**
+
 ```python
 created_at = models.DateTimeField(auto_now_add=True)
 updated_at = models.DateTimeField(auto_now=True)
 ```
+
 → **Same pattern in DailyPodcast**
 
 ---
@@ -174,6 +197,7 @@ updated_at = models.DateTimeField(auto_now=True)
 ### Where to Place the New App
 
 **Option 1: New App `dailycast` (RECOMMENDED)** ✅
+
 ```
 zporta_academy_backend/dailycast/
 ├── models.py (DailyPodcast)
@@ -183,6 +207,7 @@ zporta_academy_backend/dailycast/
 ├── management/commands/generate_daily_podcasts.py
 └── ...
 ```
+
 **Why:** Focused on single feature, easy to maintain, can reuse for other audio features later
 
 **Option 2: Extend `intelligence` App** ❌
@@ -220,6 +245,7 @@ next-frontend/
 ### Current Dashboard Components
 
 **DiaryRecommendations.js** (Already built, can use as pattern):
+
 ```javascript
 const { data } = await apiClient.get(`/feed/dashboard/?limit=${limit}`);
 // → Calls backend API to get recommendations
@@ -227,31 +253,33 @@ const { data } = await apiClient.get(`/feed/dashboard/?limit=${limit}`);
 ```
 
 **Pattern We'll Follow:**
+
 ```javascript
 // In StudyDashboard.js or new DailyPodcastWidget.js:
 
 useEffect(() => {
-  apiClient.get('/api/dailycast/today/')
-    .then(response => {
-      setPodcast(response.data.podcast);
-    })
+  apiClient.get("/api/dailycast/today/").then((response) => {
+    setPodcast(response.data.podcast);
+  });
 }, []);
 
 // Render with audio player:
-<audio controls src={podcast.audio_url} />
+<audio controls src={podcast.audio_url} />;
 ```
 
 ### API Client Setup (Already Exists)
 
 **File:** `src/api.js`
+
 ```javascript
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  headers: { 'Authorization': `Token ${token}` }
+  headers: { Authorization: `Token ${token}` },
 });
 ```
 
-**Implication:** 
+**Implication:**
+
 - ✅ Authentication already handled
 - ✅ Just add new endpoint path
 - ✅ No changes needed to frontend setup
@@ -262,24 +290,26 @@ const apiClient = axios.create({
 
 ### Data We Need → Where We Get It
 
-| Data | Source Model | Query Method | Availability |
-|------|--------------|--------------|--------------|
-| User ability score | `UserAbilityProfile` | `user.ability_profile.overall_ability_score` | ✅ Always exists (defaults to 400) |
-| Weak subjects | `UserAbilityProfile.ability_by_subject` | Query dict, find min value | ✅ JSON dict with scores |
-| Success rate (7-day) | `QuizAttempt` | Filter by attempted_at >= 7 days ago | ✅ Easy to query |
-| Items to review | `MemoryStat` | Filter by next_review_at <= now | ✅ Indexed query |
-| Recommended quiz | `MatchScore` or `RecommendationCache` | Order by match_score DESC limit 1 | ✅ Cached/precomputed |
-| User preferences | `UserPreference` | OneToOne with user | ✅ Optional but available |
-| Performance trend | `UserAbilityProfile.recent_performance_trend` | Single field | ✅ Computed offline |
-| Recent mistakes | `QuizAttempt` + `Question` | Filter is_correct=False | ✅ Available with context |
+| Data                 | Source Model                                  | Query Method                                 | Availability                       |
+| -------------------- | --------------------------------------------- | -------------------------------------------- | ---------------------------------- |
+| User ability score   | `UserAbilityProfile`                          | `user.ability_profile.overall_ability_score` | ✅ Always exists (defaults to 400) |
+| Weak subjects        | `UserAbilityProfile.ability_by_subject`       | Query dict, find min value                   | ✅ JSON dict with scores           |
+| Success rate (7-day) | `QuizAttempt`                                 | Filter by attempted_at >= 7 days ago         | ✅ Easy to query                   |
+| Items to review      | `MemoryStat`                                  | Filter by next_review_at <= now              | ✅ Indexed query                   |
+| Recommended quiz     | `MatchScore` or `RecommendationCache`         | Order by match_score DESC limit 1            | ✅ Cached/precomputed              |
+| User preferences     | `UserPreference`                              | OneToOne with user                           | ✅ Optional but available          |
+| Performance trend    | `UserAbilityProfile.recent_performance_trend` | Single field                                 | ✅ Computed offline                |
+| Recent mistakes      | `QuizAttempt` + `Question`                    | Filter is_correct=False                      | ✅ Available with context          |
 
 ### Performance Impact Assessment
 
 **Current Daily Tasks at 3 AM UTC:**
+
 - `update_daily_memory_stats_retention_decay_task` → Process 10,000+ MemoryStat rows
 - Takes ~2-3 minutes
 
 **Our Podcast Generation Would Add:**
+
 - 1000 users × 40 seconds = 40,000 seconds / 100 parallel = 400 seconds (~7 minutes)
 - Running after retention update = no conflict
 
@@ -290,6 +320,7 @@ const apiClient = axios.create({
 ## 🛡️ SAFETY & COMPATIBILITY ASSESSMENT
 
 ### Breaking Changes? **NO** ✅
+
 - New app `dailycast` (isolated)
 - New model `DailyPodcast` (no schema changes to existing)
 - New API endpoint `/api/dailycast/today/` (doesn't touch existing endpoints)
@@ -298,12 +329,14 @@ const apiClient = axios.create({
 - No changes to User model
 
 ### Backward Compatibility? **100%** ✅
+
 - Can enable/disable via `INSTALLED_APPS`
 - Can disable via settings toggle
 - Graceful degradation if generation fails
 - Frontend works even if endpoint not available (404 → "coming tomorrow")
 
 ### Database Migration Safety? **Safe** ✅
+
 - Single new model = simple migration
 - No data transformation needed
 - Can apply to production without downtime
@@ -316,11 +349,13 @@ const apiClient = axios.create({
 ### Data Passed to External LLMs
 
 **Current Zporta Practice:**
+
 - Stripe API gets: user email, payment token
 - Google Analytics: anonymized user behavior
 - Firebase: user authentication tokens
 
 **What We'd Send to LLM:**
+
 ```python
 {
     "username": "sarah_chen",              # Non-sensitive
@@ -334,6 +369,7 @@ const apiClient = axios.create({
 ```
 
 **What We'd NOT Send:**
+
 - ❌ User email
 - ❌ User real name
 - ❌ Location (except if public preference)
@@ -346,6 +382,7 @@ const apiClient = axios.create({
 ## 🎯 EXISTING PATTERNS WE'LL FOLLOW
 
 ### 1. **Offline Computation + Online Caching**
+
 ```python
 # Pattern from intelligence/analytics apps:
 # - Heavy work (computation) runs offline
@@ -359,6 +396,7 @@ const apiClient = axios.create({
 ```
 
 ### 2. **Celery Task Pattern**
+
 ```python
 # Pattern from analytics/tasks.py:
 @shared_task(name="podcast.generate_daily")
@@ -372,6 +410,7 @@ def process_user_podcast(user_id):
 ```
 
 ### 3. **Error Handling Pattern**
+
 ```python
 # Pattern from existing code:
 try:
@@ -384,6 +423,7 @@ except Exception as e:
 ```
 
 ### 4. **Settings Pattern**
+
 ```python
 # Pattern from zporta/settings/base.py:
 FEATURE_SETTINGS = {
@@ -395,6 +435,7 @@ FEATURE_SETTINGS = {
 ```
 
 ### 5. **API Response Pattern**
+
 ```python
 # Pattern from intelligence/views.py:
 return Response({
@@ -409,6 +450,7 @@ return Response({
 ## 📈 SCALABILITY ASSESSMENT
 
 ### Current Zporta Scale
+
 - Django supports multi-instance deployment
 - Celery distributed across workers
 - PostgreSQL with proper indexing
@@ -426,6 +468,7 @@ return Response({
 **Current Design Handles:** 5,000+ users without changes
 
 **If Scaling to 50,000:**
+
 - Increase batch size from 100 to 500
 - Use multiple Celery workers in parallel
 - Add provider queuing (don't hammer APIs)
@@ -436,6 +479,7 @@ return Response({
 ## 🎓 LESSONS FROM EXISTING CODE
 
 ### What Works Well
+
 1. **Nullable fields + defaults** (safe migrations)
 2. **JSONField for metadata** (flexible storage)
 3. **Comprehensive indexing** (fast queries)
@@ -444,6 +488,7 @@ return Response({
 6. **Multiple fallbacks** (resilient)
 
 ### What to Avoid
+
 1. ❌ Don't store binary data in DB (use S3)
 2. ❌ Don't call external APIs in request/response path
 3. ❌ Don't create unique_together constraints lightly (migration hell)
@@ -451,6 +496,7 @@ return Response({
 5. ❌ Don't skip error handling in async tasks
 
 ### What We're Implementing
+
 - ✅ Nullable fields (safe)
 - ✅ JSONField metadata (flexible)
 - ✅ Comprehensive indexing (fast)
@@ -465,6 +511,7 @@ return Response({
 ## 🎁 BONUS: WHAT WE LEARNED
 
 ### Existing Zporta Strengths (We Can Use)
+
 1. **Strong AI/Analytics Foundation** - intelligence app is well-architected
 2. **Multi-Provider Ready** - feed system already supports fallbacks
 3. **User Profiling Mature** - ability profiles comprehensive
@@ -472,6 +519,7 @@ return Response({
 5. **Frontend Modern** - Next.js with good API integration
 
 ### Why This Feature Fits Perfectly
+
 - Uses existing ability data (no new computation)
 - Runs offline like existing tasks (no new infrastructure)
 - Follows established patterns (lower risk)
@@ -483,24 +531,28 @@ return Response({
 ## ✅ FINAL ASSESSMENT
 
 ### Integration Difficulty: **LOW** ✅
+
 - Existing patterns to follow
 - No schema conflicts
 - Isolated new app
 - Existing infrastructure sufficient
 
 ### Implementation Time: **2-3 weeks** ✅
+
 - Straightforward feature
 - Clear patterns to follow
 - Well-defined scope
 - Comprehensive documentation provided
 
 ### Risk Level: **LOW** ✅
+
 - No breaking changes
 - Can be rolled back
 - Can be disabled via settings
 - Graceful degradation
 
 ### Quality Potential: **HIGH** ✅
+
 - Leverages mature intelligence system
 - Multi-provider fallbacks
 - Comprehensive error handling
@@ -513,6 +565,7 @@ return Response({
 **Status: GREEN LIGHT**
 
 All required:
+
 - ✅ Architecture analysis complete
 - ✅ Integration points identified
 - ✅ Data sources verified
@@ -531,4 +584,3 @@ All required:
 **Prepared by:** AI Architecture Analysis  
 **Date:** December 7, 2025  
 **For:** Zporta Academy Development Team
-

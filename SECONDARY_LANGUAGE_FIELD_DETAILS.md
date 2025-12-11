@@ -78,50 +78,55 @@ The customization form appears below the selected items:
 ## The Secondary Language Field Details
 
 ### HTML Structure
+
 ```html
 <div class="form-group">
-    <label>🌐 Secondary Language (optional - for comparison/bilingual content)</label>
-    <select id="form-language-secondary">
-        <option value="">None - Single language only</option>
-        <option value="en">English</option>
-        <option value="es">Spanish (Español)</option>
-        <option value="fr">French (Français)</option>
-        <option value="de">German (Deutsch)</option>
-        <option value="ja">Japanese (日本語)</option>
-        <option value="it">Italian (Italiano)</option>
-        <option value="pt">Portuguese (Português)</option>
-        <option value="ru">Russian (Русский)</option>
-        <option value="ko">Korean (한국어)</option>
-    </select>
+  <label
+    >🌐 Secondary Language (optional - for comparison/bilingual content)</label
+  >
+  <select id="form-language-secondary">
+    <option value="">None - Single language only</option>
+    <option value="en">English</option>
+    <option value="es">Spanish (Español)</option>
+    <option value="fr">French (Français)</option>
+    <option value="de">German (Deutsch)</option>
+    <option value="ja">Japanese (日本語)</option>
+    <option value="it">Italian (Italiano)</option>
+    <option value="pt">Portuguese (Português)</option>
+    <option value="ru">Russian (Русский)</option>
+    <option value="ko">Korean (한국어)</option>
+  </select>
 </div>
 ```
 
 ### Styling (CSS)
+
 ```css
 .form-group {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .form-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 4px;
-    font-size: 12px;
-    color: #333;
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #333;
 }
 
 .form-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
 }
 ```
 
 ### Field Position
+
 - **Location:** Below "Preferred Language" field
 - **Above:** "Additional Notes" field
 - **CSS Class:** `form-group`
@@ -133,6 +138,7 @@ The customization form appears below the selected items:
 ## How It Works (Step by Step)
 
 ### Step 1: User Selects Primary Language
+
 ```
 User clicks on "Preferred Language" dropdown:
 [English ▼]
@@ -143,6 +149,7 @@ Result: language = "en"
 ```
 
 ### Step 2: User Selects Secondary Language (NEW!)
+
 ```
 User clicks on "Secondary Language" dropdown:
 [None - Single language only ▼]
@@ -160,6 +167,7 @@ Result: language_secondary = "es"
 ```
 
 ### Step 3: Form Data Collected
+
 ```javascript
 const languageSecondary = document.getElementById('form-language-secondary').value;
 // Result: "es"
@@ -177,6 +185,7 @@ const languageSecondary = document.getElementById('form-language-secondary').val
 ```
 
 ### Step 4: Backend Processes
+
 ```python
 language_secondary = data.get('language_secondary', '')
 # Result: "es"
@@ -194,6 +203,7 @@ prompt = _build_multi_item_prompt(
 ```
 
 ### Step 5: LLM Receives Instructions
+
 ```
 LLM Prompt includes:
 "Language: en"
@@ -210,6 +220,7 @@ SPANISH: "Hacer seguimiento de la propuesta"
 ## Field Behavior
 
 ### If Secondary Language = "" (Default)
+
 ```
 Script generated in PRIMARY LANGUAGE ONLY
 Example:
@@ -220,21 +231,23 @@ Example:
 ```
 
 ### If Secondary Language = "es" (Spanish)
+
 ```
 Script generated in BOTH LANGUAGES
 Example:
   "Follow up on the proposal"
   "Hacer seguimiento de la propuesta"
-  
+
   "Request action on the agreement"
   "Solicitar acción en el acuerdo"
-  
+
   "Negotiate the timeline"
   "Negociar el cronograma"
   (English + Spanish)
 ```
 
 ### If Secondary Language = Primary Language
+
 ```
 Script includes both
 (AI smart enough to notice same language selected)
@@ -247,19 +260,20 @@ If Primary=English, Secondary=English:
 
 ## Available Languages
 
-| Code | Language | Native |
-|------|----------|--------|
-| en | English | English |
-| es | Spanish | Español |
-| fr | French | Français |
-| de | German | Deutsch |
-| ja | Japanese | 日本語 |
-| it | Italian | Italiano |
-| pt | Portuguese | Português |
-| ru | Russian | Русский |
-| ko | Korean | 한국어 |
+| Code | Language   | Native    |
+| ---- | ---------- | --------- |
+| en   | English    | English   |
+| es   | Spanish    | Español   |
+| fr   | French     | Français  |
+| de   | German     | Deutsch   |
+| ja   | Japanese   | 日本語    |
+| it   | Italian    | Italiano  |
+| pt   | Portuguese | Português |
+| ru   | Russian    | Русский   |
+| ko   | Korean     | 한국어    |
 
 ### Combinations
+
 - **All 81 combinations supported** (9 × 9)
 - Primary + Secondary can be any language
 - Or Primary alone (Secondary = "None")
@@ -269,17 +283,19 @@ If Primary=English, Secondary=English:
 ## Common Use Cases
 
 ### Use Case 1: Language Learning
+
 ```
 Primary: Spanish (learning)
 Secondary: English (native)
 
-Result: 
+Result:
 "Buenos días" (Spanish)
 "Good morning" (English translation)
 (Helps learn Spanish with English support)
 ```
 
 ### Use Case 2: Bilingual Audience
+
 ```
 Primary: English
 Secondary: Spanish
@@ -291,6 +307,7 @@ Result:
 ```
 
 ### Use Case 3: Translation Reference
+
 ```
 Primary: French
 Secondary: German
@@ -302,6 +319,7 @@ Result:
 ```
 
 ### Use Case 4: Single Language (Default)
+
 ```
 Primary: English
 Secondary: None
@@ -316,6 +334,7 @@ Result:
 ## JavaScript Integration
 
 ### Capturing the Value
+
 ```javascript
 function generateScriptTextFromSelection() {
     const selectedItems = document.querySelectorAll('.course-item.selected, ...');
@@ -323,12 +342,12 @@ function generateScriptTextFromSelection() {
     const topic = document.getElementById('form-topic').value;
     const profession = document.getElementById('form-profession').value;
     const language = document.getElementById('form-language').value;
-    
+
     // NEW: Capture secondary language
     const languageSecondary = document.getElementById('form-language-secondary').value;
-    
+
     const notes = document.getElementById('form-notes').value;
-    
+
     // Send to backend
     fetch('/api/admin/ajax/generate-script/', {
         method: 'POST',
@@ -347,11 +366,14 @@ function generateScriptTextFromSelection() {
 ```
 
 ### Event Listener
+
 ```javascript
 // When form appears, button gets event listener:
-document.getElementById('generate-text-btn').addEventListener('click', function() {
-    generateScriptTextFromSelection();  // Collects secondary language
-});
+document
+  .getElementById("generate-text-btn")
+  .addEventListener("click", function () {
+    generateScriptTextFromSelection(); // Collects secondary language
+  });
 ```
 
 ---
@@ -359,17 +381,18 @@ document.getElementById('generate-text-btn').addEventListener('click', function(
 ## Backend Integration
 
 ### Python Function
+
 ```python
 @login_required
 @user_passes_test(is_admin_or_staff)
 def generate_script_ajax(request):
     try:
         data = json.loads(request.body)
-        
+
         # Capture all fields INCLUDING secondary language
         language_secondary = data.get('language_secondary', '')
         # Result: "" or "es" or "fr" or any code
-        
+
         # Pass to prompt builder
         prompt = _build_multi_item_prompt(
             items=items,
@@ -380,10 +403,10 @@ def generate_script_ajax(request):
             language_secondary=language_secondary,  # NEW!
             notes=notes
         )
-        
+
         # Call LLM with prompt including secondary language info
         script = _generate_script_with_llm(prompt, language)
-        
+
         return JsonResponse({
             'success': True,
             'script': script
@@ -395,6 +418,7 @@ def generate_script_ajax(request):
 ## Testing the Field
 
 ### Test 1: Field Exists
+
 ```
 1. Go to admin form
 2. Select user & items
@@ -404,6 +428,7 @@ def generate_script_ajax(request):
 ```
 
 ### Test 2: Default Value
+
 ```
 1. Form appears
 2. Check Secondary Language field
@@ -411,6 +436,7 @@ def generate_script_ajax(request):
 ```
 
 ### Test 3: Can Change
+
 ```
 1. Click Secondary Language dropdown
 2. Select "Spanish"
@@ -420,6 +446,7 @@ def generate_script_ajax(request):
 ```
 
 ### Test 4: Bilingual Generation
+
 ```
 1. Fill form:
    Primary: English
@@ -429,6 +456,7 @@ def generate_script_ajax(request):
 ```
 
 ### Test 5: Single Language (Backward Compatible)
+
 ```
 1. Fill form:
    Primary: English
@@ -445,6 +473,7 @@ def generate_script_ajax(request):
 ### If Secondary Language Not Working
 
 **Check 1: Field Exists**
+
 ```
 Browser DevTools (F12):
 Elements tab → Find id="form-language-secondary"
@@ -453,6 +482,7 @@ Elements tab → Find id="form-language-secondary"
 ```
 
 **Check 2: Value Captured**
+
 ```
 Browser Console (F12):
 > document.getElementById('form-language-secondary').value
@@ -461,6 +491,7 @@ Browser Console (F12):
 ```
 
 **Check 3: Sent to Backend**
+
 ```
 Network tab (F12):
 POST /api/admin/ajax/generate-script/
@@ -470,6 +501,7 @@ Look at Request body (Payload)
 ```
 
 **Check 4: Backend Received**
+
 ```
 Server logs:
 Check for: data.get('language_secondary', '')
@@ -482,6 +514,7 @@ Check for: data.get('language_secondary', '')
 ## Summary
 
 The **Secondary Language Field:**
+
 - ✅ Located below "Preferred Language" in form
 - ✅ Optional (defaults to "None")
 - ✅ 9 languages + "None" option
@@ -490,4 +523,3 @@ The **Secondary Language Field:**
 - ✅ Used in LLM prompts for bilingual content
 - ✅ 100% backward compatible
 - ✅ Ready to use now!
-

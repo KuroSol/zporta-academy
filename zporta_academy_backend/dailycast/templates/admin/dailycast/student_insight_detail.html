@@ -256,107 +256,160 @@
         </div>
     </div>
 
-    <!-- AI Refresh Controls -->
-    <div class="refresh-controls">
-        <h3>🤖 AI Analysis Controls</h3>
-        <div class="refresh-form">
-            <div style="margin-bottom: 15px;">
-                <label for="ai-subject">Focus Subject (Optional):</label>
-                <select id="ai-subject" name="ai_subject" style="margin-left: 10px; padding: 8px; border-radius: 4px;">
-                    <option value="">All Subjects</option>
-                    <option value="english">📚 English</option>
-                    <option value="programming">💻 Programming</option>
-                    <option value="mathematics">🔢 Mathematics</option>
-                    <option value="science">🔬 Science</option>
-                    <option value="history">📜 History</option>
-                    <option value="business">💼 Business</option>
-                </select>
-            </div>
-            <label for="ai-model">Select AI Model:</label>
-            <select id="ai-model" name="ai_model">
-                <optgroup label="Google Gemini">
-                    <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash (Fast & Cheap)</option>
-                    <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro (Best Quality)</option>
-                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                </optgroup>
-                <optgroup label="OpenAI GPT">
-                    <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
-                    <option value="gpt-4o">GPT-4o (Balanced)</option>
-                    <option value="gpt-4-turbo">GPT-4 Turbo (High Quality)</option>
-                </optgroup>
-            </select>
-            <button type="button" class="refresh-btn" id="refresh-analysis-btn" onclick="refreshAnalysis()">
-                🔄 Refresh AI Analysis
-            </button>
-            <span class="loading-indicator" id="loading-indicator">⏳ Analyzing...</span>
-        </div>
-        <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
-            💡 Select a subject to get focused advice, or analyze all subjects. This will review user's quiz scores, notes, enrolled courses, and activity to provide real, personalized insights.
-        </p>
-    </div>
-
-    {% if not success %}
-        <div class="section">
-            {% if error %}
-                <div class="error-message">
-                    <strong>⚠️ Error analyzing student data:</strong><br>
-                    {{ error }}
-                </div>
-            {% else %}
-                <div style="background: #e8f4f8; border-left: 4px solid #417690; padding: 15px; border-radius: 4px;">
-                    <strong>ℹ️ Analysis not yet triggered</strong><br>
-                    Click the "Analyze with AI" button above to generate insights.
-                </div>
-            {% endif %}
-        </div>
-    {% else %}
-
-    <!-- Learning Summary -->
+    <!-- SUMMARY SECTION (Always Visible) -->
     <div class="section">
         <h2 class="section-title">📊 Learning Summary</h2>
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.total_courses }}</span>
+                <span class="stat-value">{{ analysis.total_courses|default:0 }}</span>
                 <span class="stat-label">📚 Enrolled Courses</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.lessons_completed }}</span>
+                <span class="stat-value">{{ analysis.lessons_completed|default:0 }}</span>
                 <span class="stat-label">✅ Lessons Completed</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.notes_count }}</span>
+                <span class="stat-value">{{ analysis.notes_count|default:0 }}</span>
                 <span class="stat-label">📔 Notes Written</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.quizzes_completed }}</span>
+                <span class="stat-value">{{ analysis.quizzes_completed|default:0 }}</span>
                 <span class="stat-label">📝 Quizzes Taken</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.quiz_accuracy|floatformat:1 }}%</span>
+                <span class="stat-value">{{ analysis.quiz_accuracy|default:0|floatformat:1 }}%</span>
                 <span class="stat-label">🎯 Quiz Accuracy</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.study_streak }}</span>
+                <span class="stat-value">{{ analysis.study_streak|default:0 }}</span>
                 <span class="stat-label">🔥 Study Streak (days)</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.active_days }}</span>
+                <span class="stat-value">{{ analysis.active_days|default:0 }}</span>
                 <span class="stat-label">📅 Active Days (30d)</span>
             </div>
         </div>
     </div>
 
-    <!-- Enrolled Courses -->
+    <!-- AI INSIGHTS PANEL -->
+    <div class="section">
+        <h2 class="section-title">🤖 AI-Generated Insights</h2>
+        
+        <!-- USER PREFERENCES OVERVIEW -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
+            <!-- INTERESTED SUBJECTS -->
+            <div style="background: #f3e5f5; border-left: 4px solid #9c27b0; padding: 15px; border-radius: 4px;">
+                <strong style="color: #6a1b9a; display: block; margin-bottom: 10px;">📚 Interested Subjects:</strong>
+                {% if interested_subjects_list %}
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        {% for subject in interested_subjects_list %}
+                        <span style="background: #9c27b0; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold;">
+                            {{ subject.name }}
+                            {% if forloop.first %}<span style="margin-left: 5px;">★ Primary</span>{% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <span style="color: #999; font-size: 13px;">No subjects selected</span>
+                {% endif %}
+            </div>
+            
+            <!-- INTERESTED TAGS -->
+            <div style="background: #e0f2f1; border-left: 4px solid #00897b; padding: 15px; border-radius: 4px;">
+                <strong style="color: #004d40; display: block; margin-bottom: 10px;">🏷️ Learning Interests:</strong>
+                {% if interested_tags_list %}
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        {% for tag in interested_tags_list %}
+                        <span style="background: #00897b; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px;">
+                            {{ tag.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <span style="color: #999; font-size: 13px;">No tags selected</span>
+                {% endif %}
+            </div>
+            
+            <!-- RECENT ACTIVITY SUMMARY -->
+            <div style="background: #fff3e0; border-left: 4px solid #ff6f00; padding: 15px; border-radius: 4px;">
+                <strong style="color: #e65100; display: block; margin-bottom: 10px;">📊 Recent Activity:</strong>
+                {% if user_activity_data %}
+                    <div style="font-size: 13px;">
+                        <div style="color: #666;">Last 10 activities:</div>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #555;">
+                            {% for activity in user_activity_data|slice:":3" %}
+                            <li style="margin-bottom: 4px;">
+                                <strong>{{ activity.activity_type }}</strong>
+                                <div style="font-size: 12px; color: #888;">{{ activity.created_at|date:"M d, Y H:i" }}</div>
+                            </li>
+                            {% endfor %}
+                            {% if user_activity_data|length > 3 %}
+                            <li style="color: #999;">+ {{ user_activity_data|length|add:"-3" }} more activities</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <span style="color: #999; font-size: 13px;">No recent activity</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label for="ai-subject" style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">Focus Subject:</label>
+                    <select id="ai-subject" name="ai_subject" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                        <option value="">📚 All Subjects</option>
+                        {% for subject_id, subject_name in enrolled_subjects %}
+                        <option value="{{ subject_name }}" {% if subject_name == primary_subject %}selected{% endif %}>{{ subject_name }}</option>
+                        {% endfor %}
+                        {% if not enrolled_subjects %}
+                        <option disabled style="color: #999;">No enrolled subjects</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div>
+                    <label for="ai-engine" style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">AI Engine:</label>
+                    <select id="ai-engine" name="ai_engine" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                        <optgroup label="Google Gemini">
+                            <option value="gemini-2.0-flash-exp" selected>⚡ Gemini 2.0 Flash (Fast)</option>
+                            <option value="gemini-2.0-pro-exp">✨ Gemini 2.0 Pro (Best)</option>
+                            <option value="gemini-1.5-pro">🔧 Gemini 1.5 Pro</option>
+                        </optgroup>
+                        <optgroup label="OpenAI">
+                            <option value="gpt-4o-mini">⚡ GPT-4o Mini (Fast)</option>
+                            <option value="gpt-4o">🎯 GPT-4o (Balanced)</option>
+                            <option value="gpt-4-turbo">🚀 GPT-4 Turbo (Best)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button type="button" class="refresh-btn" id="generate-insights-btn" onclick="generateAIInsights()" style="width: 100%; margin: 0;">
+                        ✨ Generate Insights
+                    </button>
+                </div>
+            </div>
+            <span class="loading-indicator" id="insights-loading" style="display: none; text-align: center; width: 100%; margin-bottom: 10px;">
+                ⏳ Analyzing student data with AI...
+            </span>
+            <div id="insights-result" style="display: none; background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #2196f3;"></div>
+            <div id="insights-error" style="display: none; background: #ffebee; padding: 15px; border-radius: 6px; border-left: 4px solid #f44336; color: #c62828;"></div>
+        </div>
+    </div>
+
+    <!-- COURSES & LESSONS SECTION -->
     {% if analysis.enrolled_courses %}
     <div class="section">
-        <h2 class="section-title">📚 Enrolled Courses</h2>
+        <h2 class="section-title">📚 Enrolled Courses & Lessons</h2>
         <ul class="courses-list">
             {% for course in analysis.enrolled_courses %}
             <li class="course-item">
                 <div class="course-title">{{ course.title }}</div>
                 <div class="course-meta">
-                    📖 {{ course.subject }} • Enrolled: {{ course.enrollment_date|date:"M d, Y" }}
+                    📖 {{ course.subject|default:"Unknown Subject" }}
+                    {% if course.enrollment_date %}
+                    • Enrolled: {{ course.enrollment_date|date:"M d, Y" }}
+                    {% endif %}
                 </div>
             </li>
             {% endfor %}
@@ -364,12 +417,12 @@
     </div>
     {% endif %}
 
-    <!-- Weak Areas -->
+    <!-- AREAS FOR IMPROVEMENT SECTION -->
     {% if analysis.weak_topics %}
     <div class="section">
         <h2 class="section-title">⚠️ Areas for Improvement</h2>
         <p style="color: #666; margin-bottom: 15px;">
-            These topics need more practice. Scoring below 70% indicates room for growth.
+            Topics with scores below 70% need more practice. Focus here for biggest gains!
         </p>
         <ul class="weak-topics">
             {% for topic in analysis.weak_topics %}
@@ -382,12 +435,12 @@
     </div>
     {% endif %}
 
-    <!-- Strong Areas -->
+    <!-- STRONG AREAS SECTION -->
     {% if analysis.strong_topics %}
     <div class="section">
         <h2 class="section-title">💪 Strong Areas</h2>
         <p style="color: #666; margin-bottom: 15px;">
-            Excellent mastery! Scoring above 85% shows strong understanding.
+            Excellent mastery! Scoring 85%+ shows strong understanding of these topics.
         </p>
         <ul class="strong-topics">
             {% for topic in analysis.strong_topics %}
@@ -400,56 +453,12 @@
     </div>
     {% endif %}
 
-    <!-- AI Recommendations -->
+    <!-- RECOMMENDATIONS SECTION -->
     <div class="section">
-        <h2 class="section-title">🎯 AI Recommendations</h2>
-        
-        {% if recommendations.ai_insights %}
-        <div style="background: #e3f2fd; padding: 20px; border-radius: 6px; margin-bottom: 25px; border-left: 4px solid #2196f3;">
-            <h3 style="color: #1976d2; font-size: 18px; margin: 0 0 15px 0;">🤖 AI Deep Analysis</h3>
-            
-            {% if recommendations.ai_insights.error %}
-            <p style="color: #d32f2f;">⚠️ {{ recommendations.ai_insights.message }}</p>
-            {% else %}
-            <p><strong>English Level:</strong> {{ recommendations.ai_insights.english_level }} - {{ recommendations.ai_insights.english_level_reasoning }}</p>
-            <p><strong>Learning Style:</strong> {{ recommendations.ai_insights.learning_style }}</p>
-            
-            {% if recommendations.ai_insights.strengths %}
-            <p><strong>💪 Strengths:</strong></p>
-            <ul>
-                {% for strength in recommendations.ai_insights.strengths %}
-                <li>{{ strength }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            
-            {% if recommendations.ai_insights.areas_for_improvement %}
-            <p><strong>📈 Areas for Improvement:</strong></p>
-            <ul>
-                {% for area in recommendations.ai_insights.areas_for_improvement %}
-                <li>{{ area }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            
-            {% if recommendations.ai_insights.recommendations %}
-            <p><strong>💡 AI Recommendations:</strong></p>
-            <ul>
-                {% for rec in recommendations.ai_insights.recommendations %}
-                <li>{{ rec }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            
-            {% if recommendations.ai_insights.study_schedule_suggestion %}
-            <p><strong>📅 Suggested Study Schedule:</strong> {{ recommendations.ai_insights.study_schedule_suggestion }}</p>
-            {% endif %}
-            {% endif %}
-        </div>
-        {% endif %}
+        <h2 class="section-title">🎯 Recommendations</h2>
         
         {% if recommendations.priority_actions %}
-        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Priority Actions</h3>
+        <h3 style="color: #666; font-size: 16px; margin: 0 0 15px 0;">📌 Priority Actions</h3>
         <ul class="recommendations-list">
             {% for action in recommendations.priority_actions %}
             <li>{{ action }}</li>
@@ -458,7 +467,7 @@
         {% endif %}
 
         {% if recommendations.study_tips %}
-        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Study Tips</h3>
+        <h3 style="color: #666; font-size: 16px; margin: 20px 0 15px 0;">💡 Study Tips</h3>
         <ul class="recommendations-list">
             {% for tip in recommendations.study_tips %}
             <li>
@@ -470,7 +479,7 @@
         {% endif %}
 
         {% if recommendations.next_steps %}
-        <h3 style="color: #666; font-size: 16px; margin: 20px 0 10px 0;">Next Steps</h3>
+        <h3 style="color: #666; font-size: 16px; margin: 20px 0 15px 0;">📋 Next Steps</h3>
         <ul class="recommendations-list">
             {% for step in recommendations.next_steps %}
             <li>{{ step }}</li>
@@ -485,64 +494,258 @@
         {% endif %}
     </div>
 
-    <!-- Recent Activity -->
+    <!-- RECENT ACTIVITY SECTION -->
     {% if analysis.recent_activity %}
     <div class="section">
         <h2 class="section-title">📈 Recent Activity</h2>
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.recent_activity.last_7_days.total_events }}</span>
+                <span class="stat-value">{{ analysis.recent_activity.last_7_days.total_events|default:0 }}</span>
                 <span class="stat-label">Events (Last 7 Days)</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">{{ analysis.recent_activity.last_30_days.total_events }}</span>
+                <span class="stat-value">{{ analysis.recent_activity.last_30_days.total_events|default:0 }}</span>
                 <span class="stat-label">Events (Last 30 Days)</span>
             </div>
         </div>
     </div>
     {% endif %}
-
-    {% endif %}
 </div>
 
 <script>
-function refreshAnalysis() {
-    const btn = document.getElementById('refresh-analysis-btn');
-    const loading = document.getElementById('loading-indicator');
-    const model = document.getElementById('ai-model').value;
+// Helper function to format nested objects/arrays
+function formatNestedObject(obj) {
+    if (!obj) return '';
+    let html = '';
+    if (Array.isArray(obj)) {
+        html += '<ul>';
+        obj.forEach(item => {
+            if (typeof item === 'object') {
+                html += '<li>' + formatNestedObject(item) + '</li>';
+            } else {
+                html += '<li>' + item + '</li>';
+            }
+        });
+        html += '</ul>';
+    } else if (typeof obj === 'object') {
+        html += '<ul>';
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (Array.isArray(value)) {
+                    html += '<li><strong>' + label + ':</strong><ul>';
+                    value.forEach(v => {
+                        if (typeof v === 'object') {
+                            html += '<li>' + formatNestedObject(v) + '</li>';
+                        } else {
+                            html += '<li>' + v + '</li>';
+                        }
+                    });
+                    html += '</ul></li>';
+                } else if (typeof value === 'object') {
+                    html += '<li><strong>' + label + ':</strong> ' + formatNestedObject(value) + '</li>';
+                } else {
+                    html += '<li><strong>' + label + ':</strong> ' + value + '</li>';
+                }
+            }
+        }
+        html += '</ul>';
+    } else {
+        html += '<p>' + obj + '</p>';
+    }
+    return html;
+}
+
+function generateAIInsights() {
+    console.log('🔘 Generate button clicked');
+    const btn = document.getElementById('generate-insights-btn');
+    const loading = document.getElementById('insights-loading');
+    const result = document.getElementById('insights-result');
+    const errorDiv = document.getElementById('insights-error');
     const subject = document.getElementById('ai-subject').value;
+    const engine = document.getElementById('ai-engine').value;
+    
+    console.log('📊 Selected subject:', subject);
+    console.log('🤖 Selected engine:', engine);
+    
+    // Clear previous results
+    result.style.display = 'none';
+    errorDiv.style.display = 'none';
     
     // Disable button and show loading
     btn.disabled = true;
-    loading.classList.add('active');
+    loading.style.display = 'block';
+    btn.textContent = '⏳ Generating...';
     
-    // Make AJAX request
-    fetch('{% url "admin:refresh_student_analysis" user.id %}', {
+    console.log('🚀 Sending request to:', '{% url "admin:student_ai_insights" user.id %}');
+    
+    // Make AJAX request to AI insights endpoint
+    fetch('{% url "admin:student_ai_insights" user.id %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token }}'
         },
         body: JSON.stringify({
-            ai_model: model,
-            subject: subject
+            subject: subject,
+            engine: engine
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📡 Response received:', response.status, response.statusText);
+        return response.json();
+    })
     .then(data => {
+        console.log('📦 Data received:', data);
+        loading.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = '✨ Generate Insights';
+        
         if (data.success) {
-            // Reload page to show updated analysis
-            window.location.reload();
+            const insights = data.insights;
+            let html = '<h3 style="color: #1976d2; margin-top: 0;">📊 Comprehensive Learning Analysis</h3>';
+            
+            // EXECUTIVE SUMMARY
+            if (insights.summary) {
+                html += '<div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #2196f3;">';
+                html += '<p style="margin: 0; color: #1565c0;"><strong>Executive Summary:</strong></p>';
+                html += '<p style="margin: 5px 0 0 0; color: #333;">' + insights.summary + '</p>';
+                html += '</div>';
+            }
+            
+            // ASSESSMENT
+            if (insights.assessment) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #333; margin: 0 0 10px 0;">📍 Current Learning Level</h4>';
+                if (typeof insights.assessment === 'object') {
+                    html += formatNestedObject(insights.assessment);
+                } else {
+                    html += '<p>' + insights.assessment + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // VOCABULARY GAPS
+            if (insights.vocabulary_gaps) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #d32f2f; margin: 0 0 10px 0;">📚 Vocabulary Gaps</h4>';
+                if (typeof insights.vocabulary_gaps === 'object') {
+                    html += formatNestedObject(insights.vocabulary_gaps);
+                } else {
+                    html += '<p>' + insights.vocabulary_gaps + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // GRAMMAR ANALYSIS
+            if (insights.grammar_analysis) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #7b1fa2; margin: 0 0 10px 0;">✍️ Grammar Analysis</h4>';
+                if (typeof insights.grammar_analysis === 'object') {
+                    html += formatNestedObject(insights.grammar_analysis);
+                } else {
+                    html += '<p>' + insights.grammar_analysis + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // QUIZ RECOMMENDATIONS
+            if (insights.quiz_recommendations && insights.quiz_recommendations.length > 0) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #0277bd; margin: 0 0 10px 0;">🎯 Recommended Quizzes</h4><ul>';
+                insights.quiz_recommendations.forEach(q => {
+                    html += '<li style="margin-bottom: 8px;"><strong>' + (q.title || q.topic || q) + '</strong>';
+                    if (q.reason) html += '<br><span style="color: #666; font-size: 13px;">' + q.reason + '</span>';
+                    if (q.difficulty) html += '<br><span style="background: #fff3e0; padding: 2px 8px; border-radius: 3px; font-size: 12px;">Difficulty: ' + q.difficulty + '</span>';
+                    html += '</li>';
+                });
+                html += '</ul></div>';
+            }
+            
+            // DIFFICULTY PROGRESSION
+            if (insights.difficulty_progression) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #00796b; margin: 0 0 10px 0;">📈 Difficulty Progression</h4>';
+                if (typeof insights.difficulty_progression === 'object') {
+                    html += formatNestedObject(insights.difficulty_progression);
+                } else {
+                    html += '<p>' + insights.difficulty_progression + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // EXTERNAL RESOURCES
+            if (insights.external_resources) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #c62828; margin: 0 0 10px 0;">🌐 External Resources</h4>';
+                if (typeof insights.external_resources === 'object') {
+                    html += formatNestedObject(insights.external_resources);
+                } else {
+                    html += '<p>' + insights.external_resources + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // STUDY GUIDE
+            if (insights.study_guide) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #f57f17; margin: 0 0 10px 0;">📋 Study Guide</h4>';
+                if (typeof insights.study_guide === 'object') {
+                    html += formatNestedObject(insights.study_guide);
+                } else {
+                    html += '<p>' + insights.study_guide + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // LEARNING JOURNEY
+            if (insights.learning_journey) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #00838f; margin: 0 0 10px 0;">🚀 Learning Journey</h4>';
+                if (typeof insights.learning_journey === 'object') {
+                    html += formatNestedObject(insights.learning_journey);
+                } else {
+                    html += '<p>' + insights.learning_journey + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // SPECIFIC ACTIONS
+            if (insights.specific_actions) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #388e3c; margin: 0 0 10px 0;">✅ Specific Actions</h4>';
+                if (typeof insights.specific_actions === 'object') {
+                    html += formatNestedObject(insights.specific_actions);
+                } else {
+                    html += '<p>' + insights.specific_actions + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            // POTENTIAL STRUGGLES
+            if (insights.potential_struggles) {
+                html += '<div style="margin-bottom: 20px;"><h4 style="color: #e64a19; margin: 0 0 10px 0;">⚠️ Potential Struggles</h4>';
+                if (Array.isArray(insights.potential_struggles)) {
+                    html += '<ul>';
+                    insights.potential_struggles.forEach(s => {
+                        html += '<li>' + s + '</li>';
+                    });
+                    html += '</ul>';
+                } else if (typeof insights.potential_struggles === 'object') {
+                    html += formatNestedObject(insights.potential_struggles);
+                } else {
+                    html += '<p>' + insights.potential_struggles + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            result.innerHTML = html;
+            result.style.display = 'block';
         } else {
-            alert('Error: ' + data.error);
-            btn.disabled = false;
-            loading.classList.remove('active');
+            console.error('❌ Error in response:', data.error);
+            errorDiv.innerHTML = '<strong>⚠️ Error:</strong> ' + (data.error || 'Failed to generate insights');
+            errorDiv.style.display = 'block';
         }
     })
     .catch(error => {
-        alert('Network error: ' + error);
+        console.error('❌ Fetch error:', error);
+        loading.style.display = 'none';
+        errorDiv.innerHTML = '<strong>⚠️ Network Error:</strong> ' + error.message;
+        errorDiv.style.display = 'block';
         btn.disabled = false;
-        loading.classList.remove('active');
+        btn.textContent = '✨ Generate Insights';
     });
 }
 </script>

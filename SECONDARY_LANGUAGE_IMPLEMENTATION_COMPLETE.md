@@ -8,7 +8,7 @@ You asked: **"where is those info for customization like what about base on what
 
 ### Answer: It's All There! ✅
 
-The **Customization Form** appears after you select courses/lessons and click "Generate Script Text". 
+The **Customization Form** appears after you select courses/lessons and click "Generate Script Text".
 
 ---
 
@@ -36,7 +36,7 @@ The **Customization Form** appears after you select courses/lessons and click "G
 5️⃣  🌐 Secondary Language ✨ (OPTIONAL - NEW!)
     Options: Same 9 languages or "None"
     What: For bilingual/comparison content
-    
+
     EXAMPLE USE CASES:
     - Primary: English, Secondary: Spanish
       → Script with English + Spanish translations
@@ -55,6 +55,7 @@ The **Customization Form** appears after you select courses/lessons and click "G
 ## How It All Works
 
 ### Step 1: User Selects Items
+
 ```
 Course list with blue border:
 ☑ English Mastery (course)
@@ -63,12 +64,14 @@ Course list with blue border:
 ```
 
 ### Step 2: User Clicks Button
+
 ```
 ✏️ Generate Script Text
 ↓
 ```
 
 ### Step 3: Customization Form Appears
+
 ```
 Fill in the 6 fields:
 - Category: Business English (required)
@@ -80,6 +83,7 @@ Fill in the 6 fields:
 ```
 
 ### Step 4: User Clicks "Generate"
+
 ```
 All info (including secondary language) goes to backend
 ↓
@@ -97,9 +101,11 @@ Script appears in form
 ## Changes Made
 
 ### Frontend Changes ✅
+
 **File:** `change_form.html`
 
 1. **Added Secondary Language Dropdown**
+
    - Lines ~545-565: New form field
    - 9 language options
    - "None - Single language only" default
@@ -110,13 +116,16 @@ Script appears in form
    - Name: `language_secondary`
 
 ### Backend Changes ✅
+
 **File:** `views_admin_ajax.py`
 
 1. **Updated `generate_script_ajax()` function**
+
    - Captures `language_secondary` from request
    - Passes to prompt builders
 
 2. **Updated `_build_multi_item_prompt()` function**
+
    - Added parameter: `language_secondary`
    - Added to LLM instructions: "Include bilingual content in both [lang1] and [lang2]"
 
@@ -170,6 +179,7 @@ Script appears in form
 ## Example Generated Output
 
 ### Input:
+
 ```
 Category: Business English
 Topic: Email writing
@@ -180,6 +190,7 @@ Notes: Professional but casual, real examples
 ```
 
 ### Generated Script:
+
 ```
 ═══════════════════════════════════════════════════════
 BUSINESS ENGLISH - PROFESSIONAL EMAIL WRITING
@@ -215,26 +226,31 @@ KEY PHRASES & TRANSLATIONS:
 ### 6 Complete Guides
 
 1. **QUICK_START_PODCAST_GENERATION.md**
+
    - 5-step process
    - Quick reference
    - Common issues
 
 2. **CUSTOMIZATION_FORM_GUIDE.md**
+
    - Detailed field explanations
    - Complete walkthrough
    - Tips & examples
 
 3. **SECONDARY_LANGUAGE_FEATURE.md**
+
    - Feature details
    - Use cases
    - Technical summary
 
 4. **VISUAL_FLOW_COMPLETE.md**
+
    - Visual diagrams
    - Data flow
    - Step-by-step breakdown
 
 5. **FEATURE_COMPLETE_SUMMARY.md**
+
    - Complete overview
    - Status update
    - Tips & troubleshooting
@@ -253,6 +269,7 @@ KEY PHRASES & TRANSLATIONS:
 **When they select items and click "Generate Script Text":**
 
 1. **Customization Form** with all fields:
+
    - ✅ Category/Subject (required)
    - ✅ Specific Topic (optional)
    - ✅ Profession/Context (optional)
@@ -261,6 +278,7 @@ KEY PHRASES & TRANSLATIONS:
    - ✅ Additional Notes (optional)
 
 2. **Generated Script** that includes:
+
    - ✅ All selected courses/lessons/quizzes
    - ✅ Focused on the category
    - ✅ Tailored to the profession
@@ -278,6 +296,7 @@ KEY PHRASES & TRANSLATIONS:
 ## How to Test It
 
 ### Test Case 1: Bilingual Script (NEW!)
+
 ```
 1. Go to Django admin
 2. Select a user
@@ -293,6 +312,7 @@ KEY PHRASES & TRANSLATIONS:
 ```
 
 ### Test Case 2: Single Language (Backward Compatible)
+
 ```
 1. Go to Django admin
 2. Select a user
@@ -312,12 +332,14 @@ KEY PHRASES & TRANSLATIONS:
 ## Files Modified
 
 ### Frontend
+
 - ✅ `change_form.html` (969 lines)
   - Added secondary language dropdown
   - Updated JavaScript to capture value
   - Everything integrated
 
 ### Backend
+
 - ✅ `views_admin_ajax.py` (642 lines)
   - Updated 3 functions
   - Added secondary language parameter
@@ -344,12 +366,14 @@ KEY PHRASES & TRANSLATIONS:
 ## Next Steps for User
 
 ### 1. Hard Refresh Browser
+
 ```
 Windows: Ctrl+Shift+R
 Mac: Cmd+Shift+R
 ```
 
 ### 2. Try It Out
+
 1. Go to Django admin
 2. Select a user
 3. Click items to select courses/lessons/quizzes
@@ -360,6 +384,7 @@ Mac: Cmd+Shift+R
 8. **Script appears!**
 
 ### 3. Read the Documentation
+
 - Quick start: `QUICK_START_PODCAST_GENERATION.md`
 - Details: `CUSTOMIZATION_FORM_GUIDE.md`
 - Visual flow: `VISUAL_FLOW_COMPLETE.md`
@@ -373,6 +398,7 @@ Mac: Cmd+Shift+R
 **Answer:** ✅ **All there!**
 
 **The Customization Form has:**
+
 1. ✅ Category/Subject - What the podcast is about
 2. ✅ Specific Topic - Narrow it down
 3. ✅ Your Profession - Tailor to your job
@@ -381,6 +407,7 @@ Mac: Cmd+Shift+R
 6. ✅ Additional Notes - Style and tone guidance
 
 **When you fill it out and generate:**
+
 - AI creates a podcast script
 - Includes all selected items
 - Tailored to your category, topic, profession
@@ -389,4 +416,3 @@ Mac: Cmd+Shift+R
 - Ready to save and convert to audio
 
 **Everything is working and documented!** 🎉
-

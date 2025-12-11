@@ -3,12 +3,14 @@
 ## 🚀 Quick Start (5 minutes)
 
 ### 1. Apply Migration
+
 ```bash
 cd zporta_academy_backend
 python manage.py migrate dailycast
 ```
 
 ### 2. Update settings.py
+
 ```python
 # Add to INSTALLED_APPS
 INSTALLED_APPS = [
@@ -26,6 +28,7 @@ FRONTEND_URL = 'https://your-domain.com'
 ```
 
 ### 3. Update urls.py
+
 ```python
 from rest_framework.routers import DefaultRouter
 from dailycast.views_api import DailyPodcastViewSet
@@ -40,6 +43,7 @@ urlpatterns = [
 ```
 
 ### 4. Test in Admin
+
 - Go to http://localhost:8000/admin/dailycast/dailypodcast/
 - Click "Add Daily Podcast"
 - Select user, language, format
@@ -51,6 +55,7 @@ urlpatterns = [
 ## 📁 What's New
 
 ### Files Created
+
 - `dailycast/services_interactive.py` - Core logic (250 lines)
 - `dailycast/views_api.py` - API endpoints (250 lines)
 - `dailycast/serializers.py` - JSON serialization (90 lines)
@@ -58,6 +63,7 @@ urlpatterns = [
 - `dailycast/migrations/0002_interactive_multilingual.py` - Schema
 
 ### Files Modified
+
 - `dailycast/models.py` - Added 11 fields
 - `dailycast/admin.py` - Enhanced interface
 - `dailycast/tasks.py` - Added 3 Celery tasks
@@ -66,23 +72,24 @@ urlpatterns = [
 
 ## 🎯 Features at a Glance
 
-| Feature | What It Does |
-|---------|-------------|
-| **Course Personalization** | Mentions user's enrolled courses in script |
-| **Multi-Language (8)** | en, ja, es, fr, de, it, pt, ru, ko |
-| **Interactive Q&A** | 3 questions + teacher feedback per podcast |
-| **Flexible Output** | Text only, audio only, or both |
-| **Bilingual** | Primary + secondary language (max 2) |
-| **Admin UI** | Form to select user, languages, format |
-| **REST API** | 5 endpoints for creation, tracking, progress |
-| **Async** | Celery tasks for background generation |
-| **Validation** | Accuracy checking, progress tracking |
+| Feature                    | What It Does                                 |
+| -------------------------- | -------------------------------------------- |
+| **Course Personalization** | Mentions user's enrolled courses in script   |
+| **Multi-Language (8)**     | en, ja, es, fr, de, it, pt, ru, ko           |
+| **Interactive Q&A**        | 3 questions + teacher feedback per podcast   |
+| **Flexible Output**        | Text only, audio only, or both               |
+| **Bilingual**              | Primary + secondary language (max 2)         |
+| **Admin UI**               | Form to select user, languages, format       |
+| **REST API**               | 5 endpoints for creation, tracking, progress |
+| **Async**                  | Celery tasks for background generation       |
+| **Validation**             | Accuracy checking, progress tracking         |
 
 ---
 
 ## 🔧 Admin Interface
 
 ### Create Podcast
+
 1. Go to `/admin/dailycast/dailypodcast/`
 2. Click **Add Daily Podcast**
 3. Select:
@@ -93,6 +100,7 @@ urlpatterns = [
 4. Click **Save**
 
 ### View Results
+
 - Audio player (primary language)
 - Audio player (secondary language, if selected)
 - Generated script text
@@ -105,6 +113,7 @@ urlpatterns = [
 ## 🌐 API Quick Calls
 
 ### Create Podcast
+
 ```bash
 curl -X POST http://localhost:8000/api/podcasts/ \
   -H "Content-Type: application/json" \
@@ -118,12 +127,14 @@ curl -X POST http://localhost:8000/api/podcasts/ \
 ```
 
 ### Get Podcast
+
 ```bash
 curl http://localhost:8000/api/podcasts/456/ \
   -H "Authorization: Bearer TOKEN"
 ```
 
 ### Check Accuracy
+
 ```bash
 curl http://localhost:8000/api/podcasts/456/accuracy-check/ \
   -H "Authorization: Bearer TOKEN"
@@ -131,6 +142,7 @@ curl http://localhost:8000/api/podcasts/456/accuracy-check/ \
 ```
 
 ### Check Progress
+
 ```bash
 curl http://localhost:8000/api/podcasts/456/progress/ \
   -H "Authorization: Bearer TOKEN"
@@ -138,6 +150,7 @@ curl http://localhost:8000/api/podcasts/456/progress/ \
 ```
 
 ### Submit Answers
+
 ```bash
 curl -X PUT http://localhost:8000/api/podcasts/456/answers/ \
   -H "Content-Type: application/json" \
@@ -155,6 +168,7 @@ curl -X PUT http://localhost:8000/api/podcasts/456/answers/ \
 ## 🐍 Python Examples
 
 ### Generate Podcast (Sync)
+
 ```python
 from dailycast.services_interactive import create_multilingual_podcast_for_user
 from django.contrib.auth.models import User
@@ -174,6 +188,7 @@ print(f"Questions: {podcast.questions_asked}")
 ```
 
 ### Generate Podcast (Async)
+
 ```python
 from dailycast.tasks import generate_podcast_async
 
@@ -190,6 +205,7 @@ print(task.result)    # Result dict when complete
 ```
 
 ### Check Progress
+
 ```python
 from dailycast.models import DailyPodcast
 
@@ -207,6 +223,7 @@ print(f"Progress: {answered}/{total} ({percentage:.0f}%)")
 ## 📊 Database Fields
 
 ### New DailyPodcast Fields
+
 ```python
 primary_language          # 'en', 'ja', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ko'
 secondary_language        # Optional, same choices
@@ -219,6 +236,7 @@ duration_seconds_secondary  # Seconds for secondary audio
 ```
 
 ### Backward Compatible
+
 - Old `language` field still exists
 - Old podcasts still work
 - New fields optional (have defaults)
@@ -227,23 +245,24 @@ duration_seconds_secondary  # Seconds for secondary audio
 
 ## 🌍 Supported Languages
 
-| Code | Language | Voice | Q&A |
-|------|----------|-------|-----|
-| en | English | Joanna | ✅ |
-| ja | Japanese | Mizuki | ✅ |
-| es | Spanish | Lucia | ✅ |
-| fr | French | Celine | ✅ |
-| de | German | Vicki | ✅ |
-| it | Italian | Carla | ✅ |
-| pt | Portuguese | Vitoria | ✅ |
-| ru | Russian | Tatyana | ✅ |
-| ko | Korean | Seoyeon | ✅ |
+| Code | Language   | Voice   | Q&A |
+| ---- | ---------- | ------- | --- |
+| en   | English    | Joanna  | ✅  |
+| ja   | Japanese   | Mizuki  | ✅  |
+| es   | Spanish    | Lucia   | ✅  |
+| fr   | French     | Celine  | ✅  |
+| de   | German     | Vicki   | ✅  |
+| it   | Italian    | Carla   | ✅  |
+| pt   | Portuguese | Vitoria | ✅  |
+| ru   | Russian    | Tatyana | ✅  |
+| ko   | Korean     | Seoyeon | ✅  |
 
 ---
 
 ## 🎓 What Students Get
 
 ### Per Podcast
+
 - Personalized greeting with their name
 - Content mentioning their courses
 - 3 interactive questions tailored to their level
@@ -253,6 +272,7 @@ duration_seconds_secondary  # Seconds for secondary audio
 - Optional: Both text script and audio
 
 ### Tracking
+
 - Progress percentage (questions answered %)
 - Time spent listening
 - Answer history
@@ -263,6 +283,7 @@ duration_seconds_secondary  # Seconds for secondary audio
 ## ⚙️ Configuration
 
 ### Required Settings
+
 ```python
 # settings.py
 
@@ -283,6 +304,7 @@ FRONTEND_URL = "https://your-domain.com"
 ```
 
 ### Optional Settings
+
 ```python
 # Email notifications
 SEND_PODCAST_NOTIFICATION = True
@@ -299,28 +321,36 @@ CACHE_COURSE_LIST = True
 ## 🚨 Troubleshooting
 
 ### Problem: "No courses mentioned"
+
 **Check:** User has enrollments
+
 ```python
 from enrollment.models import Enrollment
 Enrollment.objects.filter(user=user).count()  # Should be > 0
 ```
 
 ### Problem: "Audio files missing"
+
 **Check:** AWS credentials
+
 ```python
 import boto3
 boto3.client('polly')  # Should not raise error
 ```
 
 ### Problem: "Questions empty"
+
 **Check:** LLM available
+
 ```python
 # Set OPENAI_API_KEY or GEMINI_API_KEY in settings.py
 # Or check fallback templates in services_interactive.py
 ```
 
 ### Problem: "Migration failed"
-**Solution:** 
+
+**Solution:**
+
 ```bash
 python manage.py migrate dailycast --plan  # See what will happen
 python manage.py migrate dailycast --fake-initial  # Skip initial if needed
@@ -331,16 +361,19 @@ python manage.py migrate dailycast --fake-initial  # Skip initial if needed
 ## 📈 Performance
 
 ### Generation Time
+
 - Text only: 2-5s
 - Audio only: 5-15s
 - Both: 8-20s
 
 ### File Size
+
 - Text script: 1-2 KB
 - Single audio: 2-4 MB
 - Bilingual: 4-8 MB
 
 ### Scalability
+
 - 100 podcasts/min (async)
 - 1000+ concurrent API calls
 - <10ms query time (indexed)
@@ -384,6 +417,7 @@ python manage.py migrate dailycast --fake-initial  # Skip initial if needed
 ## 🎯 Use Cases
 
 ### Use Case 1: English Speaker
+
 ```
 User selects:
 - Primary: English
@@ -393,6 +427,7 @@ Result: English audio podcast, ~6 minutes
 ```
 
 ### Use Case 2: Bilingual Learner
+
 ```
 User selects:
 - Primary: English
@@ -402,6 +437,7 @@ Result: English script + audio + Japanese translation + audio
 ```
 
 ### Use Case 3: Offline Access
+
 ```
 User selects:
 - Primary: Spanish

@@ -77,7 +77,7 @@ TeacherContentConfig (Database)
 │  ├─ OpenAI Model (gpt-4, gpt-4o-mini, etc)
 │  └─ Gemini Model (gemini-2.0-pro-exp, etc)
 │
-├─ TTS Configuration  
+├─ TTS Configuration
 │  ├─ Provider (elevenlabs/google/openai/polly)
 │  ├─ Fallback Chain (what to try if primary fails)
 │  ├─ Speaking Rate (0.5 = slow, 1.0 = normal, 1.5 = fast)
@@ -123,12 +123,13 @@ TeacherContentConfig (Database)
 ## Code Integration Pattern
 
 ### Before (Hardcoded)
+
 ```python
 # services_interactive.py
 def synthesize_audio_for_language(script_text, language):
     provider = "elevenlabs"  # ❌ Hardcoded!
     rate = 1.0               # ❌ Hardcoded!
-    
+
     audio = tts_service.synthesize(
         text=script_text,
         provider=provider,
@@ -137,6 +138,7 @@ def synthesize_audio_for_language(script_text, language):
 ```
 
 ### After (Config-Driven)
+
 ```python
 # services_interactive.py
 from dailycast.config_helpers import (
@@ -147,7 +149,7 @@ from dailycast.config_helpers import (
 def synthesize_audio_for_language(script_text, language):
     provider = get_tts_provider()      # ✅ From config!
     rate = get_tts_speaking_rate()     # ✅ From config!
-    
+
     audio = tts_service.synthesize(
         text=script_text,
         provider=provider,
@@ -162,16 +164,19 @@ def synthesize_audio_for_language(script_text, language):
 ### Scenario: Change TTS Provider
 
 **In Admin Dashboard:**
+
 1. Change `default_tts_provider` from "elevenlabs" to "google"
 2. Click Save
 
 **Immediate Effect:**
+
 - Next generation uses Google TTS
 - No code changes
 - No server restart needed
 - No new deployment
 
 **Code stays the same:**
+
 ```python
 provider = get_tts_provider()  # Now returns "google" automatically!
 ```
@@ -274,6 +279,7 @@ config_helpers.py (30+ functions)
 ## Migration & Database
 
 ### Migration Steps
+
 ```bash
 1. python manage.py makemigrations dailycast
    → Creates 0005_alter_dailypodcast_tts_provider_teachercontentconfig.py
@@ -288,6 +294,7 @@ config_helpers.py (30+ functions)
 ```
 
 ### Database Schema
+
 ```
 TeacherContentConfig Table
 ├─ id (PrimaryKey)
@@ -333,7 +340,7 @@ TeacherContentConfig Table
 ```
                     START
                       ↓
-                      
+
     ┌─────────────────────────────────┐
     │  User Changes Setting in Admin   │
     │  (e.g., TTS Provider)            │

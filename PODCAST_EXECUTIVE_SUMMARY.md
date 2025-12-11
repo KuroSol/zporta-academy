@@ -18,6 +18,7 @@
 4. 📱 Display in their AI Dashboard with a play button
 
 **User Experience:**
+
 ```
 User opens /study/dashboard
     ↓
@@ -35,6 +36,7 @@ Optional: Reads transcript if they want to see the text
 ## 🏗️ ARCHITECTURE IN ONE PAGE
 
 ### What Gets Built
+
 - New Django app: `dailycast`
 - New database model: `DailyPodcast`
 - New API endpoint: `GET /api/dailycast/today/`
@@ -42,7 +44,9 @@ Optional: Reads transcript if they want to see the text
 - Frontend component: audio player on dashboard
 
 ### What Provides the Intelligence
+
 **Already exists** in Zporta (we just use it):
+
 - `UserAbilityProfile` → user's current level
 - `MemoryStat` → what to review today
 - `ActivityEvent` → recent quiz results
@@ -50,12 +54,13 @@ Optional: Reads transcript if they want to see the text
 - `Feed system` → already personalized quizzes
 
 ### What Gets Called (External Services)
-| Service | Purpose | Cost/User/Month | Fallback |
-|---------|---------|-----------------|----------|
-| **GPT-4o Mini** (OpenAI) | Write script | $0.15-0.20 | Gemini Flash |
-| **Google Cloud TTS** (Google) | Convert to audio (premium) | $0.04-0.12 | Azure Neural TTS |
-| **Amazon Polly** (AWS) | Convert to audio (basic) | $0.02-0.07 | Google TTS |
-| **S3 + CloudFront** (AWS) | Store MP3 | $0.10 | Local disk (fallback) |
+
+| Service                       | Purpose                    | Cost/User/Month | Fallback              |
+| ----------------------------- | -------------------------- | --------------- | --------------------- |
+| **GPT-4o Mini** (OpenAI)      | Write script               | $0.15-0.20      | Gemini Flash          |
+| **Google Cloud TTS** (Google) | Convert to audio (premium) | $0.04-0.12      | Azure Neural TTS      |
+| **Amazon Polly** (AWS)        | Convert to audio (basic)   | $0.02-0.07      | Google TTS            |
+| **S3 + CloudFront** (AWS)     | Store MP3                  | $0.10           | Local disk (fallback) |
 
 ---
 
@@ -64,6 +69,7 @@ Optional: Reads transcript if they want to see the text
 ### Quality Strategy
 
 **Best Quality:**
+
 - Use **latest neural TTS** (Google/Azure) → natural-sounding, human-like
 - Use **GPT-4o Mini** → best balance of quality & speed
 - **Parameterized LLM prompt** → podcast tailored to user's actual data
@@ -103,6 +109,7 @@ Storage Fails? → Queue retry task → Alert admin
 ## 📊 REAL NUMBERS
 
 ### Cost per Month (1000 Users)
+
 - **Text Generation (LLM):** $200-250/month
 - **Audio Conversion (TTS):** ~$217/month
 - **Storage (S3/CDN):** ~$100/month
@@ -118,6 +125,7 @@ vs.
 - Our solution: **$0.55/month** ✅
 
 ### Performance Targets
+
 - **Script Generation:** 15-30 seconds
 - **Audio Conversion:** 10-20 seconds per user
 - **Database Save:** <1 second
@@ -130,7 +138,9 @@ vs.
 ## 📋 WHAT'S INCLUDED IN THE PLAN
 
 ### Document 1: DAILY_PODCAST_PLAN.md
+
 **Complete technical specification**
+
 - Models & database schema
 - Provider selection strategy (cost-optimized)
 - Generation pipeline (Celery task flow)
@@ -140,7 +150,9 @@ vs.
 - Implementation checklist (5 phases)
 
 ### Document 2: PODCAST_LLM_PROMPT_TEMPLATE.md
+
 **Production-ready LLM prompt**
+
 - System prompt (tell LLM what to do)
 - User prompt with all variables
 - Example output format
@@ -149,7 +161,9 @@ vs.
 - Usage examples (Python code)
 
 ### Document 3: PODCAST_ARCHITECTURE_VISUAL.md
+
 **Visual diagrams & data flows**
+
 - Full system architecture (components + services)
 - Sequence diagram (step-by-step what happens at 3 AM)
 - Database schema & relationships
@@ -162,6 +176,7 @@ vs.
 ## 🎬 NEXT STEPS (Implementation Phases)
 
 ### Phase 1: Models & Setup (1-2 days)
+
 ```
 ☐ Create dailycast Django app
 ☐ Define DailyPodcast model (8 fields)
@@ -171,6 +186,7 @@ vs.
 ```
 
 ### Phase 2: Core Services (3-4 days)
+
 ```
 ☐ LLM provider service (GPT-4o Mini + fallbacks)
 ☐ TTS provider service (Google/Amazon/Azure + fallbacks)
@@ -182,6 +198,7 @@ vs.
 ```
 
 ### Phase 3: Celery Task (1-2 days)
+
 ```
 ☐ Management command: generate_daily_podcasts
 ☐ Batch processing (100 users at a time)
@@ -190,6 +207,7 @@ vs.
 ```
 
 ### Phase 4: API & Frontend (2-3 days)
+
 ```
 ☐ REST API endpoint: GET /api/dailycast/today/
 ☐ Serializers & response format
@@ -199,6 +217,7 @@ vs.
 ```
 
 ### Phase 5: Testing & Deployment (2-3 days)
+
 ```
 ☐ Unit tests (LLM, TTS, S3)
 ☐ Integration tests (end-to-end generation)
@@ -214,36 +233,42 @@ vs.
 ## 🔐 Key Design Decisions
 
 ### 1. **Why Celery Background Task (Not In-Request)?**
+
 - ✅ Podcast generation takes 40-60 seconds per user
 - ✅ Can't block HTTP request that long (user experience suffers)
 - ✅ Must run offline at scheduled time (3 AM = low-traffic window)
 - ✅ Already have Celery infrastructure in Zporta
 
 ### 2. **Why Multiple LLM Providers?**
+
 - ✅ OpenAI has rate limits → need fallback
 - ✅ If OpenAI goes down → Gemini Flash as backup
 - ✅ Cost optimization: Gemini cheaper if primary fails
 - ✅ Template fallback if all LLMs fail (graceful degradation)
 
 ### 3. **Why Different TTS for Different User Plans?**
+
 - ✅ Free users: Amazon Polly (cheapest, good quality)
 - ✅ Premium users: Google Neural TTS (sounds natural, like real person)
 - ✅ Enterprise: Azure Neural (best voices, emotion control)
 - ✅ Saves ~$0.15/podcast on basic users, while keeping quality high
 
 ### 4. **Why Store in S3, Not Local Disk?**
+
 - ✅ Scalable (don't depend on single server storage)
 - ✅ CDN-able (CloudFront serves MP3 fast globally)
 - ✅ Persistent (survives server restarts/redeployment)
 - ✅ Cheap ($0.023/GB) with automatic expiration
 
 ### 5. **Why Store Script Text in Database?**
+
 - ✅ Fast transcript loading (no S3 call needed)
 - ✅ Small size (4000 chars = tiny database footprint)
 - ✅ Searchable/indexable if we want to analyze content
 - ✅ Simple compliance (audit trail of what was generated)
 
 ### 6. **Why Unique Constraint on (user, date)?**
+
 - ✅ Prevents duplicate podcasts for same user on same day
 - ✅ Simple idempotent re-runs (safe to retry)
 - ✅ Database ensures "one podcast per user per day"
@@ -265,21 +290,23 @@ After 2 weeks in production, track these:
 
 ## 🛡️ Risks & Mitigation
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| LLM generates bad script | User experience | Template fallback + manual review of first 10 podcasts |
-| TTS sounds robotic | User experience | Use neural TTS for premium users only |
-| S3 storage fails | Data loss | Automatic retry queue, store in DB as backup |
-| Cost higher than $0.60/user | Budget overrun | Monitor costs weekly, switch providers if needed |
-| One LLM/TTS provider goes down | Service interruption | 2-3 fallback providers per step, no single point of failure |
-| User privacy concern | Compliance issue | Don't send PII to LLM; use hashed user ID, encrypt script in DB |
+| Risk                           | Impact               | Mitigation                                                      |
+| ------------------------------ | -------------------- | --------------------------------------------------------------- |
+| LLM generates bad script       | User experience      | Template fallback + manual review of first 10 podcasts          |
+| TTS sounds robotic             | User experience      | Use neural TTS for premium users only                           |
+| S3 storage fails               | Data loss            | Automatic retry queue, store in DB as backup                    |
+| Cost higher than $0.60/user    | Budget overrun       | Monitor costs weekly, switch providers if needed                |
+| One LLM/TTS provider goes down | Service interruption | 2-3 fallback providers per step, no single point of failure     |
+| User privacy concern           | Compliance issue     | Don't send PII to LLM; use hashed user ID, encrypt script in DB |
 
 ---
 
 ## 📚 ADDITIONAL RESOURCES PROVIDED
 
 ### 1. **Complete LLM Prompt Template**
+
 Ready to use with GPT-4o Mini, Gemini Flash, or Claude Haiku. Just insert user variables and call the API. Includes:
+
 - System prompt (instructions for the LLM)
 - User prompt with all parameterized variables
 - Example output format
@@ -287,6 +314,7 @@ Ready to use with GPT-4o Mini, Gemini Flash, or Claude Haiku. Just insert user v
 - Testing with mock data
 
 ### 2. **Visual Architecture Diagrams**
+
 - Full system architecture (what talks to what)
 - Sequence diagram (what happens at 3 AM step-by-step)
 - Database schema (how DailyPodcast relates to other tables)
@@ -294,6 +322,7 @@ Ready to use with GPT-4o Mini, Gemini Flash, or Claude Haiku. Just insert user v
 - Cost breakdown ($ per month by provider)
 
 ### 3. **Implementation Checklist**
+
 - 5 phases, ~2-3 weeks total
 - Each phase has clear tasks
 - Each task is 1-2 hours of work
@@ -352,6 +381,7 @@ All questions answered in the three detailed documents:
 **Ready to: START CODING** 🚀
 
 The system is designed to be:
+
 - **Scalable**: Add more users without architecture changes
 - **Reliable**: Automatic fallbacks if providers fail
 - **Cost-Efficient**: Multi-tier TTS strategy saves money
@@ -360,6 +390,5 @@ The system is designed to be:
 
 ---
 
-**All three analysis documents are production-ready and can be used immediately 
+**All three analysis documents are production-ready and can be used immediately
 for implementation with any Django developer familiar with Celery and REST APIs.**
-

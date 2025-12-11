@@ -41,6 +41,7 @@ UserCategoryConfig:
 ```
 
 **Why**: Non-engineers now instantly understand:
+
 - Global Defaults = Apply to everyone
 - Student Group = Group of users
 - Category Override = Special settings for specific groups
@@ -67,6 +68,7 @@ class UserCategoryConfigAdmin → class PerCategoryOverrideAdmin
 **Updated Docstrings with Visual Hierarchy**:
 
 #### GlobalPodcastDefaultsAdmin
+
 ```
 Global default settings for ALL podcast generation.
 
@@ -84,6 +86,7 @@ Example:
 ```
 
 #### StudentGroupAdmin
+
 ```
 Manage Student Groups and their settings overrides.
 
@@ -102,6 +105,7 @@ To override a setting for a group:
 ```
 
 #### PerCategoryOverrideAdmin
+
 ```
 Settings overrides for specific student groups.
 
@@ -121,14 +125,10 @@ IMPORTANT:
 **Location**: StudentGroupAdmin fieldsets
 
 ```html
-💡 Tip: Leave a field BLANK to use the global default.
-Only fill in values you want to OVERRIDE for this group.
-
-Example:
-• Global cost: $0.50
-• This group cost: $0.25 (override) → Beginners pay less
-• Global cooldown: 24 hours
-• This group cooldown: (blank) → Beginners use global 24 hours
+💡 Tip: Leave a field BLANK to use the global default. Only fill in values you
+want to OVERRIDE for this group. Example: • Global cost: $0.50 • This group
+cost: $0.25 (override) → Beginners pay less • Global cooldown: 24 hours • This
+group cooldown: (blank) → Beginners use global 24 hours
 ```
 
 ---
@@ -136,6 +136,7 @@ Example:
 ## 🎯 VISUAL IMPROVEMENTS (What User Sees in Admin)
 
 ### Before
+
 ```
 Django Administration
 ├── DAILYCAST
@@ -146,6 +147,7 @@ Django Administration
 ```
 
 ### After
+
 ```
 Django Administration
 ├── DAILYCAST
@@ -162,6 +164,7 @@ Django Administration
 ### Scenario: Set cheaper model for "Beginners"
 
 **Before**: User confused
+
 ```
 1. Opens "User Categories"
 2. Clicks "Beginners"
@@ -173,6 +176,7 @@ Django Administration
 ```
 
 **After**: User understands
+
 ```
 1. Opens "Student Groups"
 2. Clicks "Beginners"
@@ -201,6 +205,7 @@ Django Administration
 ## 🔄 PHASE 2 NEXT STEPS (When Ready)
 
 ### Dashboard View (90 minutes)
+
 Create unified settings page showing:
 
 ```
@@ -219,6 +224,7 @@ Create unified settings page showing:
 ```
 
 **Benefits**:
+
 - See ALL settings at once
 - No tab-switching
 - Visual comparison
@@ -250,20 +256,23 @@ dailycast/
 ## 📊 IMPACT ANALYSIS
 
 ### User Experience
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Time to change setting | 5-10 min | 2 min | **60% faster** |
-| Confusion on names | High | None | **100% clear** |
-| Support requests | High | Low | **-80% expected** |
-| Configuration errors | Medium | Rare | **-90% expected** |
+
+| Metric                 | Before   | After | Improvement       |
+| ---------------------- | -------- | ----- | ----------------- |
+| Time to change setting | 5-10 min | 2 min | **60% faster**    |
+| Confusion on names     | High     | None  | **100% clear**    |
+| Support requests       | High     | Low   | **-80% expected** |
+| Configuration errors   | Medium   | Rare  | **-90% expected** |
 
 ### Code Quality
+
 - ✅ **Zero logic changes** - all existing code works
 - ✅ **Backward compatible** - database unchanged
 - ✅ **Non-breaking** - just renamed displays
 - ✅ **Easy to test** - no new features
 
 ### User Learning Curve
+
 ```
 BEFORE:
 New admin reads "Teacher Content Configuration"
@@ -289,17 +298,20 @@ Clear understanding in 2 minutes
 ## 🎓 NEXT PHASES
 
 ### Phase 2: Settings Dashboard (2-3 hours)
+
 - [ ] Create unified view
 - [ ] Show comparison table
 - [ ] Add user impact preview
 - [ ] Add quick-edit buttons
 
 ### Phase 3: Inline Editing (1 hour)
+
 - [ ] Improve StudentGroupAdmin inline form
 - [ ] Better field organization
 - [ ] Live validation
 
 ### Phase 4: Advanced Features (2 hours)
+
 - [ ] Cost calculator with preview
 - [ ] User impact analyzer
 - [ ] Settings export/import
@@ -320,7 +332,7 @@ Clear understanding in 2 minutes
 ## 🚀 READY TO TEST?
 
 1. Refresh Django admin page
-2. Click "Student Groups" 
+2. Click "Student Groups"
 3. Create/edit a group
 4. Notice the clear "SETTINGS OVERRIDE" section
 5. Notice the yellow tip explaining blank vs filled fields

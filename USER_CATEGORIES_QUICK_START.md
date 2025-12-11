@@ -5,6 +5,7 @@
 You can now create **groups of users** where each group has **different settings**.
 
 For example:
+
 - **Teachers** → Unlimited generations, GPT-4, ElevenLabs TTS
 - **Students** → 3 generations/day, Template LLM, Google TTS, no cost
 - **Trial** → 1 generation, template, free
@@ -14,11 +15,13 @@ For example:
 ## Quick Setup (5 Steps)
 
 ### Step 1: Go to Admin
+
 ```
 http://localhost:8000/admin/
 ```
 
 ### Step 2: Create a Category
+
 ```
 Dailycast → User Categories → Add User Category
 
@@ -31,6 +34,7 @@ Users: (select users)
 Click **Save**
 
 ### Step 3: Configure the Category
+
 ```
 You'll see a form with "Configuration" section:
 
@@ -49,11 +53,13 @@ Cost per Generation: $2.00
 Fill it and click **Save**
 
 ### Step 4: Add More Users
+
 ```
 Click category again → Users section → Add more users
 ```
 
 ### Step 5: Done!
+
 ```
 Now all Teachers will use:
 - GPT-4 LLM
@@ -67,6 +73,7 @@ Now all Teachers will use:
 ## 📊 Example Groups to Create
 
 ### Teachers
+
 - LLM: gpt-4o-mini (best)
 - TTS: elevenlabs (natural)
 - Limit: 20/day
@@ -74,6 +81,7 @@ Now all Teachers will use:
 - Cooldown: 24h
 
 ### Students
+
 - LLM: template (no cost)
 - TTS: google (fast)
 - Limit: 3/day
@@ -81,6 +89,7 @@ Now all Teachers will use:
 - Cooldown: 24h
 
 ### Trial Users
+
 - LLM: template
 - TTS: google
 - Limit: 1/day
@@ -92,6 +101,7 @@ Now all Teachers will use:
 ## 🎯 In Code
 
 ### Get user's config:
+
 ```python
 from dailycast.category_helpers import get_category_config
 
@@ -106,6 +116,7 @@ cost = config.cost_per_generation  # 2.00
 ```
 
 ### Get specific settings:
+
 ```python
 from dailycast.category_helpers import (
     get_tts_provider_for_user,
@@ -119,6 +130,7 @@ limit = get_max_generations_per_day_for_user(user)  # 20
 ```
 
 ### Add user to category:
+
 ```python
 from dailycast.category_helpers import add_user_to_category
 
@@ -133,6 +145,7 @@ add_user_to_category(user, 'Teachers')
 ✅ Complete and ready to use!
 
 **Features:**
+
 - Create unlimited categories
 - Assign users to categories
 - Different config per category

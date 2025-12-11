@@ -13,6 +13,8 @@ def collect_user_stats(user) -> Dict:
     from notes.models import Note
     from lessons.models import LessonCompletion
     from enrollment.models import Enrollment
+    from django.contrib.contenttypes.models import ContentType
+    from courses.models import Course
     
     stats = {
         "ability_score": None,
@@ -28,7 +30,7 @@ def collect_user_stats(user) -> Dict:
 
     # Count notes written by user
     try:
-        stats["notes_count"] = Note.objects.filter(creator=user).count()
+        stats["notes_count"] = Note.objects.filter(user=user).count()
     except Exception as e:
         logger.warning(f"Error counting notes for user {user.id}: {e}")
         stats["notes_count"] = 0
@@ -36,8 +38,7 @@ def collect_user_stats(user) -> Dict:
     # Count lessons completed
     try:
         stats["lessons_completed"] = LessonCompletion.objects.filter(
-            user=user, 
-            completed=True
+            user=user
         ).count()
     except Exception as e:
         logger.warning(f"Error counting lessons for user {user.id}: {e}")
@@ -45,18 +46,22 @@ def collect_user_stats(user) -> Dict:
     
     # Get enrolled courses with details
     try:
+        course_content_type = ContentType.objects.get_for_model(Course)
         enrollments = Enrollment.objects.filter(
-            user=user
-        ).select_related('course')
+            user=user,
+            content_type=course_content_type,
+            enrollment_type='course'
+        )
         
         stats["enrolled_courses"] = [
             {
-                'id': e.course.id,
-                'title': e.course.title,
-                'subject': getattr(e.course, 'subject', 'Unknown'),
-                'enrollment_date': e.enrolled_at if hasattr(e, 'enrolled_at') else e.created_at if hasattr(e, 'created_at') else None
+                'id': e.object_id,
+                'title': e.content_object.title if e.content_object else f'Course {e.object_id}',
+                'subject': getattr(e.content_object, 'subject', 'Unknown') if e.content_object else 'Unknown',
+                'enrollment_date': e.enrollment_date
             }
             for e in enrollments
+            if e.content_object
         ]
     except Exception as e:
         logger.warning(f"Error getting enrolled courses for user {user.id}: {e}")
@@ -64,7 +69,7 @@ def collect_user_stats(user) -> Dict:
     
     # Count quizzes completed
     try:
-        from quizzes.models import QuizAttempt
+        from analytics.models import QuizAttempt
         stats["quizzes_completed"] = QuizAttempt.objects.filter(user=user).count()
     except Exception as e:
         logger.warning(f"Error counting quizzes for user {user.id}: {e}")

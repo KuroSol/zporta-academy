@@ -44,6 +44,7 @@ There are **2 levels of settings**:
 ## 📍 WHERE TO FIND SETTINGS
 
 ### Global Defaults (For Everyone)
+
 ```
 Django Admin → Dailycast → Global Podcast Defaults
 └─ This is the fallback for all users
@@ -52,6 +53,7 @@ Django Admin → Dailycast → Global Podcast Defaults
 **What to do here**: Set defaults that make sense for most users
 
 **Example settings**:
+
 - AI Provider: OpenAI (gpt-4o-mini)
 - Cost per podcast: $0.50
 - Cooldown: 24 hours
@@ -60,6 +62,7 @@ Django Admin → Dailycast → Global Podcast Defaults
 ---
 
 ### Student Group Overrides (Per Group)
+
 ```
 Django Admin → Dailycast → Student Groups
 └─ Click a group → Edit overrides
@@ -68,6 +71,7 @@ Django Admin → Dailycast → Student Groups
 **What to do here**: Override ONLY what you want different for this group
 
 **Example**:
+
 ```
 GROUP: "Beginners" (150 users)
 └─ Cost: $0.25 (cheaper for beginners!)
@@ -81,6 +85,7 @@ GROUP: "Beginners" (150 users)
 ## 💡 KEY RULES
 
 ### Rule 1: Blank = Use Global Default
+
 ```
 If you leave a field BLANK in Student Group overrides:
 → That setting uses the Global Default
@@ -93,6 +98,7 @@ Beginner users pay: $0.50 (uses global)
 ```
 
 ### Rule 2: Filled In = Override Global
+
 ```
 If you FILL IN a field in Student Group overrides:
 → That setting overrides the global default
@@ -105,6 +111,7 @@ Beginner users pay: $0.25 (override)
 ```
 
 ### Rule 3: No Group = Always Global
+
 ```
 If a user is NOT in any Student Group:
 → They get ALL global defaults
@@ -120,6 +127,7 @@ Sees: Global settings for everything
 ## 🎓 REAL WORLD EXAMPLE
 
 ### Setup
+
 ```
 GLOBAL DEFAULTS:
 ├─ AI Model: gpt-4o-mini (cheap)
@@ -143,6 +151,7 @@ STUDENT GROUPS:
 ```
 
 ### What Each User Sees
+
 ```
 Beginner user "Sarah":
 ├─ AI Model: gpt-4o-mini (global)
@@ -168,6 +177,7 @@ No-group user "Anonymous":
 ## 🔧 COMMON TASKS
 
 ### Task 1: Make podcasts cheaper for beginners
+
 ```
 1. Go to: Django Admin → Student Groups → Beginners
 2. Scroll to: SETTINGS OVERRIDE
@@ -179,6 +189,7 @@ No-group user "Anonymous":
 ```
 
 ### Task 2: Give advanced users premium AI
+
 ```
 1. Go to: Django Admin → Student Groups → Advanced
 2. Scroll to: SETTINGS OVERRIDE
@@ -190,6 +201,7 @@ No-group user "Anonymous":
 ```
 
 ### Task 3: Limit how often beginners can generate
+
 ```
 1. Go to: Django Admin → Student Groups → Beginners
 2. Scroll to: SETTINGS OVERRIDE
@@ -198,6 +210,7 @@ No-group user "Anonymous":
 ```
 
 ### Task 4: Set global defaults everyone should use
+
 ```
 1. Go to: Django Admin → Global Podcast Defaults
 2. Edit: Default AI Provider = gemini-1.5-pro (fast & cheap)
@@ -211,12 +224,13 @@ No-group user "Anonymous":
 ## ⚙️ SETTINGS EXPLAINED
 
 ### AI Model
+
 ```
 What: Which artificial intelligence generates the script
 Options: OpenAI (GPT), Google Gemini, Claude, Template
 
 Cost from cheapest to expensive:
-Template (free) < Gemini-Flash < GPT-4o-mini < Claude-Haiku 
+Template (free) < Gemini-Flash < GPT-4o-mini < Claude-Haiku
 < Gemini-Pro < Claude-Sonnet < GPT-4-Turbo < Claude-Opus
 
 Recommendation:
@@ -226,6 +240,7 @@ Recommendation:
 ```
 
 ### Cost per Podcast
+
 ```
 What: How much users pay to generate one podcast
 Example: $0.50 = 50 cents per generation
@@ -237,6 +252,7 @@ Recommendation:
 ```
 
 ### Cooldown Hours
+
 ```
 What: How long to wait between generations
 Example: 24 = must wait 24 hours between podcasts
@@ -250,6 +266,7 @@ Special: 0 = no limit (can generate anytime)
 ```
 
 ### Script Word Limit
+
 ```
 What: Maximum length of podcast script (longer = more AI tokens)
 Example: 1000 = up to 1000 words per podcast
@@ -261,6 +278,7 @@ Recommendation:
 ```
 
 ### TTS Provider (Voice)
+
 ```
 What: Which service generates the audio voice
 Options: ElevenLabs (best), Google TTS, OpenAI
@@ -276,6 +294,7 @@ Recommendation:
 ## 🚨 COMMON MISTAKES
 
 ### ❌ Mistake 1: Filling in ALL fields in group override
+
 ```
 WRONG:
 Beginners group:
@@ -290,6 +309,7 @@ Better: Leave most blank, only override what's different
 ```
 
 ### ❌ Mistake 2: Editing the wrong admin page
+
 ```
 WRONG:
 Going to: Category Overrides list
@@ -303,6 +323,7 @@ CORRECT:
 ```
 
 ### ❌ Mistake 3: Forgetting what settings mean
+
 ```
 WRONG:
 Setting Cooldown = 0 thinking "unlimited AI calls"
@@ -318,6 +339,7 @@ Cooldown = hours to wait between generations
 ## ✅ CHECKLIST: Setting Up Student Groups
 
 ### Step 1: Create a Student Group
+
 ```
 [ ] Go to: Django Admin → Student Groups
 [ ] Click: Add Student Group
@@ -329,6 +351,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### Step 2: Configure Overrides
+
 ```
 [ ] Scroll to: SETTINGS OVERRIDE section
 [ ] Fill in: Only the fields you want DIFFERENT from global
@@ -337,6 +360,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### Step 3: Verify It Works
+
 ```
 [ ] Log in as a test user in this group
 [ ] Generate a podcast
@@ -346,6 +370,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### Step 4: Monitor & Adjust
+
 ```
 [ ] Check: Are users happy with these settings?
 [ ] Track: Cost, usage, feedback
@@ -358,6 +383,7 @@ Cooldown = hours to wait between generations
 ## 📞 NEED HELP?
 
 ### "I want to change cost for only Beginners"
+
 ```
 → Go to: Student Groups → Beginners
 → Set: Cost per generation = $0.25
@@ -366,6 +392,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### "I want all groups to use the same AI model"
+
 ```
 → Go to: Global Podcast Defaults
 → Set: Default LLM provider = gpt-4o-mini
@@ -374,6 +401,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### "I'm confused which setting applies to which user"
+
 ```
 → Rule: FILLED IN = override that group
 → Rule: BLANK = uses global default
@@ -381,6 +409,7 @@ Cooldown = hours to wait between generations
 ```
 
 ### "I need different settings for a new group"
+
 ```
 → Go to: Student Groups → Add new
 → Create: Group name, add users
@@ -393,10 +422,12 @@ Cooldown = hours to wait between generations
 ## 🎯 BOTTOM LINE
 
 **Two levels:**
+
 1. **Global** = Default for everyone
 2. **Groups** = Override for specific users
 
 **Simple rule:**
+
 - Blank = Use global
 - Filled = Override global
 - No group = All global

@@ -81,16 +81,16 @@ actions = ['add_audio_to_text_only', 'regenerate_audio_from_script']
 def add_audio_to_text_only(self, request, queryset):
     """Admin action: Generate audio for text-only podcasts."""
     from dailycast.services_interactive import synthesize_single_language_audio
-    
+
     # Filters for text-only podcasts with scripts
     text_only_podcasts = queryset.filter(
         output_format='text',
         script_text__isnull=False
     ).exclude(script_text__exact='')
-    
+
     success_count = 0
     error_count = 0
-    
+
     for podcast in text_only_podcasts:
         try:
             # Generate audio from script
@@ -98,7 +98,7 @@ def add_audio_to_text_only(self, request, queryset):
                 podcast.script_text,
                 podcast.primary_language
             )
-            
+
             if audio_bytes:
                 filename = f"podcast_{podcast.id}_{podcast.primary_language}_{int(time.time())}.mp3"
                 podcast.audio_file.save(filename, ContentFile(audio_bytes), save=False)
@@ -110,7 +110,7 @@ def add_audio_to_text_only(self, request, queryset):
         except Exception as e:
             error_count += 1
             logger.exception(f"Error: {e}")
-    
+
     self.message_user(
         request,
         f"✅ Added audio to {success_count} text-only podcasts. Errors: {error_count}",
@@ -132,27 +132,27 @@ add_audio_to_text_only.short_description = "🎧 Add audio to selected text-only
 def regenerate_audio_from_script(self, request, queryset):
     """Admin action: Regenerate audio from existing scripts."""
     from dailycast.services_interactive import synthesize_audio_for_language
-    
+
     # Filters for podcasts with existing scripts
     podcasts_with_scripts = queryset.filter(
         script_text__isnull=False
     ).exclude(script_text__exact='')
-    
+
     success_count = 0
     error_count = 0
     skip_count = 0
-    
+
     for podcast in podcasts_with_scripts:
         try:
             logger.info(f"Regenerating audio for podcast {podcast.id}...")
-            
+
             # Regenerate primary language audio
             if podcast.primary_language and podcast.script_text:
                 audio_bytes, tts_provider = synthesize_audio_for_language(
                     podcast.script_text,
                     podcast.primary_language
                 )
-                
+
                 if audio_bytes:
                     filename = f"podcast_{podcast.id}_{podcast.primary_language}_{int(time.time())}.mp3"
                     podcast.audio_file.save(filename, ContentFile(audio_bytes), save=False)
@@ -160,30 +160,30 @@ def regenerate_audio_from_script(self, request, queryset):
                 else:
                     error_count += 1
                     continue
-            
+
             # Regenerate secondary language audio if applicable
             if podcast.secondary_language and podcast.script_text:
                 audio_bytes_sec, provider_sec = synthesize_audio_for_language(
                     podcast.script_text,
                     podcast.secondary_language
                 )
-                
+
                 if audio_bytes_sec:
                     filename_sec = f"podcast_{podcast.id}_{podcast.secondary_language}_{int(time.time())}.mp3"
                     podcast.audio_file_secondary.save(
-                        filename_sec, 
-                        ContentFile(audio_bytes_sec), 
+                        filename_sec,
+                        ContentFile(audio_bytes_sec),
                         save=False
                     )
-            
+
             # Save the podcast with updated audio files
             podcast.save()
             success_count += 1
-                
+
         except Exception as e:
             error_count += 1
             logger.exception(f"Error regenerating audio for podcast {podcast.id}: {e}")
-    
+
     self.message_user(
         request,
         f"✅ Regenerated audio for {success_count} podcast(s). Errors: {error_count}",
@@ -200,6 +200,7 @@ regenerate_audio_from_script.short_description = "🔄 Regenerate audio from exi
 ## Required Imports (Already Present)
 
 ### In admin.py
+
 ```python
 import logging
 import time
@@ -218,6 +219,7 @@ from dailycast.services import create_podcast_for_user
 ```
 
 ### In views_admin_ajax.py
+
 ```python
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
@@ -231,6 +233,7 @@ import logging
 ```
 
 ### In ajax_urls.py
+
 ```python
 from django.urls import path
 from dailycast.views_admin_ajax import (
@@ -256,20 +259,22 @@ from dailycast.views_admin_ajax import (
 ## Testing Code Snippets
 
 ### Test AJAX Endpoint (JavaScript)
+
 ```javascript
 // Test in browser console (while logged in as staff)
-fetch('/api/admin/ajax/user-courses/?user_id=1')
-  .then(r => r.json())
-  .then(data => console.log(data))
-  .catch(err => console.error(err));
+fetch("/api/admin/ajax/user-courses/?user_id=1")
+  .then((r) => r.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
 
 // Test with specific course
-fetch('/api/admin/ajax/course-details/?course_id=1')
-  .then(r => r.json())
-  .then(data => console.log(data));
+fetch("/api/admin/ajax/course-details/?course_id=1")
+  .then((r) => r.json())
+  .then((data) => console.log(data));
 ```
 
 ### Test Admin Action (Django)
+
 ```python
 # In Django shell:
 from dailycast.admin import DailyPodcastAdmin
@@ -297,12 +302,14 @@ admin.add_audio_to_text_only(request, queryset)
 ## Error Messages
 
 ### Success Messages
+
 ```
 ✅ Added audio to 5 text-only podcasts. Errors: 0
 ✅ Regenerated audio for 10 podcasts. Errors: 0
 ```
 
 ### Error Handling
+
 - Invalid user_id → JSON: `{"success": false, "error": "User not found"}`
 - Permission denied → 403 Forbidden (decorator handles)
 - Missing script → Skipped in batch, counted in summary
@@ -312,13 +319,13 @@ admin.add_audio_to_text_only(request, queryset)
 
 ## Performance Characteristics
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| AJAX user courses | ~200ms | Database query optimized |
-| AJAX course details | ~150ms | Small result set |
-| Add audio (batch 5) | ~30s | Depends on TTS provider |
-| Regenerate audio (batch 5) | ~30s | Depends on TTS provider |
-| Admin load time | <50ms | No new overhead |
+| Operation                  | Time   | Notes                    |
+| -------------------------- | ------ | ------------------------ |
+| AJAX user courses          | ~200ms | Database query optimized |
+| AJAX course details        | ~150ms | Small result set         |
+| Add audio (batch 5)        | ~30s   | Depends on TTS provider  |
+| Regenerate audio (batch 5) | ~30s   | Depends on TTS provider  |
+| Admin load time            | <50ms  | No new overhead          |
 
 ---
 
@@ -346,13 +353,13 @@ git push origin main
 
 ## Support Matrix
 
-| Issue | Solution | Check |
-|-------|----------|-------|
-| AJAX returns 404 | Verify URL in urls.py | `grep 'api/admin/ajax' urls.py` |
-| Admin action missing | Clear cache, restart | Check `DailyPodcastAdmin.actions` |
-| Audio not generating | Check TTS credentials | Django logs |
-| Permission denied | Verify staff flag | `user.is_staff` |
-| Empty responses | Check database | Verify courses/lessons exist |
+| Issue                | Solution              | Check                             |
+| -------------------- | --------------------- | --------------------------------- |
+| AJAX returns 404     | Verify URL in urls.py | `grep 'api/admin/ajax' urls.py`   |
+| Admin action missing | Clear cache, restart  | Check `DailyPodcastAdmin.actions` |
+| Audio not generating | Check TTS credentials | Django logs                       |
+| Permission denied    | Verify staff flag     | `user.is_staff`                   |
+| Empty responses      | Check database        | Verify courses/lessons exist      |
 
 ---
 

@@ -59,12 +59,12 @@ MODIFIED FILES:
 class DailyPodcast(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_podcasts')
     date = models.DateField(db_index=True)
-    
+
     # Content
     script_text = models.TextField()
     audio_url = models.URLField(max_length=500)
     duration_seconds = models.PositiveIntegerField(default=240)
-    
+
     # Metadata
     ai_model_used = models.CharField(max_length=50)  # 'gpt-4o-mini', 'gemini-flash', etc.
     tts_provider = models.CharField(max_length=50)   # 'google', 'amazon', 'azure'
@@ -72,12 +72,12 @@ class DailyPodcast(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=30, default='pending')
     error_message = models.TextField(blank=True, null=True)
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-    
+
     class Meta:
         unique_together = ('user', 'date')  # ← IMPORTANT: One per user per day
         ordering = ['-date']
@@ -102,7 +102,7 @@ from .serializers import DailyPodcastSerializer
 
 class DailyPodcastTodayView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         today = timezone.now().date()
         podcast = DailyPodcast.objects.filter(
@@ -110,14 +110,14 @@ class DailyPodcastTodayView(APIView):
             date=today,
             is_active=True
         ).first()
-        
+
         if not podcast:
             return Response({
                 'podcast': None,
                 'status': 'not_available',
                 'message': 'Your podcast will be available tomorrow at 3 AM UTC'
             }, status=status.HTTP_200_OK)
-        
+
         serializer = DailyPodcastSerializer(podcast)
         return Response({
             'podcast': serializer.data,
@@ -144,7 +144,7 @@ logger = logging.getLogger(__name__)
 def generate_daily_podcasts():
     """Generate podcasts for all active users at 3 AM UTC."""
     today = timezone.now().date()
-    
+
     # Get active users without today's podcast
     users = User.objects.filter(
         is_active=True,
@@ -152,13 +152,13 @@ def generate_daily_podcasts():
     ).exclude(
         daily_podcasts__date=today
     )
-    
+
     # Batch them
     batch_size = 100
     for i in range(0, users.count(), batch_size):
         batch = list(users[i:i+batch_size])
         process_podcast_batch.delay(batch_ids=[u.id for u in batch])
-    
+
     return f"Started generation for {users.count()} users"
 
 @shared_task(name='dailycast.process_podcast_batch')
@@ -175,35 +175,35 @@ def process_user_podcast(user_id):
     """Generate podcast for one user."""
     user = User.objects.get(id=user_id)
     today = timezone.now().date()
-    
+
     try:
         # 1. Check if already exists
         if DailyPodcast.objects.filter(user=user, date=today).exists():
             return f"Podcast already exists for user {user_id}"
-        
+
         # 2. Collect user data
         user_data = collect_user_data(user)
-        
+
         # 3. Generate script
         script = generate_podcast_script(user_data)
         podcast = DailyPodcast.objects.create(
             user=user, date=today, script_text=script, status='script_generated'
         )
-        
+
         # 4. Generate audio
         audio_bytes, tts_provider = generate_audio(script)
         podcast.tts_provider = tts_provider
         podcast.save()
-        
+
         # 5. Upload to S3
         audio_url = upload_to_s3(audio_bytes, user_id, today)
         podcast.audio_url = audio_url
         podcast.status = 'completed'
         podcast.save()
-        
+
         logger.info(f"✓ Generated podcast for user {user_id}")
         return f"Success for user {user_id}"
-    
+
     except Exception as e:
         logger.error(f"✗ Failed to generate podcast for user {user_id}: {e}")
         DailyPodcast.objects.filter(user=user, date=today).update(
@@ -222,17 +222,17 @@ def process_user_podcast(user_id):
 
 def select_llm_provider(user_data):
     """Try providers in order: GPT-4o Min → Gemini → Claude → Template"""
-    
+
     providers = [
         ('openai', 'gpt-4o-mini', os.getenv('OPENAI_API_KEY')),
         ('google', 'gemini-1.5-flash', os.getenv('GOOGLE_API_KEY')),
         ('anthropic', 'claude-3-5-haiku', os.getenv('ANTHROPIC_API_KEY')),
     ]
-    
+
     for name, model, api_key in providers:
         if not api_key:
             continue
-        
+
         try:
             if name == 'openai':
                 return generate_with_openai(model, user_data), name
@@ -243,24 +243,24 @@ def select_llm_provider(user_data):
         except Exception as e:
             logger.warning(f"LLM provider {name} failed: {e}")
             continue
-    
+
     # All failed → template
     logger.error("All LLM providers failed, using template")
     return generate_template_podcast(user_data), 'template'
 
 def select_tts_provider(user, script_text):
     """Select TTS based on user plan."""
-    
+
     user_plan = get_user_plan(user)  # 'free', 'premium', 'enterprise'
-    
+
     tts_matrix = {
         'free': [('amazon', 'Polly'), ('google', 'Cloud TTS')],
         'premium': [('google', 'Cloud TTS'), ('azure', 'Neural TTS')],
         'enterprise': [('azure', 'Neural TTS'), ('google', 'Cloud TTS')],
     }
-    
+
     providers = tts_matrix.get(user_plan, tts_matrix['free'])
-    
+
     for provider_name, provider_label in providers:
         try:
             if provider_name == 'amazon':
@@ -272,7 +272,7 @@ def select_tts_provider(user, script_text):
         except Exception as e:
             logger.warning(f"TTS provider {provider_name} failed: {e}")
             continue
-    
+
     # All failed
     logger.error(f"All TTS providers failed for user {user.id}")
     raise Exception("TTS generation failed for all providers")
@@ -390,23 +390,23 @@ FIRST WEEK IN PRODUCTION:
 
 ## 🆘 QUICK FIXES
 
-| Problem | Solution |
-|---------|----------|
-| Podcasts not generating | Check Celery worker running: `celery -A zporta worker` |
-| API returns 404 | Check DailyPodcast exists for today: `python manage.py shell` |
-| Script sounds bad | Adjust LLM prompt, use better TTS provider |
-| Cost too high | Switch basic users to Amazon Polly, premium to Google TTS |
-| One provider failing | Check API keys in .env, test with curl |
-| Podcast quality bad | Use Google/Azure neural TTS instead of standard |
-| Users not seeing podcast | Check frontend component loaded, check API working |
-| S3 upload fails | Check AWS credentials, bucket exists, permissions |
+| Problem                  | Solution                                                      |
+| ------------------------ | ------------------------------------------------------------- |
+| Podcasts not generating  | Check Celery worker running: `celery -A zporta worker`        |
+| API returns 404          | Check DailyPodcast exists for today: `python manage.py shell` |
+| Script sounds bad        | Adjust LLM prompt, use better TTS provider                    |
+| Cost too high            | Switch basic users to Amazon Polly, premium to Google TTS     |
+| One provider failing     | Check API keys in .env, test with curl                        |
+| Podcast quality bad      | Use Google/Azure neural TTS instead of standard               |
+| Users not seeing podcast | Check frontend component loaded, check API working            |
+| S3 upload fails          | Check AWS credentials, bucket exists, permissions             |
 
 ---
 
 ## 📞 WHEN YOU'RE STUCK
 
 1. **"How do I use the LLM?"** → Read `PODCAST_LLM_PROMPT_TEMPLATE.md`
-2. **"What's the architecture?"** → Read `PODCAST_ARCHITECTURE_VISUAL.md` 
+2. **"What's the architecture?"** → Read `PODCAST_ARCHITECTURE_VISUAL.md`
 3. **"What's the full spec?"** → Read `DAILY_PODCAST_PLAN.md`
 4. **"Show me diagrams"** → Check `PODCAST_ARCHITECTURE_VISUAL.md`
 5. **"How much does it cost?"** → Check cost table in this card or PLAN.md
@@ -427,4 +427,3 @@ FIRST WEEK IN PRODUCTION:
 ---
 
 **Print this card. Keep it handy during development. Reference docs always available in repo root.**
-

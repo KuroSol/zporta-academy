@@ -5,6 +5,7 @@
 Your podcast generation system is **fully implemented and tested locally!**
 
 ### Test Results
+
 ```
 ✓ Found user: Alex (ID: 1)
 ✓ OpenAI API connected (gpt-4o-mini)
@@ -15,8 +16,9 @@ Your podcast generation system is **fully implemented and tested locally!**
 ```
 
 **Generated Script Sample:**
+
 ```
-Hello, dear learners! Welcome back to another episode of Daily Learning. 
+Hello, dear learners! Welcome back to another episode of Daily Learning.
 I'm so glad you're here. First, let's take a moment to celebrate your progress...
 ```
 
@@ -38,6 +40,7 @@ python manage.py generate_test_podcast --language en
 ```
 
 **Output:**
+
 ```
 ✓ Podcast generated successfully (id=3) for user Alex
 ```
@@ -47,6 +50,7 @@ python manage.py generate_test_podcast --language en
 ### Option 2: Django Admin (Web UI)
 
 **Step 1: Start the server**
+
 ```bash
 cd c:\Users\AlexSol\Documents\zporta_academy\zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -54,25 +58,30 @@ python manage.py runserver 8000 --settings=zporta.settings.local
 ```
 
 **Output should say:**
+
 ```
 Starting development server at http://127.0.0.1:8000/
 ```
 
 **Step 2: Open Django Admin**
+
 - Go to: http://localhost:8000/admin/
 - Username: (your admin username, or create one with: `python manage.py createsuperuser`)
 - Password: (your password)
 
 **Step 3: Find "Daily Podcasts"**
+
 - Left sidebar → "Dailycast" section
 - Click "Daily Podcasts"
 
 **Step 4: Click "Generate Test Podcast Now"**
+
 - Big green button at top right
 - Wait 30-60 seconds for generation
 - You'll see a success message
 
 **Step 5: View the Result**
+
 - Click the latest podcast in the list
 - See:
   - ✅ Status: "Completed"
@@ -86,6 +95,7 @@ Starting development server at http://127.0.0.1:8000/
 ## 🔧 What Each Component Does
 
 ### Models (`dailycast/models.py`)
+
 ```python
 DailyPodcast
 ├── user (FK to auth user)
@@ -100,6 +110,7 @@ DailyPodcast
 ```
 
 ### Services (`dailycast/services.py`)
+
 ```
 generate_podcast_script()
   └─ Try OpenAI gpt-4o-mini
@@ -117,6 +128,7 @@ create_podcast_for_user()
 ```
 
 ### Admin (`dailycast/admin.py`)
+
 - List view: shows user, date, language, provider, status
 - Detail view: shows full script + audio player
 - Action button: "Generate Test Podcast Now"
@@ -129,37 +141,45 @@ create_podcast_for_user()
 ## 📊 Testing Scenarios
 
 ### Test 1: Generate for User ID 1 (Alex)
+
 ```bash
 python manage.py generate_test_podcast --language en
 # Result: English podcast for "Alex"
 ```
 
 ### Test 2: Generate for User ID 17 (alex_sol)
+
 **Edit `.env` first:**
+
 ```
 DAILYCAST_TEST_USER_ID=17
 ```
 
 Then run:
+
 ```bash
 python manage.py generate_test_podcast
 # Result: Podcast for "alex_sol"
 ```
 
 ### Test 3: Different Language
+
 ```bash
 python manage.py generate_test_podcast --language ja
 # Result: Japanese podcast (with Japanese Polly voice if audio enabled)
 ```
 
 ### Test 4: Run Sync vs Async
+
 **Sync (default, no Celery needed):**
+
 ```bash
 python manage.py generate_test_podcast
 # Waits for completion
 ```
 
 **Async (with Celery running):**
+
 ```bash
 # Terminal 1: Start Celery worker
 celery -A zporta worker -l info
@@ -176,6 +196,7 @@ python manage.py runserver
 ## 🎯 Current Capabilities
 
 ### ✅ Working
+
 - [x] Script generation with OpenAI (gpt-4o-mini)
 - [x] Fallback to Gemini if OpenAI fails
 - [x] Fallback to template if both fail
@@ -186,12 +207,14 @@ python manage.py runserver
 - [x] Error handling with informative messages
 
 ### ⏳ Next Phase (when AWS credentials added)
+
 - [ ] Audio synthesis with Amazon Polly
 - [ ] Local MP3 file storage in `MEDIA_ROOT/podcasts/`
 - [ ] HTML5 audio player in admin detail view
 - [ ] Download MP3 from admin
 
 ### 🚀 Future (Frontend API)
+
 - [ ] `/api/dailycast/can-request/` - Check 24h cooldown
 - [ ] `/api/dailycast/generate/` - User-triggered generation
 - [ ] `/api/dailycast/today/` - Get user's latest podcast
@@ -201,28 +224,37 @@ python manage.py runserver
 ## 🐛 Troubleshooting
 
 ### Issue: "Test user not found"
+
 **Fix:** Set `DAILYCAST_TEST_USER_ID` to an existing user ID in your database.
+
 ```bash
 # Check existing users
 python manage.py shell -c "from django.contrib.auth import get_user_model; print([(u.id, u.username) for u in get_user_model().objects.all()[:10]])"
 ```
 
 ### Issue: "OpenAI API: ✗ Missing"
+
 **Fix:** Ensure `.env` has:
+
 ```
 OPENAI_API_KEY=sk-proj-...your-key...
 ```
+
 No quotes, no comments on same line.
 
 ### Issue: "Gemini API: ✗ Missing"
+
 **Fix:** Ensure `.env` has:
+
 ```
 GEMINI_API_KEY=AIzaSy...your-key...
 ```
 
 ### Issue: "AWS credentials not configured, skipping audio"
+
 **This is OK!** Audio is optional. Scripts work fine without it.
 When you're ready to add audio, set:
+
 ```
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
@@ -230,24 +262,27 @@ AWS_REGION=us-east-1
 ```
 
 ### Issue: "Dailycast: Polly synthesis failed"
+
 **Fix:** This means AWS credentials are invalid. Either:
+
 - Set them correctly in `.env`
 - OR leave them empty (audio will be skipped gracefully)
 
 ### Issue: "This prototype is restricted to the configured test user"
+
 **Fix:** You're trying to generate for a different user. Change `DAILYCAST_TEST_USER_ID` in `.env` to the user ID you want to test.
 
 ---
 
 ## 📈 Cost Estimate (When Audio Enabled)
 
-| Component | Cost | Notes |
-|-----------|------|-------|
-| OpenAI gpt-4o-mini | $0.15/1M tokens | ~$0.001 per podcast |
-| Gemini Flash Lite | Free/Low-cost | Fallback |
-| Amazon Polly | $0.008/min | Standard voice, or $0.015/min neural |
-| Estimated per podcast | **$0.15** | Script + audio |
-| 100 podcasts/month | **$15** | Very affordable |
+| Component             | Cost            | Notes                                |
+| --------------------- | --------------- | ------------------------------------ |
+| OpenAI gpt-4o-mini    | $0.15/1M tokens | ~$0.001 per podcast                  |
+| Gemini Flash Lite     | Free/Low-cost   | Fallback                             |
+| Amazon Polly          | $0.008/min      | Standard voice, or $0.015/min neural |
+| Estimated per podcast | **$0.15**       | Script + audio                       |
+| 100 podcasts/month    | **$15**         | Very affordable                      |
 
 ---
 
@@ -292,6 +327,7 @@ dailycast/
 **All code is production-ready. This is NOT a prototype—it's a working MVP! 🎉**
 
 When you're ready for:
+
 - **Audio synthesis:** Add AWS credentials
 - **Frontend UI:** I'll build `/api/` endpoints with 24h cooldown
 - **Scale to production:** Code follows Django best practices, ready to deploy to Lightsail

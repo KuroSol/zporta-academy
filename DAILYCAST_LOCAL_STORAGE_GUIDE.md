@@ -10,6 +10,7 @@
 Your podcast system **saves MP3s directly to your server's media folder** - no AWS S3 required!
 
 ### Why This is Better
+
 ✅ **Cheaper** - Save $1-3/month per user (no cloud storage costs)  
 ✅ **Faster** - Audio serves from local disk (instant access)  
 ✅ **Simpler** - No cloud account dependencies  
@@ -21,6 +22,7 @@ Your podcast system **saves MP3s directly to your server's media folder** - no A
 ## Architecture
 
 ### How It Works
+
 ```
 1. Generate Script (OpenAI/Gemini/Template)
    ↓
@@ -34,6 +36,7 @@ Your podcast system **saves MP3s directly to your server's media folder** - no A
 ```
 
 ### File Structure
+
 ```
 zporta_academy_backend/
 ├── media/                          ← Django media folder
@@ -53,6 +56,7 @@ zporta_academy_backend/
 ## Configuration
 
 ### Minimal Setup (Script Only)
+
 ```env
 # No AWS keys needed!
 OPENAI_API_KEY=sk-proj-...
@@ -64,6 +68,7 @@ AWS_SECRET_ACCESS_KEY=
 ✅ **Works!** Generates script, skips audio, saves to database
 
 ### With Audio (Optional)
+
 ```env
 OPENAI_API_KEY=sk-proj-...
 GEMINI_API_KEY=AIzaSy...
@@ -78,6 +83,7 @@ AWS_SECRET_ACCESS_KEY=...
 ## File Path Examples
 
 ### When Generated
+
 ```python
 podcast = DailyPodcast.objects.get(id=2)
 
@@ -95,6 +101,7 @@ podcast.audio_file.path
 ```
 
 ### File Naming Convention
+
 ```
 podcast_<USER_ID>_<TIMESTAMP>.mp3
 │        │        │
@@ -108,6 +115,7 @@ podcast_<USER_ID>_<TIMESTAMP>.mp3
 ## Cost Comparison
 
 ### Without Audio (Script Only)
+
 ```
 Per podcast: $0.001 (OpenAI gpt-4o-mini)
 1000 podcasts: $1.00
@@ -115,6 +123,7 @@ Per podcast: $0.001 (OpenAI gpt-4o-mini)
 ```
 
 ### With Audio (Script + MP3)
+
 ```
 Per podcast: $0.001 (OpenAI) + $0.10 (Polly)
 1000 podcasts: $101.00
@@ -122,6 +131,7 @@ Per podcast: $0.001 (OpenAI) + $0.10 (Polly)
 ```
 
 ### Storage Cost (if using local disk)
+
 ```
 MP3 size: ~2-5 MB per podcast
 1000 users: 2-5 GB storage
@@ -136,6 +146,7 @@ vs S3 storage:
 ## Disk Usage Planning
 
 ### Estimate
+
 ```
 Average MP3: 3.5 MB (4 min @ 64 kbps)
 
@@ -155,12 +166,14 @@ Users      Total Storage    Cost (Local)   Cost (S3)
 ## Setup for Production
 
 ### 1. Ensure Media Folder Exists
+
 ```bash
 mkdir -p zporta_academy_backend/media/podcasts
 chmod 755 zporta_academy_backend/media/podcasts
 ```
 
 ### 2. Configure Django Settings ✅ (Already Done)
+
 ```python
 # zporta/settings/base.py
 MEDIA_ROOT = BASE_DIR / "media"
@@ -168,6 +181,7 @@ MEDIA_URL = "/media/"
 ```
 
 ### 3. Configure Web Server (Nginx/Apache)
+
 ```nginx
 # For production on Lightsail
 location /media/ {
@@ -176,6 +190,7 @@ location /media/ {
 ```
 
 ### 4. Backup Strategy
+
 ```bash
 # Daily backup
 rsync -av media/podcasts/ /backup/podcasts_$(date +%Y%m%d)/
@@ -189,6 +204,7 @@ rsync -av media/podcasts/ /backup/podcasts_$(date +%Y%m%d)/
 ## Testing Locally
 
 ### Generate with Audio
+
 ```bash
 # 1. Add AWS credentials to .env
 AWS_ACCESS_KEY_ID=AKIA...
@@ -207,6 +223,7 @@ ls media/podcasts/
 ```
 
 ### Generate without Audio
+
 ```bash
 # Leave AWS keys empty
 AWS_ACCESS_KEY_ID=
@@ -230,6 +247,7 @@ python manage.py shell
 ## Django Admin Interface
 
 ### View Generated Podcasts
+
 ```
 Admin → Daily Podcasts → List
 ├── User: alex
@@ -241,6 +259,7 @@ Admin → Daily Podcasts → List
 ```
 
 ### Listen to Audio
+
 ```
 Admin → Daily Podcasts → Detail
 ├── Script Text: [Large textarea with full script]
@@ -256,6 +275,7 @@ Admin → Daily Podcasts → Detail
 ## Troubleshooting
 
 ### "Audio file not created"
+
 ```python
 # Check 1: Was audio synthesis attempted?
 podcast.tts_provider  # Should be 'polly' or 'none'
@@ -272,6 +292,7 @@ ls -la media/
 ```
 
 ### "File not accessible via /media/ URL"
+
 ```bash
 # Check 1: Django serving media in local dev
 python manage.py runserver
@@ -287,6 +308,7 @@ print(settings.MEDIA_ROOT)  # Should point to local folder
 ```
 
 ### "Storage full!" (Unlikely but planning)
+
 ```bash
 # Delete old podcasts (keep last 100)
 python manage.py shell
@@ -305,6 +327,7 @@ rsync -av media/podcasts/ /backup/old_podcasts/
 ## Best Practices
 
 ### ✅ DO
+
 - ✅ Generate podcasts on-demand (not scheduled)
 - ✅ Keep AWS optional (script-only still valuable)
 - ✅ Monitor media folder growth
@@ -312,6 +335,7 @@ rsync -av media/podcasts/ /backup/old_podcasts/
 - ✅ Use CDN for distribution if scaling to 10K+ users
 
 ### ❌ DON'T
+
 - ❌ Delete audio files without backup
 - ❌ Run out of disk space (monitor growth)
 - ❌ Share AWS credentials in .env with others
@@ -322,6 +346,7 @@ rsync -av media/podcasts/ /backup/old_podcasts/
 ## Migration Path
 
 ### Now (Small Users, <100)
+
 ```
 Local disk storage ✅
 - Zero cloud costs
@@ -330,6 +355,7 @@ Local disk storage ✅
 ```
 
 ### Later (Growing, 100-1000)
+
 ```
 Same local storage ✅
 - Still fits on Lightsail
@@ -338,6 +364,7 @@ Same local storage ✅
 ```
 
 ### Future (Enterprise, 1000+)
+
 ```
 Option 1: Stay local ✅
 - Upgrade to larger server disk
@@ -359,6 +386,7 @@ Option 3: Hybrid
 ## Summary
 
 ### Current Setup
+
 - ✅ Audio saves to `media/podcasts/`
 - ✅ Files accessible via `/media/` URL
 - ✅ AWS only needed for audio synthesis (optional)
@@ -366,6 +394,7 @@ Option 3: Hybrid
 - ✅ No changes to code needed
 
 ### You Can
+
 - ✅ Start testing immediately
 - ✅ Add AWS keys later if you want audio
 - ✅ Scale to 1000+ users without cloud storage
@@ -373,6 +402,7 @@ Option 3: Hybrid
 - ✅ Backup using standard server tools
 
 ### No Need For
+
 - ❌ AWS S3 account
 - ❌ Additional storage costs
 - ❌ Cloud migration tools

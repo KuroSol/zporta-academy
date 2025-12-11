@@ -190,7 +190,7 @@ START
   │         └─→ Student enters answer
   │
   ├─→ Student submits answers
-  │    └─→ PUT /api/podcasts/{id}/answers/ 
+  │    └─→ PUT /api/podcasts/{id}/answers/
   │         {
   │           "answers": {
   │             "What is Django?": "A Python web framework",
@@ -396,6 +396,7 @@ Admin clicks Save
 ## 🔗 Integration Points
 
 ### Enrollment Model Integration
+
 ```
 User
   ├─→ has many Enrollments
@@ -415,6 +416,7 @@ User
 ```
 
 ### Course Selection Flow
+
 ```
 1. create_multilingual_podcast_for_user(user, ...)
    │
@@ -425,10 +427,10 @@ User
    ├─→ Get content_object (the Course)
    ├─→ Extract course.title
    └─→ Add to list: ["Django Fundamentals", "Python Advanced"]
-   
+
 4. Mention in LLM prompt:
    └─→ "Since you study Django Fundamentals and Python Advanced, today's podcast covers..."
-   
+
 5. Save to database:
    └─→ podcast.included_courses = ["Django Fundamentals", "Python Advanced"]
 ```
@@ -505,10 +507,10 @@ get_user_enrolled_courses(john_doe)
 
             ↓
 
-Query: SELECT e.*, c.title 
-       FROM enrollment 
+Query: SELECT e.*, c.title
+       FROM enrollment
        WHERE user_id = john_doe
-       
+
             ↓
 
 Results:
@@ -525,7 +527,7 @@ Extract titles: ["Django Fundamentals", "Python Advanced", "Database Design"]
 Build Prompt:
 "Generate a podcast for john_doe who is studying:
 - Django Fundamentals
-- Python Advanced  
+- Python Advanced
 - Database Design
 
 Focus on connections between these courses..."

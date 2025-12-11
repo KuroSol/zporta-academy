@@ -1,18 +1,22 @@
 # ✅ Google TTS Quality Issue - FIXED
 
 ## The Problem You Reported
+
 > "All Google TTS I selected has exactly same quality. I chose Google TTS standard, Journey voice and Chirp 3 all have exact same output."
 
 ## Root Cause
+
 1. **Chirp voices don't exist** in Google Cloud API (experimental, not released)
-2. **Journey voices don't exist** in Google Cloud API 
+2. **Journey voices don't exist** in Google Cloud API
 3. Invalid voice names caused silent fallback to Neural2
 4. Result: All three options generated identical Neural2 audio
 
 ## The Fix
+
 Replaced non-existent voice names with **real, working voices** with actual quality differences:
 
 ### Mapping
+
 ```
 Admin Option                          → Actual Voice Used     → Quality
 ────────────────────────────────────────────────────────────────────────
@@ -26,7 +30,9 @@ Admin Option                          → Actual Voice Used     → Quality
 ## What Changed in Code
 
 ### 1. **services_interactive.py** - Voice Configuration
+
 **Before:**
+
 ```python
 chirp_configs = {
     "en": {"name": "en-US-Chirp-HD-F"},     # ❌ Doesn't exist!
@@ -34,6 +40,7 @@ chirp_configs = {
 ```
 
 **After:**
+
 ```python
 # Added Wavenet tier (highest quality)
 wavenet_configs = {
@@ -52,7 +59,9 @@ voice_configs = {
 ```
 
 ### 2. **models.py** - Updated TTS Provider Choices
+
 **Before:**
+
 ```python
 ("google", "Google TTS (Standard)"),        # Confusing - didn't show quality
 ("google_chirp", "Google AI Studio (Chirp)"),  # ❌ Non-existent voice
@@ -60,6 +69,7 @@ voice_configs = {
 ```
 
 **After:**
+
 ```python
 ("google", "🎤 Google TTS (Standard Quality)"),    # Clear it's Standard
 ("google_chirp", "✨ Google Wavenet Premium (Highest Quality)"),  # ✅ Actual quality tier
@@ -67,7 +77,9 @@ voice_configs = {
 ```
 
 ### 3. **Voice Selection Logic**
+
 **Before:**
+
 ```python
 if voice_type == 'chirp':
     voice_config = chirp_configs.get(language)  # Returns None
@@ -75,6 +87,7 @@ if voice_type == 'chirp':
 ```
 
 **After:**
+
 ```python
 if voice_type == 'chirp':
     voice_config = wavenet_configs.get(language)  # Uses Wavenet (best!)
@@ -85,6 +98,7 @@ if voice_type == 'chirp':
 ## Quality Differences You'll Now Hear
 
 ### 🎤 Standard (Fast & Cheap)
+
 ```
 Sample: "Hey everyone, welcome back!"
 Voice: Clear, fast-paced
@@ -94,6 +108,7 @@ Quality: 6/10 - Good but slightly robotic
 ```
 
 ### 🏆 Wavenet Premium (Best Quality)
+
 ```
 Same text but:
 Voice: More natural, expressive, premium feel
@@ -109,10 +124,12 @@ Quality: 10/10 - Professional, natural sounding
 2. **Create test podcast with same script**
 
 3. **Select "🎤 Google TTS (Standard Quality)"**
+
    - Regenerate audio
    - Listen: Clear, fast voice
 
 4. **Select "✨ Google Wavenet Premium (Highest Quality)"**
+
    - Regenerate SAME script
    - Listen: Noticeably more expressive & natural
 
@@ -121,28 +138,33 @@ Quality: 10/10 - Professional, natural sounding
 ## Expected Log Output
 
 ### When you select Google Standard:
+
 ```
 INFO 🎤 STANDARD/NEURAL2 MODE: Using balanced Neural2 voices (fast & clear)
 INFO [TTS_PROVIDER] Voice selected: en-US-Neural2-F
 ```
 
 ### When you select Wavenet Premium:
+
 ```
 INFO 🏆 WAVENET PREMIUM MODE: Using highest-quality Wavenet voices (most expressive)
 INFO [TTS_PROVIDER] Voice selected: en-US-Wavenet-F
 ```
 
 ## Files Modified
+
 - ✅ `dailycast/services_interactive.py` - Added Wavenet tier, fixed voice selection
 - ✅ `dailycast/models.py` - Updated TTS provider choices with quality indicators
 - ✅ Created `GOOGLE_TTS_QUALITY_GUIDE.md` - Detailed explanation
 
 ## Cost Impact
+
 - **Standard:** Cheaper ($0.01/episode)
 - **Wavenet:** More expensive ($0.04/episode) but best quality
 - Choose based on your needs!
 
 ## Summary
+
 ✅ **Fixed:** Google TTS now has THREE distinct quality levels
 ✅ **Clear:** Admin dropdown shows which is which
 ✅ **Different:** Each option produces noticeably different audio quality

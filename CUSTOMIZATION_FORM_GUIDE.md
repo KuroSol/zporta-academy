@@ -9,6 +9,7 @@ When you select courses/lessons/quizzes and click the **"✏️ Generate Script 
 ## Step-by-Step Form Flow
 
 ### Step 1: Select Items
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │ Select a User  [alice_johnson ▼]                    │
@@ -40,6 +41,7 @@ When you select courses/lessons/quizzes and click the **"✏️ Generate Script 
 ```
 
 ### Step 2: After Selecting Items
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
@@ -152,9 +154,11 @@ When you click the "Generate Script Text" button, this form appears:
 ## Form Fields Explained
 
 ### 1️⃣ **📂 Category / Subject** (REQUIRED)
+
 **What it is:** The main subject or category you want the podcast about
 
 **Examples:**
+
 - "Business English"
 - "Hair Styling Techniques"
 - "French for Beginners"
@@ -166,9 +170,11 @@ When you click the "Generate Script Text" button, this form appears:
 ---
 
 ### 2️⃣ **🎯 Specific Topic** (OPTIONAL)
+
 **What it is:** A more narrow, specific topic within the category
 
 **Examples:**
+
 - If Category is "Business English" → Topic could be "Negotiation tactics" or "Email writing"
 - If Category is "French for Beginners" → Topic could be "Greetings and introductions"
 - If Category is "Hair Styling" → Topic could be "Curly hair care" or "Balayage techniques"
@@ -178,9 +184,11 @@ When you click the "Generate Script Text" button, this form appears:
 ---
 
 ### 3️⃣ **👤 Your Profession / Context** (OPTIONAL)
+
 **What it is:** Your job, role, or professional context where you'll use this knowledge
 
 **Examples:**
+
 - "Sales manager at tech startup"
 - "Hair stylist in Germany"
 - "Marketing manager in fashion industry"
@@ -192,9 +200,11 @@ When you click the "Generate Script Text" button, this form appears:
 ---
 
 ### 4️⃣ **🗣️ Preferred Language** (REQUIRED)
+
 **What it is:** The main language you want the podcast script in
 
 **Available Languages:**
+
 - English
 - Spanish (Español)
 - French (Français)
@@ -210,13 +220,16 @@ When you click the "Generate Script Text" button, this form appears:
 ---
 
 ### 5️⃣ **🌐 Secondary Language** (OPTIONAL) ✨ **NEW!**
+
 **What it is:** A second language to include for comparison or bilingual learning
 
 **Options:**
+
 - "None - Single language only" (default)
 - Or pick any of the 9 languages above
 
 **Example Use Cases:**
+
 - Primary: English, Secondary: Spanish → Script compares English and Spanish versions
 - Primary: French, Secondary: English → Learn French while seeing English translations
 - Primary: Japanese, Secondary: English → Bilingual Japanese learning content
@@ -226,9 +239,11 @@ When you click the "Generate Script Text" button, this form appears:
 ---
 
 ### 6️⃣ **📝 Additional Notes / Style Guide** (OPTIONAL)
+
 **What it is:** Any special instructions or style preferences for the script
 
 **Examples:**
+
 - "Keep it casual and friendly, use humor"
 - "Very formal and professional tone"
 - "Include lots of real-world examples"
@@ -246,14 +261,16 @@ When you click the "Generate Script Text" button, this form appears:
 ### Scenario: Creating a Business English podcast for a sales manager
 
 **Step 1: Select items**
+
 ```
-✓ Select: 
+✓ Select:
   - 📚 Business Communication (course)
   - 📖 Professional Email Writing (lesson)
   - ✓ Business Idioms Quiz (quiz)
 ```
 
 **Step 2: Fill in form**
+
 ```
 📂 Category: Business English
 🎯 Topic: Professional email communication and idioms
@@ -266,22 +283,23 @@ When you click the "Generate Script Text" button, this form appears:
 **Step 3: Click "Generate Script Text"**
 
 **Step 4: AI generates script like this:**
+
 ```
 ═══════════════════════════════════════════════════════
 PODCAST SCRIPT: Business English for Sales Professionals
 ═══════════════════════════════════════════════════════
 
 INTRODUCTION:
-Welcome to today's Business English podcast! I'm your host, and today we're focusing 
-on something every sales professional needs: writing effective emails and using business 
+Welcome to today's Business English podcast! I'm your host, and today we're focusing
+on something every sales professional needs: writing effective emails and using business
 idioms to sound more natural in English.
 
 We've drawn content from three key areas:
 - Business Communication fundamentals
-- Professional email writing techniques  
+- Professional email writing techniques
 - Common business idioms that native speakers use daily
 
-Whether you're closing deals, following up with clients, or negotiating contracts, 
+Whether you're closing deals, following up with clients, or negotiating contracts,
 this episode will give you practical English phrases you can use immediately.
 
 MAIN CONTENT:
@@ -294,11 +312,11 @@ A good business email has three parts:
 - Strong closing
 
 Example (ENGLISH):
-"Hi Mr. Johnson, I wanted to follow up on our conversation yesterday about the Q4 
+"Hi Mr. Johnson, I wanted to follow up on our conversation yesterday about the Q4
 proposal. I'd love to discuss timeline and next steps."
 
 Same idea (SPANISH for learning):
-"Hola Sr. Johnson, quería hacer seguimiento de nuestra conversación ayer sobre la 
+"Hola Sr. Johnson, quería hacer seguimiento de nuestra conversación ayer sobre la
 propuesta de Q4. Me encantaría hablar de los plazos y los próximos pasos."
 
 [2] BUSINESS IDIOMS YOU NEED TO KNOW
@@ -319,7 +337,7 @@ When asking for decision:
 "The ball is in your court now. When can we expect to hear from you?"
 
 CONCLUSION:
-Remember, in sales, clear communication wins deals. Practice these phrases, use them 
+Remember, in sales, clear communication wins deals. Practice these phrases, use them
 naturally in your emails, and you'll sound like a native English speaker in no time.
 
 Next episode: Advanced negotiation language. See you then!
@@ -332,6 +350,7 @@ Next episode: Advanced negotiation language. See you then!
 ## After Generation
 
 Once the script is generated:
+
 1. ✅ Script appears in the **Script Text** field below the form
 2. ✅ You can **edit it** directly in the text area
 3. ✅ Click **"Save"** to save it to the podcast
@@ -343,28 +362,33 @@ Once the script is generated:
 ## Tips for Best Results
 
 ### 🎯 Category/Subject Tips
+
 - Be specific but not too narrow
 - "Business English" ✅ (good)
 - "English" ❌ (too broad)
 - "The difference between 'since' and 'for'" ❌ (too specific)
 
 ### 📝 Topic Tips
+
 - Only use if you want to narrow down the category further
 - Leave blank if the category is specific enough
 - "Business English + Topic: Negotiation" = Very focused content ✅
 
 ### 👤 Profession Tips
+
 - The more specific, the better the examples
 - "Sales manager at tech startup" ✅ (specific)
 - "Businessman" ❌ (too generic)
 - Helps AI choose relevant examples from your field
 
 ### 🗣️ Language Tips
+
 - Always select the primary language you want the script in
 - Secondary language helps with learning (optional but useful)
 - System supports 9 major languages
 
 ### 📝 Notes Tips
+
 - Be specific about what you want
 - "Casual, with humor, 8-10 minutes" ✅ (good)
 - "Good" ❌ (not specific enough)
@@ -375,20 +399,24 @@ Once the script is generated:
 ## Troubleshooting
 
 ### ❌ "Form didn't appear"
+
 - Make sure you **selected at least one item**
 - Check browser console for JavaScript errors (F12)
 
 ### ❌ "Script generation failed"
+
 - Check that **Category/Subject is filled in**
 - Try selecting a different primary language
 - Try removing secondary language if set
 
 ### ❌ "Script looks generic"
+
 - Fill in **Profession** field for more targeted examples
 - Add more detail to **Topic** field
 - Use **Notes** to guide the style/format
 
 ### ❌ "Want to change something"
+
 - Edit the generated script directly in the text area
 - Or click "Generate Script Text" again to try different settings
 - Or deselect items and start over
@@ -397,14 +425,14 @@ Once the script is generated:
 
 ## Quick Reference
 
-| Field | Required? | Purpose |
-|-------|-----------|---------|
-| Category/Subject | ✅ YES | Main topic for podcast |
-| Specific Topic | ❌ Optional | Narrow down the focus |
-| Profession/Context | ❌ Optional | Tailor to your job |
-| Primary Language | ✅ YES | Language for script |
+| Field              | Required?   | Purpose                |
+| ------------------ | ----------- | ---------------------- |
+| Category/Subject   | ✅ YES      | Main topic for podcast |
+| Specific Topic     | ❌ Optional | Narrow down the focus  |
+| Profession/Context | ❌ Optional | Tailor to your job     |
+| Primary Language   | ✅ YES      | Language for script    |
 | Secondary Language | ❌ Optional | For bilingual learning |
-| Additional Notes | ❌ Optional | Style/tone guidance |
+| Additional Notes   | ❌ Optional | Style/tone guidance    |
 
 ---
 
@@ -431,4 +459,3 @@ Once the script is generated:
 ---
 
 **That's it!** The customization form makes sure your podcast script is exactly what you need. 🎙️
-

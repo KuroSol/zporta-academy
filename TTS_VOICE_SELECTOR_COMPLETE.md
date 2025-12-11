@@ -2,7 +2,7 @@
 
 ## 🎯 **What's New**
 
-You requested: *"can i have list in here to instead of hard code depend on model user chose like eleven lab list id and maybe accent and male or female"*
+You requested: _"can i have list in here to instead of hard code depend on model user chose like eleven lab list id and maybe accent and male or female"_
 
 **Implemented**: Dynamic voice selection system that fetches voice metadata from TTS provider APIs with gender, accent, and language filters!
 
@@ -15,12 +15,14 @@ You requested: *"can i have list in here to instead of hard code depend on model
 Created: `/api/admin/ajax/tts-voices/?provider=<provider>&language=<language>`
 
 **Supported Providers:**
+
 - ✅ **ElevenLabs** - Fetches from live API (`https://api.elevenlabs.io/v1/voices`)
 - ✅ **Google TTS** - Predefined voices with Wavenet & Neural2 models
 - ✅ **OpenAI TTS** - 6 voices (alloy, echo, fable, onyx, nova, shimmer)
 - ✅ **Amazon Polly** - Common voices (Joanna, Matthew, Mizuki, etc.)
 
 **Response Format:**
+
 ```json
 {
   "voices": [
@@ -46,6 +48,7 @@ Created: `/api/admin/ajax/tts-voices/?provider=<provider>&language=<language>`
 ## 📋 **Voice Metadata Included**
 
 Each voice includes:
+
 - ✅ **voice_id** - Unique identifier for API calls
 - ✅ **name** - Display name (e.g., "Lily", "Alloy", "Joanna")
 - ✅ **gender** - male / female / neutral / unknown
@@ -60,6 +63,7 @@ Each voice includes:
 ## 🔧 **Provider-Specific Details**
 
 ### **ElevenLabs** (Live API)
+
 - **API Key Required**: Uses `ELEVENLABS_API_KEY` from settings
 - **Real-Time Fetching**: Calls `https://api.elevenlabs.io/v1/voices`
 - **Multilingual Support**: All premade voices support multiple languages
@@ -67,28 +71,33 @@ Each voice includes:
 - **Voice Count**: ~40+ voices (varies by account tier)
 
 **Example Voices:**
+
 - Lily (pFZP5JQG7iQjIQuC4Bku) - Female, American, Professional
 - Adam (pNInz6obpgDQGcFmaJgB) - Male, American, Deep
 - Rachel (21m00Tcm4TlvDq8ikWAM) - Female, American, Calm
 
 ### **Google TTS** (Predefined)
+
 - **Voice Types**: Wavenet, Neural2
 - **Languages**: English (US/UK), Japanese, Spanish, French, German
 - **Gender**: Male/Female clearly labeled
 - **Accents**: American, British, Tokyo, Spain, Paris, Standard
 
 **Example Voices:**
+
 - en-US-Wavenet-A (Male, American)
 - en-GB-Wavenet-A (Female, British)
 - ja-JP-Wavenet-A (Female, Tokyo)
 
 ### **OpenAI TTS** (Hardcoded)
+
 - **6 Voices**: alloy, echo, fable, onyx, nova, shimmer
 - **Multilingual**: All voices support 50+ languages
 - **Gender**: Clearly marked (male/female/neutral)
 - **Accents**: Neutral, expressive, deep, bright, young
 
 **Voice Characteristics:**
+
 - alloy - Neutral, versatile (best for learning)
 - echo - Male, clear
 - fable - Expressive storytelling
@@ -97,6 +106,7 @@ Each voice includes:
 - shimmer - Bright, friendly female
 
 ### **Amazon Polly** (Predefined)
+
 - **16 Common Voices**: Joanna, Matthew, Mizuki, etc.
 - **Languages**: English (US/UK), Japanese, Spanish, French, German
 - **Gender**: Male/Female/Child
@@ -107,21 +117,25 @@ Each voice includes:
 ## 🎨 **Usage Examples**
 
 ### **1. Fetch All ElevenLabs Voices**
+
 ```bash
 GET /api/admin/ajax/tts-voices/?provider=elevenlabs
 ```
 
 ### **2. Filter by Language (English only)**
+
 ```bash
 GET /api/admin/ajax/tts-voices/?provider=google&language=en
 ```
 
 ### **3. Get OpenAI Voices**
+
 ```bash
 GET /api/admin/ajax/tts-voices/?provider=openai
 ```
 
 ### **4. Get Japanese Voices from Polly**
+
 ```bash
 GET /api/admin/ajax/tts-voices/?provider=polly&language=ja
 ```
@@ -131,11 +145,13 @@ GET /api/admin/ajax/tts-voices/?provider=polly&language=ja
 ## 🔌 **API Endpoints**
 
 ### **New Endpoint**
+
 ```
 GET /api/admin/ajax/tts-voices/
 ```
 
 **Query Parameters:**
+
 - `provider` (required): elevenlabs | google | openai | polly
 - `language` (optional): Language code (en, ja, es, fr, de)
 
@@ -146,6 +162,7 @@ GET /api/admin/ajax/tts-voices/
 ## 📂 **Files Modified**
 
 ### 1. **dailycast/views_admin_ajax.py**
+
 - **Added**: `get_tts_voices_ajax()` function (lines 825-992)
 - **Features**:
   - Fetches ElevenLabs voices from live API
@@ -155,6 +172,7 @@ GET /api/admin/ajax/tts-voices/
   - Error handling with traceback
 
 ### 2. **dailycast/ajax_urls.py**
+
 - **Added**: `path('tts-voices/', get_tts_voices_ajax)`
 - **URL**: `/api/admin/ajax/tts-voices/`
 
@@ -163,11 +181,13 @@ GET /api/admin/ajax/tts-voices/
 ## 🧪 **Testing the Endpoint**
 
 ### **Test in Browser**
+
 ```
 http://127.0.0.1:8000/api/admin/ajax/tts-voices/?provider=elevenlabs
 ```
 
 ### **Expected Response (ElevenLabs)**
+
 ```json
 {
   "voices": [
@@ -190,11 +210,13 @@ http://127.0.0.1:8000/api/admin/ajax/tts-voices/?provider=elevenlabs
 ```
 
 ### **Test Google TTS**
+
 ```
 http://127.0.0.1:8000/api/admin/ajax/tts-voices/?provider=google&language=ja
 ```
 
 **Expected Response:**
+
 ```json
 {
   "voices": [
@@ -219,6 +241,7 @@ http://127.0.0.1:8000/api/admin/ajax/tts-voices/?provider=google&language=ja
 ## 🎯 **Next Steps (Optional)**
 
 ### **Phase 1: Voice Selector UI (Future)**
+
 If you want a dropdown UI in the admin form:
 
 1. **Add JavaScript** to fetch voices dynamically
@@ -227,11 +250,13 @@ If you want a dropdown UI in the admin form:
 4. **Store selection** in `voice_map_json` field
 
 ### **Phase 2: Voice Preview (Future)**
+
 - **Test TTS button** - Generate 10-second audio sample
 - **Play in browser** - Audio player with voice preview
 - **Compare voices** - Side-by-side comparison
 
 ### **Phase 3: Smart Recommendations (Future)**
+
 - **Auto-suggest voices** based on content language
 - **Gender balance** - Alternate male/female voices
 - **Accent matching** - Match voice accent to content region
@@ -240,25 +265,29 @@ If you want a dropdown UI in the admin form:
 
 ## 📊 **Voice Counts by Provider**
 
-| Provider | Total Voices | Multilingual | Gendered | Accents |
-|----------|-------------|-------------|----------|---------|
-| **ElevenLabs** | 40+ | ✅ All | ✅ Yes | ✅ Multiple |
-| **Google TTS** | 18 (sample) | ❌ No | ✅ Yes | ✅ Multiple |
-| **OpenAI TTS** | 6 | ✅ All | ✅ Yes | ⚠️ Limited |
-| **Amazon Polly** | 16 (sample) | ❌ No | ✅ Yes | ✅ Multiple |
+| Provider         | Total Voices | Multilingual | Gendered | Accents     |
+| ---------------- | ------------ | ------------ | -------- | ----------- |
+| **ElevenLabs**   | 40+          | ✅ All       | ✅ Yes   | ✅ Multiple |
+| **Google TTS**   | 18 (sample)  | ❌ No        | ✅ Yes   | ✅ Multiple |
+| **OpenAI TTS**   | 6            | ✅ All       | ✅ Yes   | ⚠️ Limited  |
+| **Amazon Polly** | 16 (sample)  | ❌ No        | ✅ Yes   | ✅ Multiple |
 
 ---
 
 ## ⚙️ **Configuration**
 
 ### **ElevenLabs API Key**
+
 Already configured in `zporta/settings/base.py`:
+
 ```python
 ELEVENLABS_API_KEY = "sk_1fa574d07736f4b13cc861985064ff00509b4d3eacd04982"
 ```
 
 ### **Google TTS**
+
 Uses existing credentials:
+
 ```python
 GOOGLE_APPLICATION_CREDENTIALS = "C:\\...\\google-credentials.json"
 ```
@@ -277,18 +306,24 @@ GOOGLE_APPLICATION_CREDENTIALS = "C:\\...\\google-credentials.json"
 ## 📝 **Example Use Cases**
 
 ### **Use Case 1: Language-Specific Voice Selection**
+
 User creates Japanese podcast → API filters for `ja` voices → Shows only:
+
 - ElevenLabs multilingual voices
 - Google TTS: ja-JP-Wavenet-A, ja-JP-Wavenet-B, etc.
 - Polly: Mizuki, Takumi
 
 ### **Use Case 2: Gender Balance**
+
 User wants alternating male/female voices → API provides gender metadata → Admin can select:
+
 - Female: Lily (ElevenLabs), Joanna (Polly), Shimmer (OpenAI)
 - Male: Adam (ElevenLabs), Matthew (Polly), Onyx (OpenAI)
 
 ### **Use Case 3: Accent Matching**
+
 British English content → Filter for `accent=british`:
+
 - Google TTS: en-GB-Wavenet-A, en-GB-Wavenet-B
 - Polly: Amy, Brian
 
@@ -312,6 +347,7 @@ All completed! ✅
 ## 🎉 **Summary**
 
 You now have a **dynamic voice selection system** that:
+
 - ✅ Fetches **40+ voices from ElevenLabs API** in real-time
 - ✅ Includes **gender, accent, age, and language metadata**
 - ✅ Filters by language code (e.g., `?language=ja`)
@@ -320,6 +356,7 @@ You now have a **dynamic voice selection system** that:
 - ✅ No hardcoding - all voice data from APIs or predefined lists
 
 **Next**: You can now build a UI dropdown that shows:
+
 ```
 📢 Lily (Female, American) - Professional tone [ElevenLabs]
 🎙️ Alloy (Neutral) - Versatile [OpenAI]

@@ -7,12 +7,13 @@ Your **complete dashboard configuration system** is built and ready:
 ### ✅ Components Created
 
 1. **TeacherContentConfig Model** - Database table with 25+ settings
-2. **Django Admin Interface** - Beautiful UI with 10 organized sections  
+2. **Django Admin Interface** - Beautiful UI with 10 organized sections
 3. **Config Helpers** - 30+ functions to read settings in code
 4. **Migration** - Applied to database ✅
 5. **Full Documentation** - 5 comprehensive guides
 
 ### ✅ Database Status
+
 ```
 ✅ Migration created: 0005_alter_dailypodcast_tts_provider_teachercontentconfig.py
 ✅ Migration applied: OK
@@ -25,19 +26,23 @@ Your **complete dashboard configuration system** is built and ready:
 ## How to Access RIGHT NOW
 
 ### Step 1: Go to Admin
+
 ```
 http://localhost:8000/admin/
 (Log in if needed)
 ```
 
 ### Step 2: Find Configuration
+
 ```
 Left sidebar → DAILYCAST section
 → "Teacher Content Configuration"
 ```
 
 ### Step 3: Configure Your Settings
+
 You'll see organized sections:
+
 - 🟢 Enable/Disable
 - 🌐 Basic settings
 - 🤖 LLM provider (OpenAI/Gemini/Template)
@@ -48,6 +53,7 @@ You'll see organized sections:
 - And more...
 
 ### Step 4: Click Save
+
 Settings are **instantly active** for next generation!
 
 ---
@@ -55,11 +61,13 @@ Settings are **instantly active** for next generation!
 ## Key Features RIGHT NOW
 
 ✨ **One-Click Configuration**
+
 - No code changes needed
 - No server restart needed
 - Changes apply instantly
 
 💰 **Fully Customizable**
+
 - LLM provider (OpenAI, Gemini, Template)
 - TTS provider (ElevenLabs, Google, OpenAI, Polly)
 - Script length (short/normal/long)
@@ -67,11 +75,13 @@ Settings are **instantly active** for next generation!
 - Rate limiting (cooldown & quotas)
 
 🌍 **Multilingual Ready**
+
 - Support EN+JA, EN+ES, EN+FR, etc
 - Custom voice selection per language
 - Single or separate audio files
 
 📊 **Admin Audit Trail**
+
 - See who changed what
 - See when changes were made
 - Full history
@@ -81,19 +91,23 @@ Settings are **instantly active** for next generation!
 ## Next Steps (Quick - 2 hours)
 
 ### Option A: Use Immediately
+
 1. ✅ Go to admin
 2. ✅ Configure your preferences
 3. ✅ Start using custom settings
 4. Done! 🎉
 
 ### Option B: Wire Code First (Recommended)
+
 1. Update `services_interactive.py` to use config helpers
+
    ```python
    from dailycast.config_helpers import get_tts_provider
    provider = get_tts_provider()  # Instead of hardcoded
    ```
 
 2. Update `views_admin_ajax.py` for word limits
+
    ```python
    from dailycast.config_helpers import get_script_word_limit
    limit = get_script_word_limit(is_short=is_short)
@@ -107,46 +121,53 @@ Settings are **instantly active** for next generation!
 
 ## Available Documentation
 
-| Document | When to Use |
-|----------|------------|
-| **QUICK_REFERENCE_CONFIG.md** | 📌 Quick lookup (1 min) |
-| **TEACHER_CONFIG_GUIDE.md** | 📚 Full detailed guide (5-10 min) |
-| **SETUP_COMPLETE_CONFIG_DASHBOARD.md** | 🚀 Getting started (3 min) |
-| **CONFIG_ARCHITECTURE.md** | 🏗️ How it works (10 min) |
-| **IMPLEMENTATION_CHECKLIST.md** | ✅ Step-by-step tasks |
+| Document                               | When to Use                       |
+| -------------------------------------- | --------------------------------- |
+| **QUICK_REFERENCE_CONFIG.md**          | 📌 Quick lookup (1 min)           |
+| **TEACHER_CONFIG_GUIDE.md**            | 📚 Full detailed guide (5-10 min) |
+| **SETUP_COMPLETE_CONFIG_DASHBOARD.md** | 🚀 Getting started (3 min)        |
+| **CONFIG_ARCHITECTURE.md**             | 🏗️ How it works (10 min)          |
+| **IMPLEMENTATION_CHECKLIST.md**        | ✅ Step-by-step tasks             |
 
 ---
 
 ## Configuration Examples
 
 ### Example 1: Save Money
+
 ```
 LLM: template (no API costs)
 TTS: google (free tier)
 Cost: 0
 Cooldown: 24 hours
 ```
+
 💰 **Result: Completely free**
 
 ### Example 2: High Quality
+
 ```
 LLM: openai (gpt-4o-mini)
 TTS: elevenlabs
 Cost: 0.50 credit
 Cooldown: 0 (unlimited)
 ```
+
 ✨ **Result: Premium quality, paid**
 
 ### Example 3: Bilingual (EN+JA)
+
 ```
 Bilingual: enabled
 Pair: en_ja
 Audio Stitch: single file
 TTS: elevenlabs
 ```
+
 🌍 **Result: Native EN + JA in one audio**
 
 ### Example 4: Testing/Dev
+
 ```
 LLM: template
 TTS: google
@@ -154,6 +175,7 @@ Cooldown: 0
 Verbose Logging: on
 Debug Mode: on
 ```
+
 🧪 **Result: Fast, free testing**
 
 ---
@@ -180,6 +202,7 @@ All return values directly from your admin settings!
 ## Testing Your Setup
 
 ### Test 1: Config Exists
+
 ```bash
 python manage.py shell
 >>> from dailycast.models import TeacherContentConfig
@@ -189,6 +212,7 @@ elevenlabs  # ✅ Shows your admin setting!
 ```
 
 ### Test 2: Helper Functions Work
+
 ```bash
 python manage.py shell
 >>> from dailycast.config_helpers import get_tts_provider
@@ -197,6 +221,7 @@ elevenlabs  # ✅ Should match admin!
 ```
 
 ### Test 3: Generate with Custom Config
+
 1. Change setting in admin (e.g., TTS to "google")
 2. Generate teacher content
 3. Verify it uses new setting
@@ -207,14 +232,17 @@ elevenlabs  # ✅ Should match admin!
 ## Files Changed/Created
 
 ### New Files
+
 - ✅ `dailycast/config_helpers.py` (helpers module)
 - ✅ `dailycast/migrations/0005_*.py` (migration)
 
-### Modified Files  
+### Modified Files
+
 - ✅ `dailycast/models.py` (added TeacherContentConfig)
 - ✅ `dailycast/admin.py` (added admin interface)
 
 ### Documentation
+
 - ✅ `TEACHER_CONFIG_GUIDE.md`
 - ✅ `SETUP_COMPLETE_CONFIG_DASHBOARD.md`
 - ✅ `QUICK_REFERENCE_CONFIG.md`
@@ -239,16 +267,16 @@ Running migrations:
 
 ## What You Can Customize
 
-| Area | What | Where |
-|------|------|-------|
-| **LLM** | Provider, Model | Admin → LLM PROVIDER SETTINGS |
-| **TTS** | Provider, Rate, Pitch, Volume | Admin → TTS PROVIDER SETTINGS |
-| **Scripts** | Word limits, Questions, Quotes | Admin → SCRIPT GENERATION |
-| **Pricing** | Cost per generation | Admin → PRICING & CREDITS |
-| **Limits** | Cooldown hours, Max per day | Admin → COOLDOWN & QUOTA |
-| **Languages** | Bilingual support, Pairs | Admin → BILINGUAL SETTINGS |
-| **Prompts** | AI personality, Tone | Admin → PROMPT TEMPLATES |
-| **Logging** | Verbose, Debug mode | Admin → LOGGING & DEBUG |
+| Area          | What                           | Where                         |
+| ------------- | ------------------------------ | ----------------------------- |
+| **LLM**       | Provider, Model                | Admin → LLM PROVIDER SETTINGS |
+| **TTS**       | Provider, Rate, Pitch, Volume  | Admin → TTS PROVIDER SETTINGS |
+| **Scripts**   | Word limits, Questions, Quotes | Admin → SCRIPT GENERATION     |
+| **Pricing**   | Cost per generation            | Admin → PRICING & CREDITS     |
+| **Limits**    | Cooldown hours, Max per day    | Admin → COOLDOWN & QUOTA      |
+| **Languages** | Bilingual support, Pairs       | Admin → BILINGUAL SETTINGS    |
+| **Prompts**   | AI personality, Tone           | Admin → PROMPT TEMPLATES      |
+| **Logging**   | Verbose, Debug mode            | Admin → LOGGING & DEBUG       |
 
 ---
 
@@ -257,17 +285,20 @@ Running migrations:
 🎯 **Status:** Configuration system is **100% complete and ready**
 
 ✅ **What's working:**
+
 - Admin dashboard configured
 - Database migrated
 - Helper functions ready
 - Documentation complete
 
 🚀 **Next (optional):**
+
 - Wire code to use helpers (2 hours)
 - Test with actual config
 - Deploy to production
 
 📌 **Access now:**
+
 ```
 http://localhost:8000/admin/
 → DAILYCAST → Teacher Content Configuration

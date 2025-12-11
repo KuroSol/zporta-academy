@@ -32,9 +32,11 @@ ai_core/                          # NEW APP (coexists with dailycast)
 ## 🗄️ New Models
 
 ### 1. **AiProviderConfig** (AI Provider Configuration)
+
 **Purpose**: Central config for all AI models (text + audio)
 
 **Fields**:
+
 - `provider`: 'openai', 'gemini', 'claude', 'elevenlabs', 'google_tts', 'local_small_model'
 - `model_name`: e.g. 'gpt-4o-mini', 'gemini-2.0-pro-exp'
 - `tier`: 'cheap', 'normal', 'premium'
@@ -51,9 +53,11 @@ ai_core/                          # NEW APP (coexists with dailycast)
 ---
 
 ### 2. **AiMemory** (Smart Cache for AI Content)
+
 **Purpose**: Cache ALL AI-generated content to avoid duplicate API calls
 
 **Key Features**:
+
 - **Deduplication**: Uses `prompt_hash` (SHA256 of normalized prompt + options)
 - **Quality tracking**: `is_verified_good`, `user_rating`, `usage_count`
 - **Training data**: Flag good examples with `use_for_training`
@@ -61,6 +65,7 @@ ai_core/                          # NEW APP (coexists with dailycast)
 - **Reusability**: If exact same request comes again → return cached response (0 cost!)
 
 **Fields**:
+
 - `request_type`: 'podcast_script', 'quiz_generation', 'lesson_script', 'tts_audio', etc.
 - `prompt_hash`: Unique hash for deduplication
 - `prompt_text`: Original prompt
@@ -76,9 +81,11 @@ ai_core/                          # NEW APP (coexists with dailycast)
 ---
 
 ### 3. **AiTrainingData** (Curated Dataset for Fine-Tuning)
+
 **Purpose**: Track verified, high-quality examples for training our own model
 
 **Fields**:
+
 - `memory_item`: Link to AiMemory item
 - `training_weight`: Importance (1.0 = normal, 2.0 = double weight)
 - `difficulty_label`: 'easy', 'medium', 'hard'
@@ -93,9 +100,11 @@ ai_core/                          # NEW APP (coexists with dailycast)
 ---
 
 ### 4. **AiUsageLog** (Cost & Performance Tracking)
+
 **Purpose**: Log EVERY AI request for cost monitoring and analytics
 
 **Fields**:
+
 - `request_type`: What was requested
 - `endpoint`: Which function made the call
 - `user`: Who requested it (optional)
@@ -107,6 +116,7 @@ ai_core/                          # NEW APP (coexists with dailycast)
 - `error_message`: If failed
 
 **Usage**: Admin dashboard shows:
+
 - Total cost last 30 days
 - Cache hit rate (how much money saved)
 - Top expensive endpoints
@@ -115,9 +125,11 @@ ai_core/                          # NEW APP (coexists with dailycast)
 ---
 
 ### 5. **AiModelTrainingRun** (Training History)
+
 **Purpose**: Track each fine-tuning run for our own model
 
 **Fields**:
+
 - `training_batch_id`: Unique ID (e.g. 'zporta_2025_01')
 - `model_version`: 'zporta_v1', 'zporta_v2', etc.
 - `training_size`: Number of examples used
@@ -142,6 +154,7 @@ ai_core/                          # NEW APP (coexists with dailycast)
 **Purpose**: ONE entry point for ALL text generation across entire platform
 
 **Usage Example**:
+
 ```python
 from ai_core.services import generate_text
 
@@ -167,6 +180,7 @@ script, provider = generate_text(
 ```
 
 **What it does**:
+
 1. **Check cache first**: Compute `prompt_hash`, look in AiMemory
 2. **Cache hit?** → Return cached text immediately (0 cost!)
 3. **Cache miss?** → Select AI model (auto or manual)
@@ -185,6 +199,7 @@ script, provider = generate_text(
 **Purpose**: ONE entry point for ALL TTS/audio generation
 
 **Usage Example**:
+
 ```python
 from ai_core.services import generate_audio
 
@@ -207,6 +222,7 @@ audio_bytes, provider = generate_audio(
 ```
 
 **What it does**:
+
 1. **Check audio cache**: Compute `text_hash` + language + voice_id
 2. **Cache hit?** → Return MP3 file immediately (0 cost!)
 3. **Cache miss?** → Select TTS provider (ElevenLabs, OpenAI, Google)
@@ -226,25 +242,26 @@ audio_bytes, provider = generate_audio(
 def _auto_select_model(request_type, options):
     # Determine tier
     tier = 'cheap'  # Default
-    
+
     # Important content → Normal tier
     if request_type in ['podcast_script', 'report', 'lesson_script']:
         tier = 'normal'
-    
+
     # Explicit premium request → Premium tier
     if options.get('quality') == 'premium' or options.get('deep_reasoning'):
         tier = 'premium'
-    
+
     # Get cheapest model in this tier
     config = AiProviderConfig.objects.filter(
         tier=tier,
         is_active=True
     ).order_by('cost_per_million_tokens', '-quality_score').first()
-    
+
     return config.provider, config.model_name
 ```
 
 **Tiers**:
+
 - **Cheap** (`gpt-4o-mini`, `gemini-1.5-flash`): Simple quizzes, drills, basic reports
 - **Normal** (`gpt-4o`, `gemini-1.5-pro`): Podcasts, lesson scripts, important content
 - **Premium** (`gpt-4-turbo`, `claude-3-5-sonnet`): Complex reasoning, long context
@@ -258,7 +275,7 @@ def _auto_select_tts_provider(language):
     # Prefer ElevenLabs for quality (if API key exists)
     if has_elevenlabs_key():
         return 'elevenlabs'
-    
+
     # Fallback to OpenAI TTS
     return 'openai'
 ```
@@ -268,11 +285,13 @@ def _auto_select_tts_provider(language):
 ## 🎓 Training Our Own Model (Future Phase)
 
 ### Step 1: Collect Data
+
 - Admin reviews AI-generated content in **AiMemory** admin
 - Marks best examples with **"✓ Mark as Verified (Training)"** action
 - System automatically tags them for training
 
 ### Step 2: Export Training Data
+
 ```python
 from ai_core.services import export_training_data
 
@@ -286,6 +305,7 @@ dataset = export_training_data(
 ```
 
 ### Step 3: Fine-Tune Model
+
 ```bash
 # Example using OpenAI (or Gemini, or local)
 python manage.py train_zporta_model \
@@ -296,6 +316,7 @@ python manage.py train_zporta_model \
 ```
 
 ### Step 4: Deploy Fine-Tuned Model
+
 - Add to **AiProviderConfig**: `provider='local_small_model'`, `model='zporta_v1'`
 - Set `tier='cheap'`, `is_default=True`
 - System will auto-use it for cheap tier requests
@@ -306,23 +327,28 @@ python manage.py train_zporta_model \
 ## 💰 Cost Control Tactics
 
 ### 1. Caching (Biggest Savings!)
+
 - Before ANY external API call → Check AiMemory
 - Same prompt + options → Reuse cached response
 - **Savings**: 90%+ for routine content
 
 ### 2. Deduplication
+
 - Normalize prompts before hashing (strip whitespace, lowercase, sort options)
 - Combine multiple small requests into batches
 
 ### 3. Tier-Based Selection
+
 - Don't use `gpt-4-turbo` for simple JLPT drills
 - Use cheapest model that meets quality threshold
 
 ### 4. Context Control
+
 - Send only minimal necessary context
 - Use IDs and references instead of full lesson text
 
 ### 5. Monitoring
+
 - **Admin Dashboard** shows:
   - Total cost last 30 days
   - Cache hit rate
@@ -330,6 +356,7 @@ python manage.py train_zporta_model \
   - Cost per provider
 
 ### 6. Local Model (Later)
+
 - After collecting 5,000-10,000 verified examples → Fine-tune
 - Use `local_small_model` for Zporta-typical requests (0 cost!)
 - Fallback to external if quality drops
@@ -341,6 +368,7 @@ python manage.py train_zporta_model \
 ### Where: Django Admin → AI Core → AI Usage Logs
 
 **Stats Shown**:
+
 - **Last 30 Days**:
   - Total requests: 12,543
   - Total cost: $45.23
@@ -361,6 +389,7 @@ python manage.py train_zporta_model \
 ## 🔗 Integration with Existing Code
 
 ### Before (Old Way):
+
 ```python
 # In dailycast/services_interactive.py
 from dailycast.services_interactive import generate_podcast_script_with_courses
@@ -375,6 +404,7 @@ script, provider = generate_podcast_script_with_courses(
 ```
 
 ### After (New Way):
+
 ```python
 # Use central AI router
 from ai_core.services import generate_text
@@ -399,6 +429,7 @@ script, provider = generate_text(
 ```
 
 **Benefits**:
+
 - ✅ Automatic caching (reuse if same prompt seen before)
 - ✅ Cost tracking (logged in AiUsageLog)
 - ✅ Auto model selection (picks cheapest good model)
@@ -409,6 +440,7 @@ script, provider = generate_text(
 ## 📝 Setup Instructions
 
 ### Step 1: Add to INSTALLED_APPS
+
 ```python
 # settings/base.py
 INSTALLED_APPS = [
@@ -419,6 +451,7 @@ INSTALLED_APPS = [
 ```
 
 ### Step 2: Run Migrations
+
 ```bash
 cd c:\Users\AlexSol\Documents\zporta_academy\zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -428,11 +461,13 @@ python manage.py migrate ai_core
 ```
 
 ### Step 3: Populate Provider Configs
+
 ```bash
 python manage.py setup_ai_providers
 ```
 
 **Output**:
+
 ```
 Setting up AI Provider Configurations...
   ✓ Created: openai/gpt-4o-mini (cheap)
@@ -448,12 +483,14 @@ Setting up AI Provider Configurations...
 ```
 
 ### Step 4: Test in Admin
+
 1. Go to: http://localhost:8000/admin/ai_core/
 2. Check **AI Provider Configs** (should see 11 entries)
 3. Check **AI Memory** (empty until first AI call)
 4. Check **AI Usage Logs** (empty until first AI call)
 
 ### Step 5: Update Existing Code (Optional)
+
 Replace direct AI calls with `generate_text()` or `generate_audio()`:
 
 ```python
@@ -492,6 +529,7 @@ After setup, verify:
 ## 🚀 Next Steps
 
 ### Phase 1 (Now): Foundation
+
 - ✅ Models created
 - ✅ Admin interfaces ready
 - ✅ Central router (`generate_text`, `generate_audio`)
@@ -499,6 +537,7 @@ After setup, verify:
 - ✅ Cost tracking
 
 ### Phase 2 (1-2 Weeks): Integration
+
 - [ ] Update podcast generation to use `generate_text()`
 - [ ] Update quiz generation to use `generate_text()`
 - [ ] Update email generation to use `generate_text()`
@@ -506,12 +545,14 @@ After setup, verify:
 - [ ] Monitor cache hit rate (target: 80%+)
 
 ### Phase 3 (1 Month): Data Collection
+
 - [ ] Admin reviews generated content
 - [ ] Mark 500+ examples as verified
 - [ ] Tag by subject/difficulty
 - [ ] Export training dataset
 
 ### Phase 4 (2-3 Months): Fine-Tuning
+
 - [ ] Collect 5,000-10,000 verified examples
 - [ ] Fine-tune `gpt-4o-mini` or `gemini-flash` on our data
 - [ ] Deploy as `local_small_model/zporta_v1`
@@ -525,11 +566,13 @@ After setup, verify:
 ### Conservative Estimates (After Full Rollout):
 
 **Current Costs** (Without AI Core):
+
 - 10,000 AI requests/month
 - No caching → Every request hits API
 - Cost: ~$200/month
 
 **With AI Core** (After 1 Month):
+
 - 10,000 AI requests/month
 - 80% cache hit rate → Only 2,000 API calls
 - Auto-selects cheapest good models
@@ -537,6 +580,7 @@ After setup, verify:
 - **Savings: $150/month (75%)**
 
 **With Fine-Tuned Model** (After 3 Months):
+
 - 10,000 AI requests/month
 - 80% cache hit rate
 - Of remaining 2,000:
@@ -560,6 +604,7 @@ After setup, verify:
 ## 📞 Support & Questions
 
 For questions about this system:
+
 1. Check this guide first
 2. Review admin interfaces
 3. Check logs: `tail -f logs/django_errors.log`
@@ -580,6 +625,7 @@ For questions about this system:
 ## 🎉 Summary
 
 **What you get**:
+
 1. ✅ ALL existing features work exactly as before
 2. ✅ Smart caching → 80%+ cost savings
 3. ✅ Central AI router → Easy monitoring

@@ -20,14 +20,17 @@ S3 Bucket:        Not used                 ✅ Zero
 ## How to Use
 
 ### Generate Podcast (Script Only - NOW)
+
 ```bash
 python manage.py generate_test_podcast --language en
 ```
+
 - Cost: $0.001 (OpenAI only)
 - Audio: Skipped (no AWS keys)
 - File: Saved to database only
 
 ### Generate Podcast (With Audio - When Ready)
+
 ```bash
 # 1. Add to .env:
 AWS_ACCESS_KEY_ID=AKIA...
@@ -36,6 +39,7 @@ AWS_SECRET_ACCESS_KEY=...
 # 2. Run:
 python manage.py generate_test_podcast --language en
 ```
+
 - Cost: $0.10 (Polly TTS)
 - Audio: Saved to `media/podcasts/podcast_1_<timestamp>.mp3`
 - File: 2-5 MB MP3
@@ -45,6 +49,7 @@ python manage.py generate_test_podcast --language en
 ## File Path Examples
 
 ### Where Files Go
+
 ```
 media/
 └── podcasts/
@@ -54,6 +59,7 @@ media/
 ```
 
 ### How to Access
+
 ```
 Django Admin:
   http://localhost:8000/admin/dailycast/dailypodcast/
@@ -72,6 +78,7 @@ Database:
 ## Cost Comparison
 
 ### Option 1: Script Only (Current)
+
 ```
 OpenAI gpt-4o-mini:  $0.001
 Amazon Polly:        $0 (not used)
@@ -81,6 +88,7 @@ Total:               $0.001 per podcast 💰
 ```
 
 ### Option 2: With Audio (When Ready)
+
 ```
 OpenAI gpt-4o-mini:  $0.001
 Amazon Polly:        $0.10
@@ -90,6 +98,7 @@ Total:               $0.10 per podcast 💰
 ```
 
 ### Old Way (S3 - Not Used)
+
 ```
 OpenAI gpt-4o-mini:  $0.001
 Amazon Polly:        $0.10
@@ -136,6 +145,7 @@ Your Server:
 ## Backup
 
 ### Simple (Every Day)
+
 ```bash
 # Copy to backup folder
 rsync -av media/podcasts/ /mnt/backup/podcasts/
@@ -145,6 +155,7 @@ tar -czf backup_$(date +%Y%m%d).tar.gz media/podcasts/
 ```
 
 ### Automatic (Lightsail)
+
 ```
 Snapshots → Create Snapshot
 (Includes entire server + media folder)
@@ -155,6 +166,7 @@ Snapshots → Create Snapshot
 ## Can I Switch Later?
 
 **To Add Audio:**
+
 ```bash
 # 1. Edit .env
 AWS_ACCESS_KEY_ID=AKIA...
@@ -167,6 +179,7 @@ python manage.py generate_test_podcast
 ```
 
 **To Use S3 (Future):**
+
 ```bash
 # 1. Install: pip install django-storages
 # 2. Edit settings:
@@ -181,14 +194,17 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 ## What to Read
 
 **Quick answers:**
+
 - This file (you're reading it!)
 - AUDIO_GENERATION_TEST.md (5 min read)
 
 **Complete info:**
+
 - DAILYCAST_LOCAL_STORAGE_GUIDE.md (40 pages)
 - RESPONSE_TO_STORAGE_REQUEST.md (answers your question in detail)
 
 **Everything:**
+
 - DAILYCAST_INDEX.md (navigation)
 - START_HERE_DAILYCAST.md (overview)
 
@@ -197,6 +213,7 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 ## Next Steps
 
 ### Immediate (Optional)
+
 ```bash
 # Verify it works
 python manage.py generate_test_podcast
@@ -205,6 +222,7 @@ python manage.py generate_test_podcast
 ```
 
 ### Soon (If You Want Audio)
+
 ```bash
 # 1. Get AWS credentials (if you have them)
 # 2. Add to .env
@@ -213,6 +231,7 @@ python manage.py generate_test_podcast
 ```
 
 ### Later (For Production)
+
 ```bash
 # 1. Deploy to Lightsail
 # 2. Configure Nginx for /media/ serving
@@ -225,6 +244,7 @@ python manage.py generate_test_podcast
 ## Bottom Line
 
 ✨ **You now have:**
+
 - ✅ MP3 audio saves to local disk (media/podcasts/)
 - ✅ No S3 bucket needed
 - ✅ No cloud storage costs
@@ -234,12 +254,14 @@ python manage.py generate_test_podcast
 - ✅ Production-ready
 
 ✨ **You save:**
+
 - 💰 $0.02+ per podcast (no S3)
 - 💰 $20-50/month for 1000 users
 - 🎯 Cloud vendor lock-in eliminated
 - 🎯 Server portability improved
 
 ✨ **You can always:**
+
 - Add AWS audio synthesis later
 - Switch to S3 if scaling to 100K+ users
 - Keep everything else exactly the same
@@ -253,6 +275,7 @@ Perfect for your current scale (100-1000 users).
 ---
 
 **Ready to test?**
+
 ```bash
 python manage.py generate_test_podcast --language en
 ```

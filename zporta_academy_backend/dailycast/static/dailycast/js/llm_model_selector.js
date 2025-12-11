@@ -128,17 +128,18 @@
    */
   function showProviderTooltip(provider) {
     // Fetch tooltip from AJAX endpoint
-    const apiUrl = "/api/admin/ajax/llm-models/?provider=" + encodeURIComponent(provider);
-    
+    const apiUrl =
+      "/api/admin/ajax/llm-models/?provider=" + encodeURIComponent(provider);
+
     fetch(apiUrl)
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.tooltip) {
           console.log(`📋 Provider tooltip: ${data.tooltip}`);
           showTooltipNotification(data.tooltip);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.warn("⚠️ Could not fetch tooltip:", error);
       });
   }
@@ -492,40 +493,46 @@
     // /admin/dailycast/usercategoryconfig/1/change/ → UserCategoryConfig
     // /administration-xxx/dailycast/teachercontentconfig/1/change/ → TeacherContentConfig
     const pathname = window.location.pathname;
-    let modelName = 'TeacherContentConfig'; // default
-    
-    if (pathname.includes('teachercontentconfig')) {
-      modelName = 'TeacherContentConfig';
-    } else if (pathname.includes('usercategoryconfig')) {
-      modelName = 'UserCategoryConfig';
+    let modelName = "TeacherContentConfig"; // default
+
+    if (pathname.includes("teachercontentconfig")) {
+      modelName = "TeacherContentConfig";
+    } else if (pathname.includes("usercategoryconfig")) {
+      modelName = "UserCategoryConfig";
     }
-    
+
     console.log(`📄 Detected model: ${modelName}`);
-    
+
     // List of fields to fetch help text for
     const fieldsToFetch = [
-      'voice_map_json',
-      'tts_fallback_chain',
-      'bilingual_default_pair',
-      'support_bilingual',
-      'script_word_limit',
-      'cooldown_hours',
-      'max_generations_per_day',
+      "voice_map_json",
+      "tts_fallback_chain",
+      "bilingual_default_pair",
+      "support_bilingual",
+      "script_word_limit",
+      "cooldown_hours",
+      "max_generations_per_day",
     ];
-    
+
     // Fetch help text for each field
-    fieldsToFetch.forEach(fieldName => {
-      const apiUrl = `/api/admin/ajax/field-help/?model=${encodeURIComponent(modelName)}&field=${encodeURIComponent(fieldName)}`;
-      
+    fieldsToFetch.forEach((fieldName) => {
+      const apiUrl = `/api/admin/ajax/field-help/?model=${encodeURIComponent(
+        modelName
+      )}&field=${encodeURIComponent(fieldName)}`;
+
       fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           if (!data.error && data.help_text) {
             // Find the field element in the form
-            const fieldElement = document.querySelector(`[name="${fieldName}"]`);
+            const fieldElement = document.querySelector(
+              `[name="${fieldName}"]`
+            );
             if (fieldElement && fieldElement.parentElement) {
               // Check if help box already exists (avoid duplicates)
-              const existingHelpBox = document.querySelector(`.field-help-text-${fieldName}`);
+              const existingHelpBox = document.querySelector(
+                `.field-help-text-${fieldName}`
+              );
               if (!existingHelpBox) {
                 // Create help text box with consistent styling
                 const helpBox = document.createElement("div");
@@ -539,14 +546,17 @@
                 helpBox.style.lineHeight = "1.4em";
                 helpBox.style.color = "#ffffff";
                 helpBox.innerHTML = `📌 ${data.help_text}`;
-                
+
                 // Insert after the field
-                fieldElement.parentElement.insertBefore(helpBox, fieldElement.nextSibling);
+                fieldElement.parentElement.insertBefore(
+                  helpBox,
+                  fieldElement.nextSibling
+                );
               }
             }
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.warn(`Could not fetch help text for ${fieldName}:`, error);
         });
     });
@@ -563,14 +573,22 @@
    * Voice map helper: fetch provider voices and update voice_map_json without manual typing
    */
   function initializeVoiceMapHelper() {
-    const providerSelect = document.querySelector('select[name="default_tts_provider"]');
-    const voiceMapInput = document.querySelector('textarea[name="voice_map_json"]');
+    const providerSelect = document.querySelector(
+      'select[name="default_tts_provider"]'
+    );
+    const voiceMapInput = document.querySelector(
+      'textarea[name="voice_map_json"]'
+    );
     if (!providerSelect || !voiceMapInput) return;
 
     // Hide the textarea and its help text - user doesn't need to see JSON
     voiceMapInput.style.display = "none";
     const helpText = voiceMapInput.previousElementSibling;
-    if (helpText && helpText.className && helpText.className.includes("help-text")) {
+    if (
+      helpText &&
+      helpText.className &&
+      helpText.className.includes("help-text")
+    ) {
       helpText.style.display = "none";
     }
 
@@ -627,7 +645,9 @@
     const loadVoices = () => {
       const provider = providerSelect.value || "elevenlabs";
       const lang = langSelect.value || "";
-      const url = `/api/admin/ajax/tts-voices/?provider=${encodeURIComponent(provider)}&language=${encodeURIComponent(lang)}`;
+      const url = `/api/admin/ajax/tts-voices/?provider=${encodeURIComponent(
+        provider
+      )}&language=${encodeURIComponent(lang)}`;
       statusLine.textContent = `Loading...`;
       fetch(url)
         .then((r) => r.json())
@@ -641,7 +661,9 @@
             opt.textContent = `${v.name || v.voice_id}${gender}${accent}`;
             voiceSelect.appendChild(opt);
           });
-          statusLine.textContent = `${data.count || voiceSelect.options.length} voices available`;
+          statusLine.textContent = `${
+            data.count || voiceSelect.options.length
+          } voices available`;
         })
         .catch((err) => {
           console.error("Voice load failed", err);
@@ -662,13 +684,17 @@
     addButton.style.cursor = "pointer";
     addButton.onclick = () => {
       const lang = langSelect.value;
-      const selections = Array.from(voiceSelect.selectedOptions).map((o) => o.value);
+      const selections = Array.from(voiceSelect.selectedOptions).map(
+        (o) => o.value
+      );
       if (!lang || selections.length === 0) {
         statusLine.textContent = "Select language and voice(s)";
         return;
       }
       try {
-        const current = voiceMapInput.value.trim() ? JSON.parse(voiceMapInput.value) : {};
+        const current = voiceMapInput.value.trim()
+          ? JSON.parse(voiceMapInput.value)
+          : {};
         current[lang] = selections.length === 1 ? selections[0] : selections;
         voiceMapInput.value = JSON.stringify(current, null, 2);
         voiceMapInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -721,5 +747,4 @@
       initializeVoiceMapHelper();
     }, 600);
   });
-
 })();

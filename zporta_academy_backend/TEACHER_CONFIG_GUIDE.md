@@ -27,9 +27,11 @@ Changes apply **instantly** to all future generations.
 ## Configuration Sections
 
 ### 🟢 ENABLED
+
 - `enabled`: Toggle teacher content generation on/off globally
 
 ### 🌐 BASIC SETTINGS
+
 - `default_language`: Default language (en, ja, es, fr, de, etc)
 - `default_output_format`: Output format (text, audio, or both)
 
@@ -38,11 +40,13 @@ Changes apply **instantly** to all future generations.
 **Choose which AI generates teacher scripts:**
 
 - `default_llm_provider`: Select provider
+
   - `template`: Use hardcoded templates (no LLM cost)
   - `openai`: Use OpenAI GPT models
   - `gemini`: Use Google Gemini
 
 - `openai_model`: Which OpenAI model to use
+
   - `gpt-4o-mini` (recommended, cheaper)
   - `gpt-4` (most capable, more expensive)
   - `gpt-3.5-turbo` (fastest, lower quality)
@@ -52,6 +56,7 @@ Changes apply **instantly** to all future generations.
   - `gemini-1.5-pro`
 
 **Example: Use cheaper GPT-4o-mini**
+
 ```
 default_llm_provider = "openai"
 openai_model = "gpt-4o-mini"
@@ -62,6 +67,7 @@ openai_model = "gpt-4o-mini"
 **Choose which service generates audio:**
 
 - `default_tts_provider`: Select provider
+
   - `elevenlabs` (natural, expressive)
   - `google` (standard Google Neural2)
   - `openai` (OpenAI TTS)
@@ -70,21 +76,25 @@ openai_model = "gpt-4o-mini"
   - `google_chirp` (Google's newest universal model)
 
 - `tts_fallback_chain`: What to try if primary fails
+
   - Example: `["elevenlabs", "google", "openai"]`
   - Code will try each in order until one works
 
 - `tts_speaking_rate`: How fast to speak
+
   - `0.5` = very slow
   - `1.0` = normal (recommended)
   - `1.5` = fast
 
 - `tts_pitch`: Voice pitch adjustment
+
   - `-20.0` to `+20.0` (0 = no change)
 
 - `tts_volume_gain`: Volume adjustment in dB
   - `-16.0` to `+16.0` (0 = no change)
 
 **Example: Use ElevenLabs with natural speaking**
+
 ```
 default_tts_provider = "elevenlabs"
 tts_speaking_rate = 1.0
@@ -97,6 +107,7 @@ tts_fallback_chain = ["elevenlabs", "google", "openai"]
 - `voice_map_json`: Map languages to specific voice IDs
 
 **Example JSON:**
+
 ```json
 {
   "en": "pFZP5JQG7iQjIQuC4Bku",
@@ -116,6 +127,7 @@ tts_fallback_chain = ["elevenlabs", "google", "openai"]
 - `include_motivational_quote`: Add quote at end? (yes/no)
 
 **Example: Shorter scripts**
+
 ```
 script_word_limit_normal = 400
 script_word_limit_short = 150
@@ -127,11 +139,13 @@ num_questions_per_script = 2
 **Customize the instructions sent to LLM:**
 
 - `prompt_system_role`: AI personality/role
+
   ```
   "You are a warm, enthusiastic, and engaging teacher."
   ```
 
 - `prompt_script_intro`: Main instruction
+
   ```
   "Create a conversational teacher script for a student."
   ```
@@ -150,6 +164,7 @@ num_questions_per_script = 2
 - `max_generations_per_day`: Max per day per user (0=unlimited)
 
 **Example: Allow 3 generations per day**
+
 ```
 cooldown_hours = 0
 max_generations_per_day = 3
@@ -163,6 +178,7 @@ max_generations_per_day = 3
 - `cost_per_generation`: Credit cost per generation (default: 0.50)
 
 **Example: Charge 1 credit per generation**
+
 ```
 enable_credit_system = true
 cost_per_generation = 1.00
@@ -177,6 +193,7 @@ cost_per_generation = 1.00
 - `bilingual_audio_stitch`: Stitch into one file? (yes/no)
 
 **Example: Support EN+JA with single audio file**
+
 ```
 support_bilingual = true
 bilingual_default_pair = "en_ja"
@@ -245,6 +262,7 @@ print(config.openai_model)  # "gpt-4o-mini"
 ## Common Configuration Recipes
 
 ### Recipe 1: Budget-Friendly Setup
+
 ```
 LLM Provider: template (no API costs)
 TTS Provider: google (free tier works)
@@ -254,6 +272,7 @@ Cost: 0 (free for users)
 ```
 
 ### Recipe 2: High Quality Setup
+
 ```
 LLM Provider: openai
 OpenAI Model: gpt-4
@@ -264,6 +283,7 @@ Cost: 1.00 credit per generation
 ```
 
 ### Recipe 3: Bilingual (EN+JA) Setup
+
 ```
 Support Bilingual: true
 Bilingual Pair: en_ja
@@ -273,6 +293,7 @@ Script Length: 600 words (balanced)
 ```
 
 ### Recipe 4: Testing/Development
+
 ```
 LLM Provider: template (fast)
 TTS Provider: google (free)
@@ -288,6 +309,7 @@ Debug Mode: true (extra output)
 Example: `services_interactive.py`
 
 **Before (hardcoded):**
+
 ```python
 def synthesize_audio_for_language(script_text, language):
     provider = "elevenlabs"  # Hardcoded!
@@ -295,6 +317,7 @@ def synthesize_audio_for_language(script_text, language):
 ```
 
 **After (reads from config):**
+
 ```python
 from dailycast.config_helpers import get_tts_provider, get_openai_model
 
@@ -308,11 +331,13 @@ def synthesize_audio_for_language(script_text, language):
 ## Migration Steps
 
 1. **Create and apply migration:**
+
    ```bash
    python manage.py migrate dailycast
    ```
 
 2. **Access Django admin:**
+
    ```
    http://your-site/admin/dailycast/teachercontentconfig/
    ```
@@ -335,18 +360,20 @@ A: No, only one singleton config exists. You can't add more.
 
 **Q: Changes aren't taking effect?**
 A: - Clear Django cache: `python manage.py clear_cache`
-   - Restart Django: `python manage.py runserver`
-   - Check `verbose_logging` is enabled to see what's happening
+
+- Restart Django: `python manage.py runserver`
+- Check `verbose_logging` is enabled to see what's happening
 
 **Q: How do I know what settings are being used?**
 A: Enable `verbose_logging=true` and check logs for `[CONFIG_DEBUG]` messages
 
 **Q: Can I export/import configs?**
 A: You can use Django's `dumpdata`/`loaddata`:
-   ```bash
-   python manage.py dumpdata dailycast.TeacherContentConfig > config.json
-   python manage.py loaddata config.json
-   ```
+
+```bash
+python manage.py dumpdata dailycast.TeacherContentConfig > config.json
+python manage.py loaddata config.json
+```
 
 ---
 

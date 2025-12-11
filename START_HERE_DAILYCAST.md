@@ -11,6 +11,7 @@
 A fully functional **on-demand AI podcast generator** for your Zporta Academy backend.
 
 ### ✅ Tested & Working
+
 ```
 ✓ Django app created and registered
 ✓ Database migrations applied
@@ -25,6 +26,7 @@ A fully functional **on-demand AI podcast generator** for your Zporta Academy ba
 ```
 
 ### ✅ Real Test Proof
+
 ```
 ✓ Generated podcast ID 2 for user "Alex" (ID 1)
 ✓ Status: completed
@@ -38,6 +40,7 @@ A fully functional **on-demand AI podcast generator** for your Zporta Academy ba
 ## 🚀 How to Use Right Now
 
 ### Option 1: CLI (Fastest - 30 seconds)
+
 ```bash
 cd zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -45,6 +48,7 @@ python manage.py generate_test_podcast --language en
 ```
 
 ### Option 2: Django Admin (Best UI - 2 minutes)
+
 ```bash
 cd zporta_academy_backend
 .\env\Scripts\Activate.ps1
@@ -54,6 +58,7 @@ python manage.py runserver 8000 --settings=zporta.settings.local
 ```
 
 ### Option 3: Django Shell (For Inspection)
+
 ```bash
 python manage.py shell
 from dailycast.models import DailyPodcast
@@ -74,6 +79,7 @@ DailyPodcast.objects.all()
 6. **DAILYCAST_REFERENCE_CARD.md** ← Command cheat sheet
 
 **Plus:**
+
 - **VERIFICATION_CHECKLIST.md** ← Proof everything works
 - **AUDIO_GENERATION_TEST.md** ← Quick test guide
 
@@ -84,6 +90,7 @@ DailyPodcast.objects.all()
 ## 🔧 What Was Added to Backend
 
 ### New Files
+
 ```
 dailycast/                                ✨ New app
 ├── __init__.py
@@ -100,6 +107,7 @@ dailycast/                                ✨ New app
 ```
 
 ### Modified Files
+
 ```
 zporta/settings/base.py                   ← Added 7 settings
 requirements.txt                          ← Added boto3
@@ -107,6 +115,7 @@ requirements.txt                          ← Added boto3
 ```
 
 ### Database
+
 ```
 dailycast_dailypodcast table             ← Created & migrated
 ├── user_id (FK)
@@ -124,22 +133,23 @@ dailycast_dailypodcast table             ← Created & migrated
 
 ## 🎯 Key Features Working
 
-| Feature | Status | How |
-|---------|--------|-----|
-| Generate script | ✅ Working | OpenAI gpt-4o-mini |
-| Fallback LLM | ✅ Ready | Gemini → Template |
+| Feature              | Status     | How                         |
+| -------------------- | ---------- | --------------------------- |
+| Generate script      | ✅ Working | OpenAI gpt-4o-mini          |
+| Fallback LLM         | ✅ Ready   | Gemini → Template           |
 | User personalization | ✅ Working | Pulls from intelligence app |
-| Manual trigger | ✅ Working | Button, command, shell |
-| Admin interface | ✅ Working | Full CRUD |
-| Audio synthesis | ✅ Ready | Needs AWS credentials |
-| Celery async | ✅ Ready | Falls back to sync |
-| Error handling | ✅ Working | Graceful degradation |
+| Manual trigger       | ✅ Working | Button, command, shell      |
+| Admin interface      | ✅ Working | Full CRUD                   |
+| Audio synthesis      | ✅ Ready   | Needs AWS credentials       |
+| Celery async         | ✅ Ready   | Falls back to sync          |
+| Error handling       | ✅ Working | Graceful degradation        |
 
 ---
 
 ## 📋 Configuration
 
 ### Your `.env` (Already Set)
+
 ```
 OPENAI_API_KEY=sk-proj-...              ✅ Working
 GEMINI_API_KEY=AIzaSy...                ✅ Ready
@@ -150,7 +160,9 @@ AWS_SECRET_ACCESS_KEY=                  ⏳ Optional
 ```
 
 ### To Change User
+
 Edit `.env`:
+
 ```
 DAILYCAST_TEST_USER_ID=17
 # (This is "alex_sol")
@@ -161,16 +173,19 @@ DAILYCAST_TEST_USER_ID=17
 ## 💡 Design Highlights
 
 ### ✅ Safety First
+
 - Only configured test user can generate
 - Graceful error handling
 - Detailed error messages
 
 ### ✅ Resilient
+
 - LLM provider fallback chain
 - AWS credentials optional (skips audio gracefully)
 - Database-backed error messages
 
 ### ✅ Django Patterns
+
 - Standard models, migrations, admin
 - Celery integration
 - Environment-based config
@@ -178,6 +193,7 @@ DAILYCAST_TEST_USER_ID=17
 - Type hints
 
 ### ✅ Ready for Scale
+
 - Async-ready (Celery)
 - Indexed database queries
 - Proper error handling
@@ -195,6 +211,7 @@ $ python manage.py generate_test_podcast --language en
 ```
 
 **Behind the scenes:**
+
 1. Validate user ID matches DAILYCAST_TEST_USER_ID
 2. Collect user stats from intelligence app
 3. Call OpenAI API with personalized prompt
@@ -207,24 +224,28 @@ $ python manage.py generate_test_podcast --language en
 ## 🚀 Next Phases
 
 ### Phase 1: Local Testing (NOW)
+
 - ✅ CLI test
 - ✅ Admin test
 - ✅ Shell inspection
 - **Duration:** 30 minutes
 
 ### Phase 2: Enable Audio (When Ready)
+
 - Add AWS credentials to `.env`
 - Test audio generation
 - Verify MP3 files saved
 - **Duration:** 1 hour
 
 ### Phase 3: Frontend API (After Audio)
+
 - `/api/dailycast/can-request/`
 - `/api/dailycast/generate/`
 - `/api/dailycast/today/`
 - **Duration:** 4-6 hours
 
 ### Phase 4: Production (Final)
+
 - Deploy to Lightsail
 - Configure Celery + Redis
 - Set up CDN
@@ -236,12 +257,14 @@ $ python manage.py generate_test_podcast --language en
 ## 📊 Cost Analysis
 
 ### Per Podcast
+
 - OpenAI gpt-4o-mini: $0.001
 - Amazon Polly audio: $0.10 (optional)
 - **Total (script only): $0.001**
 - **Total (with audio): $0.11**
 
 ### For 1000 Users
+
 - On-demand (20% adopt): $2-6/month
 - Full adoption: $30-110/month
 - **Much cheaper than automatic daily generation!**
@@ -264,21 +287,27 @@ $ python manage.py generate_test_podcast --language en
 ## 📞 Quick Support
 
 ### "Is it working?"
+
 ✅ Yes! Run: `python manage.py generate_test_podcast`
 
 ### "Can I test different languages?"
+
 ✅ Yes! Run: `python manage.py generate_test_podcast --language ja`
 
 ### "Can I test different users?"
+
 ✅ Yes! Edit `.env` DAILYCAST_TEST_USER_ID, then run again
 
 ### "Can I see it in admin?"
+
 ✅ Yes! Run server, go to http://localhost:8000/admin/
 
 ### "Can I add audio?"
+
 ✅ Yes! Add AWS credentials to `.env`, run again
 
 ### "Is it ready for production?"
+
 ✅ Yes! Code follows Django best practices, fully tested
 
 ---
@@ -295,6 +324,7 @@ $ python manage.py generate_test_podcast --language en
 6. DAILYCAST_IMPLEMENTATION_COMPLETE.md (technical)
 
 **Or jump to what you need:**
+
 - First test? → QUICK_START.md
 - Need command? → REFERENCE_CARD.md
 - Stuck? → LOCAL_TESTING_GUIDE.md
@@ -339,6 +369,7 @@ $ python manage.py generate_test_podcast --language en
 **Pick one path:**
 
 ### Path 1: Quickest (30 sec)
+
 ```
 1. Open terminal
 2. cd zporta_academy_backend
@@ -348,6 +379,7 @@ $ python manage.py generate_test_podcast --language en
 ```
 
 ### Path 2: Visual (5 min)
+
 ```
 1. Start server: python manage.py runserver 8000
 2. Visit: http://localhost:8000/admin/
@@ -356,6 +388,7 @@ $ python manage.py generate_test_podcast --language en
 ```
 
 ### Path 3: Inspect (3 min)
+
 ```
 1. Open shell: python manage.py shell
 2. Check: from dailycast.models import DailyPodcast

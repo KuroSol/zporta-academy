@@ -1,7 +1,9 @@
 # Form Update: Month Range & Reply Size Settings
 
 ## Summary
+
 The podcast generation form has been updated with **two new customizable options**:
+
 1. **Month Range** - Choose what time period of content to include
 2. **Reply Size** - Choose the duration/depth of the podcast
 
@@ -13,13 +15,13 @@ These settings are now **fully integrated** into the database and admin form.
 
 Control what time period of student activity is included in the podcast review:
 
-| Option | Value | Use Case |
-|--------|-------|----------|
+| Option            | Value     | Use Case                              |
+| ----------------- | --------- | ------------------------------------- |
 | **Current Month** | `current` | Focus on this month's recent progress |
-| **Last 3 Months** | `last_3` | Medium-term progress review |
-| **Last 6 Months** | `last_6` | Semester-like review |
-| **Last Year** | `last_12` | Full year review |
-| **All Time** | `all` | Complete learning history |
+| **Last 3 Months** | `last_3`  | Medium-term progress review           |
+| **Last 6 Months** | `last_6`  | Semester-like review                  |
+| **Last Year**     | `last_12` | Full year review                      |
+| **All Time**      | `all`     | Complete learning history             |
 
 **Database Field**: `month_range` in `DailyPodcast` model
 
@@ -31,11 +33,11 @@ Control what time period of student activity is included in the podcast review:
 
 Control the duration and depth of the generated podcast:
 
-| Option | Value | Duration | Depth |
-|--------|-------|----------|-------|
-| **Short** | `short` | 2-3 minutes | Quick summary |
-| **Medium** | `medium` | 4-5 minutes | Balanced |
-| **Long** | `long` | 6-8 minutes | Comprehensive |
+| Option       | Value      | Duration    | Depth           |
+| ------------ | ---------- | ----------- | --------------- |
+| **Short**    | `short`    | 2-3 minutes | Quick summary   |
+| **Medium**   | `medium`   | 4-5 minutes | Balanced        |
+| **Long**     | `long`     | 6-8 minutes | Comprehensive   |
 | **Detailed** | `detailed` | 10+ minutes | In-depth review |
 
 **Database Field**: `reply_size` in `DailyPodcast` model
@@ -47,14 +49,17 @@ Control the duration and depth of the generated podcast:
 ## How to Use in Admin
 
 ### Step 1: Go to Admin Dashboard
+
 ```
 http://localhost:8000/admin/dailycast/dailypodcast/
 ```
 
 ### Step 2: Create New Podcast or Edit Existing
+
 - Click "Add Podcast" or click on an existing one
 
 ### Step 3: Configure Settings
+
 ```
 1. Select User (required)
 2. Choose Primary Language (required)
@@ -65,6 +70,7 @@ http://localhost:8000/admin/dailycast/dailypodcast/
 ```
 
 ### Step 4: Generate
+
 - Click "Generate" button
 - The podcast will be created with your selected settings
 
@@ -137,7 +143,9 @@ reply_size = models.CharField(
 ## How These Settings Are Used in Podcast Generation
 
 ### 1. When Form is Submitted
+
 The values from the form are saved to the `DailyPodcast` record:
+
 ```python
 podcast = DailyPodcast(
     user=user,
@@ -151,7 +159,9 @@ podcast = DailyPodcast(
 ```
 
 ### 2. When Podcast is Generated
+
 The settings are passed to the service:
+
 ```python
 new_podcast = create_multilingual_podcast_for_user(
     user=user,
@@ -164,7 +174,9 @@ new_podcast = create_multilingual_podcast_for_user(
 ```
 
 ### 3. In the Script Generation
+
 These values should be used to:
+
 - **month_range**: Filter student activities to the selected time period
 - **reply_size**: Adjust script length, detail level, and content depth
 
@@ -175,6 +187,7 @@ These values should be used to:
 **Migration Applied**: `0006_dailypodcast_month_range_dailypodcast_reply_size.py`
 
 This migration adds:
+
 - ✅ `month_range` field to `DailyPodcast` table (max 20 chars, default='current')
 - ✅ `reply_size` field to `DailyPodcast` table (max 20 chars, default='medium')
 
@@ -187,6 +200,7 @@ Both fields are now part of the database schema and will store user selections.
 To fully utilize these settings in the podcast generation, you can:
 
 1. **Filter Activities by Date Range**
+
    ```python
    if podcast.month_range == 'last_3':
        cutoff_date = now - timedelta(days=90)
@@ -197,6 +211,7 @@ To fully utilize these settings in the podcast generation, you can:
    ```
 
 2. **Adjust Script Length**
+
    ```python
    if podcast.reply_size == 'short':
        script_word_limit = 400
@@ -219,15 +234,18 @@ To fully utilize these settings in the podcast generation, you can:
 ## Testing
 
 ### View Saved Settings
+
 Go to any DailyPodcast in admin and check:
+
 - `Month Range` field shows your selected value
 - `Reply Size` field shows your selected value
 
 ### In Database
+
 ```sql
-SELECT id, user_id, month_range, reply_size, created_at 
-FROM dailycast_dailypodcast 
-ORDER BY created_at DESC 
+SELECT id, user_id, month_range, reply_size, created_at
+FROM dailycast_dailypodcast
+ORDER BY created_at DESC
 LIMIT 5;
 ```
 
@@ -238,7 +256,6 @@ LIMIT 5;
 ✅ **Form fields added** - Month Range & Reply Size now appear on the form  
 ✅ **Database fields added** - Both fields stored in DailyPodcast model  
 ✅ **Migration applied** - Schema updated (0006)  
-✅ **Integration ready** - Values passed to podcast generation service  
+✅ **Integration ready** - Values passed to podcast generation service
 
 Users can now customize **when** content is reviewed and **how much** detail is provided! 🎉
-

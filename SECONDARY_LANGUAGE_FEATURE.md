@@ -5,6 +5,7 @@
 ### Feature: Secondary Language Support 🌐
 
 Users can now select a **secondary language** when generating podcast scripts. This is useful for:
+
 - Bilingual learning (English + Spanish)
 - Language comparison content
 - Learning content in multiple languages simultaneously
@@ -16,38 +17,44 @@ Users can now select a **secondary language** when generating podcast scripts. T
 ### 1. Frontend - change_form.html
 
 **Added Secondary Language Dropdown Field:**
+
 ```html
 <div class="form-group">
-    <label>🌐 Secondary Language (optional - for comparison/bilingual content)</label>
-    <select id="form-language-secondary">
-        <option value="">None - Single language only</option>
-        <option value="en">English</option>
-        <option value="es">Spanish (Español)</option>
-        <option value="fr">French (Français)</option>
-        <option value="de">German (Deutsch)</option>
-        <option value="ja">Japanese (日本語)</option>
-        <option value="it">Italian (Italiano)</option>
-        <option value="pt">Portuguese (Português)</option>
-        <option value="ru">Russian (Русский)</option>
-        <option value="ko">Korean (한국어)</option>
-    </select>
+  <label
+    >🌐 Secondary Language (optional - for comparison/bilingual content)</label
+  >
+  <select id="form-language-secondary">
+    <option value="">None - Single language only</option>
+    <option value="en">English</option>
+    <option value="es">Spanish (Español)</option>
+    <option value="fr">French (Français)</option>
+    <option value="de">German (Deutsch)</option>
+    <option value="ja">Japanese (日本語)</option>
+    <option value="it">Italian (Italiano)</option>
+    <option value="pt">Portuguese (Português)</option>
+    <option value="ru">Russian (Русский)</option>
+    <option value="ko">Korean (한국어)</option>
+  </select>
 </div>
 ```
 
 **Updated JavaScript to capture secondary language:**
+
 ```javascript
-const languageSecondary = document.getElementById('form-language-secondary').value;
+const languageSecondary = document.getElementById(
+  "form-language-secondary"
+).value;
 
 // Send to backend with other form data
 body: JSON.stringify({
-    items: items,
-    category: category,
-    topic: topic,
-    profession: profession,
-    language: language,
-    language_secondary: languageSecondary,  // ← NEW
-    notes: notes
-})
+  items: items,
+  category: category,
+  topic: topic,
+  profession: profession,
+  language: language,
+  language_secondary: languageSecondary, // ← NEW
+  notes: notes,
+});
 ```
 
 ---
@@ -55,6 +62,7 @@ body: JSON.stringify({
 ### 2. Backend - views_admin_ajax.py
 
 **Updated generate_script_ajax function:**
+
 ```python
 # Capture secondary language from request
 language_secondary = data.get('language_secondary', '')
@@ -71,13 +79,14 @@ prompt = _build_multi_item_prompt(
 )
 ```
 
-**Updated _build_multi_item_prompt function:**
+**Updated \_build_multi_item_prompt function:**
+
 ```python
 def _build_multi_item_prompt(items, category, topic, profession, language, language_secondary='', notes=''):
     """
     [docstring updated with language_secondary parameter]
     """
-    
+
     # In the prompt sent to LLM:
     prompt = f"""...
 **Language**: {language}
@@ -87,13 +96,14 @@ def _build_multi_item_prompt(items, category, topic, profession, language, langu
 ..."""
 ```
 
-**Updated _build_script_prompt function:**
+**Updated \_build_script_prompt function:**
+
 ```python
 def _build_script_prompt(item_type, item_name, course_name, category, topic, profession, language, language_secondary='', notes=''):
     """
     [docstring updated]
     """
-    
+
     # In the prompt sent to LLM:
     prompt = f"""...
 **Language**: {language}
@@ -108,6 +118,7 @@ def _build_script_prompt(item_type, item_name, course_name, category, topic, pro
 ## How It Works
 
 ### User Flow:
+
 1. User selects courses/lessons/quizzes
 2. Clicks "Generate Script Text" button
 3. **NEW:** Customization form appears with secondary language field
@@ -123,6 +134,7 @@ def _build_script_prompt(item_type, item_name, course_name, category, topic, pro
 9. Script appears with bilingual content
 
 ### Example:
+
 ```
 Primary Language:     English
 Secondary Language:   Spanish
@@ -143,14 +155,14 @@ In business English, "follow up" is a common phrasal verb meaning...
 
 ## Fields in Customization Form
 
-| Field | Type | Required | Purpose |
-|-------|------|----------|---------|
-| Category/Subject | Text input | ✅ YES | Main topic for podcast |
-| Specific Topic | Text input | ❌ NO | Narrow down focus |
-| Profession/Context | Text input | ❌ NO | Tailor to user's job |
-| Primary Language | Dropdown | ✅ YES | Main script language |
-| **Secondary Language** | Dropdown | ❌ NO | 2nd language (NEW!) |
-| Additional Notes | Textarea | ❌ NO | Style/tone guidance |
+| Field                  | Type       | Required | Purpose                |
+| ---------------------- | ---------- | -------- | ---------------------- |
+| Category/Subject       | Text input | ✅ YES   | Main topic for podcast |
+| Specific Topic         | Text input | ❌ NO    | Narrow down focus      |
+| Profession/Context     | Text input | ❌ NO    | Tailor to user's job   |
+| Primary Language       | Dropdown   | ✅ YES   | Main script language   |
+| **Secondary Language** | Dropdown   | ❌ NO    | 2nd language (NEW!)    |
+| Additional Notes       | Textarea   | ❌ NO    | Style/tone guidance    |
 
 ---
 
@@ -159,6 +171,7 @@ In business English, "follow up" is a common phrasal verb meaning...
 **File Modified:** `dailycast/views_admin_ajax.py`
 
 **Functions Updated:**
+
 1. `generate_script_ajax()` - Added language_secondary parameter capture
 2. `_build_multi_item_prompt()` - Added language_secondary parameter and instructions
 3. `_build_script_prompt()` - Added language_secondary parameter and instructions
@@ -172,6 +185,7 @@ In business English, "follow up" is a common phrasal verb meaning...
 **File Modified:** `dailycast/templates/admin/dailycast/dailypodcast/change_form.html`
 
 **Changes:**
+
 1. Added secondary language dropdown HTML (lines ~550-565)
 2. Updated `generateScriptTextFromSelection()` to capture `form-language-secondary` value
 3. Updated fetch request body to include `language_secondary` parameter
@@ -183,6 +197,7 @@ In business English, "follow up" is a common phrasal verb meaning...
 ## Available Languages
 
 Both Primary and Secondary Language support:
+
 - ✅ English (en)
 - ✅ Spanish (es) - Español
 - ✅ French (fr) - Français
@@ -198,6 +213,7 @@ Both Primary and Secondary Language support:
 ## Use Cases
 
 ### 1. Bilingual Learning
+
 ```
 User wants to learn English while maintaining Spanish proficiency
 
@@ -208,6 +224,7 @@ Result: Script with English content + Spanish translations
 ```
 
 ### 2. Language Comparison
+
 ```
 User wants to compare how same topic is taught in two languages
 
@@ -218,6 +235,7 @@ Result: French lesson with English explanations for clarity
 ```
 
 ### 3. Language Bridge
+
 ```
 User learning new language wants support in native language
 
@@ -228,6 +246,7 @@ Result: German content with English context/explanations
 ```
 
 ### 4. Single Language (Default)
+
 ```
 User just wants content in one language
 
@@ -242,6 +261,7 @@ Result: English-only script (no bilingual content)
 ## Testing the Feature
 
 ### Test Case 1: Bilingual Generation
+
 ```
 1. Select courses/lessons
 2. Click Generate
@@ -255,6 +275,7 @@ Result: English-only script (no bilingual content)
 ```
 
 ### Test Case 2: Single Language (Backwards Compatible)
+
 ```
 1. Select courses/lessons
 2. Click Generate
@@ -273,12 +294,14 @@ Result: English-only script (no bilingual content)
 Three comprehensive guides were created to explain how to use this feature:
 
 1. **CUSTOMIZATION_FORM_GUIDE.md** (detailed guide with examples)
+
    - All form fields explained
    - Step-by-step walkthrough
    - Example use cases
    - Troubleshooting tips
 
 2. **QUICK_START_PODCAST_GENERATION.md** (quick reference)
+
    - 5-step process
    - Quick reference tables
    - Where everything is on the page
@@ -297,6 +320,7 @@ Three comprehensive guides were created to explain how to use this feature:
 ✅ **NO database changes required**
 
 The feature works entirely through:
+
 - Frontend form input (JavaScript)
 - Backend prompt modification (AI instruction)
 - No new database fields needed
@@ -319,11 +343,12 @@ The feature works entirely through:
 ## What Gets Passed to LLM
 
 ### Multi-Item Generation:
+
 ```json
 {
   "items": [
-    {"type": "course", "id": 1, "name": "English Mastery"},
-    {"type": "lesson", "id": 5, "name": "Grammar Basics"}
+    { "type": "course", "id": 1, "name": "English Mastery" },
+    { "type": "lesson", "id": 5, "name": "Grammar Basics" }
   ],
   "category": "Business English",
   "topic": "Professional email",
@@ -335,6 +360,7 @@ The feature works entirely through:
 ```
 
 ### Resulting LLM Instructions:
+
 ```
 **Language**: en
 **Secondary Language**: es
@@ -368,4 +394,3 @@ These could be added in future:
 - Ready for Use: Yes
 
 Users can now generate bilingual podcast scripts for learning multiple languages simultaneously!
-

@@ -13,6 +13,7 @@
 **Backend:** Django 5.1 + Celery (async task queue) + Redis  
 **Frontend:** Next.js / React  
 **AI System:** Existing `intelligence` app with:
+
 - User ability profiling (ELO-style ratings)
 - Content difficulty scoring
 - Match scores for recommendations
@@ -21,6 +22,7 @@
 - Activity analytics (ActivityEvent)
 
 **Key Data Available:**
+
 1. `UserAbilityProfile` - user ability scores by subject
 2. `MemoryStat` - spaced repetition + retention estimates (what to review)
 3. `ActivityEvent` - quiz attempts (correct/incorrect)
@@ -30,6 +32,7 @@
 7. Recent quiz history - accessible via analytics
 
 **Existing Patterns:**
+
 - Heavy computation runs offline via management commands + Celery tasks
 - API endpoints return precomputed data only (<20ms response times)
 - Graceful fallbacks when AI data unavailable
@@ -44,6 +47,7 @@
 **User sees:** One daily 3-6 minute audio file in their AI Dashboard.
 
 **What we generate automatically once per day:**
+
 1. **Analyze** user's data (what they're weak at, what they reviewed today, current level)
 2. **Write** a 3-6 minute podcast script using cheap AI (GPT-4o mini / Gemini Flash)
 3. **Convert** script to natural-sounding audio using TTS (Google/Amazon/Azure)
@@ -51,6 +55,7 @@
 5. **Display** on dashboard with play button
 
 **Quality & Cost Strategy:**
+
 - Use **small LLMs** (cheap, good enough) for script generation
 - Use **cheap + high-quality TTS** (Google Cloud TTS / Amazon Polly)
 - Different TTS quality for different user plans (basic=cheaper, premium=better)
@@ -66,6 +71,7 @@
 **Location:** `zporta_academy_backend/dailycast/`
 
 **New Models:**
+
 ```
 DailyPodcast
 ├─ user (ForeignKey)
@@ -89,6 +95,7 @@ PodcastGenerationLog (optional, for debugging)
 ```
 
 **Why this app?**
+
 - Dedicated to podcast feature, easy to maintain
 - Can be reused/extended later for weekly/monthly podcasts
 - Clean separation from core learning/analytics
@@ -101,13 +108,14 @@ PodcastGenerationLog (optional, for debugging)
 
 #### **Text Generation (Script Writing)**
 
-| Provider | Model | Cost/Month (1000 users) | Speed | Quality | Use Case |
-|----------|-------|------------------------|-------|---------|----------|
-| **OpenAI** | GPT-4o Mini | ~$500-800 | Fast | Excellent | Primary choice |
-| **Google** | Gemini 1.5 Flash | ~$300-400 | Very Fast | Good | Cheaper alternative |
-| **Anthropic** | Claude 3.5 Haiku | ~$600 | Fast | Excellent | Premium fallback |
+| Provider      | Model            | Cost/Month (1000 users) | Speed     | Quality   | Use Case            |
+| ------------- | ---------------- | ----------------------- | --------- | --------- | ------------------- |
+| **OpenAI**    | GPT-4o Mini      | ~$500-800               | Fast      | Excellent | Primary choice      |
+| **Google**    | Gemini 1.5 Flash | ~$300-400               | Very Fast | Good      | Cheaper alternative |
+| **Anthropic** | Claude 3.5 Haiku | ~$600                   | Fast      | Excellent | Premium fallback    |
 
 **Strategy:**
+
 - **Primary:** GPT-4o Mini (best balance of cost + quality)
 - **Fallback 1:** Gemini Flash (if OpenAI rate-limited)
 - **Fallback 2:** Claude Haiku (if both above fail)
@@ -115,12 +123,12 @@ PodcastGenerationLog (optional, for debugging)
 
 #### **Text-to-Speech (Audio Conversion)**
 
-| Provider | Voice Quality | Cost/Min (1000 users) | Setup | Languages |
-|----------|--------------|----------------------|-------|-----------|
-| **Google Cloud TTS** | Excellent (neural) | $3-4/month | Easy API | 150+ |
-| **Amazon Polly** | Good (standard) | $1-2/month | AWS account | 50+ |
-| **Azure Neural TTS** | Excellent | $4-5/month | Azure account | 100+ |
-| **ElevenLabs** | Best quality | $25-50/month | Expensive | 30+ |
+| Provider             | Voice Quality      | Cost/Min (1000 users) | Setup         | Languages |
+| -------------------- | ------------------ | --------------------- | ------------- | --------- |
+| **Google Cloud TTS** | Excellent (neural) | $3-4/month            | Easy API      | 150+      |
+| **Amazon Polly**     | Good (standard)    | $1-2/month            | AWS account   | 50+       |
+| **Azure Neural TTS** | Excellent          | $4-5/month            | Azure account | 100+      |
+| **ElevenLabs**       | Best quality       | $25-50/month          | Expensive     | 30+       |
 
 **Strategy (Provider Matrix):**
 
@@ -135,6 +143,7 @@ PodcastGenerationLog (optional, for debugging)
 ```
 
 **Automatic Fallback Logic:**
+
 ```
 Try TTS Primary Provider
   ├─ Success → Save audio + mark status="completed"
@@ -146,6 +155,7 @@ Try TTS Primary Provider
 ```
 
 **Cost Estimate (per month, 1000 active users):**
+
 - Script generation: ~$500 (GPT-4o Mini)
 - TTS (mix of providers): ~$100-200
 - **Total: ~$600-700/month for 1000 users = $0.60-0.70 per user/month**
@@ -202,6 +212,7 @@ Try TTS Primary Provider
 ```
 
 **File Storage:**
+
 - Store MP3s on **AWS S3** (or similar cloud storage)
 - Naming: `podcasts/{user_id}/{date}_{user_id}_podcast.mp3`
 - Also store in database `audio_url` field pointing to S3
@@ -215,13 +226,13 @@ Generated by LLM, personalized for each user. Example outline:
 
 ```
 [0:00-0:30] GREETING & SUMMARY
-"Hi {username}! I'm your Zporta AI coach. 
+"Hi {username}! I'm your Zporta AI coach.
 Today you're at level {ability_level} in {primary_subject}.
-You've solved {correct_count} out of {total_count} quizzes correctly this week. 
+You've solved {correct_count} out of {total_count} quizzes correctly this week.
 Great progress! Let's work on one weakness today."
 
 [0:30-2:00] TODAY'S FOCUS (1.5 minutes)
-"Your weakest area is {weak_subject}. 
+"Your weakest area is {weak_subject}.
 Let me explain why {weak_concept} is important...
 [mini-lesson: explain the concept in natural English with examples]"
 
@@ -232,7 +243,7 @@ Take 30 seconds to think...
 The answer is {answer}. Here's why..."
 
 [3:30-4:00] ENCOURAGEMENT (optional, 30 seconds)
-"You're doing amazing! 
+"You're doing amazing!
 Your next goal: reach {next_level} by improving {focus_area}.
 Let's do it! See you tomorrow."
 
@@ -245,6 +256,7 @@ Max: 6:00 for premium users
 ### 5. **API ENDPOINT & FRONTEND INTEGRATION**
 
 **Backend API Endpoint:**
+
 ```
 GET /api/dailycast/today/
 ├─ Requires authentication
@@ -266,6 +278,7 @@ GET /api/dailycast/today/
 ```
 
 **Frontend Component:**
+
 ```jsx
 // /study/dashboard shows this section:
 ┌─────────────────────────────────────┐
@@ -293,33 +306,33 @@ class DailyPodcast(models.Model):
         ('completed', 'Completed'),
         ('failed', 'Failed (Retrying Tomorrow)'),
     ]
-    
+
     user = models.ForeignKey(
-        User, 
+        User,
         on_delete=models.CASCADE,
         related_name='daily_podcasts'
     )
-    
+
     date = models.DateField(
         db_index=True,
         help_text="Date of this podcast (unique per user)"
     )
-    
+
     # Content
     script_text = models.TextField(
         help_text="Generated podcast script (3-6 min duration)"
     )
-    
+
     audio_url = models.URLField(
         max_length=500,
         help_text="S3 or similar cloud storage URL to MP3"
     )
-    
+
     duration_seconds = models.PositiveIntegerField(
         default=240,
         help_text="Length of audio in seconds (180-360)"
     )
-    
+
     # Generation details
     ai_model_used = models.CharField(
         max_length=50,
@@ -331,7 +344,7 @@ class DailyPodcast(models.Model):
         ],
         default='gpt-4o-mini'
     )
-    
+
     tts_provider = models.CharField(
         max_length=50,
         choices=[
@@ -341,41 +354,41 @@ class DailyPodcast(models.Model):
         ],
         default='google'
     )
-    
+
     tts_voice_gender = models.CharField(
         max_length=20,
         choices=[('male', 'Male'), ('female', 'Female')],
         default='female'
     )
-    
+
     # Metadata
     metadata = models.JSONField(
         default=dict,
         blank=True,
         help_text="Stores: weak_subjects, ability_score, quiz_count, providers_tried, retry_count"
     )
-    
+
     status = models.CharField(
         max_length=30,
         choices=STATUS_CHOICES,
         default='pending'
     )
-    
+
     error_message = models.TextField(
         blank=True,
         null=True,
         help_text="If status='failed', stores error details"
     )
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     is_active = models.BooleanField(
         default=True,
         help_text="Mark as inactive if user deletes/dislikes"
     )
-    
+
     class Meta:
         unique_together = ('user', 'date')
         ordering = ['-date']
@@ -415,7 +428,7 @@ DAILYCAST_SETTINGS = {
             'api_key_env': 'ANTHROPIC_API_KEY',
         },
     ],
-    
+
     # TTS Provider Matrix (by user plan)
     'TTS_PROVIDERS': {
         'free': {
@@ -431,18 +444,18 @@ DAILYCAST_SETTINGS = {
             'fallback': 'google',
         },
     },
-    
+
     # Audio settings
     'AUDIO_DURATION_MIN': 180,      # 3 minutes
     'AUDIO_DURATION_MAX': 360,      # 6 minutes
     'TTS_VOICE_GENDER': 'female',   # Or 'male'
     'AUDIO_SAMPLE_RATE': 24000,     # Hz
-    
+
     # Storage
     'STORAGE_BACKEND': 'aws_s3',    # Or 'local', 'gcs'
     'AWS_S3_BUCKET': 'zporta-podcasts',
     'PODCAST_EXPIRATION_DAYS': 30,  # Keep MP3 for 30 days
-    
+
     # Generation
     'GENERATION_SCHEDULE': '3 0 * * *',  # Cron: 3 AM UTC daily
     'BATCH_SIZE': 100,               # Process 100 users per task
@@ -473,17 +486,17 @@ def select_llm_provider():
             api_key = os.getenv(provider['api_key_env'])
             if not api_key:
                 continue
-            
+
             # Try to generate with this provider
             script = call_llm(provider['name'], provider['model'], prompt)
-            
+
             # Log which provider was used
             return script, provider['name']
-        
+
         except Exception as e:
             logger.warning(f"LLM provider {provider['name']} failed: {e}")
             continue
-    
+
     # All LLMs failed
     logger.error("All LLM providers failed, using template fallback")
     return generate_template_podcast(user_data), 'template'
@@ -493,12 +506,12 @@ def select_tts_provider(user):
     """Pick best TTS for this user plan, with fallback."""
     user_plan = get_user_plan(user)  # 'free', 'premium', 'enterprise'
     tts_config = DAILYCAST_SETTINGS['TTS_PROVIDERS'][user_plan]
-    
+
     providers_to_try = [
         tts_config['primary'],
         tts_config['fallback'],
     ]
-    
+
     for provider_name in providers_to_try:
         try:
             audio_bytes = call_tts(provider_name, script_text)
@@ -506,7 +519,7 @@ def select_tts_provider(user):
         except Exception as e:
             logger.warning(f"TTS provider {provider_name} failed: {e}")
             continue
-    
+
     # All TTS failed
     logger.error("All TTS providers failed, marking podcast for retry")
     return None, 'all_failed'
@@ -517,6 +530,7 @@ def select_tts_provider(user):
 ## 📊 IMPLEMENTATION CHECKLIST
 
 ### Phase 1: Models & Setup
+
 - [ ] Create `dailycast` Django app
 - [ ] Define `DailyPodcast` model
 - [ ] Create migrations
@@ -524,6 +538,7 @@ def select_tts_provider(user):
 - [ ] Add settings to `base.py`
 
 ### Phase 2: Core Services
+
 - [ ] LLM provider service (with fallback logic)
 - [ ] TTS provider service (with fallback logic)
 - [ ] S3 storage service (upload/retrieve MP3)
@@ -532,12 +547,14 @@ def select_tts_provider(user):
 - [ ] Audio converter (TTS call)
 
 ### Phase 3: Celery Task
+
 - [ ] Management command: `generate_daily_podcasts`
 - [ ] Batch processing logic (100 users at a time)
 - [ ] Error handling & retry logic
 - [ ] Celery Beat schedule setup
 
 ### Phase 4: API & Frontend
+
 - [ ] API endpoint: `GET /api/dailycast/today/`
 - [ ] Serializers for podcast response
 - [ ] Frontend component on dashboard
@@ -545,6 +562,7 @@ def select_tts_provider(user):
 - [ ] Optional transcript display
 
 ### Phase 5: Testing & Deployment
+
 - [ ] Unit tests for each provider
 - [ ] Integration tests (end-to-end generation)
 - [ ] Load testing (1000+ users)
@@ -562,8 +580,8 @@ This template will be used with GPT-4o Mini / Gemini Flash to generate scripts.
 SYSTEM PROMPT
 =============================================================================
 
-You are a friendly, encouraging English language coach creating personalized 
-daily podcast scripts for Japanese learners of English. Your goal is to help 
+You are a friendly, encouraging English language coach creating personalized
+daily podcast scripts for Japanese learners of English. Your goal is to help
 them improve in areas where they struggle while celebrating their progress.
 
 Your tone should be:
@@ -605,12 +623,12 @@ TODAY'S DATA:
 - Performance trend this month: {performance_trend} ({trend_direction})
 
 TODAY'S PODCAST FOCUS:
-Your podcast should focus on improving {weakest_subject}, specifically on 
-{weakest_concept}. Include a mini-lesson explaining this concept in a way 
+Your podcast should focus on improving {weakest_subject}, specifically on
+{weakest_concept}. Include a mini-lesson explaining this concept in a way
 that {username} can understand (their level: {ability_level}).
 
 OPTIONAL PRACTICE:
-You may reference the recommended quiz "{recommended_quiz_title}" as part of 
+You may reference the recommended quiz "{recommended_quiz_title}" as part of
 the practice section to encourage {username} to try it.
 
 =============================================================================
@@ -692,14 +710,14 @@ Now, generate the podcast script:
 ```
 LLM Provider:
   GPT-4o Mini:     1000 users × 1 script/day × 400 tokens × $0.15/1M = $600
-  
+
 TTS Provider:
   Google TTS:      700 users × 240 sec × $0.004/min = $112 (premium)
   Amazon Polly:    300 users × 240 sec × $0.0008/min = $24 (basic)
-  
+
 Storage (S3):
   1000 podcasts × 4MB × 30 days / 1TB = ~$10/month
-  
+
 Total Monthly: ~$750 / 1000 users = $0.75/user/month
 ```
 
@@ -753,6 +771,5 @@ Track these to measure podcast impact:
 
 ---
 
-**This plan is ready for implementation. All components are modular and can be swapped 
+**This plan is ready for implementation. All components are modular and can be swapped
 out if better providers/models become available.**
-

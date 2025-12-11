@@ -20,6 +20,7 @@ python manage.py runserver
 ## Pre-Deployment Checklist
 
 ### Code Files
+
 - [x] `dailycast/templates/admin/dailycast/dailypodcast/change_form.html` - Updated
 - [x] `dailycast/views_admin_ajax.py` - Updated
 - [x] No model changes needed
@@ -27,6 +28,7 @@ python manage.py runserver
 - [x] No settings changes needed
 
 ### Documentation
+
 - [x] `MULTI_SELECT_IMPLEMENTATION_COMPLETE.md` - Created
 - [x] `MULTI_SELECT_QUICK_REFERENCE.md` - Created
 - [x] `MULTI_SELECT_ANALYTICS_STATUS.md` - Created
@@ -36,6 +38,7 @@ python manage.py runserver
 - [x] `DEPLOYMENT_GUIDE.md` - This file
 
 ### Testing
+
 - [ ] Unit tests run successfully
 - [ ] Manual testing in development
 - [ ] Test multi-select functionality
@@ -49,6 +52,7 @@ python manage.py runserver
 ## Deployment Steps
 
 ### Step 1: Code Review
+
 ```bash
 # Check what files changed
 git diff HEAD~1 --name-only
@@ -59,6 +63,7 @@ git diff HEAD~1 --name-only
 ```
 
 ### Step 2: Backup (if production)
+
 ```bash
 # Optional: Backup database
 pg_dump mydb > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -68,6 +73,7 @@ git tag deployment_$(date +%Y%m%d_%H%M%S)
 ```
 
 ### Step 3: Pull Code
+
 ```bash
 # Development
 cd zporta_academy_backend
@@ -78,6 +84,7 @@ git pull origin feature/multi-select-podcasts
 ```
 
 ### Step 4: Install Dependencies
+
 ```bash
 # Check if any new packages needed
 cat requirements.txt | head -20
@@ -90,6 +97,7 @@ pip check
 ```
 
 ### Step 5: Restart Django
+
 ```bash
 # Development
 python manage.py runserver
@@ -105,6 +113,7 @@ kill $(lsof -t -i:8000) && nohup python manage.py runserver &
 ```
 
 ### Step 6: Clear Cache (if needed)
+
 ```bash
 # Browser cache
 # Open DevTools → Application → Clear All
@@ -119,6 +128,7 @@ python manage.py shell
 ```
 
 ### Step 7: Test the Feature
+
 ```
 1. Open browser
 2. Go to Django Admin
@@ -135,6 +145,7 @@ python manage.py shell
 ## Verification Steps
 
 ### Step 1: Verify Files Updated
+
 ```bash
 # Check change_form.html has new functions
 grep "generateScriptTextFromSelection" dailycast/templates/admin/dailycast/dailypodcast/change_form.html
@@ -146,6 +157,7 @@ grep "_build_multi_item_prompt" dailycast/views_admin_ajax.py
 ```
 
 ### Step 2: Test API Endpoint
+
 ```bash
 # Make test request
 curl -X POST http://localhost:8000/api/admin/ajax/generate-script/ \
@@ -163,6 +175,7 @@ curl -X POST http://localhost:8000/api/admin/ajax/generate-script/ \
 ```
 
 ### Step 3: Check Logs
+
 ```bash
 # Check for errors
 tail -f logs/django.log | grep -i error
@@ -175,6 +188,7 @@ tail -f logs/django.log | grep "Generated script"
 ```
 
 ### Step 4: Browser Console
+
 ```javascript
 // In browser DevTools Console
 // Open admin form and try feature
@@ -183,10 +197,10 @@ tail -f logs/django.log | grep "Generated script"
 // Should be empty
 
 // Try multi-select
-document.querySelector('.course-item').click()
+document.querySelector(".course-item").click();
 
 // Check if selected
-document.querySelector('.course-item').classList.contains('selected')
+document.querySelector(".course-item").classList.contains("selected");
 // Should return: true
 ```
 
@@ -197,6 +211,7 @@ document.querySelector('.course-item').classList.contains('selected')
 ### If Something Goes Wrong
 
 #### Option 1: Revert Code
+
 ```bash
 # If merged to main
 git revert <commit-hash>
@@ -207,6 +222,7 @@ git reset --hard HEAD~1
 ```
 
 #### Option 2: Restore from Backup
+
 ```bash
 # Restore database
 psql mydb < backup_YYYYMMDD_HHMMSS.sql
@@ -216,6 +232,7 @@ git checkout <backup-tag>
 ```
 
 #### Option 3: Disable Feature (Minimal)
+
 ```python
 # In views_admin_ajax.py, comment out new endpoint:
 # @require_POST
@@ -230,17 +247,20 @@ git checkout <backup-tag>
 ### Things to Watch
 
 1. **Error Logs**
+
    ```bash
    tail -f logs/django.log | grep -i error
    ```
 
 2. **API Response Times**
+
    ```bash
    # Time how long script generation takes
    time curl -X POST http://localhost:8000/api/admin/ajax/generate-script/
    ```
 
 3. **User Reports**
+
    - Check for issues from users
    - Watch for slow performance
    - Monitor error reports
@@ -264,14 +284,17 @@ git checkout <backup-tag>
 After deployment, share these with team:
 
 1. **User Guide**: `MULTI_SELECT_QUICK_REFERENCE.md`
+
    - How to use the feature
    - Troubleshooting tips
 
 2. **Technical Details**: `CODE_CHANGES_REFERENCE.md`
+
    - What code changed
    - Before/after comparison
 
 3. **Architecture**: `ARCHITECTURE_DIAGRAMS.md`
+
    - Data flow
    - System architecture
    - Message flow
@@ -286,28 +309,36 @@ After deployment, share these with team:
 ## Troubleshooting
 
 ### Issue: Multi-select not working
+
 **Solution**:
+
 1. Check browser console for JS errors
 2. Verify `change_form.html` has `attachCourseSelectionHandlers()`
 3. Clear browser cache
 4. Try different browser
 
 ### Issue: Script generation fails
+
 **Solution**:
+
 1. Check Django logs for errors
 2. Verify API endpoint responds
 3. Check if LLM service available
 4. Try with fewer items selected
 
 ### Issue: Form not showing
+
 **Solution**:
+
 1. Verify template file updated
 2. Clear Django template cache
 3. Check for syntax errors in HTML
 4. Try hard refresh (Ctrl+Shift+R)
 
 ### Issue: Backward compatibility broken
+
 **Solution**:
+
 1. Verify `_build_script_prompt()` still exists
 2. Check old API still routed correctly
 3. Verify fallback function exists
@@ -333,17 +364,20 @@ After deployment, you should see:
 ## Performance Notes
 
 ### What Changed
+
 - **Frontend**: Added JS functions, CSS styling
 - **Backend**: Added 1 new function `_build_multi_item_prompt()`
 - **Database**: No changes
 
 ### Performance Impact
+
 - **No impact** on page load (no new queries)
 - **No impact** on existing features (pure addition)
 - **LLM calls** same as before (1 per generation)
 - **Response time** same as before (LLM dependent)
 
 ### Optimization Potential
+
 - Could cache generated scripts
 - Could limit to 7 items max (UX)
 - Could pre-generate templates
@@ -354,6 +388,7 @@ After deployment, you should see:
 ## Version Control
 
 ### Commit Message
+
 ```
 feat: Add multi-select for podcast script generation
 
@@ -373,6 +408,7 @@ Database migrations: None required
 ```
 
 ### Git Tags
+
 ```bash
 git tag -a v1.0-multi-select -m "Multi-select podcast generation feature"
 git push origin v1.0-multi-select
@@ -384,13 +420,13 @@ git push origin v1.0-multi-select
 
 For questions or issues:
 
-| Role | Contact |
-|------|---------|
-| Frontend Issues | [Frontend Dev] |
-| Backend Issues | [Backend Dev] |
-| LLM Issues | [Intelligence Team] |
-| Deployment Issues | [DevOps Team] |
-| General Questions | [Project Lead] |
+| Role              | Contact             |
+| ----------------- | ------------------- |
+| Frontend Issues   | [Frontend Dev]      |
+| Backend Issues    | [Backend Dev]       |
+| LLM Issues        | [Intelligence Team] |
+| Deployment Issues | [DevOps Team]       |
+| General Questions | [Project Lead]      |
 
 ---
 
@@ -441,6 +477,7 @@ ISSUES:
 ## Timeline
 
 ### Estimated Duration
+
 - **Code pull**: < 1 minute
 - **Server restart**: 2-5 seconds
 - **Cache clear**: < 1 minute
@@ -448,6 +485,7 @@ ISSUES:
 - **Total downtime**: < 30 seconds
 
 ### No Database Downtime
+
 - No migrations
 - No data changes
 - No schema changes
@@ -457,6 +495,7 @@ ISSUES:
 ## Rollback Time
 
 If rollback needed:
+
 - **Git revert**: 1-2 minutes
 - **Server restart**: 2-5 seconds
 - **Total rollback time**: 5-10 minutes
@@ -466,4 +505,3 @@ If rollback needed:
 **Deployment Status**: ✅ READY
 
 All files are prepared and tested. Ready to deploy to any environment.
-

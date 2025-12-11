@@ -1,6 +1,7 @@
 # 🎬 FINAL ANSWER - Complete Customization Form Overview
 
 ## Your Question
+
 "Where is those info for customization like what about base on what they want to change and what subject and what main language and second language then generate text"
 
 ## Complete Answer ✅
@@ -15,7 +16,7 @@
    Examples: "Business English", "Hair Styling", "Python Coding"
    Status: REQUIRED
 
-2. 🎯 SPECIFIC TOPIC  
+2. 🎯 SPECIFIC TOPIC
    What: What to focus on within the category
    Examples: "Email writing", "Curly hair care", "Functions and loops"
    Status: OPTIONAL
@@ -47,18 +48,21 @@
 ## How to Access It
 
 ### Step 1: Go to Django Admin
+
 ```
 http://localhost:8000/admin/
 Click: DailyPodcast
 ```
 
 ### Step 2: Select a User
+
 ```
 User dropdown: [Select a user...]
 Pick any user
 ```
 
 ### Step 3: Select Courses/Lessons/Quizzes
+
 ```
 Blue-bordered list appears:
 
@@ -80,6 +84,7 @@ Quizzes
 ```
 
 ### Step 4: Click Generate Button
+
 ```
 After selecting items, you see:
 
@@ -95,6 +100,7 @@ Total: 3, Courses: 1, Lessons: 1, Quizzes: 1
 ```
 
 ### Step 5: Customization Form Appears
+
 ```
 The 6-field form appears!
 ```
@@ -214,6 +220,7 @@ The 6-field form appears!
 ### Example 1: Single Language (No Secondary Language)
 
 **Input:**
+
 ```
 Category: "Business English"
 Topic: "Email writing"
@@ -224,6 +231,7 @@ Notes: "Casual, professional, real examples"
 ```
 
 **Output Script:**
+
 ```
 ═══════════════════════════════════════════════════════════
 PODCAST SCRIPT - Business English for Sales Professionals
@@ -259,6 +267,7 @@ KEY PHRASES FOR SALES EMAILS:
 ### Example 2: Bilingual (With Secondary Language)
 
 **Input:**
+
 ```
 Category: "Business English"
 Topic: "Email writing"
@@ -269,6 +278,7 @@ Notes: "Casual, professional, real examples"
 ```
 
 **Output Script:**
+
 ```
 ═══════════════════════════════════════════════════════════
 PODCAST SCRIPT - Business English for Sales Professionals
@@ -287,7 +297,7 @@ KEY PHRASES FOR SALES EMAILS:
    ENGLISH:
    "I wanted to follow up on our conversation..."
    "I'm reaching out regarding..."
-   
+
    SPANISH:
    "Quería hacer seguimiento de nuestra conversación..."
    "Me comunico para hablar de..."
@@ -296,7 +306,7 @@ KEY PHRASES FOR SALES EMAILS:
    ENGLISH:
    "Could you please review the attached proposal?"
    "When could we schedule a call to discuss?"
-   
+
    SPANISH:
    "¿Podrías revisar la propuesta adjunta?"
    "¿Cuándo podríamos agendar una llamada?"
@@ -305,7 +315,7 @@ KEY PHRASES FOR SALES EMAILS:
    ENGLISH:
    "Looking forward to your response."
    "Please let me know if you have questions."
-   
+
    SPANISH:
    "Espero tu respuesta."
    "Avísame si tienes dudas."
@@ -324,6 +334,7 @@ KEY PHRASES FOR SALES EMAILS:
 The main topic or subject area of your podcast
 
 **Examples:**
+
 - "Business English" (main category)
 - "Hair Styling Techniques" (main category)
 - "Python Programming" (main category)
@@ -333,6 +344,7 @@ The main topic or subject area of your podcast
 Tells the AI what domain to focus on. The script will be specific to this subject.
 
 **What happens:**
+
 - AI structures entire script around this topic
 - All examples and references will be related to this subject
 - Required because AI needs to know what to write about
@@ -345,6 +357,7 @@ Tells the AI what domain to focus on. The script will be specific to this subjec
 A narrower focus within the category (optional)
 
 **Examples:**
+
 - Category: "Business English" → Topic: "Email writing"
 - Category: "Hair Styling" → Topic: "Curly hair care"
 - Category: "Python" → Topic: "Functions and modules"
@@ -353,6 +366,7 @@ A narrower focus within the category (optional)
 Narrows down the content even more. Makes the script more focused.
 
 **What happens:**
+
 - Script focuses on this specific subtopic
 - More detailed and relevant content
 - If not provided, AI uses category only
@@ -365,6 +379,7 @@ Narrows down the content even more. Makes the script more focused.
 Your job/role so examples are tailored to you
 
 **Examples:**
+
 - "Sales manager at tech startup"
 - "Hair stylist in Germany"
 - "Marketing professional"
@@ -374,6 +389,7 @@ Your job/role so examples are tailored to you
 AI includes examples relevant to YOUR job/situation
 
 **What happens:**
+
 - If you're a "Sales manager": Examples use sales scenarios
 - If you're a "Hair stylist": Examples use hair salon scenarios
 - If blank: Generic examples used
@@ -386,6 +402,7 @@ AI includes examples relevant to YOUR job/situation
 The main language to write the script in
 
 **Your choices:**
+
 - English (en)
 - Spanish (es)
 - French (fr)
@@ -400,6 +417,7 @@ The main language to write the script in
 Entire script written in this language
 
 **What happens:**
+
 - Script generated in your selected language
 - All content, examples, everything in this language
 - Audio will be in this language
@@ -412,6 +430,7 @@ Entire script written in this language
 A second language for bilingual/comparison content
 
 **Your choices:**
+
 - "None - Single language only" (default)
 - Or any of the 9 languages above
 
@@ -421,6 +440,7 @@ Useful for language learners or bilingual audiences
 **What happens:**
 
 **If you select "None":**
+
 ```
 Script is in PRIMARY LANGUAGE ONLY
 "Follow up on the proposal"
@@ -428,6 +448,7 @@ Script is in PRIMARY LANGUAGE ONLY
 ```
 
 **If you select Spanish:**
+
 ```
 Script includes BOTH LANGUAGES
 "Follow up on the proposal" (English)
@@ -437,6 +458,7 @@ Both side-by-side for comparison
 ```
 
 **Use cases:**
+
 - Learning Spanish? Set Primary=Spanish, Secondary=English
 - Bilingual audience? Set Primary=English, Secondary=Spanish
 - Want translations? Pick any two languages
@@ -450,6 +472,7 @@ Both side-by-side for comparison
 Instructions about style, tone, length, format
 
 **Examples:**
+
 - "Keep it casual and friendly"
 - "Very formal and professional"
 - "Include lots of real-world examples"
@@ -462,6 +485,7 @@ Instructions about style, tone, length, format
 Tells AI HOW to write, not just WHAT to write
 
 **What happens:**
+
 - AI follows your style preferences
 - Script tone matches your request
 - Length/format as specified
@@ -474,17 +498,20 @@ Tells AI HOW to write, not just WHAT to write
 ### Scenario: Creating a Business Spanish Podcast
 
 **Step 1: Go to Admin**
+
 ```
 http://localhost:8000/admin/
 DailyPodcast form opens
 ```
 
 **Step 2: Select User**
+
 ```
 User dropdown: [alice_johnson ▼]
 ```
 
 **Step 3: Select Items**
+
 ```
 ✓ Spanish for Business (course)
 ✓ Email Communication (lesson)
@@ -492,6 +519,7 @@ User dropdown: [alice_johnson ▼]
 ```
 
 **Step 4: Click Generate Button**
+
 ```
 ┌─────────────────────────┐
 │ ✏️ Generate Script Text │
@@ -499,6 +527,7 @@ User dropdown: [alice_johnson ▼]
 ```
 
 **Step 5: Fill Customization Form**
+
 ```
 📂 Category: [Spanish for Business]
 🎯 Topic: [Professional email communication]
@@ -509,6 +538,7 @@ User dropdown: [alice_johnson ▼]
 ```
 
 **Step 6: Click Generate**
+
 ```
 ⏳ Generating...
 ✅ Script appears with:
@@ -520,6 +550,7 @@ User dropdown: [alice_johnson ▼]
 ```
 
 **Step 7: Save & Generate Audio**
+
 ```
 [Save] → Podcast saved
 [Regenerate Audio] → Audio file created
@@ -530,14 +561,14 @@ User dropdown: [alice_johnson ▼]
 
 ## Summary Table
 
-| Field | Required? | Type | Purpose | Example |
-|-------|-----------|------|---------|---------|
-| Category | ✅ YES | Text | Main topic | "Business English" |
-| Topic | ❌ NO | Text | Narrow focus | "Email writing" |
-| Profession | ❌ NO | Text | Tailor examples | "Sales manager" |
-| Primary Language | ✅ YES | Dropdown | Script language | "English" |
-| **Secondary Language** | ❌ NO | Dropdown | 2nd language | "Spanish" |
-| Notes | ❌ NO | Text | Style guide | "Casual tone" |
+| Field                  | Required? | Type     | Purpose         | Example            |
+| ---------------------- | --------- | -------- | --------------- | ------------------ |
+| Category               | ✅ YES    | Text     | Main topic      | "Business English" |
+| Topic                  | ❌ NO     | Text     | Narrow focus    | "Email writing"    |
+| Profession             | ❌ NO     | Text     | Tailor examples | "Sales manager"    |
+| Primary Language       | ✅ YES    | Dropdown | Script language | "English"          |
+| **Secondary Language** | ❌ NO     | Dropdown | 2nd language    | "Spanish"          |
+| Notes                  | ❌ NO     | Text     | Style guide     | "Casual tone"      |
 
 ---
 
@@ -553,4 +584,3 @@ User dropdown: [alice_johnson ▼]
 ✅ **How to use it** - Fill fields → Click Generate → Script appears
 
 **All information flows through the form to create exactly what you need!** 🎙️
-

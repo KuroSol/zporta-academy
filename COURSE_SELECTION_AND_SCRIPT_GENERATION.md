@@ -3,13 +3,16 @@
 ## What's New
 
 ### 1. ✅ Improved Course List (Fixed Background & Made Clickable)
+
 - **Better styling**: White background with blue border
 - **Clickable items**: Click on any course, lesson, or quiz to select it
 - **Visual feedback**: Selected item is highlighted
 - Shows icons: 📚 for courses, 📖 for lessons, ✓ for quizzes
 
 ### 2. ✅ Customization Form (NEW)
+
 When you click a course/lesson/quiz, a form appears below asking:
+
 - **📂 Category/Subject** (required) - e.g., "Business English", "Hair Styling"
 - **🎯 Specific Topic** (optional) - e.g., "Negotiation tactics", "Curly hair care"
 - **👤 Your Profession/Context** (optional) - e.g., "Hair stylist in Germany"
@@ -17,12 +20,14 @@ When you click a course/lesson/quiz, a form appears below asking:
 - **📝 Additional Notes** (optional) - Style guide or special requirements
 
 ### 3. ✅ Generate Script Text Button
+
 - Click "✏️ Generate Script Text" button to generate a podcast script
 - Script is automatically inserted into the "Script text" field
 - Shows success message when done
 - Scrolls to the script field so you can see it immediately
 
 ### 4. ✅ Regenerate Audio Button (Still There!)
+
 - "🎧 Regenerate Audio from Script" button remains below script field
 - Works on edit forms only
 - Regenerates audio from the script you just created
@@ -32,11 +37,13 @@ When you click a course/lesson/quiz, a form appears below asking:
 ## How It Works Now
 
 ### Step 1: Select User
+
 ```
 [Select User: Alex ▼]
 ```
 
 ### Step 2: Click on a Course/Lesson/Quiz
+
 ```
 📚 Enrolled Courses (3):
    • English Mastery - 5 lessons, 3 quizzes   ← Click this
@@ -50,6 +57,7 @@ When you click a course/lesson/quiz, a form appears below asking:
 ```
 
 ### Step 3: Customization Form Appears
+
 ```
 ✏️ Customize Your Podcast Script
 
@@ -69,6 +77,7 @@ Selected: Course - English Mastery
 ```
 
 ### Step 4: Click "Generate Script Text"
+
 - AJAX request sent to backend
 - LLM generates personalized script based on:
   - The course/lesson/quiz selected
@@ -79,6 +88,7 @@ Selected: Course - English Mastery
 - Script automatically appears in the "Script text" field
 
 ### Step 5: Regenerate Audio (Optional)
+
 - If you want to convert to audio, click "🎧 Regenerate Audio from Script"
 - Or save the podcast with text only
 
@@ -87,6 +97,7 @@ Selected: Course - English Mastery
 ## Example Flows
 
 ### Example 1: Business English Course
+
 1. Select user "Alex"
 2. Click "English Mastery" course
 3. Fill form:
@@ -100,6 +111,7 @@ Selected: Course - English Mastery
 6. (Optional) Click "Regenerate Audio" to add audio
 
 ### Example 2: Hair Styling Lesson
+
 1. Select user "Sophie"
 2. Click "Lesson: Curly Hair Care" lesson
 3. Fill form:
@@ -117,6 +129,7 @@ Selected: Course - English Mastery
 ## Visual Design Changes
 
 ### Course List Styling
+
 - ✅ White background (clear and readable)
 - ✅ Blue border (stands out from form)
 - ✅ Hover effect (light blue background)
@@ -124,6 +137,7 @@ Selected: Course - English Mastery
 - ✅ Icons for visual identification
 
 ### Customization Form
+
 - ✅ Light gray background (distinct section)
 - ✅ Clear labels with emojis
 - ✅ Input fields with placeholders
@@ -131,6 +145,7 @@ Selected: Course - English Mastery
 - ✅ Blue buttons matching Django admin theme
 
 ### Status Messages
+
 - ✅ Loading message (blue)
 - ✅ Success message (green with checkmark)
 - ✅ Error message (red with X)
@@ -140,12 +155,14 @@ Selected: Course - English Mastery
 ## Files Updated
 
 1. **change_form.html** - Complete rewrite
+
    - Better styling for course list
    - Added click handlers for selection
    - Added customization form HTML
    - Added script generation logic
 
 2. **views_admin_ajax.py** - Added functions:
+
    - `generate_script_ajax()` - Main endpoint
    - `_build_script_prompt()` - Creates LLM prompt
    - `_generate_script_with_llm()` - Calls LLM service
@@ -159,11 +176,13 @@ Selected: Course - English Mastery
 ## How Script Generation Works
 
 ### If LLM is Available (OpenAI, Claude, etc.)
+
 - Uses your existing intelligence/LLM service
 - Generates highly personalized script
 - Considers profession, language, topic, notes
 
 ### If LLM Unavailable (Fallback)
+
 - Uses a professional template structure
 - Includes: Introduction, Main Content, Tips, Conclusion
 - You can edit it manually
@@ -190,7 +209,9 @@ Selected: Course - English Mastery
 ## Customization Options
 
 ### Category/Subject (Required)
+
 Pre-fill with course name, but can change to:
+
 - "Business English"
 - "Hair Styling"
 - "Advanced Math"
@@ -198,22 +219,26 @@ Pre-fill with course name, but can change to:
 - Anything you want!
 
 ### Specific Topic (Optional)
+
 - "Email writing"
 - "Color theory"
 - "Calculus"
 - Makes script more focused
 
 ### Profession/Context (Optional)
+
 - "Hair stylist in Germany"
 - "Marketing manager at startup"
 - "Teacher in France"
 - Personalizes examples and tone
 
 ### Language (Dropdown)
+
 - English, Spanish, French, German
 - Japanese, Italian, Portuguese, Russian, Korean
 
 ### Additional Notes (Optional)
+
 - "Keep it casual"
 - "Include industry examples"
 - "Make it beginner-friendly"
@@ -224,21 +249,25 @@ Pre-fill with course name, but can change to:
 ## Benefits
 
 ✅ **Personalized Content**
+
 - Scripts tailored to user's profession
 - Relevant examples and context
 - Multiple language support
 
 ✅ **User Control**
+
 - Can customize before generation
 - Can edit script after generation
 - Can regenerate with different settings
 
 ✅ **Flexible**
+
 - Works with courses, lessons, or quizzes
 - Can generate text or audio or both
 - Fallback template if LLM unavailable
 
 ✅ **Fast**
+
 - AJAX - no page reload
 - Instant feedback and status
 - Generates in seconds
@@ -248,11 +277,13 @@ Pre-fill with course name, but can change to:
 ## What's Still There
 
 ### Batch Admin Actions (Unchanged)
+
 - "🎧 Add audio to text-only podcasts"
 - "🔄 Regenerate audio from scripts"
 - Select multiple, choose action, click Go
 
 ### Audio Regeneration (Enhanced)
+
 - Still available as standalone button
 - Now better styled
 - Shows status messages
@@ -262,6 +293,7 @@ Pre-fill with course name, but can change to:
 ## Error Handling
 
 If something goes wrong:
+
 - ❌ Shows error message on form
 - ❌ Button returns to normal state
 - ❌ You can try again
@@ -272,11 +304,13 @@ If something goes wrong:
 ## Browser Support
 
 Works on any modern browser with:
+
 - JavaScript enabled
 - Fetch API (all modern browsers)
 - DOM manipulation
 
 Tested on:
+
 - Chrome 90+
 - Firefox 88+
 - Safari 14+
@@ -294,4 +328,4 @@ Tested on:
 
 ---
 
-*All features live and ready to test!*
+_All features live and ready to test!_

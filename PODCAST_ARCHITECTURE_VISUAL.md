@@ -360,9 +360,9 @@ TIME: 3:00 AM UTC (Cron triggers daily generation)
         ═════════════════════════════════════════════════════════════
 
         NEXT DAY: 9:00 AM UTC
-        
+
         User opens dashboard → API calls /api/dailycast/today/
-        
+
         └─ Get DailyPodcast record (already in DB) ✓
            └─ Return audio URL (S3) ✓
               └─ Frontend plays MP3 ✓
@@ -379,7 +379,7 @@ Scenario A: LLM fails (OpenAI rate limited)
 └─ Mark status='completed' or 'completed_with_fallback'
 
 Scenario B: TTS fails (Google Cloud TTS timeout)
-├─ Catch exception  
+├─ Catch exception
 ├─ Try fallback: Amazon Polly
 ├─ If succeeds: Continue to S3 upload
 ├─ If fails: Try Azure TTS
@@ -449,7 +449,7 @@ Scenario C: S3 upload fails
     │ updated_at          │              │
     │ is_active           │              │
     └────────────────────────────────────┘
-    
+
     Query Pattern (in API):
     ┌────────────────────────────────────┐
     │ SELECT * FROM dailycast_daily...   │
@@ -561,7 +561,7 @@ FREE/BASIC USER:
                                ├─ If fails → Google TTS
                                │
                                ├─ If fails → Azure TTS
-                               │  
+                               │
                                ├─ If all fail →
                                │  Mark retry for tomorrow,
                                │  Alert admin
@@ -708,4 +708,3 @@ This architecture covers:
 - ✅ **Monitoring**: Logging, error alerts, metrics
 
 **All pieces are modular and can be swapped without major refactoring.**
-

@@ -155,11 +155,11 @@
             NETWORK REQUEST
             ──────────────────
             POST /api/admin/ajax/generate-script/
-            
+
             Headers:
             - Content-Type: application/json
             - X-CSRFToken: <token>
-            
+
             Body:
             {
               "items": [
@@ -747,4 +747,3 @@ Step 10: Django saves podcast
 ---
 
 **Diagrams explain the architecture and user flow for multi-select podcast script generation.**
-

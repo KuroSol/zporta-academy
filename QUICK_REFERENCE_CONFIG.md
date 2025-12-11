@@ -1,6 +1,7 @@
 # ⚡ Quick Reference: Teacher Config Dashboard
 
 ## Access Dashboard
+
 ```
 http://localhost:8000/admin/
 → DAILYCAST → Teacher Content Configuration
@@ -10,22 +11,23 @@ http://localhost:8000/admin/
 
 ## Most Important Settings
 
-| Setting | Default | What It Does |
-|---------|---------|--------------|
-| **enabled** | true | Turn generation on/off |
-| **default_llm_provider** | template | Which AI generates scripts (openai/gemini/template) |
-| **openai_model** | gpt-4o-mini | Which OpenAI model (cheaper/faster) |
-| **default_tts_provider** | elevenlabs | Which service makes audio (natural/fast) |
-| **script_word_limit_normal** | 700 | Target words for normal scripts (~7 min audio) |
-| **script_word_limit_short** | 300 | Target words for short scripts (~3 min audio) |
-| **cooldown_hours** | 24 | Hours between generations (0=unlimited) |
-| **cost_per_generation** | 0.50 | Credit cost per generation (0=free) |
+| Setting                      | Default     | What It Does                                        |
+| ---------------------------- | ----------- | --------------------------------------------------- |
+| **enabled**                  | true        | Turn generation on/off                              |
+| **default_llm_provider**     | template    | Which AI generates scripts (openai/gemini/template) |
+| **openai_model**             | gpt-4o-mini | Which OpenAI model (cheaper/faster)                 |
+| **default_tts_provider**     | elevenlabs  | Which service makes audio (natural/fast)            |
+| **script_word_limit_normal** | 700         | Target words for normal scripts (~7 min audio)      |
+| **script_word_limit_short**  | 300         | Target words for short scripts (~3 min audio)       |
+| **cooldown_hours**           | 24          | Hours between generations (0=unlimited)             |
+| **cost_per_generation**      | 0.50        | Credit cost per generation (0=free)                 |
 
 ---
 
 ## Common Configurations
 
 ### Save Money (Free/Low Cost)
+
 ```
 LLM Provider: template
 TTS Provider: google
@@ -33,6 +35,7 @@ Cost: 0
 ```
 
 ### Highest Quality
+
 ```
 LLM Provider: openai
 OpenAI Model: gpt-4
@@ -41,6 +44,7 @@ Cost: 1.00+
 ```
 
 ### Fastest Generation
+
 ```
 LLM Provider: template
 TTS Provider: google
@@ -48,6 +52,7 @@ Script Words: 200
 ```
 
 ### Bilingual (EN+JA)
+
 ```
 Support Bilingual: true
 Bilingual Pair: en_ja
@@ -78,21 +83,25 @@ limit = get_script_word_limit(is_short=False)
 ## Quick Decisions
 
 **Question: Should I use OpenAI or Gemini?**
+
 - Use **OpenAI** if you want proven quality (gpt-4o-mini is cheap)
 - Use **Gemini** if you want lower cost with good results
 - Use **Template** if you want zero API costs
 
 **Question: ElevenLabs or Google TTS?**
+
 - Use **ElevenLabs** for most natural voice (requires API key)
 - Use **Google** for free or cheap option
 - Both support all languages
 
 **Question: How long should scripts be?**
+
 - **700 words** = ~7-8 minutes of audio (default)
 - **400 words** = ~4-5 minutes of audio
 - **200 words** = ~2-3 minutes of audio
 
 **Question: Should I charge credits?**
+
 - If **free**: set `enable_credit_system = false`, `cost = 0`
 - If **charged**: set `enable_credit_system = true`, `cost = amount`
 
@@ -101,8 +110,9 @@ limit = get_script_word_limit(is_short=False)
 ## Settings That Don't Require Code Changes
 
 These settings apply instantly to next generation:
+
 - ✅ LLM provider choice
-- ✅ TTS provider choice  
+- ✅ TTS provider choice
 - ✅ Script word limits
 - ✅ Speaking rate/pitch
 - ✅ Cooldown hours
@@ -110,6 +120,7 @@ These settings apply instantly to next generation:
 - ✅ Questions per script
 
 These require code changes to use:
+
 - 🔄 Prompt templates (need code to read them)
 - 🔄 Language settings (need code integration)
 - 🔄 Voice map (need code to read it)
@@ -119,6 +130,7 @@ These require code changes to use:
 ## Next: Wire Your Code
 
 ### In `services_interactive.py`
+
 ```python
 # Add at top
 from dailycast.config_helpers import get_tts_provider
@@ -128,6 +140,7 @@ preferred_provider = get_tts_provider()  # ← Instead of hardcoded
 ```
 
 ### In `views_admin_ajax.py`
+
 ```python
 # Add at top
 from dailycast.config_helpers import get_script_word_limit
@@ -142,6 +155,7 @@ prompt = f"Create script (~{word_limit} words)..."
 ## Testing
 
 **Test that config is being read:**
+
 ```python
 # In Django shell
 python manage.py shell
@@ -151,6 +165,7 @@ print(get_tts_provider())  # Should print what you set in admin
 ```
 
 **Test generation with new settings:**
+
 1. Change config in admin
 2. Generate teacher content
 3. Check logs for `[CONFIG_DEBUG]` messages
@@ -160,12 +175,12 @@ print(get_tts_provider())  # Should print what you set in admin
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| Can't find config in admin | Refresh page (Ctrl+F5), restart Django |
-| Changes not taking effect | Enable verbose_logging, check logs |
-| Imports failing | Ensure `config_helpers.py` exists and code migrated |
-| Database error | Run `python manage.py migrate dailycast` |
+| Problem                    | Solution                                            |
+| -------------------------- | --------------------------------------------------- |
+| Can't find config in admin | Refresh page (Ctrl+F5), restart Django              |
+| Changes not taking effect  | Enable verbose_logging, check logs                  |
+| Imports failing            | Ensure `config_helpers.py` exists and code migrated |
+| Database error             | Run `python manage.py migrate dailycast`            |
 
 ---
 

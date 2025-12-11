@@ -1775,3 +1775,342 @@ admin.site.register(TeacherContentConfig, GlobalPodcastDefaultsAdmin)
 from dailycast.admin_student_insights import StudentLearningInsight, StudentLearningInsightAdmin
 admin.site.register([StudentLearningInsight], StudentLearningInsightAdmin)
 
+# ============================================================================
+# CACHE MANAGEMENT ADMIN INTERFACE
+# ============================================================================
+from dailycast.models import CachedAIInsight, CachedUserAnalytics, CacheStatistics
+
+@admin.register(CachedAIInsight)
+class CachedAIInsightAdmin(admin.ModelAdmin):
+    """Display and manage cached AI insights with performance metrics."""
+    
+    list_display = (
+        'user_display',
+        'subject_display', 
+        'engine_display',
+        'hits_display',
+        'tokens_saved_display',
+        'freshness_status',
+        'created_at_display',
+    )
+    
+    list_filter = (
+        'engine',
+        'subject',
+        'created_at',
+        'expires_at',
+    )
+    
+    search_fields = ('user__username', 'user__email', 'subject')
+    readonly_fields = (
+        'user',
+        'subject',
+        'engine',
+        'tokens_used',
+        'tokens_saved',
+        'hits',
+        'created_at',
+        'ai_insights_preview',
+        'cache_info',
+    )
+    
+    fieldsets = (
+        ('Cache Identity', {
+            'fields': ('user', 'subject', 'engine')
+        }),
+        ('Cached Data', {
+            'fields': ('ai_insights_preview',),
+            'classes': ('collapse',)
+        }),
+        ('Performance Metrics', {
+            'fields': ('hits', 'tokens_used', 'tokens_saved', 'cache_info'),
+            'description': '💾 Shows how much this cache is being reused and tokens saved'
+        }),
+        ('Lifetime', {
+            'fields': ('created_at', 'expires_at'),
+        }),
+    )
+    
+    def user_display(self, obj):
+        return f"👤 {obj.user.get_full_name() or obj.user.username}"
+    user_display.short_description = 'Student'
+    user_display.admin_order_field = 'user__username'
+    
+    def subject_display(self, obj):
+        return obj.subject or '📚 All Subjects'
+    subject_display.short_description = 'Subject'
+    
+    def engine_display(self, obj):
+        engines = {
+            'gemini-2.0-flash-exp': '⚡ Gemini Flash',
+            'gemini-2.0-pro-exp': '✨ Gemini Pro',
+            'gpt-4o-mini': '⚡ GPT-4o Mini',
+            'gpt-4o': '🎯 GPT-4o',
+        }
+        return engines.get(obj.engine, obj.engine)
+    engine_display.short_description = 'AI Engine'
+    
+    def hits_display(self, obj):
+        return f"🔄 {obj.hits} reuses"
+    hits_display.short_description = 'Cache Hits'
+    hits_display.admin_order_field = 'hits'
+    
+    def tokens_saved_display(self, obj):
+        return f"💾 {obj.tokens_saved:,} tokens"
+    tokens_saved_display.short_description = 'Tokens Saved'
+    tokens_saved_display.admin_order_field = 'tokens_saved'
+    
+    def freshness_status(self, obj):
+        from django.utils import timezone
+        is_fresh = obj.expires_at > timezone.now()
+        if is_fresh:
+            return '✅ Fresh'
+        return '⏱️ Expired'
+    freshness_status.short_description = 'Status'
+    
+    def created_at_display(self, obj):
+        return obj.created_at.strftime('%m/%d %H:%M')
+    created_at_display.short_description = 'Created'
+    created_at_display.admin_order_field = 'created_at'
+    
+    def ai_insights_preview(self, obj):
+        """Show a formatted preview of the cached insights."""
+        insights = obj.ai_insights
+        html = '<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px;">'
+        
+        # Show each section
+        sections = [
+            'summary', 'assessment', 'vocabulary_gaps', 'grammar_analysis',
+            'quiz_recommendations', 'difficulty_progression', 'external_resources',
+            'study_guide', 'learning_journey', 'specific_actions', 'potential_struggles'
+        ]
+        
+        for section in sections:
+            value = insights.get(section, 'N/A')
+            if isinstance(value, (list, dict)):
+                preview = str(value)[:100] + '...' if len(str(value)) > 100 else str(value)
+            else:
+                preview = str(value)[:100] + '...' if len(str(value)) > 100 else str(value)
+            
+            html += f'<div style="margin-bottom: 8px;"><strong>{section}:</strong> {preview}</div>'
+        
+        html += '</div>'
+        return mark_safe(html)
+    ai_insights_preview.short_description = 'AI Insights Content'
+    
+    def cache_info(self, obj):
+        """Show cache performance information."""
+        from django.utils import timezone
+        
+        freshness = "✅ Fresh" if obj.expires_at > timezone.now() else "⏱️ Expired"
+        html = f'''
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4caf50;">
+            <p style="margin: 0 0 10px 0;"><strong>📊 Cache Performance</strong></p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> {freshness}</p>
+            <p style="margin: 5px 0;"><strong>Created:</strong> {obj.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p style="margin: 5px 0;"><strong>Expires:</strong> {obj.expires_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p style="margin: 5px 0;"><strong>Reused:</strong> {obj.hits} times</p>
+            <p style="margin: 5px 0;"><strong>Tokens Saved:</strong> {obj.tokens_saved:,}</p>
+            <p style="margin: 5px 0;"><strong>Cost Saved:</strong> ~${(obj.tokens_saved / 1000) * 0.0001:.4f}</p>
+        </div>
+        '''
+        return mark_safe(html)
+    cache_info.short_description = 'Performance Info'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+
+@admin.register(CachedUserAnalytics)
+class CachedUserAnalyticsAdmin(admin.ModelAdmin):
+    """Display cached user learning analytics."""
+    
+    list_display = (
+        'user_display',
+        'reads_display',
+        'freshness_status',
+        'last_updated_display',
+    )
+    
+    list_filter = (
+        'last_updated',
+        'expires_at',
+    )
+    
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = (
+        'user',
+        'reads',
+        'last_updated',
+        'analytics_preview',
+    )
+    
+    fieldsets = (
+        ('User', {
+            'fields': ('user',)
+        }),
+        ('Cached Analytics Data', {
+            'fields': ('analytics_preview',),
+            'classes': ('collapse',)
+        }),
+        ('Performance', {
+            'fields': ('reads', 'last_updated', 'expires_at'),
+        }),
+    )
+    
+    def user_display(self, obj):
+        return f"👤 {obj.user.get_full_name() or obj.user.username}"
+    user_display.short_description = 'Student'
+    user_display.admin_order_field = 'user__username'
+    
+    def reads_display(self, obj):
+        return f"👁️ {obj.reads} reads"
+    reads_display.short_description = 'Cache Reads'
+    reads_display.admin_order_field = 'reads'
+    
+    def freshness_status(self, obj):
+        from django.utils import timezone
+        is_fresh = obj.expires_at > timezone.now()
+        if is_fresh:
+            return '✅ Fresh'
+        return '⏱️ Expired'
+    freshness_status.short_description = 'Status'
+    
+    def last_updated_display(self, obj):
+        return obj.last_updated.strftime('%m/%d %H:%M')
+    last_updated_display.short_description = 'Updated'
+    last_updated_display.admin_order_field = 'last_updated'
+    
+    def analytics_preview(self, obj):
+        """Show preview of cached analytics."""
+        data = obj.analytics_data
+        html = '<div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">'
+        
+        for key, value in list(data.items())[:10]:
+            html += f'<p><strong>{key}:</strong> {str(value)[:80]}</p>'
+        
+        html += '</div>'
+        return mark_safe(html)
+    analytics_preview.short_description = 'Analytics Data'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+
+@admin.register(CacheStatistics)
+class CacheStatisticsAdmin(admin.ModelAdmin):
+    """Display cache performance statistics."""
+    
+    list_display = (
+        'date',
+        'ai_insights_stats',
+        'analytics_stats',
+        'tokens_saved_display',
+        'hit_rate_display',
+    )
+    
+    list_filter = ('date',)
+    readonly_fields = (
+        'date',
+        'ai_insights_generated',
+        'ai_insights_cached',
+        'ai_insights_hits',
+        'ai_tokens_used',
+        'ai_tokens_saved',
+        'analytics_generated',
+        'analytics_cached',
+        'detailed_stats',
+    )
+    
+    fieldsets = (
+        ('Date', {
+            'fields': ('date',)
+        }),
+        ('AI Insights Cache', {
+            'fields': (
+                'ai_insights_generated',
+                'ai_insights_cached',
+                'ai_insights_hits',
+                'ai_tokens_used',
+                'ai_tokens_saved',
+            ),
+            'description': '📊 Tracks AI analysis caching performance'
+        }),
+        ('Analytics Cache', {
+            'fields': (
+                'analytics_generated',
+                'analytics_cached',
+            ),
+            'description': '📈 Tracks user analytics caching'
+        }),
+        ('Summary Statistics', {
+            'fields': ('detailed_stats',),
+        }),
+    )
+    
+    def ai_insights_stats(self, obj):
+        return f"🤖 Gen: {obj.ai_insights_generated} | Cache: {obj.ai_insights_cached}"
+    ai_insights_stats.short_description = 'AI Insights'
+    
+    def analytics_stats(self, obj):
+        return f"📊 Gen: {obj.analytics_generated} | Cache: {obj.analytics_cached}"
+    analytics_stats.short_description = 'Analytics'
+    
+    def tokens_saved_display(self, obj):
+        return f"💾 {obj.ai_tokens_saved:,}"
+    tokens_saved_display.short_description = 'Tokens Saved'
+    
+    def hit_rate_display(self, obj):
+        rate = obj.cache_hit_rate()
+        return f"📈 {rate}%"
+    hit_rate_display.short_description = 'Hit Rate'
+    
+    def detailed_stats(self, obj):
+        cost_saved = (obj.ai_tokens_saved / 1000) * 0.000125 if obj.ai_tokens_saved > 0 else 0
+        hit_rate = obj.cache_hit_rate()
+        
+        html = f'''
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196f3;">
+            <p style="margin: 0 0 15px 0;"><strong>🎯 Cache Performance Summary</strong></p>
+            
+            <div style="background: white; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
+                <p style="margin: 5px 0;"><strong>🤖 AI Insights Cache:</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Generated: {obj.ai_insights_generated} new analyses</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Cached: {obj.ai_insights_cached} from cache</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Reuses: {obj.ai_insights_hits} total cache hits</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Hit Rate: <strong>{hit_rate}%</strong></p>
+            </div>
+            
+            <div style="background: white; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
+                <p style="margin: 5px 0;"><strong>💾 Token Savings:</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Tokens Used: {obj.ai_tokens_used:,}</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Tokens Saved: {obj.ai_tokens_saved:,}</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Cost Saved: ~${cost_saved:.4f}</p>
+            </div>
+            
+            <div style="background: white; padding: 10px; border-radius: 3px;">
+                <p style="margin: 5px 0;"><strong>📊 Analytics Cache:</strong></p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Generated: {obj.analytics_generated} new collections</p>
+                <p style="margin-left: 20px; margin: 5px 0;">• Cached: {obj.analytics_cached} from cache</p>
+            </div>
+        </div>
+        '''
+        return mark_safe(html)
+    detailed_stats.short_description = 'Detailed Statistics'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
