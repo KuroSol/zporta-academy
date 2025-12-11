@@ -12,6 +12,7 @@ def collect_user_stats(user) -> Dict:
     """Collect user statistics from the database."""
     from notes.models import Note
     from lessons.models import LessonCompletion
+    from enrollment.models import Enrollment
     
     stats = {
         "ability_score": None,
@@ -42,17 +43,31 @@ def collect_user_stats(user) -> Dict:
         logger.warning(f"Error counting lessons for user {user.id}: {e}")
         stats["lessons_completed"] = 0
     
-    # Get enrolled courses
+    # Get enrolled courses with details
     try:
-        from enrollment.models import Enrollment
-        stats["enrolled_courses"] = list(
-            Enrollment.objects.filter(
-                user=user, 
-                status__in=['active', 'completed']
-            ).values_list('course_id', flat=True)
-        )
+        enrollments = Enrollment.objects.filter(
+            user=user
+        ).select_related('course')
+        
+        stats["enrolled_courses"] = [
+            {
+                'id': e.course.id,
+                'title': e.course.title,
+                'subject': getattr(e.course, 'subject', 'Unknown'),
+                'enrollment_date': e.enrolled_at if hasattr(e, 'enrolled_at') else e.created_at if hasattr(e, 'created_at') else None
+            }
+            for e in enrollments
+        ]
     except Exception as e:
         logger.warning(f"Error getting enrolled courses for user {user.id}: {e}")
         stats["enrolled_courses"] = []
+    
+    # Count quizzes completed
+    try:
+        from quizzes.models import QuizAttempt
+        stats["quizzes_completed"] = QuizAttempt.objects.filter(user=user).count()
+    except Exception as e:
+        logger.warning(f"Error counting quizzes for user {user.id}: {e}")
+        stats["quizzes_completed"] = 0
     
     return stats
