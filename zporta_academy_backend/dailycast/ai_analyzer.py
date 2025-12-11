@@ -64,6 +64,7 @@ class UserLearningAnalyzer:
             
             # Activity data
             'lessons_completed': stats.get('lessons_completed', 0),
+            'notes_count': stats.get('notes_count', 0),
             'quizzes_completed': stats.get('quizzes_completed', 0),
             'total_points': stats.get('total_points', 0),
             

@@ -260,6 +260,18 @@
     <div class="refresh-controls">
         <h3>🤖 AI Analysis Controls</h3>
         <div class="refresh-form">
+            <div style="margin-bottom: 15px;">
+                <label for="ai-subject">Focus Subject (Optional):</label>
+                <select id="ai-subject" name="ai_subject" style="margin-left: 10px; padding: 8px; border-radius: 4px;">
+                    <option value="">All Subjects</option>
+                    <option value="english">📚 English</option>
+                    <option value="programming">💻 Programming</option>
+                    <option value="mathematics">🔢 Mathematics</option>
+                    <option value="science">🔬 Science</option>
+                    <option value="history">📜 History</option>
+                    <option value="business">💼 Business</option>
+                </select>
+            </div>
             <label for="ai-model">Select AI Model:</label>
             <select id="ai-model" name="ai_model">
                 <optgroup label="Google Gemini">
@@ -280,16 +292,23 @@
             <span class="loading-indicator" id="loading-indicator">⏳ Analyzing...</span>
         </div>
         <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
-            💡 This will analyze enrollment, quiz scores, notes, and all user activity to provide personalized insights about English level and learning recommendations.
+            💡 Select a subject to get focused advice, or analyze all subjects. This will review user's quiz scores, notes, enrolled courses, and activity to provide real, personalized insights.
         </p>
     </div>
 
     {% if not success %}
         <div class="section">
-            <div class="error-message">
-                <strong>⚠️ Error analyzing student data:</strong><br>
-                {{ error }}
-            </div>
+            {% if error %}
+                <div class="error-message">
+                    <strong>⚠️ Error analyzing student data:</strong><br>
+                    {{ error }}
+                </div>
+            {% else %}
+                <div style="background: #e8f4f8; border-left: 4px solid #417690; padding: 15px; border-radius: 4px;">
+                    <strong>ℹ️ Analysis not yet triggered</strong><br>
+                    Click the "Analyze with AI" button above to generate insights.
+                </div>
+            {% endif %}
         </div>
     {% else %}
 
@@ -304,6 +323,10 @@
             <div class="stat-card">
                 <span class="stat-value">{{ analysis.lessons_completed }}</span>
                 <span class="stat-label">✅ Lessons Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ analysis.notes_count }}</span>
+                <span class="stat-label">📔 Notes Written</span>
             </div>
             <div class="stat-card">
                 <span class="stat-value">{{ analysis.quizzes_completed }}</span>
@@ -487,6 +510,7 @@ function refreshAnalysis() {
     const btn = document.getElementById('refresh-analysis-btn');
     const loading = document.getElementById('loading-indicator');
     const model = document.getElementById('ai-model').value;
+    const subject = document.getElementById('ai-subject').value;
     
     // Disable button and show loading
     btn.disabled = true;
@@ -500,7 +524,8 @@ function refreshAnalysis() {
             'X-CSRFToken': '{{ csrf_token }}'
         },
         body: JSON.stringify({
-            ai_model: model
+            ai_model: model,
+            subject: subject
         })
     })
     .then(response => response.json())
