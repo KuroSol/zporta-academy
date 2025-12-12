@@ -1788,11 +1788,15 @@ class CachedAIInsightAdmin(admin.ModelAdmin):
         'user_display',
         'subject_display', 
         'engine_display',
+        'tokens_used_display',
         'hits_display',
+        'cost_display',
         'tokens_saved_display',
         'freshness_status',
         'created_at_display',
     )
+    
+    date_hierarchy = 'created_at'
     
     list_filter = (
         'engine',
@@ -1850,14 +1854,30 @@ class CachedAIInsightAdmin(admin.ModelAdmin):
         return engines.get(obj.engine, obj.engine)
     engine_display.short_description = 'AI Engine'
     
+    def tokens_used_display(self, obj):
+        return f"📊 {obj.tokens_used:,}"
+    tokens_used_display.short_description = 'Tokens Used'
+    tokens_used_display.admin_order_field = 'tokens_used'
+    
     def hits_display(self, obj):
-        return f"🔄 {obj.hits} reuses"
-    hits_display.short_description = 'Cache Hits'
+        return f"🔄 {obj.hits}"
+    hits_display.short_description = 'Reuses'
     hits_display.admin_order_field = 'hits'
     
+    def cost_display(self, obj):
+        """Calculate and display the cost of this request."""
+        cost_cents = CacheStatistics.estimate_cost(obj.tokens_used, obj.engine)
+        return f"💰 ${cost_cents/100:.4f}"
+    cost_display.short_description = 'API Cost'
+    cost_display.admin_order_field = 'tokens_used'
+    
     def tokens_saved_display(self, obj):
-        return f"💾 {obj.tokens_saved:,} tokens"
-    tokens_saved_display.short_description = 'Tokens Saved'
+        """Calculate total tokens and cost saved from cache reuse."""
+        if obj.hits > 0:
+            saved_cost_cents = CacheStatistics.estimate_cost(obj.tokens_saved, obj.engine)
+            return f"💚 {obj.tokens_saved:,} (${saved_cost_cents/100:.4f})"
+        return f"💾 {obj.tokens_saved:,}"
+    tokens_saved_display.short_description = 'Tokens Saved (Cost)'
     tokens_saved_display.admin_order_field = 'tokens_saved'
     
     def freshness_status(self, obj):
@@ -1910,8 +1930,10 @@ class CachedAIInsightAdmin(admin.ModelAdmin):
             <p style="margin: 5px 0;"><strong>Created:</strong> {obj.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
             <p style="margin: 5px 0;"><strong>Expires:</strong> {obj.expires_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
             <p style="margin: 5px 0;"><strong>Reused:</strong> {obj.hits} times</p>
+            <p style="margin: 5px 0;"><strong>Tokens Used (Original):</strong> {obj.tokens_used:,}</p>
             <p style="margin: 5px 0;"><strong>Tokens Saved:</strong> {obj.tokens_saved:,}</p>
-            <p style="margin: 5px 0;"><strong>Cost Saved:</strong> ~${(obj.tokens_saved / 1000) * 0.0001:.4f}</p>
+            <p style="margin: 5px 0;"><strong>Original Cost:</strong> ${CacheStatistics.estimate_cost(obj.tokens_used, obj.engine)/100:.4f}</p>
+            <p style="margin: 5px 0;"><strong>Cost Saved by Cache:</strong> ${CacheStatistics.estimate_cost(obj.tokens_saved, obj.engine)/100:.4f}</p>
         </div>
         '''
         return mark_safe(html)
