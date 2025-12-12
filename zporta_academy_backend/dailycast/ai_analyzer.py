@@ -675,11 +675,26 @@ def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str
     
     logger.info(f"Starting comprehensive AI analysis for user {user.id} with model {ai_model}, subject={subject}, language={target_language}")
     
-    # Gather user notes (for vocabulary and language patterns)
+    # Gather user notes WITH IDs and dates for reference linking
     from notes.models import Note
     user_notes = Note.objects.filter(user=user).order_by('-created_at')[:50]
-    notes_text = "\n".join([f"- {note.text[:300]}" for note in user_notes if note.text])
-    notes_summary = f"User has written {len(user_notes)} notes" if user_notes else "No notes"
+    
+    # Format notes with metadata for AI to reference
+    notes_with_metadata = []
+    for note in user_notes:
+        if note.text:
+            notes_with_metadata.append({
+                'id': note.id,
+                'date': note.created_at.strftime('%Y-%m-%d'),
+                'text': note.text[:500]  # Increased for better context
+            })
+    
+    # Build structured notes text for prompt
+    notes_text = "\n".join([
+        f"[Note ID: {n['id']}, Date: {n['date']}]\n{n['text']}\n"
+        for n in notes_with_metadata
+    ])
+    notes_summary = f"User has written {len(user_notes)} notes" if user_notes else "No notes available"
     
     # Gather quiz difficulty analysis
     try:
@@ -789,27 +804,46 @@ Learning Interests/Tags: {interested_tags_str}
 === RECENT LEARNING ACTIVITY ===
 {activity_summary}
 
-=== SAMPLE LEARNING NOTES ===
-{notes_text if notes_text else "No sample notes available"}
+=== USER'S ACTUAL NOTES (with IDs for reference) ===
+{notes_text if notes_text else "No notes available"}
 
-=== YOUR TASK: PROVIDE COMPREHENSIVE LEARNING GUIDE ===
+=== YOUR TASK: PROVIDE DATA-DRIVEN LEARNING GUIDE ===
 
-IMPORTANT: Derive SPECIFIC analytics from the user's real data. Use numbers, frequencies, and named examples. Where relevant, connect insights to notes, quizzes, lessons, course types, and tags.
+CRITICAL RULES:
+1. BASE ALL ANALYSIS ON USER'S REAL DATA ONLY - Do NOT invent generic examples
+2. For grammar_analysis: Extract EXACT mistakes from the notes above. Include note_id and date for each example.
+3. For quiz_recommendations: If quiz data exists, recommend specific quiz topics from weak areas. Otherwise say "Insufficient quiz data - complete more quizzes first"
+4. For external_resources: Only recommend if you can justify based on their level/interests. If insufficient data, say "Complete more lessons to get personalized recommendations"
+5. If notes count is less than 5, say "Write more notes for detailed grammar analysis"
 
-Provide these additional targeted analytics:
-• Notes Analysis: From all notes (count: {analysis_data.get('notes_count', 0)}), identify the top 3 recurring mistakes by frequency (e.g., missing articles, verb tense, preposition choice). For each, provide: pattern, 2 example corrections, and a short rule.
-• Quiz Speed & Accuracy: Compute average quiz completion time (if available) and average accuracy (given). Based on speed vs accuracy, recommend whether to increase vocabulary breadth, focus on comprehension, or improve time management; include one specific exercise per recommendation.
-• Lesson Completion Patterns: Based on completed lessons and course types, infer learning style (e.g., grammar-first, vocabulary-rich, video-heavy). Then recommend 2 course tags that match the style (derived from {interested_tags_str}) and 2 that would stretch capabilities.
-• Vocabulary Growth Plan: From weak topics, extract 10 candidate words the student likely doesn't know yet at their level (tiered by difficulty). Provide each with CEFR level, definition, and a sentence.
-• Error-to-Action Mapping: For each frequent mistake, provide one micro-drill (2 minutes) and one daily habit (10 minutes) to reduce errors over time.
+REQUIRED ANALYTICS FROM REAL DATA:
+
+• Grammar from Notes: Scan all notes above. Find repeated grammar mistakes (articles, verb tense, subject-verb agreement, prepositions). For each mistake:
+  - Quote the EXACT wrong sentence from a note
+  - Provide the note_id and date
+  - Show the correction
+  - Count how many times this pattern appears
+  - If no mistakes found or too few notes, say "Insufficient notes for grammar analysis - write 10+ notes first"
+
+• Quiz-Based Recommendations: From weak_topics and quiz accuracy data:
+  - Recommend SPECIFIC quiz topics the user failed (below 70%)
+  - Link to actual quiz IDs if available
+  - If no quiz data, say "No quiz data available - take quizzes to get recommendations"
+
+• Resource Justification: Only suggest books/movies/websites if you can explain WHY based on their:
+  - Current level (from quiz accuracy)
+  - Interested subjects
+  - Specific weak areas
+  - If insufficient data, say "Complete more activities for personalized resources"
 
 Analyze this student deeply and provide a JSON response with ALL of the following sections:
 
 1. **assessment**: Current learning level, strengths/weaknesses summary
 2. **vocabulary_gaps**: Specific vocabulary weaknesses (with examples of unknown words they might encounter at their level)
 3. **grammar_analysis**: 
-   - Weak grammar areas (with 2-3 examples and explanations)
-   - Strong grammar areas (with examples)
+   - Weak grammar areas: MUST include note_id, date, original_text, correction for EACH example from real notes
+   - If insufficient notes, return: {{"message": "Write 10+ notes for detailed grammar analysis"}}
+   - Strong grammar areas (only if you find correct patterns in notes)
 4. **quiz_recommendations**: Specific quiz titles/topics they should practice next
 5. **difficulty_progression**: What difficulty level they should focus on next and why
 6. **external_resources**: 
@@ -842,10 +876,39 @@ Return ONLY valid JSON in {target_language} with these keys:
 {{
   "assessment": {{...}},
   "vocabulary_gaps": {{...}},
-  "grammar_analysis": {{...}},
-  "quiz_recommendations": [...],
+  "grammar_analysis": {{
+    "weak_areas": [
+      {{
+        "error_type": "...",
+        "frequency": 0,
+        "examples": [
+          {{
+            "note_id": 123,
+            "note_date": "2025-12-11",
+            "original": "...",
+            "corrected": "...",
+            "rule": "..."
+          }}
+        ]
+      }}
+    ],
+    "strong_areas": [...],
+    "insufficient_data": false
+  }},
+  "quiz_recommendations": [
+    {{
+      "topic": "...",
+      "reason": "Based on quiz accuracy: X% on topic Y",
+      "quiz_link": "/quizzes/123" OR "insufficient_quiz_data": true
+    }}
+  ],
   "difficulty_progression": {{...}},
-  "external_resources": {{...}},
+  "external_resources": {{
+    "books": [{{"title": "...", "author": "...", "reason": "Based on your level/interests: ..."}}],
+    "movies": [{{"title": "...", "strategy": "...", "reason": "..."}}],
+    "websites": [{{"name": "...", "url": "...", "reason": "..."}}],
+    "insufficient_data": false
+  }},
   "study_guide": {{...}},
   "learning_journey": {{...}},
   "specific_actions": {{...}},
