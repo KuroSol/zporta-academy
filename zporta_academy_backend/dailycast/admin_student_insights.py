@@ -300,6 +300,7 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
             data = json.loads(request.body)
             subject = data.get('subject', '')  # e.g., 'English', 'Math', or empty for all
             engine = data.get('engine', 'gemini-2.0-flash-exp')  # AI model/engine
+            target_language = data.get('language', 'English')  # Output language for explanations
             
             logger.info(f"🤖 Generating AI insights for user {user_id}, subject={subject}, engine={engine}")
             
@@ -359,7 +360,7 @@ class StudentLearningInsightAdmin(admin.ModelAdmin):
                 analysis_data = analyzer.collect_user_learning_data()
                 
                 # Run AI analysis with specified engine
-                ai_insights = _run_ai_deep_analysis(user, analysis_data, engine, subject=subject)
+                ai_insights = _run_ai_deep_analysis(user, analysis_data, engine, subject=subject, target_language=target_language)
                 
                 # Extract actual token usage from API response
                 token_usage = ai_insights.get('_token_usage', {})

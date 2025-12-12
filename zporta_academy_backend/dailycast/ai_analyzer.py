@@ -652,7 +652,7 @@ def analyze_user_and_generate_feedback(user, ai_model: str = None) -> Dict:
     }
 
 
-def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str = '') -> Dict:
+def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str = '', target_language: str = 'English') -> Dict:
     """
     Use AI to provide COMPREHENSIVE, DETAILED insights about user's learning patterns.
     
@@ -673,7 +673,7 @@ def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str
     from users.models import UserPreference
     from users.activity_models import UserActivity
     
-    logger.info(f"Starting comprehensive AI analysis for user {user.id} with model {ai_model}, subject={subject}")
+    logger.info(f"Starting comprehensive AI analysis for user {user.id} with model {ai_model}, subject={subject}, language={target_language}")
     
     # Gather user notes (for vocabulary and language patterns)
     from notes.models import Note
@@ -753,8 +753,10 @@ def _run_ai_deep_analysis(user, analysis_data: Dict, ai_model: str, subject: str
     else:
         subject_focus = "Analyze all subjects and areas"
     
-    # Build COMPREHENSIVE analysis prompt
-    prompt = f"""You are an expert educational psychologist and learning specialist. Analyze this student's learning profile comprehensively and provide DETAILED, ACTIONABLE guidance.
+    # Build COMPREHENSIVE analysis prompt (refined for concrete analytics)
+    prompt = f"""You are an expert educational psychologist and learning specialist. Analyze this student's learning profile comprehensively and provide DETAILED, ACTIONABLE guidance with CONCRETE, MEASURABLE analytics and examples.
+
+Communicate ALL explanations and output in the user's preferred main language: {target_language}.
 
 {subject_focus}
 
@@ -792,6 +794,15 @@ Learning Interests/Tags: {interested_tags_str}
 
 === YOUR TASK: PROVIDE COMPREHENSIVE LEARNING GUIDE ===
 
+IMPORTANT: Derive SPECIFIC analytics from the user's real data. Use numbers, frequencies, and named examples. Where relevant, connect insights to notes, quizzes, lessons, course types, and tags.
+
+Provide these additional targeted analytics:
+• Notes Analysis: From all notes (count: {analysis_data.get('notes_count', 0)}), identify the top 3 recurring mistakes by frequency (e.g., missing articles, verb tense, preposition choice). For each, provide: pattern, 2 example corrections, and a short rule.
+• Quiz Speed & Accuracy: Compute average quiz completion time (if available) and average accuracy (given). Based on speed vs accuracy, recommend whether to increase vocabulary breadth, focus on comprehension, or improve time management; include one specific exercise per recommendation.
+• Lesson Completion Patterns: Based on completed lessons and course types, infer learning style (e.g., grammar-first, vocabulary-rich, video-heavy). Then recommend 2 course tags that match the style (derived from {interested_tags_str}) and 2 that would stretch capabilities.
+• Vocabulary Growth Plan: From weak topics, extract 10 candidate words the student likely doesn't know yet at their level (tiered by difficulty). Provide each with CEFR level, definition, and a sentence.
+• Error-to-Action Mapping: For each frequent mistake, provide one micro-drill (2 minutes) and one daily habit (10 minutes) to reduce errors over time.
+
 Analyze this student deeply and provide a JSON response with ALL of the following sections:
 
 1. **assessment**: Current learning level, strengths/weaknesses summary
@@ -827,7 +838,7 @@ CRITICAL: Make this HIGHLY SPECIFIC to this student's profile, subject interests
 - Clear progression path with measurable milestones
 - Vocabulary you estimate they DON'T know yet at this level
 
-Return ONLY valid JSON with these keys:
+Return ONLY valid JSON in {target_language} with these keys:
 {{
   "assessment": {{...}},
   "vocabulary_gaps": {{...}},
@@ -839,6 +850,17 @@ Return ONLY valid JSON with these keys:
   "learning_journey": {{...}},
   "specific_actions": {{...}},
   "potential_struggles": {{...}},
+    "notes_error_analysis": [
+        {{"error": "...", "frequency": 0, "examples": ["wrong → correct"], "rule": "..."}}
+    ],
+    "quiz_speed_guidance": {{"avg_time_sec": 0, "avg_accuracy": 0.0, "recommendation": "...", "exercise": "..."}},
+    "lesson_style_recommendations": {{"style": "...", "suggested_tags": ["..."], "stretch_tags": ["..."]}},
+    "vocab_growth_plan": [
+        {{"word": "...", "cefr": "B1", "definition": "...", "sentence": "..."}}
+    ],
+    "error_to_action": [
+        {{"error": "...", "micro_drill": "2 min ...", "daily_habit": "10 min ..."}}
+    ],
   "summary": "2-3 paragraph executive summary"
 }}
 """
