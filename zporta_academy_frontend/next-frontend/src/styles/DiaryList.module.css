@@ -50,7 +50,7 @@
   border-radius: var(--zporta-radius-md);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  background-color: #FFFFFF;
+  background-color: var(--bg);
 }
 
 .search-container input[type="text"]:focus {
@@ -61,7 +61,7 @@
 /* --- Diary Entry Card/Item Styling (Alternative to Table) --- */
 /* This is a suggestion for a more modern list view. If table is preferred, style .diary-table instead. */
 .diary-entry-card {
-  background-color: #FFFFFF; /* White card background */
+  background-color: var(--bg); /* var(--bg) card background */
   border-radius: var(--zporta-radius-lg);
   padding: var(--zporta-spacing-md);
   margin-bottom: var(--zporta-spacing-md);
@@ -116,7 +116,7 @@
   overflow-x: auto;
   border: 1px solid var(--zporta-border-color);
   border-radius: var(--zporta-radius-lg);
-  background-color: #FFFFFF;
+  background-color: var(--bg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -267,7 +267,7 @@
 }
 
 .pagination button {
-  background: #FFFFFF;
+  background: var(--bg);
   border: 1px solid var(--zporta-border-color);
   color: var(--zporta-dark-blue);
   padding: var(--zporta-spacing-sm) var(--zporta-spacing-md);
@@ -426,7 +426,7 @@
       border: 1px solid var(--zporta-border-color);
       border-radius: var(--zporta-radius-md);
       padding: var(--zporta-spacing-sm);
-      background-color: #FFFFFF;
+      background-color: var(--bg);
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .diary-table td {

@@ -70,7 +70,7 @@
   margin: 0; /* Remove default paragraph margin */
 }
 .courseInfo a {
-  color: var(--zporta-info-link, #f39c12); /* Even darker blue for link */
+  color: var(--zporta-info-link, var(--warning)); /* Even darker blue for link */
   font-weight: 600;
   text-decoration: none;
   border-bottom: 1px dotted var(--zporta-info-link, #07408a);
@@ -82,7 +82,7 @@
 
 /* Explicit class for course link used in JSX */
 .courseLink {
-  color: var(--zporta-info-link, #f39c12);
+  color: var(--zporta-info-link, var(--warning));
   font-weight: 600;
   text-decoration: none;
   border-bottom: 1px dotted var(--zporta-info-link, #07408a);
@@ -95,7 +95,7 @@
 /* Lesson preview section for gated content */
 .lessonPreview {
   background: #f8fafc;
-  border-left: 4px solid var(--accent-color, #0A2342);
+  border-left: 4px solid var(--accent-color, var(--text));
   padding: 1.5rem;
   margin: 2rem 0;
   border-radius: 8px;
@@ -164,7 +164,7 @@
   padding: 12px 18px;
   border: 1px solid var(--zporta-border-light, #eee);
   border-radius: 6px;
-  background: var(--zporta-background-medium, #f8f9fa);
+  background: var(--zporta-background-medium, var(--bg-page));
   text-align: center;
   font-size: 14px;
   line-height: 1.5;
@@ -174,7 +174,7 @@
   margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--zporta-warning-badge-bg, #f39c12);
+  background: var(--zporta-warning-badge-bg, var(--warning));
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -256,8 +256,8 @@
 .lessonVideoLink { /* Style for fallback link if embed fails */
   margin: 20px 0;
   padding: 12px 18px;
-  background: var(--zporta-background-medium, #f8f9fa); /* Lighter grey */
-  border: 1px solid var(--zporta-border-light, #dee2e6);
+  background: var(--zporta-background-medium, var(--bg-page)); /* Lighter grey */
+  border: 1px solid var(--zporta-border-light, var(--border));
   border-radius: 6px;
   font-size: 14px;
 }
@@ -329,8 +329,8 @@
 
 /* Code Blocks */
 .lessonContent pre {
-  background: var(--zporta-pre-bg, #f8f9fa); /* Light grey background */
-  border: 1px solid var(--zporta-border-light, #dee2e6);
+  background: var(--zporta-pre-bg, var(--bg-page)); /* Light grey background */
+  border: 1px solid var(--zporta-border-light, var(--border));
   padding: 1em;
   border-radius: 6px;
   overflow-x: auto; /* Allow horizontal scrolling */
@@ -470,7 +470,7 @@
   margin-left: 6px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--zporta-background-medium, #f1f3f5);
+  background: var(--zporta-background-medium, var(--surface-2));
   color: var(--zporta-text-main, #333);
   font-size: 12px;
 }
@@ -481,9 +481,9 @@
 .downloadSection {
   margin: 30px 0;
   padding: 20px;
-  background: var(--zporta-background-medium, #f8f9fa);
+  background: var(--zporta-background-medium, var(--bg-page));
   border-radius: 8px;
-  border: 1px solid var(--zporta-border-light, #dee2e6);
+  border: 1px solid var(--zporta-border-light, var(--border));
 }
 
 /* New top sections for owner actions and downloads */
@@ -505,9 +505,9 @@
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 600;
-  background: var(--zporta-warning-btn-bg, #ffc107);
+  background: var(--zporta-warning-btn-bg, var(--accent));
   color: #000;
-  border: 1px solid var(--zporta-warning-btn-bg, #ffc107);
+  border: 1px solid var(--zporta-warning-btn-bg, var(--accent));
   border-radius: 6px;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -600,8 +600,8 @@
   flex: 1; /* Allow buttons to grow */
   max-width: 48%; /* Prevent buttons from becoming too wide */
   padding: 10px 18px; /* More padding */
-  background: var(--zporta-background-medium, #f8f9fa);
-  border: 1px solid var(--zporta-border-light, #dee2e6);
+  background: var(--zporta-background-medium, var(--bg-page));
+  border: 1px solid var(--zporta-border-light, var(--border));
   border-radius: 6px;
   text-decoration: none;
   color: var(--zporta-secondary-light, #34495e);
@@ -609,12 +609,12 @@
   font-weight: 500;
   text-align: center;
   transition: all 0.2s ease-in-out; /* Smooth transition */
-  white-space: nowrap; /* Prevent text wrapping */
+  var(--bg)-space: nowrap; /* Prevent text wrapping */
   overflow: hidden; /* Hide overflow */
   text-overflow: ellipsis; /* Add ellipsis if text is too long */
 }
 .navButton:hover {
-  background: #e9ecef;
+  background: var(--bg-secondary);
   color: var(--zporta-secondary-color, #2c3e50);
   border-color: #ced4da;
   transform: translateY(-1px); /* Slight lift on hover */
@@ -697,7 +697,7 @@
   margin: 30px 0;
   background: var(--zporta-success-bg, #d1e7dd);
   border: 1px solid var(--zporta-success-border, #badbcc);
-  color: var(--zporta-success-text, #0f5132);
+  color: var(--zporta-success-text, var(--text-success));
   padding: 12px 18px;
   border-radius: 6px;
   text-align: center;
@@ -725,8 +725,8 @@
     font-size: 14px;
 }
 .editBtn {
-    background-color: var(--zporta-warning-btn-bg, #ffc107); /* Yellow */
-    border-color: var(--zporta-warning-btn-bg, #ffc107);
+    background-color: var(--zporta-warning-btn-bg, var(--accent)); /* Yellow */
+    border-color: var(--zporta-warning-btn-bg, var(--accent));
     color: #000;
 }
 .editBtn:hover {
@@ -846,9 +846,9 @@
     Edit Mode Form Styles
 ----------------------------------------- */
 .editLessonForm {
-  background: var(--zporta-background-medium, #f8f9fa);
+  background: var(--zporta-background-medium, var(--bg-page));
   padding: clamp(15px, 4vw, 30px);
-  border: 1px solid var(--zporta-border-light, #dee2e6);
+  border: 1px solid var(--zporta-border-light, var(--border));
   border-radius: 8px;
   margin-bottom: 30px;
 }
@@ -952,7 +952,7 @@
   border: 1px solid var(--zporta-border-color, #ccc);
   border-radius: 5px;
   padding: 10px 15px;
-  background: var(--zporta-background-medium, #f8f9fa);
+  background: var(--zporta-background-medium, var(--bg-page));
 }
 /* Optional: Scrollbar styling */
 .scrollableBox::-webkit-scrollbar { width: 6px; }

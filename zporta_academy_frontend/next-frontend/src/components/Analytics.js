@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
+import { useT } from "@/context/LanguageContext";
 import { useRouter } from "next/router";
 import styles from "@/styles/Analytics.module.css";
 import {
@@ -32,6 +33,7 @@ import {
 
 const AnalyticsAndStatistics = () => {
   const { token, logout, user } = useContext(AuthContext);
+  const t = useT();
   const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -314,31 +316,30 @@ const AnalyticsAndStatistics = () => {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Analytics Dashboard</h1>
-          <p className={styles.subtitle}>
-            Two families of insights: Teaching Insights (for creators) and
-            Learning Insights (for learners).
-          </p>
+          <h1 className={styles.title}>{t("analytics.title")}</h1>
+          <p className={styles.subtitle}>{t("analytics.twoFamilies")}</p>
           {token && (
             <div className={styles.sessionStatus}>
               <span className={styles.sessionDot} />
               <span className={styles.sessionText}>
-                Active session
+                {t("analytics.activeSession")}
                 {formattedLastHeartbeat
-                  ? ` • last ping ${formattedLastHeartbeat}`
+                  ? ` • ${t("analytics.lastPing")} ${formattedLastHeartbeat}`
                   : ""}
               </span>
               <button onClick={handleLogout} className={styles.logoutBtn}>
-                Logout
+                {t("analytics.logout")}
               </button>
               {heartbeatError && (
-                <em className={styles.hbError}>Heartbeat issue</em>
+                <em className={styles.hbError}>
+                  {t("analytics.heartbeatIssue")}
+                </em>
               )}
             </div>
           )}
         </div>
         <button className={styles.helpBtn} onClick={() => setShowHelp(true)}>
-          <HelpCircle size={18} /> Learn the scores
+          <HelpCircle size={18} /> {t("analytics.learnTheScores")}
         </button>
       </header>
 
@@ -350,7 +351,7 @@ const AnalyticsAndStatistics = () => {
           }`}
           onClick={() => setActiveTab("overview")}
         >
-          📊 Overview
+          📊 {t("analytics.overview")}
         </button>
         {/* Show Teaching tab for teachers/guides or admins regardless of impact score */}
         {canSeeTeaching && (
@@ -360,7 +361,7 @@ const AnalyticsAndStatistics = () => {
             }`}
             onClick={() => setActiveTab("teaching")}
           >
-            <Activity size={16} /> Teaching
+            <Activity size={16} /> {t("analytics.teaching")}
           </button>
         )}
         <button
@@ -369,12 +370,14 @@ const AnalyticsAndStatistics = () => {
           }`}
           onClick={() => setActiveTab("learning")}
         >
-          <Brain size={16} /> Learning
+          <Brain size={16} /> {t("analytics.learning")}
         </button>
       </div>
 
       {loading && (
-        <div className={styles.loadingWrap}>Loading your activity…</div>
+        <div className={styles.loadingWrap}>
+          {t("analytics.loadingActivity")}
+        </div>
       )}
       {error && !loading && <div className={styles.errorWrap}>{error}</div>}
 
@@ -384,7 +387,9 @@ const AnalyticsAndStatistics = () => {
           {activeTab === "overview" && (
             <>
               <section className={styles.panel}>
-                <h2 className={styles.sectionTitle}>Activity Summary</h2>
+                <h2 className={styles.sectionTitle}>
+                  {t("analytics.activitySummary")}
+                </h2>
                 <div className={styles.cards}>
                   {/* Show Impact Score for teachers/guides or admins */}
                   {canSeeTeaching && (
@@ -394,7 +399,7 @@ const AnalyticsAndStatistics = () => {
                       style={{ cursor: "pointer" }}
                     >
                       <div className={styles.cardHeader}>
-                        <Activity /> <h3>Impact Score</h3>
+                        <Activity /> <h3>{t("analytics.impactScore")}</h3>
                       </div>
                       <div className={styles.bigValue}>
                         {impactScore?.total_score ?? data.impact_score ?? 0}
@@ -445,13 +450,13 @@ const AnalyticsAndStatistics = () => {
                   <div className={styles.streaks}>
                     {data.learning_streak_days && (
                       <div className={styles.streak}>
-                        <Brain size={16} /> Learning Streak:{" "}
+                        <Brain size={16} /> {t("analytics.learningStreak")}{" "}
                         <b>{data.learning_streak_days}d</b>
                       </div>
                     )}
                     {data.impact_streak_days && (
                       <div className={styles.streak}>
-                        <Activity size={16} /> Impact Streak:{" "}
+                        <Activity size={16} /> {t("analytics.impactStreak")}{" "}
                         <b>{data.impact_streak_days}d</b>
                       </div>
                     )}
@@ -460,7 +465,9 @@ const AnalyticsAndStatistics = () => {
               </section>
               <section className={styles.grid2}>
                 <div className={styles.panel}>
-                  <h3 className={styles.panelTitle}>Daily Points</h3>
+                  <h3 className={styles.panelTitle}>
+                    {t("analytics.dailyPoints")}
+                  </h3>
                   {chartSeries.length ? (
                     <ResponsiveContainer width="100%" height={240}>
                       <LineChart data={chartSeries}>
@@ -488,11 +495,15 @@ const AnalyticsAndStatistics = () => {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className={styles.empty}>No points yet</div>
+                    <div className={styles.empty}>
+                      {t("analytics.noPointsYet")}
+                    </div>
                   )}
                 </div>
                 <div className={styles.panel}>
-                  <h3 className={styles.panelTitle}>Points Distribution</h3>
+                  <h3 className={styles.panelTitle}>
+                    {t("analytics.pointsDistribution")}
+                  </h3>
                   {pieData.length ? (
                     <ResponsiveContainer width="100%" height={240}>
                       <PieChart>
@@ -511,22 +522,26 @@ const AnalyticsAndStatistics = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className={styles.empty}>No data</div>
+                    <div className={styles.empty}>{t("common.noData")}</div>
                   )}
                 </div>
               </section>
               <section className={styles.panel}>
-                <h3 className={styles.panelTitle}>Recent Actions</h3>
+                <h3 className={styles.panelTitle}>
+                  {t("analytics.recentActions")}
+                </h3>
                 {loadingHistory ? (
-                  <div className={styles.loadingWrap}>Loading…</div>
+                  <div className={styles.loadingWrap}>
+                    {t("analytics.loadingRecent")}
+                  </div>
                 ) : history?.results?.length ? (
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th>When</th>
-                        <th>Role</th>
-                        <th>Activity</th>
-                        <th>Points</th>
+                        <th>{t("analytics.when")}</th>
+                        <th>{t("analytics.role")}</th>
+                        <th>{t("analytics.activity")}</th>
+                        <th>{t("analytics.points")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -759,22 +774,32 @@ const AnalyticsAndStatistics = () => {
           {activeTab === "learning" && (
             <>
               <section className={styles.panel}>
-                <h2 className={styles.sectionTitle}>Learning Progress</h2>
+                <h2 className={styles.sectionTitle}>
+                  {t("analytics.learningProgress")}
+                </h2>
                 <div className={styles.kpiRow}>
                   <div className={styles.kpiItemBox}>
-                    <span className={styles.kpiLabel}>Learning Score</span>
+                    <span className={styles.kpiLabel}>
+                      {t("analytics.learningScore")}
+                    </span>
                     <b>{learningScore?.total_score ?? 0}</b>
                   </div>
                   <div className={styles.kpiItemBox}>
-                    <span className={styles.kpiLabel}>Quizzes</span>
+                    <span className={styles.kpiLabel}>
+                      {t("analytics.quizzes")}
+                    </span>
                     <b>{data.total_quizzes_answered ?? 0}</b>
                   </div>
                   <div className={styles.kpiItemBox}>
-                    <span className={styles.kpiLabel}>Lessons</span>
+                    <span className={styles.kpiLabel}>
+                      {t("analytics.lessons")}
+                    </span>
                     <b>{data.total_lessons_completed ?? 0}</b>
                   </div>
                   <div className={styles.kpiItemBox}>
-                    <span className={styles.kpiLabel}>Courses</span>
+                    <span className={styles.kpiLabel}>
+                      {t("analytics.courses")}
+                    </span>
                     <b>
                       {data.total_courses_enrolled ??
                         data.total_courses_completed ??
@@ -1092,7 +1117,9 @@ const AnalyticsAndStatistics = () => {
 
           <section className={styles.grid2}>
             <div className={styles.panel}>
-              <h3 className={styles.panelTitle}>Study Time This Week</h3>
+              <h3 className={styles.panelTitle}>
+                {t("analytics.studyTimeThisWeek")}
+              </h3>
               <div className={styles.studyFlex}>
                 <div className={styles.gaugeWrap}>
                   <ResponsiveContainer width="100%" height={180}>
@@ -1118,28 +1145,32 @@ const AnalyticsAndStatistics = () => {
                       {loginGaugePercent}%
                     </div>
                     <div className={styles.gaugeSub}>
-                      of {data?.login_goal_weekly_minutes} min goal
+                      {t("analytics.goalOfMinutes", {
+                        minutes: data?.login_goal_weekly_minutes ?? 0,
+                      })}
                     </div>
                   </div>
                 </div>
                 <div className={styles.studyStats}>
                   <p>
-                    <strong>Total:</strong> {data?.total_login_minutes_7d ?? 0}{" "}
-                    min
+                    <strong>{t("analytics.total")}</strong>{" "}
+                    {data?.total_login_minutes_7d ?? 0} min
                   </p>
                   <p>
-                    <strong>Avg / day:</strong>{" "}
+                    <strong>{t("analytics.avgPerDay")}</strong>{" "}
                     {data?.average_login_minutes_per_day_7d ?? 0} min
                   </p>
                   <p className={styles.tip}>
-                    Goal set to {data?.login_goal_weekly_minutes} min/week.
+                    {t("analytics.goalSetTo", {
+                      minutes: data?.login_goal_weekly_minutes ?? 0,
+                    })}
                   </p>
                 </div>
               </div>
             </div>
             <div className={styles.panel}>
               <h3 className={styles.panelTitle}>
-                Weekly Study Minutes (7 days)
+                {t("analytics.weeklyStudyMinutes")}
               </h3>
               {loginSeries.length ? (
                 <ResponsiveContainer width="100%" height={220}>
@@ -1162,7 +1193,7 @@ const AnalyticsAndStatistics = () => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className={styles.empty}>No login time yet.</div>
+                <div className={styles.empty}>{t("analytics.noLoginTime")}</div>
               )}
             </div>
           </section>
@@ -1172,20 +1203,22 @@ const AnalyticsAndStatistics = () => {
           {/* Recent activity (exact items) */}
           <section className={styles.panel}>
             <h3 className={styles.panelTitle}>
-              Recent Actions (How Points Were Earned)
+              {t("analytics.recentActionsDetailed")}
             </h3>
             {loadingHistory ? (
-              <div className={styles.loadingWrap}>Loading recent actions…</div>
+              <div className={styles.loadingWrap}>
+                {t("analytics.loadingRecent")}
+              </div>
             ) : errorHistory ? (
               <div className={styles.errorWrap}>{errorHistory}</div>
             ) : history?.results?.length ? (
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>When</th>
-                    <th>Role</th>
-                    <th>Activity</th>
-                    <th>Points</th>
+                    <th>{t("analytics.when")}</th>
+                    <th>{t("analytics.role")}</th>
+                    <th>{t("analytics.activity")}</th>
+                    <th>{t("analytics.points")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1200,7 +1233,9 @@ const AnalyticsAndStatistics = () => {
                 </tbody>
               </table>
             ) : (
-              <div className={styles.empty}>No recent actions recorded.</div>
+              <div className={styles.empty}>
+                {t("analytics.noRecentActions")}
+              </div>
             )}
           </section>
 
@@ -1208,18 +1243,23 @@ const AnalyticsAndStatistics = () => {
             data.course_completions_detail?.length ||
             data.enrollments_detail?.length) && (
             <section className={styles.panel}>
-              <h3 className={styles.panelTitle}>Your Learning Journey</h3>
+              <h3 className={styles.panelTitle}>
+                {t("analytics.learningJourney")}
+              </h3>
               <div className={styles.recentGrid}>
                 {data.lesson_completions_detail?.length > 0 && (
                   <div>
                     <h4 className={styles.subhead}>
-                      Lessons Completed ({data.lesson_completions_detail.length}
-                      ) — Total: +
-                      {data.lesson_completions_detail.reduce(
-                        (sum, l) => sum + l.points,
-                        0
-                      )}{" "}
-                      pts
+                      {t("analytics.lessonsCompleted", {
+                        count: data.lesson_completions_detail.length,
+                      })}
+                      {" — "}
+                      {t("analytics.totalPoints", {
+                        points: data.lesson_completions_detail.reduce(
+                          (sum, l) => sum + l.points,
+                          0
+                        ),
+                      })}
                     </h4>
                     <ul className={styles.list}>
                       {data.lesson_completions_detail
@@ -1253,8 +1293,9 @@ const AnalyticsAndStatistics = () => {
                         onClick={() => openScoreDetail("student")}
                         className={styles.viewMoreBtn}
                       >
-                        View all {data.lesson_completions_detail.length} lessons
-                        →
+                        {t("analytics.viewAllLessons", {
+                          count: data.lesson_completions_detail.length,
+                        })}
                       </button>
                     )}
                   </div>
@@ -1262,30 +1303,41 @@ const AnalyticsAndStatistics = () => {
                 {data.courses_enrolled_detail?.length > 0 && (
                   <div>
                     <h4 className={styles.subhead}>
-                      Courses Enrolled ({data.courses_enrolled_detail.length}) —
-                      Total: +
-                      {data.courses_enrolled_detail.reduce(
-                        (sum, c) => sum + c.points,
-                        0
-                      )}{" "}
-                      pts
+                      {t("analytics.coursesEnrolled", {
+                        count: data.courses_enrolled_detail.length,
+                      })}
+                      {" — "}
+                      {t("analytics.totalPoints", {
+                        points: data.courses_enrolled_detail.reduce(
+                          (sum, c) => sum + c.points,
+                          0
+                        ),
+                      })}
                     </h4>
                     <div className={styles.filterBar}>
                       <div className={styles.filterGroup}>
-                        <label className={styles.filterLabel}>Sort</label>
+                        <label className={styles.filterLabel}>
+                          {t("analytics.sort")}
+                        </label>
                         <select
                           className={styles.filterSelect}
                           value={studentEnrollSort}
                           onChange={(e) => setStudentEnrollSort(e.target.value)}
                         >
-                          <option value="newest">Newest</option>
-                          <option value="oldest">Oldest</option>
-                          <option value="az">A → Z</option>
-                          <option value="za">Z → A</option>
+                          <option value="newest">
+                            {t("analytics.sortNewest")}
+                          </option>
+                          <option value="oldest">
+                            {t("analytics.sortOldest")}
+                          </option>
+                          <option value="az">{t("analytics.sortAZ")}</option>
+                          <option value="za">{t("analytics.sortZA")}</option>
                         </select>
                       </div>
                       <div className={styles.filterGroup}>
-                        <label className={styles.filterLabel}>Category</label>
+                        <label className={styles.filterLabel}>
+                          {t("analytics.category")}
+                        </label>
                         <div className={styles.segmented}>
                           <button
                             className={`${styles.segmentBtn} ${
@@ -1295,7 +1347,7 @@ const AnalyticsAndStatistics = () => {
                             }`}
                             onClick={() => setStudentEnrollFilter("all")}
                           >
-                            All
+                            {t("analytics.all")}
                           </button>
                           <button
                             className={`${styles.segmentBtn} ${
@@ -1305,7 +1357,7 @@ const AnalyticsAndStatistics = () => {
                             }`}
                             onClick={() => setStudentEnrollFilter("free")}
                           >
-                            Free
+                            {t("analytics.free")}
                           </button>
                           <button
                             className={`${styles.segmentBtn} ${
@@ -1315,7 +1367,7 @@ const AnalyticsAndStatistics = () => {
                             }`}
                             onClick={() => setStudentEnrollFilter("premium")}
                           >
-                            Premium
+                            {t("analytics.premium")}
                           </button>
                         </div>
                       </div>
@@ -1668,21 +1720,23 @@ const AnalyticsAndStatistics = () => {
                           </tbody>
                         </table>
                       ) : (
-                        <div className={styles.empty}>No quiz answers yet.</div>
+                        <div className={styles.empty}>
+                          {t("analytics.noQuizAnswers")}
+                        </div>
                       )}
 
                       <h4 className={styles.subhead}>
-                        Lesson Completions (
+                        {t("analytics.lessonCompletions")} (
                         {data?.lesson_completions_detail?.length || 0})
                       </h4>
                       {data?.lesson_completions_detail?.length > 0 ? (
                         <table className={styles.table}>
                           <thead>
                             <tr>
-                              <th>Date & Time</th>
-                              <th>Lesson</th>
-                              <th>Course</th>
-                              <th>Points</th>
+                              <th>{t("analytics.dateTime")}</th>
+                              <th>{t("analytics.lesson")}</th>
+                              <th>{t("analytics.course")}</th>
+                              <th>{t("analytics.points")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1719,7 +1773,7 @@ const AnalyticsAndStatistics = () => {
                         </table>
                       ) : (
                         <div className={styles.empty}>
-                          No lessons completed yet.
+                          {t("analytics.noLessonsCompleted")}
                         </div>
                       )}
 
@@ -1727,17 +1781,17 @@ const AnalyticsAndStatistics = () => {
                         className={styles.subhead}
                         style={{ marginTop: "2rem" }}
                       >
-                        Course Completions (
+                        {t("analytics.courseCompletions")} (
                         {data?.course_completions_detail?.length || 0})
                       </h4>
                       {data?.course_completions_detail?.length > 0 ? (
                         <table className={styles.table}>
                           <thead>
                             <tr>
-                              <th>Date & Time</th>
-                              <th>Course</th>
-                              <th>Time Spent</th>
-                              <th>Points</th>
+                              <th>{t("analytics.dateTime")}</th>
+                              <th>{t("analytics.course")}</th>
+                              <th>{t("analytics.timeSpent")}</th>
+                              <th>{t("analytics.points")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1780,7 +1834,7 @@ const AnalyticsAndStatistics = () => {
                         </table>
                       ) : (
                         <div className={styles.empty}>
-                          No courses completed yet.
+                          {t("analytics.noCoursesCompleted")}
                         </div>
                       )}
 
@@ -1984,27 +2038,34 @@ const AnalyticsAndStatistics = () => {
                 </div>
                 <div className={styles.modalBody}>
                   <div className={styles.scoreOverview}>
-                    <h2>Total Score: {learningScore.total_score}</h2>
+                    <h2>
+                      {t("analytics.totalScore", {
+                        score: learningScore.total_score,
+                      })}
+                    </h2>
                     <p>
-                      Earned from {learningScore.quiz_items.length} unique quiz
-                      questions, {learningScore.lesson_items.length} lessons,
-                      and {learningScore.course_items.length} course
-                      enrollments.
+                      {t("analytics.earnedFrom", {
+                        quizzes: learningScore.quiz_items.length,
+                        lessons: learningScore.lesson_items.length,
+                        courses: learningScore.course_items.length,
+                      })}
                     </p>
                   </div>
 
                   {/* Quiz Questions Section */}
-                  <h4 className={styles.subhead}>Quiz Questions (+1 each)</h4>
+                  <h4 className={styles.subhead}>
+                    {t("analytics.quizQuestionsEach")}
+                  </h4>
                   {learningScore.quiz_items.length > 0 ? (
                     <>
                       <table className={styles.table}>
                         <thead>
                           <tr>
-                            <th>Quiz</th>
-                            <th>Subject</th>
-                            <th>Question</th>
-                            <th>Answered</th>
-                            <th>Points</th>
+                            <th>{t("analytics.quiz")}</th>
+                            <th>{t("analytics.subject")}</th>
+                            <th>{t("analytics.question")}</th>
+                            <th>{t("analytics.answered")}</th>
+                            <th>{t("analytics.points")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2069,13 +2130,13 @@ const AnalyticsAndStatistics = () => {
                     </>
                   ) : (
                     <div className={styles.empty}>
-                      No quiz questions answered correctly yet.
+                      {t("analytics.noQuizAnswered")}
                     </div>
                   )}
 
                   {/* Completed Lessons Section */}
                   <h4 className={styles.subhead} style={{ marginTop: "2rem" }}>
-                    Completed Lessons (+1 each)
+                    {t("analytics.completedLessonsEach")}
                   </h4>
                   {learningScore.lesson_items.length > 0 ? (
                     <>
@@ -2187,7 +2248,9 @@ const AnalyticsAndStatistics = () => {
                                 </td>
                                 <td>{item.subject || "—"}</td>
                                 <td>
-                                  {item.is_premium ? "👑 Premium" : "🆓 Free"}
+                                  {item.is_premium
+                                    ? `👑 ${t("analytics.premium")}`
+                                    : `🆓 ${t("analytics.free")}`}
                                 </td>
                                 <td>
                                   <b className={styles.pointsBadge}>
@@ -2212,13 +2275,15 @@ const AnalyticsAndStatistics = () => {
                               )
                             }
                           >
-                            See more
+                            {t("common.viewMore")}
                           </button>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className={styles.empty}>No courses enrolled yet.</div>
+                    <div className={styles.empty}>
+                      {t("analytics.noCoursesEnrolled")}
+                    </div>
                   )}
                 </div>
               </div>

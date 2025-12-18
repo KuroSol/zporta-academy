@@ -13,7 +13,7 @@
 }
 
 .modalContent {
-  background: white;
+  background: var(--bg);
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   max-width: 900px;
@@ -89,7 +89,7 @@
   align-items: center;
   gap: 8px;
   justify-content: center;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .tab:hover {
@@ -100,7 +100,7 @@
 .tab.active {
   color: #0066cc;
   border-bottom-color: #0066cc;
-  background-color: white;
+  background-color: var(--bg);
 }
 
 .modalBody {
@@ -128,7 +128,7 @@
 .searchBox {
   display: flex;
   align-items: center;
-  background: white;
+  background: var(--bg);
   border: 1px solid #ddd;
   border-radius: 6px;
   padding: 8px 12px;
@@ -153,7 +153,7 @@
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  background: white;
+  background: var(--bg);
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -169,7 +169,7 @@
 .bulkButton {
   padding: 10px 16px;
   background-color: #0066cc;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -291,7 +291,7 @@
 .removeButton {
   padding: 6px 12px;
   background-color: #0066cc;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -300,7 +300,7 @@
   align-items: center;
   gap: 4px;
   transition: all 0.2s;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .addButton:hover,
@@ -340,7 +340,7 @@
 .newGroupButton {
   padding: 10px 16px;
   background-color: #28a745;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -436,7 +436,7 @@
 
 .primaryButton {
   background-color: #0066cc;
-  color: white;
+  color: var(--bg);
 }
 
 .primaryButton:hover {
@@ -465,7 +465,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: white;
+  background: var(--bg);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   transition: all 0.2s;
@@ -525,7 +525,7 @@
 .applyButton {
   padding: 8px 16px;
   background-color: #0066cc;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -540,7 +540,7 @@
 .deleteButton {
   padding: 8px 12px;
   background-color: #dc3545;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -590,7 +590,7 @@
 
 .saveButton {
   background-color: #28a745;
-  color: white;
+  color: var(--bg);
 }
 
 .saveButton:hover {
@@ -625,7 +625,7 @@
 .groupMemberPicker {
   margin-top: 16px;
   padding: 12px;
-  background: white;
+  background: var(--bg);
   border-radius: 6px;
   border: 1px solid #ddd;
 }

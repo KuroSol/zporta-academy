@@ -6,23 +6,23 @@
 /* --- :root CSS Variables (Design System) --- */
 .editorContainer {
     /* Colors */
-    --brand-blue: #1B2735;
+    --brand-blue: var(--text);
     --brand-blue-light: #e09e00;
-    --brand-gold: #ffb606;
+    --brand-gold: var(--accent);
     --brand-gold-light: #fff8e1;
     --brand-gold-dark: #e09e00;
 
-    --bg-surface: #ffffff;      /* Main bg of panels */
+    --bg-surface: var(--bg);      /* Main bg of panels */
     --bg-canvas: #f8fafc;       /* Bg of the editor canvas area */
     --bg-app: #f1f5f9;          /* Outermost bg */
     --bg-hover: #f1f5f9;        /* Light hover for items */
-    --bg-selected: #e0f2fe;     /* Light blue for selected items */
+    --bg-selected: var(--bg-secondary);     /* Light blue for selected items */
     
     --text-primary: #1e293b;    /* Dark text for headings */
     --text-secondary: #475569;  /* Lighter text for body */
     --text-light: #94a3b8;      /* Lightest text for placeholders */
-    --text-on-brand: #ffffff;   /* Text on dark blue buttons */
-    --text-brand: #0A2342;      /* Text that is brand color */
+    --text-on-brand: var(--bg);   /* Text on dark blue buttons */
+    --text-brand: var(--text);      /* Text that is brand color */
 
     --border-color: #e2e8f0;    /* Default border */
     --border-color-dark: #cbd5e1;
@@ -413,7 +413,7 @@
 }
 
 .outlineLabel {
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 0.875rem;
@@ -1533,7 +1533,7 @@
     margin: -1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
     border: 0;
 }
 
@@ -1550,8 +1550,8 @@
     --text-primary: #e2e8f0;
     --text-secondary: #94a3b8;
     --text-light: #64748b;
-    --text-on-brand: #ffffff;
-    --text-brand: #7dd3fc;
+    --text-on-brand: var(--bg);
+    --text-brand: var(--border);
 
     --border-color: #1e293b;
     --border-color-dark: #334155;

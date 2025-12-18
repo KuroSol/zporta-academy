@@ -1,0 +1,1599 @@
+/* styles/globals.css */
+@tailwind base;
+@tailwind components;
+
+/* helpers used by EnrolledCourseDetail search */
+
+
+@tailwind utilities;
+
+/* ==========================================================================
+   MODAL/POPUP SCROLL LOCK - GLOBAL SOLUTION
+   ========================================================================== */
+/* Prevent background scroll when modals/popups are open */
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  height: 100vh !important;
+  /* Prevent layout shift by compensating for scrollbar */
+  padding-right: var(--scrollbar-width, 0px) !important;
+  /* Prevent iOS Safari bounce effect */
+  position: fixed !important;
+  width: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+/* Fix for body being fixed */
+body.modal-open {
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+}
+
+/* Ensure modal content itself can scroll */
+.modal-scroll-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  max-height: 100vh;
+}
+
+/* Ensure modals/popups can scroll their own content */
+[role="dialog"],
+.modal-wrapper,
+.popup-wrapper {
+  overscroll-behavior: contain;
+}
+
+/* ==========================================================================
+   ZPORTA ACADEMY - GLOBAL CSS VARIABLES
+   ==========================================================================
+ - Defines the core color palette and design tokens for the entire site.
+ - Inspired by the zportaacademy.com branding.
+ - Establishes a light theme as the default.
+*/
+/* ==== Zporta Global Design Tokens ==== */
+:root {
+  /* === Brand & Primary === */
+  --zporta-gold: #FFB606;
+  --zporta-gold-dark: #e6a303;
+  --zporta-dark-blue: #0A2342;
+
+  --primary-color: var(--zporta-gold);
+  --primary-color-hover: var(--zporta-gold-dark);
+  --primary-text-color: #1a1a1a;
+
+  --primary-color-light: #e0e7ff;
+  /* indigo-100 */
+  --error-color-dark: #b91c1c;
+  /* red-700 (distinct from --error-color) */
+  --text-disabled: #9ca3af;
+  /* gray-400 */
+  --bg-light: #ffffff;
+  --bg-subtle: #f9fafb;
+  /* if you prefer quiz’s lighter tone */
+  --bg-page: #f3f4f6;
+  /* quiz’s page bg */
+
+  /* === Text === */
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-tertiary: #868e96;
+  --text-light: #6b7280;
+  --text-on-dark-bg: #ffffff;
+  --text-on-primary-bg: #ffffff;
+  --text-on-accent-bg: #1B2735;
+
+  /* === Backgrounds === */
+  --bg-page: #f8f9fa;
+  --bg-container: #ffffff;
+  --bg-subtle: #f1f3f5;
+  --card-bg: #ffffff;
+  --container-bg: #ffffff;
+
+  /* === Feedback (Correct/Incorrect/Error/Success) === */
+  --correct-color: #16a34a;
+  --correct-bg: #f0fdf4;
+  --correct-border: #86efac;
+  --incorrect-color: #dc2626;
+  --incorrect-bg: #fee2e2;
+  --incorrect-border: #fca5a5;
+  --error-color: #b91c1c;
+
+  --text-error: #842029;
+  --bg-error: #f8d7da;
+  --border-error: #f5c2c7;
+  --text-success: #0f5132;
+  --bg-success: #d1e7dd;
+  --border-success: #badbcc;
+
+  /* === Placeholders === */
+  --color-placeholder-bg: #e9ecef;
+  --color-placeholder-icon: #adb5bd;
+
+  /* === Borders & Radius === */
+  --border-color: #e5e7eb;
+  --border-radius-sm: 0.375rem;
+  /* 6px */
+  --border-radius-md: 0.5rem;
+  /* 8px */
+  --border-radius: 0.75rem;
+  /* 12px */
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  --border-radius-pill: 9999px;
+  --zporta-radius-md: var(--border-radius-md);
+  /* alias for sidebar */
+  --zporta-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  --border-color-medium: #d1d5db;
+  /* gray-300 */
+  --border-radius: 0.75rem;
+  /* 12px */
+  --border-radius-sm: 0.375rem;
+  /* 6px */
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --box-shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --box-shadow-light: 0 3px 6px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.08);
+  --box-shadow-medium: 0 5px 15px rgba(0, 0, 0, 0.08), 0 5px 10px rgba(0, 0, 0, 0.1);
+  --box-shadow-interactive: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--primary-accent);
+
+  /* === Transitions & Typography === */
+  --transition-speed: 0.2s;
+  --transition-fast: all 0.2s ease-in-out;
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --transition-speed-fast: 0.15s;
+  /* quiz expects this exact name */
+  /* === Header (AppHeader) === */
+  --header-bg: #13171a;
+  --header-fg: #FFFFFF;
+  --header-fg-dim: rgba(255, 255, 255, 0.8);
+  --header-accent: #FFC107;
+  --header-accent-hover: #FDB813;
+  --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --header-radius-sm: 6px;
+  --header-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  --primary-dark: var(--header-bg);
+  --primary-accent: var(--header-accent);
+  --primary-accent-hover: var(--header-accent-hover);
+  --text-light: var(--header-fg);
+  --text-light-secondary: var(--header-fg-dim);
+  --box-shadow-header: var(--header-shadow);
+  --transition-smooth: var(--header-transition);
+  --border-radius-sm: var(--header-radius-sm);
+  /* === Chrome layout heights === */
+  --app-header-height-desktop: 55px;
+  --app-header-height-mobile: 50px;
+
+  /* === NEW: Black + Bronze Theme Design Tokens === */
+  --color-black: #000000;
+  --color-espresso: #231810;
+  --color-deep-bronze: #81302B;
+  --color-bronze: #A57B62;
+  --color-beige: #F0D4C6;
+  --color-neutral-gray: #8295D0;
+  --color-white: #FFFFFF;
+
+  /* === Semantic Design Tokens - Backgrounds === */
+  --bg: #FFFFFF;
+  --bg-secondary: #F5F3F0;
+  --surface: #FFFFFF;
+  --surface-2: #F5F3F0;
+  --surface-hover: #EDE9E4;
+
+  /* === Semantic Design Tokens - Text === */
+  --text: #231810;
+  --text-secondary: #5C4F47;
+  --text-muted: #8295D0;
+  --text-on-dark: #F0D4C6;
+  --text-inverse: #FFFFFF;
+
+  /* === Semantic Design Tokens - Borders & Dividers === */
+  --border: #E0D7CF;
+  --border-strong: #A57B62;
+  --divider: #E0D7CF;
+
+  /* === Accent & Interactive === */
+  --accent: #A57B62;
+  --accent-hover: #81302B;
+  --accent-active: #5C1E1A;
+  --accent-strong: #81302B;
+  --accent-muted: #D4C5BA;
+
+  /* === Links === */
+  --link: #A57B62;
+  --link-hover: #81302B;
+  --link-visited: #7A5D52;
+
+  /* === Focus States === */
+  --focus: #A57B62;
+  --focus-ring: rgba(165, 123, 98, 0.25);
+
+  /* === Status Colors === */
+  --success: #4CAF50;
+  --success-bg: #F1F8F5;
+  --success-border: #C8E6C9;
+  --warning: #FF9800;
+  --warning-bg: #FFF3E0;
+  --warning-border: #FFE0B2;
+  --danger: #F44336;
+  --danger-bg: #FFEBEE;
+  --danger-border: #FFCDD2;
+  --error: #F44336;
+
+  /* === Hover/Active Variants === */
+  --bg-hover: #F5F3F0;
+  --surface-hover: #EDE9E4;
+  --text-hover: #000000;
+  --border-hover: #A57B62;
+
+  /* === Layout & Shadows === */
+  --shadow-sm: 0 1px 2px rgba(35, 24, 16, 0.05);
+  --shadow-md: 0 4px 6px rgba(35, 24, 16, 0.08);
+  --shadow-lg: 0 10px 15px rgba(35, 24, 16, 0.1);
+  --shadow-xl: 0 20px 25px rgba(35, 24, 16, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(165, 123, 98, 0.25);
+
+  /* === Border Radius === */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 9999px;
+
+  /* === Spacing === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* === Transitions === */
+  --transition-fast: all 0.15s ease-in-out;
+  --transition-normal: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  /* === Typography === */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --line-height-tight: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.75;
+
+  /* === Disabled States === */
+  --disabled-bg: #F5F3F0;
+  --disabled-text: #8295D0;
+  --disabled-border: #E0D7CF;
+
+  /* === Sidebar === */
+  --sidebar-bg: rgba(35, 24, 16, 0.95);
+  --sidebar-text: #F0D4C6;
+  --sidebar-accent: #A57B62;
+  --sidebar-border: #5C1E1A;
+
+  /* === Modal / Overlay (Updated for theme) === */
+  --overlay-backdrop: rgba(35, 24, 16, 0.78);
+  --overlay-blur: 6px;
+  --overlay-panel-bg: #FFFFFF;
+  --overlay-panel-radius: 1rem;
+  --overlay-panel-shadow: 0 20px 25px rgba(35, 24, 16, 0.15);
+
+  /* === Legacy Zporta Compatibility (mapped to new tokens) === */
+  --zporta-primary-color: var(--accent);
+  --zporta-secondary-color: var(--text-secondary);
+  --zporta-accent-color: var(--accent-strong);
+  --zporta-background-light: var(--bg);
+  --zporta-background-medium: var(--surface-2);
+  --zporta-background-dark: #E0D7CF;
+  --zporta-border: var(--border);
+  --zporta-border-light: var(--border);
+  --zporta-text: var(--text);
+  --zporta-text-color: var(--text);
+  --zporta-text-light: var(--text-muted);
+  --zporta-gold: #A57B62;
+  --zporta-gold-dark: #81302B;
+  --zporta-dark-blue: #231810;
+  --zporta-error-color: var(--danger);
+  --zporta-error-bg: var(--danger-bg);
+  --zporta-success-color: var(--success);
+  --zporta-success-bg: var(--success-bg);
+  --zporta-warning-color: var(--warning);
+  --zporta-warning-bg: var(--warning-bg);
+
+ /* Lesson multi-column layout styles */
+ .layoutContainer {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 16px;
+   border: 1px dashed var(--zporta-border-light);
+   padding: 16px;
+   margin: 1em 0;
+   background-color: color-mix(in srgb, var(--zporta-background-medium) 50%, transparent);
+   border-radius: var(--border-radius-sm);
+ }
+ .layoutColumn {
+   flex: 1 1 150px;
+   min-width: 150px;
+   border: 1px dotted var(--zporta-border-light);
+   padding: 10px;
+   background-color: var(--zporta-background-light);
+   border-radius: var(--border-radius-sm);
+ }
+ .layoutColumn:focus { outline: none; }
+ .layoutColumn > :first-child { margin-top: 0; }
+ .layoutColumn > :last-child { margin-bottom: 0; }
+ 
+ 
+ 
+ 
+ /* Optional: stack columns on small screens if enabled */
+ @media (prefers-reduced-motion: reduce){
+  html { scroll-behavior: auto !important; }
+}
+
+
+ @media (max-width: 767px) {
+   .layoutContainer.stackMobile .layoutColumn {
+     flex: 0 0 100%;
+     max-width: 100%;
+   }
+ }
+
+  /* === Sidebar === */
+  --zindex-sidebar: 1030;
+  --zindex-sidebar-handle: 1031;
+  --sidebar-width-desktop-collapsed: 60px;
+  --sidebar-width-expanded: 250px;
+  --sidebar-transition-duration: 0.3s;
+  --sidebar-transition-timing: ease;
+
+  --sidebar-handle-width: 28px;
+  --sidebar-handle-visual-width: 20px;
+  --sidebar-handle-height: 60px;
+  --sidebar-handle-bg-closed: #ffc107;
+  --sidebar-handle-icon-closed: #1B2735;
+  --sidebar-handle-bg-open: #2c3e50;
+  --sidebar-handle-icon-open: #ffc107;
+
+  --sidebar-bg-color: rgba(27, 39, 53, 0.97);
+  --sidebar-text-color: #ffc107;
+  --sidebar-accent-color: #ffc107;
+
+  --ink: #1B2735;
+  /* dark navy */
+  --surface: rgba(255, 255, 255, 0.9);
+  --shadow-card-hover: 0 6px 18px rgba(0, 0, 0, 0.18);
+  --sidebar-width: var(--sidebar-width-desktop-collapsed);
+  /* default 60px */
+
+  /* Match React quiz “required” semantics */
+  --required-color: var(--incorrect-color);
+
+  /* ==========================================================================
+   ZPORTA — Global Overlay System
+   ========================================================================== */
+
+  --overlay-backdrop: rgba(10, 35, 66, .78);
+  /* dark-blue + opacity */
+  --overlay-blur: 6px;
+  --overlay-panel-bg: #fff;
+  --overlay-panel-radius: var(--border-radius-lg);
+  --overlay-panel-shadow: var(--shadow-lg);
+  --zindex-overlay-backdrop: 1050;
+  --zindex-overlay-panel: 1051;
+
+  --zporta-primary-color: #222E3B;
+  /* Blue */
+  --zporta-primary-hover: #2980b9;
+  /* Darker blue */
+  --zporta-primary-light: #eaf5fb;
+  /* Light blue for subtle backgrounds */
+  --zporta-secondary-color: #2c3e50;
+  /* Dark Slate Blue - For text, headings */
+  --zporta-secondary-light: #34495e;
+  /* Lighter Slate Blue */
+  --zporta-accent-color: #e67e22;
+  /* Orange - For accents, highlights if needed */
+  --zporta-accent-hover: #d35400;
+  /* Darker Orange */
+  --zporta-background-light: #ffffff;
+  /* White */
+  --zporta-background-medium: #f8f9fa;
+  /* Very Light Grey - For sections, cards */
+  --zporta-background-dark: #e9ecef;
+  /* Light Grey - For borders, dividers */
+  --zporta-border: #e0e0e0;
+  --zporta-border-light: #dee2e6;
+  /* Lighter grey border */
+  --zporta-success-color: #2ecc71;
+  /* Green */
+  --zporta-success-bg: #eafaf1;
+  --zporta-error-color: #e74c3c;
+  /* Red */
+  --zporta-error-bg: #fdecea;
+  --zporta-warning-color: #f39c12;
+  /* Yellow/Orange */
+  --zporta-warning-bg: #fef5e7;
+  --zporta-text: #333;
+  --zporta-text-color: #343a40;
+  /* Dark grey for body text */
+  --zporta-text-light: #6c757d;
+  /* Lighter grey for secondary text, placeholders */
+  --zporta-required-color: var(--zporta-error-color);
+  --zporta-attached-color: #7f8c8d;
+  /* Grey for attached items */
+  --zporta-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --zporta-border-radius: 8px;
+  /* Standard border radius */
+  --zporta-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Subtle shadow */
+  --zporta-box-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+  /* spacing */
+  --zporta-spacing-xs: 4px;
+  --zporta-spacing-sm: 8px;
+  --zporta-spacing-md: 16px;
+  --zporta-spacing-lg: 24px;
+
+  /* colors/aliases */
+  --zporta-text-primary: var(--text-primary);
+  --zporta-text-secondary: var(--text-secondary);
+  --zporta-border-color: var(--border-color);
+  --zporta-bg-medium: var(--zporta-background-dark);
+  /* alias used by table header */
+  --zporta-text-on-gold: var(--text-on-primary-bg);
+
+  /* used by buttons you reference */
+  --zporta-olive: #556B2F;
+  --zporta-olive-lighter: #6f8b3d;
+  --zporta-bronze: #B08D57;
+  --zporta-bronze-darker: #916e3f;
+  --zporta-error: #D32F2F;
+  --zporta-gold-lighter: #FFEB80;
+
+  /* DiaryManagement needs these */
+  --zindex-header: 1010;
+  --zindex-modal-backdrop: 1050;
+  --zindex-modal-content: 1051;
+  --header-height: 120px;
+  /* tabs + title */
+  --zporta-dark-blue-lighter: #1E3A5F;
+  /* === Modal/Overlay tokens === */
+  --overlay-bg: rgba(11, 19, 33, .66);
+  /* solid, non see-through */
+  --modal-surface: var(--zporta-background-light, #fff);
+  --modal-radius: var(--border-radius-lg, 16px);
+  --modal-shadow: 0 12px 32px rgba(0, 0, 0, .22), 0 2px 6px rgba(0, 0, 0, .08);
+  /* temporary aliases for older refs */
+  --zporta-bg-light: var(--zporta-background-light, #fff);
+  --zporta-radius: 12px;
+  --zporta-radius-lg: var(--border-radius-lg, 16px);
+
+  --scrollbar-width: 0px;
+  /* set by JS when locking body scroll */
+
+  /* --- Study Notes Section (Revised & Fully Responsive) --- */
+
+  --accent-color: #222E3B;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --info-color: #222E3B;
+  --danger-color: #e74c3c;
+
+  --notes-primary: #6d28d9;
+  /* A nice violet color */
+  --notes-primary-hover: #5b21b6;
+  --notes-bg: #ffffff;
+  --notes-bg-secondary: #f3f4f6;
+  --notes-text-dark: #111827;
+  --notes-text-light: #6b7280;
+  --notes-border: #e5e7eb;
+  --notes-my-note-bg: #e0e7ff;
+  --notes-success: #16a34a;
+  --notes-danger: #dc2626;
+  --notes-radius: 12px;
+  --notes-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --notes-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --overlay-backdrop: rgba(10, 35, 66, .78);
+  /* dark-blue + opacity */
+  --overlay-blur: 6px;
+  --overlay-panel-bg: #fff;
+  --overlay-panel-radius: var(--border-radius-lg);
+  --overlay-panel-shadow: var(--shadow-lg);
+  --zindex-overlay-backdrop: 1050;
+  --zindex-overlay-panel: 1051;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Brand & Accent Colors (Inspired by your globals.css) */
+  --zporta-gold: #FFB606;
+  --zporta-gold-dark: #e6a303;
+  --zporta-dark-blue: #0A2342;
+  --accent-color: var(--zporta-dark-blue);
+  --accent-color-interactive: var(--zporta-gold);
+
+  /* Light Theme */
+  --text-primary-light: #111827;
+  --text-secondary-light: #4b5563;
+  --bg-light: #f3f4f6;
+  --bg-card-light: #ffffff;
+  --border-light: #e5e7eb;
+
+  /* Dark Theme */
+  --text-primary-dark: #f9fafb;
+  --text-secondary-dark: #9ca3af;
+  --bg-dark: var(--zporta-dark-blue);
+  --bg-card-dark: #1E3A5F;
+  --border-dark: #374151;
+
+  /* Sizing & Effects */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 0 4px color-mix(in srgb, var(--accent-color-interactive) 25%, transparent);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Editor funtion */
+	--zporta-border-color: #e5e7eb;
+	--zporta-border-light: #dee2e6;
+	--zporta-background-light: #ffffff;
+	--zporta-background-medium: #f8f9fa;
+	--zporta-background-dark: #e9ecef;
+	--zporta-text-color: #343a40;
+	--zporta-text-light: #6c757d;
+	--zporta-primary-light: #e0f2fe;
+	--zporta-gold: #FFB606;
+	--zporta-dark-blue: #0A2342;
+	--zporta-radius-sm: 6px;
+	--zporta-radius-md: 8px;
+	--zporta-box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+	--zporta-error-color: #e74c3c;
+	--zporta-error-bg: #fdecea;
+	--overlay-backdrop: rgba(10, 35, 66, 0.78);
+	--overlay-blur: 6px;
+	--overlay-panel-bg: #fff;
+	--overlay-panel-radius: 16px;
+}
+
+/* === Global Reset === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- truly global selectors used by JSX plain classNames --- */
+/* --- global scroll lock (applies to body & html to be bulletproof) --- */
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  height: 100%;
+}
+
+body.modal-open {
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+/* no layout shift on desktop */
+
+/* ==========================================================================
+   ZPORTA — Global Overlay System
+   ========================================================================== */
+
+/* ---- search highlight helpers (global) ---- */
+.search-match-highlight {
+  border-radius: 0.125em;
+  /* ~rounded */
+  padding: 0 0.1em;
+  /* ~px-[0.1em] */
+}
+
+.active-search-match {
+  outline: 2px solid #3b82f6;
+  /* tailwind blue-500 */
+  outline-offset: 2px;
+  /* ~ring-offset-2 */
+}
+
+.dark .active-search-match {
+  /* optional: mimic darker offset effect */
+  box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px #111827;
+  /* gray-900 offset */
+  outline: none;
+  /* prefer box-shadow in dark */
+}
+
+/* Backdrop */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-backdrop);
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  backdrop-filter: blur(var(--overlay-blur));
+  z-index: var(--zindex-overlay-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zporta-spacing-md);
+  animation: overlay-fade .18s ease-out;
+}
+
+/* Panel */
+.overlay-panel {
+  background: var(--overlay-panel-bg);
+  border-radius: var(--overlay-panel-radius);
+  box-shadow: var(--overlay-panel-shadow);
+  width: clamp(320px, 92vw, 720px);
+  max-height: 90vh;
+  overflow: hidden;
+  /* body scroll stays hidden behind */
+  position: relative;
+  z-index: var(--zindex-overlay-panel);
+  opacity: 0;
+  transform: translateY(6px) scale(.99);
+  animation: panel-in .22s ease-out forwards;
+}
+
+/* Header / body / actions (optional helpers) */
+.overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--zporta-spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--zporta-spacing-md);
+}
+
+.overlay-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--zporta-spacing-md);
+  padding-top: var(--zporta-spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+/* Drawer variant (right) */
+.overlay--drawer-right {
+  align-items: stretch;
+}
+
+.overlay--drawer-right .overlay-panel {
+  height: 100vh;
+  max-height: 100vh;
+  margin-left: auto;
+  border-radius: 0;
+  width: min(480px, 92vw);
+  transform: translateX(16px);
+  animation: drawer-in .24s ease-out forwards;
+}
+
+/* Bottom sheet variant */
+.overlay--sheet-bottom {
+  align-items: flex-end;
+}
+
+.overlay--sheet-bottom .overlay-panel {
+  width: 100%;
+  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
+  transform: translateY(16px);
+  animation: sheet-in .24s ease-out forwards;
+}
+
+/* Light / no-blur options */
+.overlay--light {
+  --overlay-backdrop: rgba(0, 0, 0, .45);
+}
+
+.overlay--no-blur {
+  --overlay-blur: 0px;
+}
+
+/* Animations */
+@keyframes overlay-fade {
+  from {
+    opacity: 0
+  }
+
+  to {
+    opacity: 1
+  }
+}
+
+@keyframes panel-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1)
+  }
+}
+
+@keyframes drawer-in {
+  to {
+    opacity: 1;
+    transform: translateX(0)
+  }
+}
+
+@keyframes sheet-in {
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+/* ================= Legacy mapping (no component changes needed) ============ */
+.modal-overlay {
+  /* use new backdrop but keep old class */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zporta-spacing-md);
+  background: var(--overlay-bg);
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  backdrop-filter: blur(var(--overlay-blur));
+  z-index: var(--zindex-overlay-backdrop);
+  overscroll-behavior: contain;
+  /* prevent background scroll on wheel/touch */
+  touch-action: none;
+  /* iOS rubber-band stop */
+}
+
+.modal-content:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(255, 182, 6, .35);
+}
+
+.modal-content {
+  background: var(--modal-surface);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  width: clamp(320px, 92vw, 720px);
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  z-index: var(--zindex-overlay-panel);
+  animation: panel-in .22s ease-out forwards;
+}
+
+.modal-content {
+  background: var(--zporta-bg-light);
+  padding: var(--zporta-spacing-lg);
+  border-radius: var(--zporta-radius-lg);
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  z-index: var(--zindex-modal-content);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  resize: both;
+  min-width: 300px;
+  min-height: 200px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--zporta-spacing-md);
+  border-bottom: 1px solid var(--zporta-border-color);
+  margin-bottom: var(--zporta-spacing-md);
+}
+
+.modal-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-right: var(--zporta-spacing-sm);
+  margin-right: calc(-1 * var(--zporta-spacing-sm));
+}
+
+.modal-actions {
+  margin-top: var(--zporta-spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--zporta-spacing-md);
+  padding-top: var(--zporta-spacing-md);
+  border-top: 1px solid var(--zporta-border-color);
+}
+
+.modal-actions .btn {
+  margin-left: var(--zporta-spacing-sm);
+}
+
+.modal-btn-primary {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+}
+
+/* kept for legacy */
+.modal-btn-secondary {
+  background-color: var(--zporta-bg-medium);
+  color: var(--zporta-text-secondary);
+  border: 1px solid var(--zporta-border-color);
+}
+
+/* legacy */
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--zporta-text-secondary);
+  font-size: 1.5rem;
+  padding: var(--zporta-spacing-xs);
+}
+
+/* shared highlight used by DiaryList snippet */
+.highlight {
+  background-color: var(--zporta-gold-lighter);
+  color: var(--zporta-dark-blue);
+  padding: .1em .2em;
+  border-radius: var(--zporta-radius-sm);
+  font-weight: 700;
+}
+
+@media (max-width:480px) {
+  .modal-content {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: var(--zporta-spacing-md);
+    resize: none;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: var(--zporta-spacing-sm);
+  }
+
+  .modal-actions button {
+    width: 100%;
+    padding: var(--zporta-spacing-md);
+  }
+}
+
+.modal-content .modal-header h2 {
+  color: var(--zporta-dark-blue);
+  font-size: 1.5rem;
+}
+
+.modal-content .modal-body {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.modal-content .modal-body .custom-editor-wrapper {
+  border: 1px solid var(--zporta-border-color);
+  border-radius: var(--zporta-radius-md);
+}
+
+.modal-actions button.modal-btn-save {
+  background-color: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+}
+
+.modal-actions button.modal-btn-close {
+  background-color: var(--zporta-bg-medium);
+  color: var(--zporta-text-secondary);
+  border: 1px solid var(--zporta-border-color);
+}
+
+.comment-item {
+  border-top: 1px solid var(--zporta-border-color);
+  padding: var(--zporta-spacing-md) 0;
+  margin-top: var(--zporta-spacing-sm);
+}
+
+.comment-item .comment-date {
+  font-size: .8rem;
+  color: var(--zporta-text-secondary);
+  margin-top: var(--zporta-spacing-xs);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color var(--transition-speed) ease;
+}
+
+a:hover {
+  color: var(--primary-color-hover);
+  text-decoration: underline;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Form & button basics */
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  border-radius: 0;
+}
+
+/* when your layout adds this class on expand */
+.sidebar-expanded {
+  --sidebar-width: var(--sidebar-width-expanded);
+  /* 250px by your tokens */
+}
+
+.sidebar-collapsed {
+  --sidebar-width: var(--sidebar-width-desktop-collapsed);
+  /* 60px */
+}
+
+button {
+  cursor: pointer;
+  background-color: transparent;
+  color: inherit;
+  transition: all var(--transition-speed) ease;
+}
+
+.commentItem {
+  background-color: var(--zporta-bg-medium);
+  padding: var(--zporta-spacing-md);
+  border-radius: var(--zporta-radius-md);
+  margin-bottom: var(--zporta-spacing-md);
+  border: 1px solid var(--zporta-border-color);
+}
+
+.commentItem p strong {
+  color: var(--zporta-dark-blue);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.commentText {
+  margin: var(--zporta-spacing-xs) 0 var(--zporta-spacing-sm);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--zporta-text-primary);
+}
+
+.commentDate {
+  font-size: 0.75rem;
+  color: var(--zporta-text-secondary);
+  margin-top: var(--zporta-spacing-xs);
+  text-align: right;
+}
+
+/* editor for editing a comment */
+.editTextarea {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid var(--zporta-gold);
+  border-radius: var(--zporta-radius-md);
+  padding: var(--zporta-spacing-sm);
+  font-family: var(--zporta-font-family);
+  font-size: .9rem;
+  line-height: 1.6;
+  margin-bottom: var(--zporta-spacing-sm);
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 182, 6, .1);
+  resize: vertical;
+}
+
+.editTextarea:focus {
+  outline: none;
+  border-color: var(--zporta-gold-dark);
+  box-shadow: 0 0 0 3px rgba(230, 163, 3, .25);
+}
+
+.editingCommentActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--zporta-spacing-sm);
+  margin-top: var(--zporta-spacing-xs);
+}
+
+/* icon buttons inside comments */
+.actionBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--zporta-spacing-xs);
+  border-radius: var(--zporta-radius-md);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 1.2rem;
+  transition: background-color .2s, color .2s, transform .1s;
+  margin-left: var(--zporta-spacing-sm);
+}
+
+.actionBtn:first-child {
+  margin-left: 0;
+}
+
+.actionBtn:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+.actionBtn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid var(--zporta-gold);
+  outline-offset: 1px;
+}
+
+.editBtn {
+  color: var(--zporta-olive);
+}
+
+.editBtn:hover {
+  background-color: rgba(85, 107, 47, .1);
+  color: var(--zporta-olive-lighter);
+}
+
+.saveBtn {
+  color: var(--zporta-olive-lighter);
+}
+
+.saveBtn:hover {
+  background-color: rgba(111, 139, 61, .15);
+}
+
+.deleteBtn {
+  color: var(--zporta-error);
+}
+
+.deleteBtn:hover {
+  background-color: rgba(211, 47, 47, .1);
+  color: #A02525;
+}
+
+.cancelBtn {
+  color: var(--zporta-text-secondary);
+}
+
+.cancelBtn:hover {
+  background-color: rgba(75, 85, 99, .1);
+  color: var(--zporta-text-primary);
+}
+
+
+/* ==========================================================================
+   ZPORTA — Global Buttons
+   ========================================================================== */
+
+.btn,
+.zporta-btn {
+  /* alias old class to new system */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 10px 16px;
+  /* md default */
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-md);
+  font: 600 0.95rem/1 var(--font-sans);
+  letter-spacing: .2px;
+  cursor: pointer;
+  background: var(--bg-container);
+  color: var(--text-primary);
+  transition: transform .1s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+  box-shadow: var(--box-shadow-subtle);
+  user-select: none;
+  text-decoration: none;
+}
+
+.btn:hover,
+.zporta-btn:hover {
+  box-shadow: var(--box-shadow-light);
+  transform: translateY(-1px);
+}
+
+.btn:active,
+.zporta-btn:active {
+  transform: translateY(0) scale(.98);
+}
+
+.btn:focus-visible,
+.zporta-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 182, 6, .35);
+  /* gold focus ring */
+}
+
+.btn[disabled],
+.btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Sizes */
+.btn-sm {
+  padding: 6px 10px;
+  font-size: .875rem;
+}
+
+.btn-lg {
+  padding: 12px 18px;
+  font-size: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Icon-only (square) */
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--border-radius-md);
+}
+
+/* ================= Variants ================= */
+
+/* Primary (Gold) */
+.btn-primary,
+.modal-btn-primary,
+/* map modal */
+.save-btn {
+  /* map legacy */
+  background: var(--zporta-gold);
+  color: var(--zporta-text-on-gold);
+  border-color: transparent;
+}
+
+.btn-primary:hover,
+.modal-btn-primary:hover,
+.save-btn:hover {
+  background: var(--zporta-gold-dark);
+}
+
+.btn-primary:active,
+.modal-btn-primary:active,
+.save-btn:active {
+  background: var(--zporta-gold-dark);
+}
+
+/* Secondary (Neutral) */
+.btn-secondary,
+.modal-btn-secondary,
+.cancel-btn {
+  background: var(--zporta-bg-medium);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover,
+.modal-btn-secondary:hover,
+.cancel-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Outline (Brand outline on white) */
+.btn-outline {
+  background: #fff;
+  color: var(--zporta-dark-blue);
+  border-color: var(--zporta-dark-blue);
+}
+
+.btn-outline:hover {
+  background: var(--zporta-primary-light);
+  border-color: var(--zporta-gold);
+  color: var(--zporta-gold);
+}
+
+/* Danger */
+.btn-danger {
+  background: var(--zporta-error);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  filter: brightness(.95);
+}
+
+/* Ghost (text button) */
+.btn-ghost {
+  background: transparent;
+  color: var(--zporta-dark-blue);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: var(--bg-subtle);
+}
+
+/* Group helper (optional, used by pages) */
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--zporta-spacing-md);
+}
+
+/* ================================================================== */
+/* --- STYLES MIGRATED FROM EnrolledCourseDetail.module.css --- */
+/* ================================================================== */
+
+/* --- LIVE CURSOR STYLES --- */
+.cursorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 12;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.remoteCursor {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  transition: top 0.1s linear, left 0.1s linear;
+}
+
+.remoteCursor svg {
+  animation: pulse 2s infinite ease-in-out;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cursorName {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  font-family: sans-serif;
+}
+
+/* --- RESPONSIVE MAIN LAYOUT --- */
+.lessonTemplate {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.7;
+  color: #333;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- FLOATING BUTTON --- */
+.floatingIndexButton {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+}
+
+/* --- TextStyler Component Styles --- */
+.stylerWrapper {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.floatingToolbarContainer {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  transition: bottom 0.3s ease, right 0.3s ease, left 0.3s ease, transform 0.3s ease;
+}
+
+.toolbarContent {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background-color: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease, transform 0.3s ease, max-width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  transform-origin: bottom;
+  opacity: 1;
+  transform: scaleY(1);
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.floatingToolbarContainer.collapsed .toolbarContent {
+  opacity: 0;
+  transform: scaleY(0);
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-right: 0;
+  pointer-events: none;
+}
+
+.stylerToolBtn {
+  background-color: transparent;
+  color: #e5e7eb;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stylerToolBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.stylerToolBtn.active {
+  background-color: #4f46e5;
+  color: white;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+}
+
+.separator {
+  width: 1px;
+  height: 28px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: auto 4px;
+}
+
+.toolbarToggle {
+  background-color: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+  width: 44px;
+  height: 30px;
+  border-radius: 12px 12px 0 0;
+  margin-left: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.floatingToolbarContainer.collapsed .toolbarToggle {
+  margin-left: 0;
+}
+
+.stylerEditor {
+  padding: 1.5rem;
+  min-height: 250px;
+  font-size: 1rem;
+  line-height: 1.8;
+  outline: none;
+  color: #1f2937;
+}
+
+.stylerEditor.laserActive {
+  cursor: crosshair;
+}
+
+/* Annotation Styles */
+.stylerHighlight {
+  background-color: #fef08a;
+  border-radius: 3px;
+}
+
+.stylerBox {
+  border: 2px solid #fca5a5;
+  border-radius: 5px;
+  padding: 0 2px;
+}
+
+.stylerCircle {
+  position: relative;
+  padding: 0.1em 0.2em;
+}
+
+.stylerCircle::before {
+  content: '';
+  position: absolute;
+  top: -0.4em;
+  left: -0.1em;
+  right: -0.1em;
+  bottom: -0.4em;
+  border: 2px solid #818cf8;
+  border-radius: 50%;
+}
+
+/* --- MOBILE & RESPONSIVE OVERRRIDES --- */
+@media (max-width: 767px) {
+  .lessonTemplate {
+    padding: 1rem;
+  }
+
+  .floatingToolbarContainer {
+    bottom: 100px;
+    left: 1.5rem;
+    right: auto;
+    transform: none;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toolbarContent {
+    flex-direction: column;
+    order: 1;
+    margin-bottom: 8px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .floatingToolbarContainer.collapsed .toolbarContent {
+    display: none;
+  }
+
+  .toolbarToggle {
+    order: 2;
+    margin-left: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .floatingToolbarContainer.collapsed .toolbarToggle {
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .lessonTemplate {
+    padding: 2rem;
+  }
+
+  .floatingIndexButton {
+    bottom: 3rem;
+    right: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
+  body:has(.sidebarMenu) {
+    padding-right: var(--sidebar-width-desktop-collapsed);
+    /* 60px */
+  }
+
+  body:has(.sidebarMenu.expanded) {
+    padding-right: 0;
+    /* overlay when expanded */
+  }
+}
+
+/* ==========================================================================
+   QUIZ TIMER - Stylish Overlay Timer
+   ========================================================================== */
+.quiz-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  backdrop-filter: blur(10px);
+  animation: timerPulse 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.quiz-timer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.quiz-timer-text {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  min-width: 3.5rem;
+  text-align: center;
+}
+
+@keyframes timerPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+  }
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .quiz-timer {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    gap: 0.4rem;
+  }
+  
+  .quiz-timer svg {
+    width: 14px;
+    height: 14px;
+  }
+}

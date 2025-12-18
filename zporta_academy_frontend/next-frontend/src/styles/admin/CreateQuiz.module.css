@@ -50,7 +50,7 @@
     cursor: pointer;
     transition: background-color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease, border-color var(--transition-speed-fast) ease;
     box-shadow: var(--shadow-sm);
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
     text-align: center;
   }
   
@@ -378,7 +378,7 @@
     font-size: 0.9rem;
     font-weight: 500;
     transition: background-color var(--transition-speed-fast), border-color var(--transition-speed-fast), color var(--transition-speed-fast);
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
   }
   .fileLabel:hover {
     background-color: var(--border-color);
@@ -715,7 +715,7 @@
   margin: 0;
   font-size: 1.1rem;
   color: var(--text-primary);
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .accordionPreview {
@@ -723,7 +723,7 @@
   text-align: left;
   font-weight: 400;
   color: var(--text-secondary);
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -743,7 +743,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .accordionChevron {

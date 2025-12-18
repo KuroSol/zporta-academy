@@ -1,11 +1,9 @@
 // src/components/layout/Footer.js
 import React from 'react';
 import Link from 'next/link';
-import { useT } from '@/context/LanguageContext';
 import styles from '@/styles/Footer.module.css';
 
 export default function Footer() {
-  const t = useT();
   const currentYear = new Date().getFullYear();
 
   return (

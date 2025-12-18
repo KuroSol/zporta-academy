@@ -10,16 +10,16 @@
 /* --- DARK THEME OVERRIDES --- */
 /* Apply this class to a parent container (e.g., <body>) to enable dark mode */
 :global(.dark) {
-	--zporta-border-color: #374151;
-	--zporta-border-light: #4b5563;
-	--zporta-background-light: #1f2937;
-	--zporta-background-medium: #111827;
-	--zporta-background-dark: #374151;
-	--zporta-text-color: #d1d5db;
-	--zporta-text-light: #9ca3af;
+	--zporta-border-color: var(--text);
+	--zporta-border-light: var(--text-secondary);
+	--zporta-background-light: var(--text);
+	--zporta-background-medium: var(--text);
+	--zporta-background-dark: var(--text);
+	--zporta-text-color: var(--border);
+	--zporta-text-light: var(--disabled-text);
 	--zporta-primary-light: #312e81; /* A darker blue highlight for dark mode */
 	--zporta-error-bg: #451b1b;
-	--overlay-panel-bg: #1f2937;
+	--overlay-panel-bg: var(--text);
 }
 
 

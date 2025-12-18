@@ -26,7 +26,7 @@
 }
 
 .dark .modalContent {
-  background-color: #1f2937; /* gray-800 */
+  background-color: var(--text); /* gray-800 */
 }
 
 @keyframes slide-up {
@@ -47,16 +47,16 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af; /* gray-400 */
+  color: var(--disabled-text); /* gray-400 */
 }
 .closeButton:hover {
-  color: #111827; /* gray-900 */
+  color: var(--text); /* gray-900 */
 }
 .dark .closeButton {
-  color: #6b7280; /* gray-500 */
+  color: var(--text-muted); /* gray-500 */
 }
 .dark .closeButton:hover {
-  color: #f9fafb; /* gray-50 */
+  color: var(--bg-secondary); /* gray-50 */
 }
 
 .modalHeader {
@@ -68,11 +68,11 @@
   margin: 0 auto 0.75rem;
 }
 
-.modalTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #111827); }
-.dark .modalTitle { color: #f9fafb; }
+.modalTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, var(--text)); }
+.dark .modalTitle { color: var(--bg-secondary); }
 
-.modalSubtitle { font-size: 0.9rem; color: var(--text-secondary, #6b7280); margin-top: 0.25rem; }
-.dark .modalSubtitle { color: #9ca3af; }
+.modalSubtitle { font-size: 0.9rem; color: var(--text-secondary, var(--text-muted)); margin-top: 0.25rem; }
+.dark .modalSubtitle { color: var(--disabled-text); }
 
 .searchContainer {
   position: relative;
@@ -84,38 +84,38 @@
   left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af; /* gray-400 */
+  color: var(--disabled-text); /* gray-400 */
 }
 
 .searchInput {
   width: 100%;
   padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  border: 1px solid #d1d5db; /* gray-300 */
+  border: 1px solid var(--border); /* gray-300 */
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .searchInput:focus {
   outline: none;
-  border-color: #3b82f6; /* blue-500 */
+  border-color: var(--accent); /* blue-500 */
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
 }
 .dark .searchInput {
-  background-color: #374151; /* gray-700 */
-  border-color: #4b5563; /* gray-600 */
-  color: #f9fafb; /* gray-50 */
+  background-color: var(--text); /* gray-700 */
+  border-color: var(--text-secondary); /* gray-600 */
+  color: var(--bg-secondary); /* gray-50 */
 }
 
 .resultsContainer {
   min-height: 150px;
   max-height: 250px;
   overflow-y: auto;
-  border: 1px solid #e5e7eb; /* gray-200 */
+  border: 1px solid var(--border); /* gray-200 */
   border-radius: 8px;
   padding: 0.5rem;
 }
 .dark .resultsContainer {
-    border-color: #4b5563; /* gray-600 */
+    border-color: var(--text-secondary); /* gray-600 */
 }
 
 
@@ -123,7 +123,7 @@
   display: block;
   margin: 2rem auto;
   animation: spin 1s linear infinite;
-  color: #3b82f6; /* blue-500 */
+  color: var(--accent); /* blue-500 */
 }
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -133,7 +133,7 @@
 .errorText, .noResults {
     text-align: center;
     padding: 2rem;
-    color: #6b7280; /* gray-500 */
+    color: var(--text-muted); /* gray-500 */
 }
 
 .userList {
@@ -151,10 +151,10 @@
   transition: background-color 0.2s;
 }
 .userListItem:hover {
-  background-color: #f3f4f6; /* gray-100 */
+  background-color: var(--bg-secondary); /* gray-100 */
 }
 .dark .userListItem:hover {
-  background-color: #374151; /* gray-700 */
+  background-color: var(--text); /* gray-700 */
 }
 
 .userInfo {
@@ -172,15 +172,15 @@
 
 .userName {
   font-weight: 600;
-  color: #1f2937; /* gray-800 */
+  color: var(--text); /* gray-800 */
 }
 .dark .userName {
-  color: #f9fafb; /* gray-50 */
+  color: var(--bg-secondary); /* gray-50 */
 }
 
 .userEmail {
   font-size: 0.8rem;
-  color: #6b7280; /* gray-500 */
+  color: var(--text-muted); /* gray-500 */
 }
 
 .inviteButton {
@@ -195,21 +195,21 @@
 
 /* Export a separate class for CSS Modules */
 .inviteButtonSent {
-  background-color: #16a34a; /* green-600 */
+  background-color: var(--success); /* green-600 */
   cursor: not-allowed;
 }
 
 .linkShareSection {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #e5e7eb; /* gray-200 */
+    border-top: 1px solid var(--border); /* gray-200 */
 }
 .dark .linkShareSection {
-    border-top-color: #4b5563; /* gray-600 */
+    border-top-color: var(--text-secondary); /* gray-600 */
 }
 .linkShareSection p {
     font-size: 0.8rem;
-    color: #6b7280; /* gray-500 */
+    color: var(--text-muted); /* gray-500 */
     margin-bottom: 0.5rem;
 }
 .linkContainer {
@@ -219,22 +219,22 @@
 .linkInput {
     flex-grow: 1;
     padding: 0.5rem;
-    border: 1px solid #d1d5db; /* gray-300 */
+    border: 1px solid var(--border); /* gray-300 */
     border-radius: 6px;
-    background-color: #f9fafb; /* gray-50 */
+    background-color: var(--bg-secondary); /* gray-50 */
     font-size: 0.9rem;
-    color: #4b5563; /* gray-600 */
+    color: var(--text-secondary); /* gray-600 */
 }
 .dark .linkInput {
-    background-color: #4b5563; /* gray-600 */
-    border-color: #6b7280; /* gray-500 */
-    color: #d1d5db; /* gray-300 */
+    background-color: var(--text-secondary); /* gray-600 */
+    border-color: var(--text-muted); /* gray-500 */
+    color: var(--border); /* gray-300 */
 }
 
 .copyButton {
   flex-shrink: 0; padding: .5rem .75rem;
-  border: 1px solid var(--border-color, #d1d5db);
+  border: 1px solid var(--border-color, var(--border));
   border-radius: var(--border-radius-md, 8px);
-  background: var(--bg-container, #fff); color: var(--text-primary, #111827);
+  background: var(--bg-container, #fff); color: var(--text-primary, var(--text));
 }
 .modalHeader svg { color: var(--zporta-gold); }

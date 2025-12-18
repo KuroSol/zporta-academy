@@ -4,14 +4,14 @@
   --primary-color: #007bff;
   --primary-hover: #0056b3;
   --secondary-color: #6c757d;
-  --light-bg: #f8f9fa;
-  --white: #ffffff;
+  --light-bg: var(--bg-page);
+  --var(--bg): var(--bg);
   --text-dark: #343a40;
-  --text-light: #f8f9fa;
+  --text-light: var(--bg-page);
   --border-color: #ced4da;
   --error-color: #dc3545;
   --success-color: #28a745;
-  --panel-bg: var(--white);
+  --panel-bg: var(--var(--bg));
   --image-panel-bg: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
   --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   --border-radius: 8px;
@@ -103,7 +103,7 @@
   font-size: 0.95rem;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background-color: var(--white);
+  background-color: var(--var(--bg));
 }
 
 .input:focus,
@@ -124,7 +124,7 @@
   width: 100%;
   padding: 12px 15px;
   background-color: var(--primary-color);
-  color: var(--white);
+  color: var(--var(--bg));
   border: none;
   border-radius: calc(var(--border-radius) / 2);
   font-size: 1rem;
@@ -142,14 +142,14 @@
 .verifyButton {
   padding: 10px 20px;
   background-color: #28a745;
-  color: var(--white);
+  color: var(--var(--bg));
   border: none;
   border-radius: calc(var(--border-radius) / 2);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .verifyButton:hover:not(:disabled) {
@@ -245,7 +245,7 @@
 
 .invitationBadge {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: var(--bg);
   padding: 15px 20px;
   border-radius: calc(var(--border-radius) / 2);
   text-align: center;

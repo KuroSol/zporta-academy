@@ -448,7 +448,7 @@
 #customCSS.inputField,
 #customJS.inputField {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    white-space: pre;
+    var(--bg)-space: pre;
 }
 .inputField:focus,
 .selectField:focus {
@@ -476,7 +476,7 @@ input[type="color"].inputField {
     color: #555;
     margin-top: 0.3rem;
     padding: 0.5rem;
-    background-color: #f8f9fa;
+    background-color: var(--bg-page);
     border-left: 3px solid #007bff; /* Use your accent color */
     border-radius: 3px;
 }

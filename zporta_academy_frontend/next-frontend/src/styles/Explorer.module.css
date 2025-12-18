@@ -30,7 +30,7 @@
   /* Mobile: Allow scrolling */
   overflow-x: auto;
   overflow-y: hidden;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
   scrollbar-width: none; /* Hide scrollbar Firefox */
@@ -54,7 +54,7 @@
   transition: background-color var(--transition-duration) var(--transition-timing),
               color var(--transition-duration) var(--transition-timing),
               box-shadow var(--transition-duration) var(--transition-timing);
-  white-space: nowrap; /* Prevent wrapping */
+  var(--bg)-space: nowrap; /* Prevent wrapping */
   flex-shrink: 0; /* Prevent shrinking */
   position: relative;
   -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
@@ -202,7 +202,7 @@
   display: block; /* Ensure it takes its own line */
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .gridItemTitle {
@@ -212,7 +212,7 @@
   line-height: 1.3;
   margin: 0 0 0.5rem 0; /* Space below title before creator */
   /* Allow wrapping for longer titles */
-  white-space: normal;
+  var(--bg)-space: normal;
   /* Limit to 2 lines with ellipsis (optional) */
   /* display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -245,7 +245,7 @@
     line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
 }
 
 /* Specific styling for creator info below QuizCard if needed */

@@ -156,7 +156,7 @@
 }
 
 .content :global(code) {
-  background-color: #e9ecef;
+  background-color: var(--bg-secondary);
   padding: 0.2em 0.4em;
   font-size: 85%;
   border-radius: 3px;
@@ -165,7 +165,7 @@
 
 .content :global(pre) {
   background-color: #212529;
-  color: #f8f9fa;
+  color: var(--bg-page);
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;

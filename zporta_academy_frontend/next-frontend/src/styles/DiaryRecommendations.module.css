@@ -88,7 +88,7 @@ body.modal-open {
   border: 1px solid var(--zporta-border-color);
   border-radius: var(--zporta-radius-md);
   margin-bottom: var(--zporta-spacing-md);
-  background-color: #FFFFFF;
+  background-color: var(--bg);
 }
 .modal-body .custom-editor-wrapper .ql-editor {
   min-height: 100px; /* Shorter for comment editor */
@@ -222,7 +222,7 @@ body.modal-open {
   font-size: 0.9rem;
   line-height: 1.6;
   margin-bottom: var(--zporta-spacing-sm);
-  background-color: #FFFFFF;
+  background-color: var(--bg);
   box-shadow: 0 0 0 2px rgba(var(--zporta-gold), 0.1); /* Subtle glow */
   resize: vertical; /* Allow vertical resize */
 }

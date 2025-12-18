@@ -5,14 +5,14 @@
 :root {
   --notes-primary: #6d28d9; /* A nice violet color 
   --notes-primary-hover: #5b21b6;
-  --notes-bg: #ffffff;
-  --notes-bg-secondary: #f3f4f6;
-  --notes-text-dark: #111827;
-  --notes-text-light: #6b7280;
-  --notes-border: #e5e7eb;
+  --notes-bg: var(--bg);
+  --notes-bg-secondary: var(--bg-secondary);
+  --notes-text-dark: var(--text);
+  --notes-text-light: var(--text-muted);
+  --notes-border: var(--border);
   --notes-my-note-bg: #e0e7ff;
-  --notes-success: #16a34a;
-  --notes-danger: #dc2626;
+  --notes-success: var(--success);
+  --notes-danger: var(--danger);
   --notes-radius: 12px;
   --notes-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --notes-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -27,7 +27,7 @@
     width: 56px;
     height: 56px;
     background-color: var(--notes-primary);
-    color: white;
+    color: var(--bg);
     border: none;
     border-radius: 50%;
     display: flex;
@@ -193,7 +193,7 @@
 .noteContent {
     font-size: 0.95rem;
     line-height: 1.5;
-    white-space: pre-wrap;
+    var(--bg)-space: pre-wrap;
     margin: 0;
     color: var(--notes-text-dark);
 }
@@ -258,7 +258,7 @@
     border: none;
     border-radius: var(--notes-radius);
     background: var(--notes-primary);
-    color: white;
+    color: var(--bg);
     font-weight: 600;
     cursor: pointer;
     transition: var(--notes-transition);
@@ -267,7 +267,7 @@
     background-color: var(--notes-primary-hover);
 }
 .saveButton:disabled {
-    background: #9ca3af;
+    background: var(--disabled-text);
     cursor: not-allowed;
 }
 

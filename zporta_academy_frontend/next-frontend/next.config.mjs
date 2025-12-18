@@ -11,6 +11,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Disable optimization for backend media URLs; direct load avoids /_next/image 500 errors
+    unoptimized: true,
     // Modern remotePatterns config (replaces deprecated domains)
     remotePatterns: [
       {
@@ -33,9 +35,21 @@ const nextConfig = {
       },
       {
         protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/api/media/**",
+      },
+      {
+        protocol: "http",
         hostname: "localhost",
         port: "8000",
         pathname: "/media/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/api/media/**",
       },
       {
         protocol: "http",
@@ -58,13 +72,13 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_API_BASE_URL ||
       (process.env.NODE_ENV === "production"
         ? "https://www.zportaacademy.com/api/"
-        : "http://localhost:8000/api/"),
+        : "http://127.0.0.1:8000/api/"),
   },
   // Proxy sitemap.xml requests to Django backend
   async rewrites() {
     const backendUrl =
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/$/, "") ||
-      "http://localhost:8000";
+      "http://127.0.0.1:8000";
     return [
       {
         source: "/sitemap.xml",
@@ -77,7 +91,7 @@ const nextConfig = {
     ];
   },
   ...(process.env.NODE_ENV === "development" && {
-    allowedDevOrigins: [process.env.DEV_HOST || "http://localhost:3000"],
+    allowedDevOrigins: [process.env.DEV_HOST || "http://127.0.0.1:3000"],
   }),
 };
 

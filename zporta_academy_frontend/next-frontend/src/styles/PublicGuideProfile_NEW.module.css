@@ -2,10 +2,10 @@
 
 .publicProfileDashboard {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0b1523 0%, #1a2332 100%);
+  background: #13171a;
   padding: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  color: #e2e8f0;
+  color: #ffffff;
 }
 
 /* ========================================
@@ -14,7 +14,7 @@
 
 .heroBanner {
   position: relative;
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #13171a 0%, #231810 50%, #13171a 100%);
   padding: 80px 40px 120px;
   overflow: hidden;
 }
@@ -58,7 +58,7 @@
 .heroInfo h1 {
   font-size: 3.5rem;
   font-weight: 900;
-  color: white;
+  color: var(--bg);
   margin: 0 0 15px 0;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   line-height: 1.1;
@@ -133,7 +133,7 @@
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
-  color: white;
+  color: var(--bg);
   text-decoration: none;
   font-size: 1.2rem;
   transition: all 0.3s ease;
@@ -226,7 +226,7 @@
   display: block;
   font-size: 2.5rem;
   font-weight: 900;
-  color: white;
+  color: var(--bg);
   margin-bottom: 8px;
 }
 
@@ -263,7 +263,7 @@
 .contentHeader h2 {
   font-size: 2rem;
   font-weight: 800;
-  color: white;
+  color: var(--bg);
   margin: 0;
   display: flex;
   align-items: center;
@@ -327,7 +327,7 @@
 .cardInfo h3 {
   font-size: 1.4rem;
   font-weight: 700;
-  color: white;
+  color: var(--bg);
   margin: 0 0 15px 0;
   line-height: 1.3;
 }
@@ -415,7 +415,7 @@
 .listItem h3 {
   font-size: 1.4rem;
   font-weight: 700;
-  color: white;
+  color: var(--bg);
   margin: 0 0 12px 0;
 }
 
@@ -448,7 +448,7 @@
 .error {
   text-align: center;
   padding: 60px 20px;
-  color: #ef4444;
+  color: var(--danger);
   font-size: 1.1rem;
   font-weight: 600;
   background: rgba(239, 68, 68, 0.1);

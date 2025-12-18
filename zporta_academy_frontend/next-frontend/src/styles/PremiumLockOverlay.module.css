@@ -24,7 +24,7 @@
   max-width: 500px;
   width: 90%;
   padding: 2.5rem;
-  background: white;
+  background: var(--bg);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(10, 35, 66, 0.12);
   text-align: center;
@@ -49,9 +49,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0A2342 0%, #1a3a5c 100%);
+  background: linear-gradient(135deg, var(--text) 0%, #1a3a5c 100%);
   border-radius: 50%;
-  color: white;
+  color: var(--bg);
   box-shadow: 0 8px 20px rgba(10, 35, 66, 0.25);
 }
 
@@ -76,7 +76,7 @@
   color: #475569;
   line-height: 1.6;
   margin-bottom: 1.5rem;
-  white-space: pre-line;
+  var(--bg)-space: pre-line;
 }
 
 .courseInfo {
@@ -93,7 +93,7 @@
 }
 
 .courseText strong {
-  color: #0A2342;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -116,9 +116,9 @@
 }
 
 .btnPrimary {
-  background: #0A2342;
-  color: white;
-  border: 2px solid #0A2342;
+  background: var(--text);
+  color: var(--bg);
+  border: 2px solid var(--text);
 }
 
 .btnPrimary:hover {
@@ -128,9 +128,9 @@
 }
 
 .btnSecondary {
-  background: white;
-  color: #0A2342;
-  border: 2px solid #0A2342;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--text);
 }
 
 .btnSecondary:hover {

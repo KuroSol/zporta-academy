@@ -1,42 +1,57 @@
 // src/components/SidebarMenu.js
 import React, { useContext, useEffect, useState } from "react";
 import {
-  FaHome, FaCompass, FaBell, FaPen, FaBook,
-  FaChevronLeft, FaChevronRight,
+  FaHome,
+  FaCompass,
+  FaBell,
+  FaPen,
+  FaBook,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
-import apiClient from '@/api';
-import { AuthContext } from '@/context/AuthContext';
+import apiClient from "@/api";
+import { AuthContext } from "@/context/AuthContext";
+import { useT } from "@/context/LanguageContext";
 import styles from "@/styles/SidebarMenu.module.css";
 import { lockBodyScroll, unlockBodyScroll } from "@/utils/scrollLock";
 const MAIN_ORIGIN = process.env.NEXT_PUBLIC_MAIN_ORIGIN || "/";
 
 export default function SidebarMenu({ isExpanded, setIsExpanded }) {
+  const t = useT();
+
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      const els = document.querySelectorAll('#zporta-sidebar');
-      if (els.length > 1) console.warn('[SidebarMenu] Duplicate instances:', els.length, els);
+    if (process.env.NODE_ENV !== "production") {
+      const els = document.querySelectorAll("#zporta-sidebar");
+      if (els.length > 1)
+        console.warn("[SidebarMenu] Duplicate instances:", els.length, els);
     }
   }, []);
- 
+
   const { user, token, logout } = useContext(AuthContext);
   const [unreadCount, setUnreadCount] = useState(0);
   // warn if two sidebars accidentally mount (common cause of “duplicate” look)
   useEffect(() => {
     const els = document.querySelectorAll("#zporta-sidebar");
-    if (els.length > 1) console.warn("[SidebarMenu] Duplicate instances mounted:", els.length);
+    if (els.length > 1)
+      console.warn("[SidebarMenu] Duplicate instances mounted:", els.length);
   }, []);
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!token) { setUnreadCount(0); return; }
+      if (!token) {
+        setUnreadCount(0);
+        return;
+      }
       try {
         // Use a shorter timeout so slow boots don't hang the UI
-        const res = await apiClient.get("/notifications/user-notifications/", { timeout: 8000 });
+        const res = await apiClient.get("/notifications/user-notifications/", {
+          timeout: 8000,
+        });
         const list = res.data.results ?? res.data;
-        setUnreadCount(list.filter(n => !n.is_read).length);
+        setUnreadCount(list.filter((n) => !n.is_read).length);
       } catch (err) {
         // Be quiet in production to avoid noisy console on slow boots
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV !== "production") {
           console.warn("Notifications fetch failed:", err?.message || err);
         }
         if (err.response?.status === 401) logout();
@@ -55,37 +70,58 @@ export default function SidebarMenu({ isExpanded, setIsExpanded }) {
     return () => unlockBodyScroll();
   }, [isExpanded]);
 
-  let profileImageUrl = "https://zportaacademy.com/media/managed_images/zpacademy.png";
-  if (user?.profile_image_url?.trim()) profileImageUrl = user.profile_image_url.trim();
+  let profileImageUrl =
+    "https://zportaacademy.com/media/managed_images/zpacademy.png";
+  if (user?.profile_image_url?.trim())
+    profileImageUrl = user.profile_image_url.trim();
 
   const links = [
-    { href: `${MAIN_ORIGIN}home`,              label: "Home",   Icon: FaHome },
-    { href: `${MAIN_ORIGIN}learn`,             label: "Explore",Icon: FaCompass },
-    { href: `${MAIN_ORIGIN}notifications`,     label: "Alerts", Icon: FaBell, badge: unreadCount },
-    { href: `${MAIN_ORIGIN}diary`,             label: "Diary",  Icon: FaPen },
-    { href: `${MAIN_ORIGIN}enrolled-courses`,  label: "Learn",  Icon: FaBook },
+    { href: `${MAIN_ORIGIN}home`, label: t("nav.home"), Icon: FaHome },
+    { href: `${MAIN_ORIGIN}learn`, label: t("nav.explore"), Icon: FaCompass },
+    {
+      href: `${MAIN_ORIGIN}notifications`,
+      label: t("nav.alerts"),
+      Icon: FaBell,
+      badge: unreadCount,
+    },
+    { href: `${MAIN_ORIGIN}diary`, label: t("nav.diary"), Icon: FaPen },
+    {
+      href: `${MAIN_ORIGIN}enrolled-courses`,
+      label: t("nav.learn"),
+      Icon: FaBook,
+    },
   ];
 
   return (
     <>
       <div
         id="zporta-sidebar"
-        className={`sidebarMenu ${styles.sidebarMenu} ${isExpanded ? `expanded ${styles.expanded}` : `collapsed ${styles.collapsed}`}`}
+        className={`sidebarMenu ${styles.sidebarMenu} ${
+          isExpanded
+            ? `expanded ${styles.expanded}`
+            : `collapsed ${styles.collapsed}`
+        }`}
       >
         <div className={styles.sidebarHeader}>
-          {isExpanded
-            ? <h1 className={styles.sidebarTitle}>Zporta<br/>Academy</h1>
-            : <h1 className={styles.sidebarTitle}>ZPA</h1>}
+          {isExpanded ? (
+            <h1 className={styles.sidebarTitle}>
+              {t("nav.zportaAcademy").split(" ")[0]}
+              <br />
+              {t("nav.zportaAcademy").split(" ")[1]}
+            </h1>
+          ) : (
+            <h1 className={styles.sidebarTitle}>{t("nav.zpa")}</h1>
+          )}
         </div>
 
         {/* Profile */}
         <div className={styles.profileSection}>
           <a href={`${MAIN_ORIGIN}profile`} className={styles.profileHexagon}>
-            <img src={profileImageUrl} alt="Profile" />
+            <img src={profileImageUrl} alt={t("nav.profile")} />
           </a>
           {isExpanded && (
             <div className={styles.profileInfo}>
-              <h3>{user?.username || "User"}</h3>
+              <h3>{user?.username || t("nav.user")}</h3>
             </div>
           )}
         </div>
@@ -97,11 +133,15 @@ export default function SidebarMenu({ isExpanded, setIsExpanded }) {
               <li key={href}>
                 <a
                   href={href}
-                  className={`${styles.navLink} ${badge ? styles.notificationLink : ""}`}
+                  className={`${styles.navLink} ${
+                    badge ? styles.notificationLink : ""
+                  }`}
                 >
                   <Icon className={styles.icon} />
                   {isExpanded && <span>{label}</span>}
-                  {!!badge && <span className={styles.notificationBadge}>{badge}</span>}
+                  {!!badge && (
+                    <span className={styles.notificationBadge}>{badge}</span>
+                  )}
                 </a>
               </li>
             ))}
@@ -115,18 +155,24 @@ export default function SidebarMenu({ isExpanded, setIsExpanded }) {
         aria-hidden={!isExpanded}
         aria-label="Close sidebar"
         onClick={() => setIsExpanded(false)}
-        className={`${styles.backdrop} ${isExpanded ? styles.backdropVisible : ""}`}
+        className={`${styles.backdrop} ${
+          isExpanded ? styles.backdropVisible : ""
+        }`}
       />
 
       {/* Toggle */}
       <button
-        className={`${styles.sidebarUnifiedHandle} ${isExpanded ? styles.isOpen : styles.isClosed} ${!isExpanded && unreadCount > 0 ? styles.hasUnread : ""}`}
+        className={`${styles.sidebarUnifiedHandle} ${
+          isExpanded ? styles.isOpen : styles.isClosed
+        } ${!isExpanded && unreadCount > 0 ? styles.hasUnread : ""}`}
         onClick={() => setIsExpanded(!isExpanded)}
         aria-label={isExpanded ? "Close Menu" : "Open Menu"}
       >
-        {isExpanded
-          ? <FaChevronRight className={styles.handleIcon} />
-          : <FaChevronLeft  className={styles.handleIcon} />}
+        {isExpanded ? (
+          <FaChevronRight className={styles.handleIcon} />
+        ) : (
+          <FaChevronLeft className={styles.handleIcon} />
+        )}
       </button>
     </>
   );

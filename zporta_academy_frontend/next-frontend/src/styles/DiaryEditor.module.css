@@ -4,7 +4,7 @@
   padding: var(--zporta-spacing-lg);
   margin: 0 auto;
   max-width: 800px; /* Consistent max-width */
-  background-color: var(--zporta-bg-light); /* Or #FFFFFF for a card effect */
+  background-color: var(--zporta-bg-light); /* Or var(--bg) for a card effect */
   border-radius: var(--zporta-radius-lg);
   /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); Optional: subtle shadow */
   box-sizing: border-box;
@@ -36,7 +36,7 @@
   border: 1px solid var(--zporta-border-color);
   border-radius: var(--zporta-radius-md);
   margin-bottom: var(--zporta-spacing-lg);
-  background-color: #FFFFFF;
+  background-color: var(--bg);
 }
 .editorBox :global(.ql-editor) {
   min-height: 200px;
@@ -71,7 +71,7 @@
   border: 1px solid var(--zporta-border-color);
   border-radius: var(--zporta-radius-md);
   padding: var(--zporta-spacing-xs);
-  background-color: #FFFFFF;
+  background-color: var(--bg);
   box-shadow: none; /* Remove default react-select shadow */
   transition: border-color 0.2s ease;
 }

@@ -83,7 +83,7 @@
     font-weight: 500;
     color: var(--zporta-secondary-light);
     transition: color 0.2s ease-in-out;
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
 }
 
 .stepItem:hover .stepCounter {
@@ -95,7 +95,7 @@
 
 .stepItem.active .stepCounter {
     background-color: var(--zporta-primary-color);
-    color: white;
+    color: var(--bg);
     border-color: var(--zporta-primary-color);
 }
 .stepItem.active .stepTitle {
@@ -105,7 +105,7 @@
 
 .stepItem.completed .stepCounter {
     background-color: var(--zporta-success-color);
-    color: white;
+    color: var(--bg);
     border-color: var(--zporta-success-color);
 }
 .stepItem.completed .stepTitle {
@@ -247,7 +247,7 @@
 
 .clearImageButton {
     background: var(--zporta-secondary-color);
-    color: white;
+    color: var(--bg);
     border: none;
     border-radius: 50%;
     width: 24px;
@@ -301,7 +301,7 @@
 
 .createContentBtn:hover {
     background-color: var(--zporta-primary-color);
-    color: white;
+    color: var(--bg);
 }
 
 .contentListArea {
@@ -448,7 +448,7 @@
 
 .zportaBtnPrimary {
     background-color: var(--zporta-primary-color);
-    color: white;
+    color: var(--bg);
 }
 .zportaBtnPrimary:hover:not(:disabled) {
     background-color: var(--zporta-primary-hover);

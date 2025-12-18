@@ -5,9 +5,9 @@
     --secondary-color: #50E3C2; /* A vibrant accent color 
     --text-dark: #333;
     --text-light-DEPRECATED: #5a6168; /* This is being replaced by direct color values below 
-    --text-white: #fff;
+    --text-var(--bg): #fff;
     --bg-light: #f7f9fc;
-    --bg-white: #ffffff;
+    --bg-var(--bg): var(--bg);
     --border-color: #dfe3e8;
     --error-color: #D0021B;
     --success-color: #7ED321;
@@ -30,7 +30,7 @@
     display: flex;
     width: 100%;
     max-width: 1000px;
-    background-color: var(--bg-white);
+    background-color: var(--bg-var(--bg));
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
@@ -128,7 +128,7 @@
     width: 100%;
     padding: 1rem;
     background-color: var(--primary-color);
-    color: var(--text-white);
+    color: var(--text-var(--bg));
     border: none;
     border-radius: 8px;
     font-size: 1rem;
@@ -208,7 +208,7 @@
 .magicLinkButton {
     padding: 0.875rem 1.25rem;
     background-color: var(--secondary-color);
-    color: var(--text-white);
+    color: var(--text-var(--bg));
     border: none;
     border-radius: 8px;
     font-size: 1rem;
@@ -262,8 +262,8 @@
 }
 
 .message.error {
-    background-color: #ffebee;
-    border-color: #ffcdd2;
+    background-color: var(--danger-bg);
+    border-color: var(--danger-border);
     color: var(--error-color);
 }
 
@@ -297,7 +297,7 @@
   width: 100%;
   max-width: 360px;
   padding: 1.5rem;
-  background: var(--bg-white);
+  background: var(--bg-var(--bg));
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
 }

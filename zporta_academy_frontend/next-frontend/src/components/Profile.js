@@ -28,6 +28,7 @@ import {
   FaUserCheck,
 } from "react-icons/fa";
 import { AuthContext } from "@/context/AuthContext";
+import { useLanguage, useT } from "@/context/LanguageContext";
 import apiClient from "@/api";
 import BioRenderer from "@/components/BioRenderer";
 import styles from "@/styles/Profile.module.css";
@@ -51,6 +52,8 @@ const throttle = (func, limit) => {
 
 const Profile = () => {
   const { user, token, logout } = useContext(AuthContext);
+  const { locale, setLocale } = useLanguage();
+  const t = useT();
   const router = useRouter();
 
   // --- Profile State ---
@@ -98,6 +101,7 @@ const Profile = () => {
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [deactivateReason, setDeactivateReason] = useState("");
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [selectedLocale, setSelectedLocale] = useState("en");
 
   // --- Enrolled Teachers/Students Lists ---
   const [enrolledTeachers, setEnrolledTeachers] = useState([]);
@@ -206,6 +210,10 @@ const Profile = () => {
       setProfile(response.data);
       setNewEmail(response.data.email); // Initialize newEmail with current profile email
       setNewDisplayName(response.data.display_name || "");
+      // Initialize locale from profile
+      if (response.data.locale) {
+        setSelectedLocale(response.data.locale);
+      }
       // Initialize teacher profile fields
       setTeacherBio(response.data.teacher_about || "");
       setTeacherSpecialization(response.data.teaching_specialties || "");
@@ -1038,6 +1046,12 @@ const Profile = () => {
     }
   };
 
+  const handleLocaleChange = async (newLocale) => {
+    setSelectedLocale(newLocale);
+    // Update UI immediately and persist to backend
+    await setLocale(newLocale, true);
+  };
+
   const handleSaveAccountSettings = async () => {
     setSettingsSaving(true);
     try {
@@ -1156,7 +1170,7 @@ const Profile = () => {
               <div
                 className={styles.hexagonContainer}
                 onClick={handleProfileImageClick}
-                title="Change profile picture"
+                title={t("profile.changePicture")}
               >
                 <img
                   src={
@@ -1190,13 +1204,13 @@ const Profile = () => {
                     onClick={handleUploadImage}
                     className={`${styles.uploadBtn} ${styles["imageUploadActions button"]}`}
                   >
-                    Upload
+                    {t("common.upload")}
                   </button>
                   <button
                     onClick={handleCancelUpload}
                     className={`${styles.cancelBtn} ${styles["imageUploadActions button"]}`}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 </div>
               )}
@@ -1205,13 +1219,15 @@ const Profile = () => {
                 {profile.display_name?.trim() || profile.username}
               </h1>
               <p className={styles.joinedDate}>
-                {" "}
-                Joined:{" "}
-                {new Date(profile.date_joined).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
+                {t("profile.joined")}{" "}
+                {new Date(profile.date_joined).toLocaleDateString(
+                  locale || "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}{" "}
               </p>
 
               <div className={styles.scoreContainer}>
@@ -1225,7 +1241,9 @@ const Profile = () => {
                         scores.learning_score
                       )}
                     </span>
-                    <div className={styles.scoreLabel}>Learning Score</div>
+                    <div className={styles.scoreLabel}>
+                      {t("profile.learningScore")}
+                    </div>
                   </div>
                 </div>
                 <div className={styles.scoreItem}>
@@ -1238,7 +1256,9 @@ const Profile = () => {
                         scores.impact_score
                       )}
                     </span>
-                    <div className={styles.scoreLabel}>Impact Score</div>
+                    <div className={styles.scoreLabel}>
+                      {t("profile.impactScore")}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1249,11 +1269,13 @@ const Profile = () => {
                 {/* Display Name (editable like Email) */}
                 <div className={styles.infoSection}>
                   <div className={styles.infoLabelContainer}>
-                    <span className={styles.infoLabel}>Display name:</span>
+                    <span className={styles.infoLabel}>
+                      {t("profile.displayName")}
+                    </span>
                     {!editingDisplayName && (
                       <button
                         onClick={handleDisplayNameEditToggle}
-                        title="Edit Display Name"
+                        title={t("profile.editDisplayName")}
                         className={styles.editIconButton}
                       >
                         <FaEdit size={16} />
@@ -1267,7 +1289,7 @@ const Profile = () => {
                         value={newDisplayName}
                         onChange={(e) => setNewDisplayName(e.target.value)}
                         className={styles.infoInput}
-                        placeholder="Your public name"
+                        placeholder={t("profile.displayNamePlaceholder")}
                         maxLength={50}
                       />
                       {displayNameError && (
@@ -1280,13 +1302,13 @@ const Profile = () => {
                           onClick={handleDisplayNameSave}
                           className={`${styles.sidebarButton} ${styles.uploadBtn} !mt-0 !py-1.5 !px-3`}
                         >
-                          Save
+                          {t("common.save")}
                         </button>
                         <button
                           onClick={handleDisplayNameEditToggle}
                           className={`${styles.sidebarButton} ${styles.cancelBtn} !bg-slate-500 hover:!bg-slate-600 !mt-0 !py-1.5 !px-3`}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </div>
@@ -1298,11 +1320,13 @@ const Profile = () => {
                 </div>
                 <div className={styles.infoSection}>
                   <div className={styles.infoLabelContainer}>
-                    <span className={styles.infoLabel}>Email:</span>
+                    <span className={styles.infoLabel}>
+                      {t("profile.email")}
+                    </span>
                     {!editingEmail && (
                       <button
                         onClick={handleEmailEditToggle}
-                        title="Edit Email"
+                        title={t("profile.editEmail")}
                         className={styles.editIconButton}
                       >
                         {" "}
@@ -1328,13 +1352,13 @@ const Profile = () => {
                           onClick={handleEmailSave}
                           className={`${styles.sidebarButton} ${styles.uploadBtn} !mt-0 !py-1.5 !px-3`}
                         >
-                          Save
+                          {t("common.save")}
                         </button>
                         <button
                           onClick={handleEmailEditToggle}
                           className={`${styles.sidebarButton} ${styles.cancelBtn} !bg-slate-500 hover:!bg-slate-600 !mt-0 !py-1.5 !px-3`}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </div>
@@ -1348,7 +1372,9 @@ const Profile = () => {
                 {!isTeacherOrAdmin && (
                   <div className={styles.infoSection}>
                     <div className={styles.infoLabelContainer}>
-                      <span className={styles.infoLabel}>Bio:</span>
+                      <span className={styles.infoLabel}>
+                        {t("profile.bio")}
+                      </span>
                       {!editingBio && (
                         <button
                           onClick={handleBioEditToggle}
@@ -1365,7 +1391,7 @@ const Profile = () => {
                           value={newBio}
                           onChange={(e) => setNewBio(e.target.value)}
                           className={styles.bioTextarea}
-                          placeholder="Tell us about yourself..."
+                          placeholder={t("profile.bioPlaceholder")}
                           rows={4}
                           maxLength={500}
                         />
@@ -1381,13 +1407,13 @@ const Profile = () => {
                             onClick={handleBioSave}
                             className={`${styles.sidebarButton} ${styles.uploadBtn} !mt-0 !py-1.5 !px-3`}
                           >
-                            Save
+                            {t("common.save")}
                           </button>
                           <button
                             onClick={handleBioEditToggle}
                             className={`${styles.sidebarButton} ${styles.cancelBtn} !bg-slate-500 hover:!bg-slate-600 !mt-0 !py-1.5 !px-3`}
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       </div>
@@ -1406,16 +1432,15 @@ const Profile = () => {
                 href={`/guide/${profile.username}`}
                 className={`${styles.sidebarButton} ${styles.publicProfileBtn}`}
               >
-                {" "}
-                View Public Profile{" "}
+                {t("profile.viewPublicProfile")}
               </Link>
               <button
                 onClick={toggleChangePasswordForm}
                 className={`${styles.sidebarButton} ${styles.changePasswordBtn}`}
               >
                 {showChangePassword
-                  ? "Cancel Password Change"
-                  : "Change Password"}
+                  ? t("profile.cancelPasswordChange")
+                  : t("profile.changePassword")}
               </button>
 
               {showChangePassword && (
@@ -1425,7 +1450,7 @@ const Profile = () => {
                 >
                   <div>
                     <label htmlFor="currentPasswordProf">
-                      Current Password
+                      {t("profile.currentPassword")}
                     </label>
                     <input
                       type="password"
@@ -1437,7 +1462,9 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="newPasswordProf">New Password</label>
+                    <label htmlFor="newPasswordProf">
+                      {t("profile.newPassword")}
+                    </label>
                     <input
                       type="password"
                       id="newPasswordProf"
@@ -1449,7 +1476,7 @@ const Profile = () => {
                   </div>
                   <div>
                     <label htmlFor="confirmNewPasswordProf">
-                      Confirm New Password
+                      {t("profile.confirmPassword")}
                     </label>
                     <input
                       type="password"
@@ -1476,8 +1503,7 @@ const Profile = () => {
                     type="submit"
                     className={`${styles.sidebarButton} ${styles.updatePasswordBtn}`}
                   >
-                    {" "}
-                    Update Password{" "}
+                    {t("profile.changePassword")}
                   </button>
                 </form>
               )}
@@ -1486,8 +1512,7 @@ const Profile = () => {
               onClick={logout}
               className={`${styles.sidebarButton} ${styles.logoutBtn}`}
             >
-              {" "}
-              Logout{" "}
+              {t("profile.logout")}
             </button>
           </aside>
 
@@ -1503,7 +1528,11 @@ const Profile = () => {
                     activeTab === tab ? styles.tabButtonActive : ""
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === "courses"
+                    ? t("nav.courses")
+                    : tab === "lessons"
+                    ? t("nav.lessons")
+                    : t("nav.quizzes")}
                 </button>
               ))}
               {isTeacherOrAdmin && (
@@ -1512,10 +1541,10 @@ const Profile = () => {
                   className={`${styles.tabButton} ${
                     activeTab === "teacher" ? styles.tabButtonActive : ""
                   } flex items-center gap-2`}
-                  title="Teacher Settings"
+                  title={t("profile.teacherTab")}
                 >
                   <FaChalkboardTeacher size={16} />
-                  Teacher
+                  {t("profile.teacherTab")}
                 </button>
               )}
               <button
@@ -1523,19 +1552,19 @@ const Profile = () => {
                 className={`${styles.tabButton} ${
                   activeTab === "settings" ? styles.tabButtonActive : ""
                 } flex items-center gap-2`}
-                title="Account Settings"
+                title={t("profile.settings")}
               >
                 <FaCog size={16} />
-                Settings
+                {t("profile.settings")}
               </button>
               {isTeacherOrAdmin && (
                 <button
                   onClick={() => router.push("/profile/mail-magazine")}
                   className={`${styles.tabButton} flex items-center gap-2`}
-                  title="Manage Mail Magazine"
+                  title={t("profile.mailMagazine")}
                 >
                   <FaEnvelope size={16} />
-                  Mail Magazine
+                  {t("profile.mailMagazine")}
                 </button>
               )}
             </nav>
@@ -1545,7 +1574,9 @@ const Profile = () => {
               {/* Content for tabs */}
               {activeTab === "courses" && (
                 <div>
-                  <h2 className={styles.sectionTitle}>Your Enrolled Courses</h2>
+                  <h2 className={styles.sectionTitle}>
+                    {t("profile.yourEnrolledCourses")}
+                  </h2>
                   {coursesError && (
                     <div className={`${styles.errorState} mb-4`}>
                       {coursesError}
@@ -1553,8 +1584,8 @@ const Profile = () => {
                   )}
                   {coursesLoading && courses.length === 0 && !coursesError ? (
                     <div className={styles.loadingState}>
-                      <FaSpinner className={styles.spinner} size={24} /> Loading
-                      Courses...
+                      <FaSpinner className={styles.spinner} size={24} />{" "}
+                      {t("common.loading")}
                     </div>
                   ) : courses.length > 0 ? (
                     <div className={styles.cardsGrid}>
@@ -1587,7 +1618,7 @@ const Profile = () => {
                             <p className={styles.cardDescription}>
                               {" "}
                               {stripHTML(course.description) ||
-                                "No description."}{" "}
+                                t("common.noData")}{" "}
                             </p>
                             <button
                               onClick={() =>
@@ -1596,7 +1627,7 @@ const Profile = () => {
                               className={styles.cardButton}
                             >
                               {" "}
-                              View Course{" "}
+                              {t("profile.viewCourse")}{" "}
                             </button>
                           </div>
                         </div>
@@ -1606,12 +1637,14 @@ const Profile = () => {
                     !coursesLoading &&
                     !coursesError && (
                       <p className="text-center py-10 text-slate-500">
-                        You haven&apos;t enrolled in any courses yet.
+                        {t("profile.noEnrolledCourses")}
                       </p>
                     )
                   )}
                   {isCoursesLoadingMore && (
-                    <div className={`${styles.loadingState} mt-4`}>Loading</div>
+                    <div className={`${styles.loadingState} mt-4`}>
+                      {t("common.loading")}
+                    </div>
                   )}
                   {!isCoursesLoadingMore &&
                     displayedCoursesCount < totalCourses && (
@@ -1630,7 +1663,9 @@ const Profile = () => {
                           className={styles.loadMoreButton}
                           disabled={isCoursesLoadingMore}
                         >
-                          {isCoursesLoadingMore ? "Loading" : "Load More"}{" "}
+                          {isCoursesLoadingMore
+                            ? t("common.loading")
+                            : t("common.viewMore")}{" "}
                           <FaChevronDown />
                         </button>
                       </div>
@@ -1639,7 +1674,9 @@ const Profile = () => {
               )}
               {activeTab === "lessons" && (
                 <div>
-                  <h2 className={styles.sectionTitle}>Your Accessed Lessons</h2>
+                  <h2 className={styles.sectionTitle}>
+                    {t("profile.yourAccessedLessons")}
+                  </h2>
                   {lessonsError && (
                     <div className={`${styles.errorState} mb-4`}>
                       {lessonsError}
@@ -1647,8 +1684,8 @@ const Profile = () => {
                   )}
                   {lessonsLoading && lessons.length === 0 && !lessonsError ? (
                     <div className={styles.loadingState}>
-                      <FaSpinner className={styles.spinner} size={24} /> Loading
-                      Lessons...
+                      <FaSpinner className={styles.spinner} size={24} />{" "}
+                      {t("common.loading")}
                     </div>
                   ) : lessons.length > 0 ? (
                     <div className={styles.cardsGrid}>
@@ -1675,12 +1712,12 @@ const Profile = () => {
                                   stripHTML(lesson.content).substring(0, 150) +
                                     (stripHTML(lesson.content).length > 150
                                       ? "..."
-                                      : "") || "No content.",
+                                      : "") || t("common.noData"),
                               }}
                             />
                             <Link href={`/lessons/${lesson.permalink}`}>
                               <button className={styles.cardButton}>
-                                Read Full Lesson
+                                {t("profile.readFullLesson")}
                               </button>
                             </Link>
                           </div>
@@ -1691,12 +1728,14 @@ const Profile = () => {
                     !lessonsLoading &&
                     !lessonsError && (
                       <p className="text-center py-10 text-slate-500">
-                        You haven&apos;t accessed any lessons yet.
+                        {t("profile.noAccessedLessons")}
                       </p>
                     )
                   )}
                   {isLessonsLoadingMore && (
-                    <div className={`${styles.loadingState} mt-4`}>Loading</div>
+                    <div className={`${styles.loadingState} mt-4`}>
+                      {t("common.loading")}
+                    </div>
                   )}
                   {!isLessonsLoadingMore &&
                     displayedLessonsCount < totalLessons && (
@@ -1715,7 +1754,9 @@ const Profile = () => {
                           className={styles.loadMoreButton}
                           disabled={isLessonsLoadingMore}
                         >
-                          {isLessonsLoadingMore ? "Loading" : "Load More"}{" "}
+                          {isLessonsLoadingMore
+                            ? t("common.loading")
+                            : t("common.viewMore")}{" "}
                           <FaChevronDown />
                         </button>
                       </div>
@@ -1725,7 +1766,7 @@ const Profile = () => {
               {activeTab === "quizzes" && (
                 <div>
                   <h2 className={styles.sectionTitle}>
-                    Your Attempted Quizzes
+                    {t("profile.yourAttemptedQuizzes")}
                   </h2>
                   {quizzesError && (
                     <div className={`${styles.errorState} mb-4`}>
@@ -1734,8 +1775,8 @@ const Profile = () => {
                   )}
                   {quizzesLoading && quizzes.length === 0 && !quizzesError ? (
                     <div className={styles.loadingState}>
-                      <FaSpinner className={styles.spinner} size={24} /> Loading
-                      Quizzes...
+                      <FaSpinner className={styles.spinner} size={24} />{" "}
+                      {t("common.loading")}
                     </div>
                   ) : quizzes.length > 0 ? (
                     <div className="space-y-5">
@@ -1749,14 +1790,14 @@ const Profile = () => {
                             <p className={styles.listItemDescription}>
                               {" "}
                               {stripHTML(quiz.question) ||
-                                "No question preview."}{" "}
+                                t("common.noData")}{" "}
                             </p>
                           </div>
                           <Link
                             href={quizPermalinkToUrl(quiz.permalink)}
                             className={`${styles.cardButton} ${styles.listItemButton}`}
                           >
-                            View Quiz
+                            {t("profile.viewQuiz")}
                           </Link>
                         </div>
                       ))}
@@ -1765,12 +1806,14 @@ const Profile = () => {
                     !quizzesLoading &&
                     !quizzesError && (
                       <p className="text-center py-10 text-slate-500">
-                        You haven&apos;t attempted any quizzes yet.
+                        {t("profile.noAttemptedQuizzes")}
                       </p>
                     )
                   )}
                   {isQuizzesLoadingMore && (
-                    <div className={`${styles.loadingState} mt-4`}>Loading</div>
+                    <div className={`${styles.loadingState} mt-4`}>
+                      {t("common.loading")}
+                    </div>
                   )}
                   {!isQuizzesLoadingMore &&
                     displayedQuizzesCount < totalQuizzes && (
@@ -1789,7 +1832,9 @@ const Profile = () => {
                           className={styles.loadMoreButton}
                           disabled={isQuizzesLoadingMore}
                         >
-                          {isQuizzesLoadingMore ? "Loading" : "Load More"}{" "}
+                          {isQuizzesLoadingMore
+                            ? t("common.loading")
+                            : t("common.viewMore")}{" "}
                           <FaChevronDown />
                         </button>
                       </div>
@@ -2665,11 +2710,10 @@ const Profile = () => {
                 <div className={teacherStyles.teacherDashboard}>
                   <div className={teacherStyles.dashboardHeader}>
                     <h2 className={teacherStyles.dashboardTitle}>
-                      <FaCog /> Account Settings & Privacy
+                      <FaCog /> {t("profile.accountSettingsPrivacy")}
                     </h2>
                     <p className={teacherStyles.dashboardSubtitle}>
-                      Manage your account preferences, privacy, and security
-                      settings
+                      {t("profile.accountSettingsDesc")}
                     </p>
                   </div>
 
@@ -2681,17 +2725,17 @@ const Profile = () => {
                           <FaShieldAlt />
                         </div>
                         <div>
-                          <h3>Privacy & Visibility</h3>
-                          <p>Control who can see your profile and activities</p>
+                          <h3>{t("profile.privacyVisibility")}</h3>
+                          <p>{t("profile.privacyVisibilityDesc")}</p>
                         </div>
                       </div>
 
                       <div className={teacherStyles.settingsGroup}>
                         <label className={teacherStyles.settingLabel}>
                           <div>
-                            <strong>Profile Visibility</strong>
+                            <strong>{t("profile.profileVisibility")}</strong>
                             <p className={teacherStyles.settingDescription}>
-                              Choose who can view your public profile
+                              {t("profile.profileVisibilityDesc")}
                             </p>
                           </div>
                           <select
@@ -2701,11 +2745,15 @@ const Profile = () => {
                             }
                             className={teacherStyles.settingSelect}
                           >
-                            <option value="public">Everyone (Public)</option>
-                            <option value="registered">
-                              Registered Users Only
+                            <option value="public">
+                              {t("profile.visibilityPublic")}
                             </option>
-                            <option value="private">Only Me (Private)</option>
+                            <option value="registered">
+                              {t("profile.visibilityRegistered")}
+                            </option>
+                            <option value="private">
+                              {t("profile.visibilityPrivate")}
+                            </option>
                           </select>
                         </label>
                       </div>
@@ -2718,17 +2766,17 @@ const Profile = () => {
                           <FaBell />
                         </div>
                         <div>
-                          <h3>Notifications</h3>
-                          <p>Manage how you receive updates</p>
+                          <h3>{t("profile.notifications")}</h3>
+                          <p>{t("profile.notificationsDesc")}</p>
                         </div>
                       </div>
 
                       <div className={teacherStyles.settingsGroup}>
                         <label className={teacherStyles.settingToggle}>
                           <div>
-                            <strong>Email Notifications</strong>
+                            <strong>{t("profile.emailNotifications")}</strong>
                             <p className={teacherStyles.settingDescription}>
-                              Receive email updates about your account activity
+                              {t("profile.emailNotificationsDesc")}
                             </p>
                           </div>
                           <input
@@ -2743,10 +2791,11 @@ const Profile = () => {
 
                         <label className={teacherStyles.settingToggle}>
                           <div>
-                            <strong>Mail Magazine Subscription</strong>
+                            <strong>
+                              {t("profile.mailMagazineSubscription")}
+                            </strong>
                             <p className={teacherStyles.settingDescription}>
-                              Receive educational content from teachers you
-                              follow
+                              {t("profile.mailMagazineDesc")}
                             </p>
                           </div>
                           <input
@@ -2758,7 +2807,53 @@ const Profile = () => {
                             className={teacherStyles.toggle}
                           />
                         </label>
+                      </div>
+                    </div>
 
+                    {/* Platform Language */}
+                    <div className={teacherStyles.settingsCard}>
+                      <div className={teacherStyles.cardHeader}>
+                        <div className={teacherStyles.cardIcon}>🌐</div>
+                        <div>
+                          <h3>{t("profile.platformLanguage")}</h3>
+                          <p>{t("profile.platformLanguageDesc")}</p>
+                        </div>
+                      </div>
+
+                      <div className={teacherStyles.settingsGroup}>
+                        <label className={teacherStyles.settingLabel}>
+                          <div>
+                            <strong>Display Language</strong>
+                            <p className={teacherStyles.settingDescription}>
+                              Change the language used for menus, buttons, and
+                              system messages
+                            </p>
+                          </div>
+                          <select
+                            value={selectedLocale}
+                            onChange={(e) => handleLocaleChange(e.target.value)}
+                            className={teacherStyles.settingSelect}
+                          >
+                            <option value="en">English</option>
+                            <option value="ja">日本語 (Japanese)</option>
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Notification Preferences - Teacher List */}
+                    <div className={teacherStyles.settingsCard}>
+                      <div className={teacherStyles.cardHeader}>
+                        <div className={teacherStyles.cardIcon}>
+                          <FaBell />
+                        </div>
+                        <div>
+                          <h3>{t("profile.subscriptions")}</h3>
+                          <p>{t("profile.subscriptionsDesc")}</p>
+                        </div>
+                      </div>
+
+                      <div className={teacherStyles.settingsGroup}>
                         {mailMagazineEnabled && (
                           <div className={teacherStyles.nestedSettings}>
                             <h4
@@ -2817,7 +2912,7 @@ const Profile = () => {
                                       }
                                       className={teacherStyles.viewProfileBtn}
                                     >
-                                      <FaEye /> View Profile
+                                      <FaEye /> {t("profile.viewProfile")}
                                     </button>
                                   </div>
                                 ))}
@@ -2841,8 +2936,8 @@ const Profile = () => {
                             <FaChalkboardTeacher />
                           </div>
                           <div>
-                            <h3>My Students</h3>
-                            <p>Students enrolled in your courses</p>
+                            <h3>{t("profile.myStudents")}</h3>
+                            <p>{t("profile.myStudentsDesc")}</p>
                           </div>
                         </div>
 
@@ -2852,7 +2947,7 @@ const Profile = () => {
                               style={{ textAlign: "center", padding: "20px" }}
                             >
                               <FaSpinner className={teacherStyles.spinner} />{" "}
-                              Loading students...
+                              {t("profile.loadingStudents")}
                             </div>
                           ) : myStudents.length > 0 ? (
                             <div className={teacherStyles.studentList}>
@@ -2914,8 +3009,8 @@ const Profile = () => {
                           <FaBookOpen />
                         </div>
                         <div>
-                          <h3>Learning Preferences</h3>
-                          <p>Customize your learning experience</p>
+                          <h3>{t("profile.learningPreferences")}</h3>
+                          <p>{t("profile.learningPreferencesDesc")}</p>
                         </div>
                       </div>
 
@@ -2924,7 +3019,7 @@ const Profile = () => {
                           onClick={() => router.push("/setup")}
                           className={teacherStyles.linkButton}
                         >
-                          <FaBookOpen /> Manage Subjects & Language Preferences
+                          <FaBookOpen /> {t("profile.manageSubjects")}
                         </button>
                         <p className={teacherStyles.helpText}>
                           Select subjects you&apos;re interested in and your
@@ -2937,10 +3032,11 @@ const Profile = () => {
                               onClick={() => router.push("/profile")}
                               className={teacherStyles.linkButton}
                             >
-                              <FaChalkboardTeacher /> View My Students
+                              <FaChalkboardTeacher />{" "}
+                              {t("profile.viewMyStudents")}
                             </button>
                             <p className={teacherStyles.helpText}>
-                              See all students enrolled in your courses
+                              {t("profile.viewMyStudentsDesc")}
                             </p>
                           </>
                         )}
@@ -2957,10 +3053,10 @@ const Profile = () => {
                         {settingsSaving ? (
                           <>
                             <FaSpinner className={teacherStyles.spinner} />{" "}
-                            Saving...
+                            {t("profile.saving")}
                           </>
                         ) : (
-                          <>💾 Save Settings</>
+                          <>💾 {t("profile.saveSettings")}</>
                         )}
                       </button>
                     </div>
@@ -2974,41 +3070,39 @@ const Profile = () => {
                           <FaTrash />
                         </div>
                         <div>
-                          <h3>Danger Zone</h3>
-                          <p>Irreversible actions that affect your account</p>
+                          <h3>{t("profile.dangerZone")}</h3>
+                          <p>{t("profile.dangerZoneDesc")}</p>
                         </div>
                       </div>
 
                       <div className={teacherStyles.dangerActions}>
                         <div className={teacherStyles.dangerAction}>
                           <div>
-                            <strong>Deactivate Account</strong>
+                            <strong>{t("profile.deactivateAccount")}</strong>
                             <p className={teacherStyles.settingDescription}>
-                              Temporarily disable your account. You can
-                              reactivate it anytime by logging in.
+                              {t("profile.deactivateAccountDesc")}
                             </p>
                           </div>
                           <button
                             onClick={() => setShowDeactivateModal(true)}
                             className={teacherStyles.dangerButton}
                           >
-                            Deactivate
+                            {t("profile.deactivate")}
                           </button>
                         </div>
 
                         <div className={teacherStyles.dangerAction}>
                           <div>
-                            <strong>Delete Account</strong>
+                            <strong>{t("profile.deleteAccount")}</strong>
                             <p className={teacherStyles.settingDescription}>
-                              Permanently delete your account and all associated
-                              data. This cannot be undone.
+                              {t("profile.deleteAccountDesc")}
                             </p>
                           </div>
                           <button
                             onClick={handleDeleteAccount}
                             className={`${teacherStyles.dangerButton} ${teacherStyles.deleteButton}`}
                           >
-                            Delete Forever
+                            {t("profile.deleteForever")}
                           </button>
                         </div>
                       </div>
@@ -3030,11 +3124,8 @@ const Profile = () => {
               className={teacherStyles.modalContent}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3>Deactivate Account</h3>
-              <p>
-                Are you sure you want to deactivate your account? You can
-                reactivate it by logging in again.
-              </p>
+              <h3>{t("profile.deactivateAccount")}</h3>
+              <p>{t("profile.deactivateConfirmText")}</p>
 
               <textarea
                 value={deactivateReason}

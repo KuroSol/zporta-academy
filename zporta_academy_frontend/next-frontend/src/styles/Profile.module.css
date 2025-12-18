@@ -3,8 +3,8 @@
 /* ===== Main Page Layout ===== */
 .profilePage {
   min-height: 100vh;
-  background-color: var(--light-bg);
-  color: var(--text-primary);
+  background-color: #13171a;
+  color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   padding: 20px; /* Base padding for mobile */
 }
@@ -22,7 +22,7 @@
 
 /* ===== Sidebar ===== */
 .profileSidebar {
-  background-color: var(--card-bg);
+  background-color: #231810;
   padding: 25px;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--box-shadow-light);
@@ -46,7 +46,7 @@
   height: 100%;
   object-fit: cover;
   clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
-  border: 4px solid var(--card-bg); /* Match card bg for cutout effect */
+  border: 4px solid #231810; /* Match card bg for cutout effect */
   outline: 2px solid var(--primary-accent);
   box-shadow: var(--box-shadow-medium);
   transition: var(--transition-smooth);
@@ -103,14 +103,14 @@
 }
 .uploadBtn { /* Specific for upload */
   background-color: #28a745; /* Green */
-  color: white;
+  color: var(--bg);
 }
 .uploadBtn:hover {
   background-color: #218838;
 }
 .cancelBtn { /* Specific for cancel */
   background-color: #dc3545; /* Red */
-  color: white;
+  color: var(--bg);
 }
 .cancelBtn:hover {
   background-color: #c82333;
@@ -138,7 +138,7 @@
   gap: 10px;
   margin: 25px 0;
   padding: 15px 10px;
-  background: linear-gradient(145deg, var(--light-bg), #e8ecef);
+  background: linear-gradient(145deg, #1b1f23, #13171a);
   border-radius: var(--border-radius-md);
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
@@ -179,9 +179,9 @@
 }
 .infoLabel {
   display: block; /* Or flex with justify-content: space-between if edit icon is inline */
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f5f5f5;
   margin-bottom: 5px;
 }
 .infoLabelContainer {
@@ -200,13 +200,13 @@
   transition: var(--transition-fast);
 }
 .editIconButton:hover {
-  background-color: var(--light-bg);
+  background-color: rgba(165,123,98,0.12);
   color: var(--primary-accent);
 }
 
 .infoValue {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
+  font-size: 1rem;
+  color: #ffffff;
   word-break: break-word; /* For long emails */
 }
 .infoInput {
@@ -215,7 +215,8 @@
   font-size: 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  background-color: #fff; /* Ensure input bg is distinct */
+  background-color: #231810;
+  color: #ffffff;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .infoInput:focus {
@@ -229,7 +230,8 @@
   font-size: 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  background-color: #fff;
+  background-color: #231810;
+  color: #ffffff;
   transition: border-color 0.2s, box-shadow 0.2s;
   font-family: inherit;
   resize: vertical;
@@ -294,9 +296,9 @@
 .changePasswordForm {
   margin-top: 20px;
   padding: 20px;
-  background-color: var(--light-bg);
+  background-color: #231810;
   border-radius: var(--border-radius-md);
-  border: 1px solid var(--border-color);
+  border: 1px solid #A57B62;
   text-align: left;
 }
 .changePasswordForm label {
@@ -310,7 +312,9 @@
   padding: 10px;
   margin-bottom: 15px;
   border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border-color);
+  border: 1px solid #A57B62;
+  background-color: #1b1f23;
+  color: #ffffff;
 }
 .changePasswordForm input:focus {
   border-color: var(--primary-accent);
@@ -319,7 +323,7 @@
 }
 .updatePasswordBtn {
   background-color: #28a745;
-  color: white;
+  color: var(--bg);
   width: 100%;
 }
 .updatePasswordBtn:hover {
@@ -328,11 +332,11 @@
 
 /* ===== Main Content Area ===== */
 .profileMainContent {
-  background-color: var(--card-bg);
+  background-color: #231810;
   padding: 25px;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--box-shadow-light);
-  border: 1px solid var(--border-color);
+  border: 1px solid #A57B62;
   flex-grow: 1;
 }
 
@@ -345,9 +349,9 @@
 }
 .tabButton {
   padding: 12px 20px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #f5f5f5;
   background-color: transparent;
   border: none;
   border-bottom: 3px solid transparent;
@@ -356,10 +360,10 @@
   white-space: nowrap; /* Prevent tab text from wrapping */
 }
 .tabButton:hover {
-  color: var(--primary-dark);
+  color: #ffffff;
 }
 .tabButtonActive {
-  color: var(--primary-dark);
+  color: #ffffff;
   border-bottom-color: var(--primary-accent);
 }
 
@@ -659,7 +663,7 @@
   font-size: 0.95rem;
   color: var(--text-secondary);
   word-break: break-word;
-  white-space: pre-line;
+  var(--bg)-space: pre-line;
   line-height: 1.6;
   margin: 0.5rem 0;
 }

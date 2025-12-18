@@ -48,7 +48,7 @@
 .editPageContainer { /* Edit Mode Container */
     max-width: 1000px;
     margin: 2rem auto;
-    background-color: white;
+    background-color: var(--bg);
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border: 1px solid #e2e8f0; /* slate-200 */
@@ -73,7 +73,7 @@
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     text-decoration: none;
-    white-space: nowrap;
+    var(--bg)-space: nowrap;
 }
 .zportaBtn:disabled {
     opacity: 0.6;
@@ -86,13 +86,13 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 .zportaBtnPrimary {
-    background-color: var(--zporta-primary-color, #3b82f6);
-    color: white;
-    border-color: var(--zporta-primary-color, #3b82f6);
+    background-color: var(--zporta-primary-color, var(--accent));
+    color: var(--bg);
+    border-color: var(--zporta-primary-color, var(--accent));
 }
 .zportaBtnPrimary:hover:not(:disabled) {
-    background-color: var(--zporta-primary-hover, #2563eb);
-    border-color: var(--zporta-primary-hover, #2563eb);
+    background-color: var(--zporta-primary-hover, var(--accent-hover));
+    border-color: var(--zporta-primary-hover, var(--accent-hover));
 }
 .zportaBtnSecondary {
     background-color: #f1f5f9; /* slate-100 */
@@ -104,25 +104,25 @@
     border-color: #cbd5e1; /* slate-300 */
 }
 .btnSuccess {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
+    background: linear-gradient(135deg, #22c55e 0%, var(--success) 100%);
+    color: var(--bg);
     border-color: #22c55e;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
     font-weight: 700;
 }
 .btnSuccess:hover:not(:disabled) {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-    border-color: #16a34a;
+    background: linear-gradient(135deg, var(--success) 0%, #15803d 100%);
+    border-color: var(--success);
     box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
 }
 .btnDanger {
-    background-color: #ef4444; /* red-500 */
-    color: white;
-    border-color: #ef4444;
+    background-color: var(--danger); /* red-500 */
+    color: var(--bg);
+    border-color: var(--danger);
 }
 .btnDanger:hover:not(:disabled) {
-    background-color: #dc2626; /* red-600 */
-    border-color: #dc2626;
+    background-color: var(--danger); /* red-600 */
+    border-color: var(--danger);
 }
 
 /* * Read-Only View Styles
@@ -132,7 +132,7 @@
 /* --- Admin Toolbar --- */
 .adminToolbar {
     background-color: #1e293b; /* slate-800 */
-    color: white;
+    color: var(--bg);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -174,7 +174,7 @@
     padding: 2.5rem;
 }
 .headerContent {
-    color: white;
+    color: var(--bg);
 }
 .subjectPill {
     background-color: rgba(255, 255, 255, 0.2);
@@ -199,7 +199,7 @@
     grid-template-columns: 1fr;
     gap: 2.5rem;
     padding: 2.5rem;
-    background-color: white;
+    background-color: var(--bg);
     border-radius: 0 0 12px 12px;
 }
 @media (min-width: 900px) {
@@ -229,7 +229,7 @@
     line-height: 1.8;
     color: #0f172a; /* slate-900 for stronger contrast */
     font-size: 1.05rem;
-    background: white;
+    background: var(--bg);
     border: 1px solid #e6eef8; /* softer border for the card */
     border-radius: 10px;
     padding: 1.5rem;
@@ -314,7 +314,7 @@
 }
 
 .accordionItem {
-    background: white;
+    background: var(--bg);
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     overflow: hidden;
@@ -329,7 +329,7 @@
 
 .accordionOpen {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    border-color: var(--zporta-primary-color, #3b82f6);
+    border-color: var(--zporta-primary-color, var(--accent));
 }
 
 .accordionHeader {
@@ -338,7 +338,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, var(--bg) 100%);
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -353,7 +353,7 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: var(--zporta-primary-color, #3b82f6);
+    background: var(--zporta-primary-color, var(--accent));
     transform: scaleY(0);
     transition: transform 0.3s ease;
 }
@@ -375,7 +375,7 @@
 
 .accordionIcon {
     font-size: 1.5rem;
-    color: var(--zporta-primary-color, #3b82f6);
+    color: var(--zporta-primary-color, var(--accent));
     transition: transform 0.3s ease;
 }
 
@@ -392,7 +392,7 @@
 }
 
 .accordionOpen .accordionTitle {
-    color: var(--zporta-primary-color, #3b82f6);
+    color: var(--zporta-primary-color, var(--accent));
 }
 
 .accordionCount {
@@ -402,8 +402,8 @@
     min-width: 32px;
     height: 32px;
     padding: 0 10px;
-    background: linear-gradient(135deg, var(--zporta-primary-color, #3b82f6), #2563eb);
-    color: white;
+    background: linear-gradient(135deg, var(--zporta-primary-color, var(--accent)), var(--accent-hover));
+    color: var(--bg);
     border-radius: 999px;
     font-size: 0.875rem;
     font-weight: 700;
@@ -416,7 +416,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: white;
+    background: var(--bg);
     border: 2px solid #e2e8f0;
     border-radius: 50%;
     font-size: 1.5rem;
@@ -426,9 +426,9 @@
 }
 
 .accordionOpen .accordionToggle {
-    background: var(--zporta-primary-color, #3b82f6);
-    border-color: var(--zporta-primary-color, #3b82f6);
-    color: white;
+    background: var(--zporta-primary-color, var(--accent));
+    border-color: var(--zporta-primary-color, var(--accent));
+    color: var(--bg);
     transform: rotate(180deg);
 }
 
@@ -444,7 +444,7 @@
 
 .accordionInner {
     padding: 2rem;
-    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
     border-top: 1px solid #e2e8f0;
 }
 
@@ -459,7 +459,7 @@
     align-items: center;
     gap: 1.25rem;
     padding: 1.25rem 1.5rem;
-    background: white;
+    background: var(--bg);
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     text-decoration: none;
@@ -475,7 +475,7 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, var(--zporta-primary-color, #3b82f6), #2563eb);
+    background: linear-gradient(180deg, var(--zporta-primary-color, var(--accent)), var(--accent-hover));
     transform: scaleY(0);
     transition: transform 0.3s ease;
 }
@@ -483,7 +483,7 @@
 .lessonCard:hover {
     transform: translateX(8px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    border-color: var(--zporta-primary-color, #3b82f6);
+    border-color: var(--zporta-primary-color, var(--accent));
 }
 
 .lessonCard:hover::before {
@@ -506,8 +506,8 @@
 }
 
 .lessonCard:hover .lessonNumber {
-    background: linear-gradient(135deg, var(--zporta-primary-color, #3b82f6), #2563eb);
-    color: white;
+    background: linear-gradient(135deg, var(--zporta-primary-color, var(--accent)), var(--accent-hover));
+    color: var(--bg);
     transform: scale(1.1);
 }
 
@@ -524,7 +524,7 @@
 }
 
 .lessonCard:hover .lessonTitle {
-    color: var(--zporta-primary-color, #3b82f6);
+    color: var(--zporta-primary-color, var(--accent));
 }
 
 .lessonBadges {
@@ -554,7 +554,7 @@
 }
 
 .badgePremium {
-    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    background: linear-gradient(135deg, var(--warning-border), #f59e0b);
     color: #7c2d12;
     border-color: #f59e0b;
 }
@@ -586,7 +586,7 @@
 }
 
 .lessonCard:hover .lessonArrow {
-    color: var(--zporta-primary-color, #3b82f6);
+    color: var(--zporta-primary-color, var(--accent));
     transform: translateX(4px) rotate(180deg) !important;
 }
 
@@ -601,7 +601,7 @@
     align-items: center;
     gap: 1.25rem;
     padding: 1.25rem 1.5rem;
-    background: white;
+    background: var(--bg);
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     transition: all 0.3s ease;
@@ -620,7 +620,7 @@
     justify-content: center;
     min-width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    background: linear-gradient(135deg, var(--success-bg), #dcfce7);
     color: #166534;
     font-size: 1.25rem;
     font-weight: 700;
@@ -630,8 +630,8 @@
 }
 
 .quizCard:hover .quizNumber {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
+    background: linear-gradient(135deg, #22c55e, var(--success));
+    color: var(--bg);
 }
 
 .quizInfo {
@@ -733,7 +733,7 @@
 
 /* --- Sidebar Card --- */
 .sidebarCard {
-    background-color: white;
+    background-color: var(--bg);
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 2rem;
@@ -775,7 +775,7 @@
 /* Selling Points Card */
 .sellingPointsCard {
     margin-top: 1.5rem;
-    background: linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(180deg,var(--bg) 0%, #f8fafc 100%);
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 1.25rem 1.25rem 1rem;
@@ -867,7 +867,7 @@
     display: block;
     font-size: 2.75rem;
     font-weight: 900;
-    color: var(--zporta-primary-color, #3b82f6);
+    color: var(--zporta-primary-color, var(--accent));
     margin-bottom: 0.5rem;
 }
 .sidebarCard .priceSmall {
@@ -972,7 +972,7 @@
     transition: all 0.3s ease;
 }
 .stepItem.active .stepCounter {
-    background-color: white;
+    background-color: var(--bg);
     border-color: var(--zporta-primary-color);
     color: var(--zporta-primary-color);
 }
@@ -995,10 +995,10 @@
     font-weight: 500;
     text-align: center;
 }
-.message.error { background-color: #fee2e2; color: #b91c1c; }
+.message.error { background-color: var(--danger-bg); color: #b91c1c; }
 .message.success { background-color: #dcfce7; color: #166534; }
-.message.info { background-color: #dbeafe; color: #1e40af; }
-.message.warning { background-color: #fef3c7; color: #92400e; }
+.message.info { background-color: var(--bg-secondary); color: var(--text); }
+.message.warning { background-color: var(--warning-bg); color: var(--warning); }
 
 .editStepContent {
     min-height: 350px;
@@ -1034,7 +1034,7 @@
     padding: 12px 14px;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
-    background-color: white;
+    background-color: var(--bg);
     transition: all 0.2s ease;
     font-size: 1rem;
     pointer-events: auto;
@@ -1056,7 +1056,7 @@
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     padding: 4px;
-    background: white;
+    background: var(--bg);
 }
 .contentSelectionGrid {
     display: grid;
@@ -1079,7 +1079,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 0.75rem;
-    background: white;
+    background: var(--bg);
 }
 .contentItem {
     display: flex;
@@ -1124,10 +1124,10 @@
 }
 .dangerZone {
     margin-top: 2.5rem;
-    border: 2px solid #fca5a5; /* red-300 */
-    background-color: #fee2e2; /* red-100 */
+    border: 2px solid var(--danger-border); /* red-300 */
+    background-color: var(--danger-bg); /* red-100 */
 }
-.dangerZone h3 { color: #991b1b; }
+.dangerZone h3 { color: var(--danger); }
 .dangerZone p { color: #b91c1c; }
 
 .editNavigation {
@@ -1189,7 +1189,7 @@
   padding: 0.75rem 0.9rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--bg);
   margin-bottom: 0.6rem;
   cursor: move;
   transition: all 0.2s ease;
@@ -1201,9 +1201,9 @@
 }
 
 .attachedRow.dragOver {
-  border-color: #3b82f6;
+  border-color: var(--accent);
   border-width: 2px;
-  background: #eff6ff;
+  background: var(--bg-secondary);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
@@ -1246,7 +1246,7 @@
   color: #0f172a; /* slate-900 */
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  var(--bg)-space: nowrap;
 }
 
 .detachBtn {
@@ -1254,8 +1254,8 @@
   align-items: center;
   justify-content: center;
   border: 1px solid #fecaca; /* red-200 */
-  background: #fee2e2;       /* red-100 */
-  color: #991b1b;            /* red-800 */
+  background: var(--danger-bg);       /* red-100 */
+  color: var(--danger);            /* red-800 */
   border-radius: 8px;
   padding: 6px 10px;
   cursor: pointer;
@@ -1263,7 +1263,7 @@
 }
 .detachBtn:hover {
   background: #fecaca;       /* red-200 */
-  border-color: #fca5a5;     /* red-300 */
+  border-color: var(--danger-border);     /* red-300 */
 }
 .detachBtn:active {
   transform: translateY(1px);
