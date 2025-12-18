@@ -9,3 +9,8 @@ const Login = dynamic(
 export default function LoginPage() {
   return <Login />;
 }
+
+// Disable global chrome (header/sidebar) for a clean auth layout
+LoginPage.hideChrome = true;
+// Do not wrap with AppLayout
+LoginPage.getLayout = (page) => page;

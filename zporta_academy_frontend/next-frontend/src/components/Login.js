@@ -241,6 +241,12 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
           <h2>{t("auth.signInTitle")}</h2>
           <p className={styles.subtitle}>{t("auth.loginIntro")}</p>
 
+          {/* Google at the top */}
+          <div className={styles.oauthTop}>
+            <div className={styles.oauthTitle}>{t("auth.continueWithGoogle") || "Continue with Google"}</div>
+            <div id="google-login-button" className={styles.googleButtonContainer} />
+          </div>
+
           {message && (
             <div className={`${styles.message} ${styles[messageType]}`}>
               {message}
@@ -268,50 +274,49 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
               <input
                 id="login-password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                className={styles.input}
-                autoComplete="current-password"
-              />
-            </div>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={isLoading}
-            >
-              {isLoading ? t("common.loading") : t("auth.loginWithPassword")}
-            </button>
+                <div className={styles.separator}>
+                  <span>{t("auth.or")}</span>
+                </div>
 
-            <Link href="/password-reset" className={styles.subtleLink}>
-              {t("auth.forgotPassword")}
-            </Link>
-          </form>
-
-          <div className={styles.separator}>
-            <span>{t("auth.or")}</span>
-          </div>
-
-          <div className={styles.alternativeLogins}>
-            {/* Magic link */}
-            <form
-              onSubmit={handleMagicLinkRequest}
-              className={styles.magicLinkForm}
-            >
-              <div className={styles.formGroup}>
-                <label htmlFor="magic-email">{t("auth.loginLink")}</label>
-                <div className={styles.magicLinkInputGroup}>
-                  <input
-                    id="magic-email"
-                    type="email"
-                    value={emailForMagicLink}
-                    onChange={(e) => setEmailForMagicLink(e.target.value)}
+                <div className={styles.alternativeLogins}>
+                  {/* Magic link */}
+                  <form
+                    onSubmit={handleMagicLinkRequest}
+                    className={styles.magicLinkForm}
+                  >
+                    <div className={styles.formGroup}>
+                      <label htmlFor="magic-email">{t("auth.loginLink")}</label>
+                      <div className={styles.magicLinkInputGroup}>
+                        <input
+                          id="magic-email"
+                          type="email"
+                          value={emailForMagicLink}
+                          onChange={(e) => setEmailForMagicLink(e.target.value)}
+                          placeholder={t("auth.enterEmail")}
+                          disabled={isLoading}
+                          className={styles.input}
+                        />
+                        <button
+                          type="submit"
+                          className={styles.magicLinkButton}
+                          disabled={isLoading}
+                        >
+                          {t("auth.send")}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
                     placeholder={t("auth.enterEmail")}
                     disabled={isLoading}
                     className={styles.input}
                   />
                   <button
+
+                {/* Small legal note inside the card */}
+                <div className={styles.legalNote}>
+                  © {new Date().getFullYear()} Zporta Academy • <Link href="/legal/tokushoho">Legal</Link>
+                </div>
                     type="submit"
                     className={styles.magicLinkButton}
                     disabled={isLoading}

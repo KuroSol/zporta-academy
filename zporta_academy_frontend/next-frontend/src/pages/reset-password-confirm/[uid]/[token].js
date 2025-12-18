@@ -15,3 +15,7 @@ export default function Page() {
     />
   );
 }
+
+// Disable global chrome (header/sidebar) for a clean auth layout
+Page.hideChrome = true;
+Page.getLayout = (page) => page;

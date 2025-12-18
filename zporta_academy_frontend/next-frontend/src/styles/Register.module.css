@@ -184,7 +184,37 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+}
+
+/* Top OAuth block */
+.oauthTop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.oauthTitle {
+  font-size: 0.95rem;
+  color: var(--secondary-color);
+}
+
+.legalNote {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--secondary-color);
+  margin-top: 1rem;
+}
+
+.legalNote a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.legalNote a:hover {
+  text-decoration: underline;
 }
 
 .message {

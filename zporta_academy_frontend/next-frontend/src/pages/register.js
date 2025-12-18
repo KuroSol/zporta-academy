@@ -9,3 +9,8 @@ const Register = dynamic(
 export default function RegisterPage() {
   return <Register />;
 }
+
+// Disable global chrome (header/sidebar) for a clean auth layout
+RegisterPage.hideChrome = true;
+// Do not wrap with AppLayout
+RegisterPage.getLayout = (page) => page;

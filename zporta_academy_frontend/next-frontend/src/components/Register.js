@@ -308,6 +308,12 @@ export default function Register() {
         <div className={styles.formPanel}>
           <h2>{t("register.main.pageTitle")}</h2>
 
+          {/* Google at the top */}
+          <div className={styles.oauthTop}>
+            <div className={styles.oauthTitle}>{t("auth.continueWithGoogle") || "Continue with Google"}</div>
+            <div id="google-signup" className={styles.googleButtonContainer} />
+          </div>
+
           {message && (
             <p
               className={`${styles.message} ${
@@ -518,13 +524,15 @@ export default function Register() {
 
           <div className={styles.separator}>{t("register.main.or")}</div>
 
-          {/* Google button renders here */}
-          <div id="google-signup" className={styles.googleButtonContainer} />
-
           <p className={styles.authLink}>
             {t("register.main.alreadyHaveAccount")}{" "}
             <Link href="/login">{t("register.main.loginHere")}</Link>
           </p>
+
+          {/* Small legal note inside the card */}
+          <div className={styles.legalNote}>
+            © {new Date().getFullYear()} Zporta Academy • <Link href="/legal/tokushoho">Legal</Link>
+          </div>
         </div>
       </div>
       <Footer />
