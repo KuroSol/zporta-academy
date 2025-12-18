@@ -14,6 +14,7 @@ from quizzes.serializers import QuizSerializer
 from django.db.models import Count, Q
 from rest_framework.viewsets import ModelViewSet
 from django.utils import timezone
+from seo.utils import canonical_url
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
@@ -264,19 +265,23 @@ class CourseDetailView(APIView):
         lessons_qs = base_lessons if is_privileged else base_lessons.filter(status=Lesson.PUBLISHED)
         lessons = lessons_qs.order_by('position', 'created_at')
         is_owner = request.user.is_authenticated and request.user == course.created_by
+        canonical = canonical_url(f"/courses/{course.permalink}/")
+        course_payload = CourseSerializer(course, context={"request": request}).data
+        course_payload["canonical_url"] = canonical
+
         return Response({
-            "course": CourseSerializer(course, context={"request": request}).data,
+            "course": course_payload,
             "lessons": LessonSerializer(lessons, many=True).data,
             "view_mode": "public" if as_public else "default",
             "seo": {
                 "title": course.seo_title or course.title,
                 "description": course.seo_description or "Learn more about this course.",
-                "canonical_url": request.build_absolute_uri(),
+                "canonical_url": canonical,
                 "og_title": course.og_title or course.title,
                 "og_description": course.og_description or course.seo_description,
                 "og_image": course.og_image if course.og_image else "/static/default-image.jpg",
             },
-            "is_owner": is_owner
+            "is_owner": is_owner,
         })
     
 
@@ -323,13 +328,17 @@ class DynamicCourseView(APIView):
             if total_lessons > 0:
                 progress_percentage = int((completed_count / total_lessons) * 100)
                 
+        canonical = canonical_url(f"/courses/{course.permalink}/")
+        course_payload = CourseSerializer(course, context={"request": request}).data
+        course_payload["canonical_url"] = canonical
+
         response_data = {
-            "course": CourseSerializer(course, context={"request": request}).data,
+            "course": course_payload,
             "lessons": LessonSerializer(lessons, many=True).data,
             "seo": {
                 "title": course.seo_title or course.title,
                 "description": course.seo_description or "Learn more about this course.",
-                "canonical_url": request.build_absolute_uri(),
+                "canonical_url": canonical,
                 "og_title": course.og_title or course.title,
                 "og_description": course.og_description or course.seo_description,
                 "og_image": course.og_image if course.og_image else "/static/default-image.jpg",

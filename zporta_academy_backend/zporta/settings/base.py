@@ -97,6 +97,8 @@ INSTALLED_APPS = [
     'dailycast.apps.DailycastConfig',
     'django.contrib.sitemaps',
     'mailmagazine',
+    'bulk_import.apps.BulkImportConfig',  # Bulk import courses, lessons, quizzes
+    'assets.apps.AssetsConfig',  # Asset library for images, audio, etc
 ] + _optional('gamification.apps.GamificationConfig')
 
 ASGI_APPLICATION = 'zporta.asgi.application'

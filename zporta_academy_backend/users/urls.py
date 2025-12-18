@@ -16,6 +16,7 @@ from .activity_views import (
     LearningAnalyticsView,
     ImpactAnalyticsView
 )
+from .export_views import UserDataExportView
 from quizzes.views import UserSearchView
 
 urlpatterns = [
@@ -57,5 +58,8 @@ urlpatterns = [
     path("api/impact-score/", ImpactScoreView.as_view(), name="impact-score"),
     path("api/learning-analytics/", LearningAnalyticsView.as_view(), name="learning-analytics"),
     path("api/impact-analytics/", ImpactAnalyticsView.as_view(), name="impact-analytics"),
+    
+    # Admin user data export
+    path("<int:user_id>/export-json/", UserDataExportView.as_view(), name="user-data-export"),
 ]
 

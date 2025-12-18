@@ -8,13 +8,24 @@ from lessons.views import DynamicLessonView
 from quizzes.views import DynamicQuizView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 
 # ─── NEW: import sitemap machinery ─────────────────────────────
-from django.contrib.sitemaps.views import index, sitemap
-from seo.sitemaps import QuizSitemap, CourseSitemap, LessonSitemap, PostSitemap, TagSitemap, TeacherSitemap
+from django.contrib.sitemaps.views import sitemap
+from seo.sitemaps import (
+    QuizSitemap,
+    CourseSitemap,
+    LessonSitemap,
+    PostSitemap,
+    TagSitemap,
+    TeacherSitemap,
+    canonical_sitemap_index,
+)
 
 urlpatterns = [
     path('administration-zporta-repersentiivie/', admin.site.urls),
+    # Serve media via /api/media/... before generic /api/ includes (DEBUG only)
+    *([path('api/media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT})] if settings.DEBUG else []),
     path('api/users/', include('users.urls')),
     path('api/pages/', include('pages.urls')),
     path('api/posts/', include('posts.urls')),
@@ -43,6 +54,9 @@ urlpatterns = [
     path('api/tags/',       include('tags.urls')),
     path('api/',            include('mailmagazine.urls')),
     path('api/admin/ajax/', include('dailycast.ajax_urls')),  # AJAX endpoints for admin forms
+    path('admin/dailycast/dashboard/', include('dailycast.dashboard_urls')),  # AI performance dashboard
+    path('api/bulk-import/', include('bulk_import.urls')),  # Bulk import courses/lessons/quizzes
+    path('api/assets/', include('assets.urls')),  # Asset library for images, audio
     path('', include('seo.urls')),
 ]
 
@@ -65,13 +79,15 @@ SITEMAPS = {
     "teachers": TeacherSitemap,
 }
 urlpatterns += [
-    path("sitemap.xml", index, {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap-section"}, name="sitemap-index"),
+    path("sitemap.xml", canonical_sitemap_index, {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap-section"}, name="sitemap-index"),
     path("sitemap-<section>.xml", sitemap, {"sitemaps": SITEMAPS}, name="sitemap-section"),
 ]
 
 # ─── LEAVE THIS AS-IS ───────────────────────────────────────
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Provide an /api/media/ alias so dev frontend requests hitting /api/media/... resolve
+    urlpatterns += static('/api/media/', document_root=settings.MEDIA_ROOT)
 
 # place the catch-all LAST so it doesn't swallow /sitemap.xml
 urlpatterns += [

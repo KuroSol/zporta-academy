@@ -237,15 +237,16 @@ class DynamicLessonView(APIView):
             # Ensure robots noindex for any draft visibility
             # Note: header applied on response objects below
             
+        canonical = canonical_url(f"/lessons/{lesson.permalink}/")
         seo = {
             "title": lesson.seo_title or lesson.title,
             "description": lesson.seo_description,
-            "canonical_url": lesson.canonical_url or request.build_absolute_uri(),
+            "canonical_url": canonical,
             "og_title": lesson.og_title or lesson.title,
             "og_description": lesson.og_description,
             "og_image": lesson.og_image or "/static/default_lesson_image.jpg",
         }
-         # Premium visibility is decided by the LESSON, not the course.
+        # Premium visibility is decided by the LESSON, not the course.
         if lesson.is_premium:
             attached_course = {
                 "title": lesson.course.title if lesson.course else None,
@@ -265,7 +266,6 @@ class DynamicLessonView(APIView):
 
             # For everyone else, show a gated response (200), not 403, to avoid global logout.
             if not request.user.is_authenticated:
-                # Provide free preview (first ~20% by characters) without exposing full content
                 preview_html = (lesson.content or "")
                 try:
                     total_len = len(preview_html)
@@ -284,7 +284,7 @@ class DynamicLessonView(APIView):
                         "custom_js": "",
                         "seo_title": lesson.seo_title,
                         "seo_description": lesson.seo_description,
-                        "canonical_url": lesson.canonical_url,
+                        "canonical_url": canonical,
                     },
                     "seo": seo,
                     "access": "gated",
@@ -337,7 +337,7 @@ class DynamicLessonView(APIView):
                         "custom_js": "",
                         "seo_title": lesson.seo_title,
                         "seo_description": lesson.seo_description,
-                        "canonical_url": lesson.canonical_url,
+                        "canonical_url": canonical,
                     },
                     "seo": seo,
                     "access": "gated",
@@ -369,8 +369,11 @@ class DynamicLessonView(APIView):
             ).exists()
 
         serializer = LessonSerializer(lesson, context={"request": request})
+        serialized = serializer.data
+        serialized["canonical_url"] = canonical
+
         response_data = {
-            "lesson": serializer.data,
+            "lesson": serialized,
             "seo": seo,
             "is_enrolled": is_enrolled,
             "is_completed": is_completed
@@ -392,9 +395,8 @@ class DynamicLessonView(APIView):
                 response_data["lesson"]["content"] = filtered
         except Exception:
             pass
-        
+
         # Cache the response for 5 minutes (300 seconds)
-        # Don't cache for lesson owners or staff to ensure they see latest changes
         if not (request.user.is_authenticated and (lesson.created_by == request.user or request.user.is_staff)):
             cache.set(cache_key, response_data, timeout=300)
         

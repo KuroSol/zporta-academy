@@ -22,10 +22,12 @@ from notifications.models import Notification
 from notifications.utils import send_push_to_user_devices
 from .models import Quiz, Question, QuizReport, QuizShare
 from .serializers import QuizSerializer, QuestionSerializer, QuizReportSerializer, QuizShareSerializer
+from .difficulty_explanation import get_difficulty_explanation
 from analytics.utils import update_memory_stat_item, log_event
 from analytics.models import ActivityEvent
 from rest_framework.decorators import api_view, permission_classes
 from analytics.utils import get_or_create_quiz_session_id
+from seo.utils import canonical_url
 
 
 logger = logging.getLogger(__name__)
@@ -215,6 +217,7 @@ class RecordQuizAnswerView(APIView):
         selected_answer_text = data.get("selected_answer_text")
         selected_option_key  = data.get("selected_option_key")
         selected_option      = data.get("selected_option")
+        hints_used           = data.get("hints_used", [])  # [1] or [2] or [1,2]
         try:
             selected_option = int(selected_option) if selected_option is not None else None
         except (TypeError, ValueError):
@@ -236,6 +239,7 @@ class RecordQuizAnswerView(APIView):
             "quality_of_recall_used": qor,
             "new_interval_days": stat.interval_days if stat else None,
             "attempt_index": prev_attempts + 1,
+            "hints_used": hints_used,                          # which hints were revealed
         }
 
         first_count = ActivityEvent.objects.filter(
@@ -419,6 +423,45 @@ class QuizRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         ]
 
 
+class QuizCompletionView(APIView):
+    """Record when user finishes/exits a quiz with total time spent."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk)
+        total_time_ms = request.data.get('total_time_ms')
+        questions_completed = request.data.get('questions_completed', 0)
+        session_id = request.data.get('session_id')
+        
+        if not session_id:
+            session_id = get_or_create_quiz_session_id(request.user, quiz.id)
+        
+        try:
+            total_time_ms = int(total_time_ms) if total_time_ms is not None else None
+        except (ValueError, TypeError):
+            total_time_ms = None
+        
+        # Record completion event with timing data
+        log_event(
+            user=request.user,
+            event_type='quiz_completed',
+            instance=quiz,
+            metadata={
+                'quiz_id': quiz.id,
+                'total_time_ms': total_time_ms,
+                'questions_completed': questions_completed,
+                'completed_at': timezone.now().isoformat(),
+            },
+            session_id=session_id,
+        )
+        
+        return Response({
+            "message": "Quiz completion recorded.",
+            "total_time_ms": total_time_ms,
+            "questions_completed": questions_completed
+        }, status=status.HTTP_200_OK)
+
+
 class QuizSubmitView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -454,7 +497,9 @@ class DynamicQuizView(APIView):
         if quiz.status != 'published' and not (user and (user == quiz.created_by or user.is_staff)):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = QuizSerializer(quiz, context={"request": request})
-        return Response({"quiz": serializer.data})
+        data = serializer.data
+        data["canonical_url"] = canonical_url(data.get("canonical_url") or f"/quizzes/{quiz.permalink}/")
+        return Response({"quiz": data})
 
 class QuizListByCourseView(generics.ListAPIView):
     serializer_class = QuizSerializer
@@ -514,3 +559,97 @@ class UserSearchView(APIView):
         users = User.objects.filter(username__icontains=q).order_by('username')[:10] if q else []
         results = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
         return Response({'results': results})
+
+class QuestionDetailView(APIView):
+    """
+    Retrieve a single question by its SEO-friendly permalink.
+    Returns question data with quiz context for individual question pages.
+    """
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def get(self, request, permalink):
+        # Permalink format: "alex/english/2025-12-15/quiz-name/q-1-question-slug"
+        question = get_object_or_404(Question, permalink=permalink)
+        quiz = question.quiz
+        
+        # Get all questions in this quiz for navigation
+        all_questions = list(quiz.questions.all().order_by('id'))
+        current_index = all_questions.index(question)
+        
+        # Build navigation context
+        prev_question = all_questions[current_index - 1] if current_index > 0 else None
+        next_question = all_questions[current_index + 1] if current_index < len(all_questions) - 1 else None
+        
+        # Serialize question
+        question_data = QuestionSerializer(question).data
+        
+        # Add question statistics from ActivityEvent
+        question_ct = ContentType.objects.get_for_model(Question)
+        stats = ActivityEvent.objects.filter(
+            content_type=question_ct,
+            object_id=question.id,
+            event_type='quiz_answer_submitted'
+        ).aggregate(
+            times_answered=Count('id'),
+            times_correct=Count('id', filter=Q(metadata__is_correct=True)),
+            times_wrong=Count('id', filter=Q(metadata__is_correct=False))
+        )
+        question_data['times_answered'] = stats['times_answered'] or 0
+        question_data['times_correct'] = stats['times_correct'] or 0
+        question_data['times_wrong'] = stats['times_wrong'] or 0
+        
+        # Add quiz context and navigation
+        question_data['quiz'] = {
+            'id': quiz.id,
+            'title': quiz.title,
+            'permalink': quiz.permalink,
+            'total_questions': len(all_questions),
+            'current_position': current_index + 1,
+        }
+        
+        # Add creator info to quiz
+        if quiz.created_by:
+            from users.serializers import PublicProfileSerializer
+            question_data['quiz']['created_by'] = PublicProfileSerializer(quiz.created_by.profile).data
+        
+        # Add lesson/course info if quiz is part of one
+        if hasattr(quiz, 'lesson') and quiz.lesson:
+            question_data['quiz']['lesson_title'] = quiz.lesson.title
+            question_data['quiz']['lesson_permalink'] = quiz.lesson.permalink
+        if hasattr(quiz, 'course') and quiz.course:
+            question_data['quiz']['course_title'] = quiz.course.title
+        
+        # Also include difficulty info inside quiz for frontend consistency
+        try:
+            question_data['quiz']['difficulty_explanation'] = get_difficulty_explanation(quiz)
+        except Exception as e:
+            logger.warning(f"Unable to compute difficulty_explanation for quiz {quiz.id}: {e}")
+        
+        # Add difficulty explanation from quiz
+        if hasattr(quiz, 'difficulty_explanation') and quiz.difficulty_explanation:
+            question_data['difficulty_explanation'] = quiz.difficulty_explanation
+
+            # Add difficulty explanation using the helper function
+            try:
+                difficulty_data = get_difficulty_explanation(quiz)
+                if difficulty_data:
+                    question_data['difficulty_explanation'] = difficulty_data
+            except Exception as e:
+                logger.warning(f"Could not get difficulty explanation for quiz {quiz.id}: {e}")
+
+        question_data['navigation'] = {
+            'prev': {
+                'permalink': prev_question.permalink,
+                'number': current_index
+            } if prev_question else None,
+            'next': {
+                'permalink': next_question.permalink,
+                'number': current_index + 2
+            } if next_question else None,
+        }
+        
+        # Add top-level navigation fields for frontend compatibility
+        question_data['previous_question_permalink'] = prev_question.permalink if prev_question else None
+        question_data['next_question_permalink'] = next_question.permalink if next_question else None
+        
+        return Response(question_data)

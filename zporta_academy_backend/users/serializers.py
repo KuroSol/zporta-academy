@@ -84,8 +84,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             "showcase_image_3", "showcase_image_3_url", "showcase_image_3_caption", "showcase_image_3_tags",
             "youtube_url", "linkedin_url", "twitter_url", "website_url",
             "intro_video_url",
-            # Email preferences
-            "email_notifications", "mail_magazine_enabled"
+            # Email preferences and localization
+            "email_notifications", "mail_magazine_enabled",
+            "locale"
         ]
         extra_kwargs = {
             "profile_image": {"required": False, "allow_null": True},

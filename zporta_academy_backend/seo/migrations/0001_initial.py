@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
             name='SEOSetting',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('path', models.CharField(help_text='URL pattern or specific path for SEO settings', max_length=2048, unique=True)),
+                ('path', models.CharField(help_text='URL pattern or specific path for SEO settings', max_length=191, unique=True)),
                 ('title', models.CharField(blank=True, help_text='SEO title for the page', max_length=70)),
                 ('description', models.TextField(blank=True, help_text='SEO description for better search engine visibility', max_length=160)),
                 ('keywords', models.CharField(blank=True, help_text='Comma-separated SEO keywords', max_length=255)),

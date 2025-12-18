@@ -1,12 +1,15 @@
+import re
+
 from django.test import TestCase
 from django.contrib.auth.models import User
-from django.utils import timezone
 
 from users.models import Profile
 from courses.models import Course
 from lessons.models import Lesson
 from quizzes.models import Quiz
 from subjects.models import Subject
+from tags.models import Tag
+from seo.utils import canonical_url, canonical_path, is_public_indexable_path
 from seo.sitemaps import (
     TeacherSitemap, CourseSitemap, LessonSitemap, QuizSitemap
 )
@@ -22,14 +25,19 @@ class SitemapURLTests(TestCase):
             email='teacher@example.com',
             password='testpass123'
         )
-        self.profile = Profile.objects.create(
+        self.profile, _ = Profile.objects.get_or_create(
             user=self.user,
-            role='guide',
-            active_guide=True
+            defaults={
+                'role': 'guide',
+                'active_guide': True,
+            }
         )
+        if not self.profile.active_guide or self.profile.role != 'guide':
+            Profile.objects.filter(pk=self.profile.pk).update(role='guide', active_guide=True)
+            self.profile.refresh_from_db()
         
         # Create test subject
-        self.subject = Subject.objects.create(name='Test Subject')
+        self.subject = Subject.objects.create(name='Test Subject', created_by=self.user)
         
         # Create test course
         self.course = Course.objects.create(
@@ -103,11 +111,13 @@ class SitemapURLTests(TestCase):
             email='inactive@example.com',
             password='testpass123'
         )
-        inactive_profile = Profile.objects.create(
+        inactive_profile, _ = Profile.objects.get_or_create(
             user=inactive_user,
-            role='guide',
-            active_guide=False
+            defaults={'role': 'guide', 'active_guide': False}
         )
+        if inactive_profile.active_guide or inactive_profile.role != 'guide':
+            Profile.objects.filter(pk=inactive_profile.pk).update(role='guide', active_guide=False)
+            inactive_profile.refresh_from_db()
         
         sitemap = TeacherSitemap()
         items = list(sitemap.items())
@@ -143,3 +153,105 @@ class SitemapURLTests(TestCase):
         
         self.assertIn(self.quiz, items)
         self.assertNotIn(premium_quiz, items)
+
+
+class CanonicalBuilderTests(TestCase):
+    def test_canonical_path_strips_api_and_trailing(self):
+        self.assertEqual(canonical_path("/api/lessons/foo"), "/lessons/foo/")
+        self.assertEqual(canonical_path("https://www.zportaacademy.com/courses/bar/"), "/courses/bar/")
+
+    def test_canonical_url_enforces_origin(self):
+        self.assertEqual(
+            canonical_url("http://www.zportaacademy.com/quizzes/q1"),
+            "https://zportaacademy.com/quizzes/q1/"
+        )
+
+    def test_is_public_indexable_path_blocks_auth_and_redirect(self):
+        self.assertFalse(is_public_indexable_path("/login"))
+        self.assertFalse(is_public_indexable_path("/register"))
+        self.assertFalse(is_public_indexable_path("/password-reset/foo"))
+        self.assertFalse(is_public_indexable_path("/api/lessons/foo"))
+        self.assertFalse(is_public_indexable_path("/lessons/foo?redirect_to=/login"))
+
+
+class SitemapCleanlinessTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='xmlteacher', email='xml@example.com', password='pass'
+        )
+        self.subject = Subject.objects.create(name='XML Subject', created_by=self.user)
+        self.profile, _ = Profile.objects.get_or_create(
+            user=self.user,
+            defaults={
+                'role': 'guide',
+                'active_guide': True,
+            }
+        )
+        if not self.profile.active_guide or self.profile.role != 'guide':
+            Profile.objects.filter(pk=self.profile.pk).update(role='guide', active_guide=True)
+            self.profile.refresh_from_db()
+        self.course = Course.objects.create(
+            title='XML Course',
+            description='desc',
+            created_by=self.user,
+            subject=self.subject,
+            is_draft=False,
+        )
+        self.lesson = Lesson.objects.create(
+            title='XML Lesson',
+            content='body',
+            created_by=self.user,
+            subject=self.subject,
+            status=Lesson.PUBLISHED,
+            is_premium=False,
+        )
+        self.quiz = Quiz.objects.create(
+            title='XML Quiz',
+            created_by=self.user,
+            quiz_type='free',
+            status='published'
+        )
+        self.tag = Tag.objects.create(name='xml')
+
+    def _assert_clean(self, body: str):
+        locs = re.findall(r"<loc>(.*?)</loc>", body)
+        self.assertTrue(locs)
+        forbidden = [
+            "\"",
+            "http://",
+            "www.",
+            "www.zportaacademy.com",
+            "/api/",
+            "/login",
+            "/register",
+            "/password-reset",
+            "redirect_to",
+            "[",
+            "]",
+            "tags//",
+        ]
+        for loc in locs:
+            loc = loc.strip()
+            self.assertTrue(loc.startswith("https://zportaacademy.com/"))
+            if not loc.endswith(".xml"):
+                self.assertTrue(loc.endswith("/"))
+            for token in forbidden:
+                self.assertNotIn(token, loc)
+
+    def test_sitemap_index_is_canonical(self):
+        resp = self.client.get("/sitemap.xml")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        self._assert_clean(body)
+        self.assertIn("https://zportaacademy.com/sitemap-courses.xml", body)
+
+    def test_section_sitemaps_are_clean(self):
+        for section in ("courses", "lessons", "quizzes", "tags", "teachers"):
+            resp = self.client.get(f"/sitemap-{section}.xml")
+            self.assertEqual(resp.status_code, 200)
+            self._assert_clean(resp.content.decode())
+
+    def test_tag_sitemap_locations(self):
+        resp = self.client.get("/sitemap-tags.xml")
+        self.assertEqual(resp.status_code, 200)
+        self._assert_clean(resp.content.decode())

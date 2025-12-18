@@ -11,6 +11,9 @@ from .views import (
     QuizListAPIView,
     QuizParticipantsView,
     CorrectUsersForQuestionView,
+    QuizSessionDetailView,
+    QuestionAnalyticsView,
+    UserQuizHistoryView,
     # suggest_quizzes_based_on_activity, # This can remain commented if not used
 )
 
@@ -37,6 +40,11 @@ urlpatterns = [
 
     # NEW: /api/analytics/quizzes/<quiz_id>/participants/
     path('quizzes/<int:quiz_id>/participants/', QuizParticipantsView.as_view(), name='analytics-quiz-participants'),
+
+    # Question-level tracking endpoints
+    path('sessions/<uuid:session_id>/details/', QuizSessionDetailView.as_view(), name='analytics-session-details'),
+    path('questions/<int:question_id>/analytics/', QuestionAnalyticsView.as_view(), name='analytics-question-details'),
+    path('users/<int:user_id>/quiz-history/', UserQuizHistoryView.as_view(), name='analytics-user-history'),
 
     path('quiz-attempt-overview/',QuizAttemptOverviewView.as_view(),name='quiz-attempt-overview'),
     # Include router URLs. If analytics.urls is included under 'api/analytics/',

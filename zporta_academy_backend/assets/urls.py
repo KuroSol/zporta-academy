@@ -1,0 +1,11 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import AssetViewSet
+
+# Create router and register viewset
+router = DefaultRouter()
+router.register(r'', AssetViewSet, basename='asset')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from .models import Tag
 
@@ -5,6 +6,13 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name', 'slug', 'description', 'created_at']
+        read_only_fields = ['slug', 'created_at']
+
+    def validate_name(self, value):
+        try:
+            return Tag._validate_name(value)
+        except ValidationError as exc:
+            raise serializers.ValidationError(str(exc))
 
 class TagDetailSerializer(serializers.ModelSerializer):
     posts = serializers.SerializerMethodField()
@@ -15,6 +23,7 @@ class TagDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name', 'slug', 'description', 'created_at', 'posts', 'lessons', 'courses', 'quizzes']
+        read_only_fields = ['slug', 'created_at']
 
     def get_posts(self, obj):
         from posts.models import Post

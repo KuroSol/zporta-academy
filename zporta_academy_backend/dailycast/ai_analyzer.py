@@ -267,9 +267,12 @@ class UserLearningAnalyzer:
             topic_scores = defaultdict(list)
             
             for session in sessions:
-                if session.total_questions > 0:
+                if session.total_questions > 0 and session.quiz:
                     accuracy = (session.correct_count / session.total_questions) * 100
-                    topic_name = session.quiz.course.title if hasattr(session.quiz, 'course') else 'Unknown'
+                    # Safely get course title
+                    topic_name = 'Unknown'
+                    if hasattr(session.quiz, 'course') and session.quiz.course:
+                        topic_name = session.quiz.course.title if hasattr(session.quiz.course, 'title') else 'Unknown'
                     topic_scores[topic_name].append(accuracy)
             
             # Find topics with scores below 70%
@@ -307,9 +310,12 @@ class UserLearningAnalyzer:
             topic_scores = defaultdict(list)
             
             for session in sessions:
-                if session.total_questions > 0:
+                if session.total_questions > 0 and session.quiz:
                     accuracy = (session.correct_count / session.total_questions) * 100
-                    topic_name = session.quiz.course.title if hasattr(session.quiz, 'course') else 'Unknown'
+                    # Safely get course title
+                    topic_name = 'Unknown'
+                    if hasattr(session.quiz, 'course') and session.quiz.course:
+                        topic_name = session.quiz.course.title if hasattr(session.quiz.course, 'title') else 'Unknown'
                     topic_scores[topic_name].append(accuracy)
             
             # Find topics with scores above 85%
@@ -515,10 +521,22 @@ class UserLearningAnalyzer:
                 topic_name = strong_topic['topic']
                 
                 # Find courses related to this topic (not already enrolled)
+                # Get enrolled course IDs first
+                from courses.models import Course
+                from enrollment.models import Enrollment
+                from django.contrib.contenttypes.models import ContentType
+                
+                course_content_type = ContentType.objects.get_for_model(Course)
+                enrolled_course_ids = Enrollment.objects.filter(
+                    user=self.user,
+                    content_type=course_content_type,
+                    enrollment_type='course'
+                ).values_list('object_id', flat=True)
+                
                 related_courses = Course.objects.filter(
                     title__icontains=topic_name.split()[0]  # Match first word
                 ).exclude(
-                    enrollments__user=self.user
+                    id__in=enrolled_course_ids
                 )[:3]
                 
                 for course in related_courses:
@@ -859,7 +877,13 @@ Analyze this student deeply and provide a JSON response with ALL of the followin
    - Current stage
    - Next 3 milestones
    - Long-term progression path
-9. **specific_actions**: 
+9. **exam_level_predictions**: CRITICAL - Predict their current English level
+   - CEFR band (A1, A2, B1, B2, C1, C2)
+   - TOEIC score range (e.g., "650-750")
+   - TOEFL score range (e.g., "75-85")
+   - IELTS band (e.g., "6.5")
+   - Confidence level in predictions
+10. **specific_actions**: 
    - Today's action (15 min)
    - This week's focus (5-7 days)
    - This month's goals
@@ -911,6 +935,14 @@ Return ONLY valid JSON in {target_language} with these keys:
   }},
   "study_guide": {{...}},
   "learning_journey": {{...}},
+  "exam_level_predictions": {{
+    "cefr_band": "B2",
+    "toeic_range": "650-750",
+    "toefl_range": "75-85",
+    "ielts_band": "6.5",
+    "confidence": "medium",
+    "reasoning": "Based on quiz accuracy of X%, vocabulary size of Y, and grammar proficiency"
+  }},
   "specific_actions": {{...}},
   "potential_struggles": {{...}},
     "notes_error_analysis": [

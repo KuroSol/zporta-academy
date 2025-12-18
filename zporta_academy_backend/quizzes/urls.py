@@ -8,8 +8,10 @@ from .views import (
     RecordQuizAnswerView,
     QuizListByCourseView,
     QuizSubmitView,
+    QuizCompletionView,
     QuestionListCreateView,
     QuestionRetrieveUpdateDestroyView,
+    QuestionDetailView,
     ReportQuizView, 
     ShareQuizView,
     QuizStartView,
@@ -20,6 +22,9 @@ urlpatterns = [
     path('<int:pk>/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-detail-plain'),
     path('questions/', QuestionListCreateView.as_view(), name='question-list-create'),
     path('questions/<int:pk>/', QuestionRetrieveUpdateDestroyView.as_view(), name='question-detail'),
+    
+    # Individual question permalink (must be before dynamic quiz path to match first)
+    path('q/<path:permalink>/', QuestionDetailView.as_view(), name='question-by-permalink'),
 
     # 2. Your existing Quiz endpoints remain unchanged.
     path('my/', MyQuizzesView.as_view(), name='my-quizzes'),
@@ -27,6 +32,7 @@ urlpatterns = [
     path('<int:pk>/edit/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-edit'),
     path('<int:pk>/delete/', QuizRetrieveUpdateDestroyView.as_view(), name='quiz-delete'),
     path('<int:pk>/record-answer/', RecordQuizAnswerView.as_view(), name='record-quiz-answer'),
+    path('<int:pk>/record-completion/', QuizCompletionView.as_view(), name='quiz-completion'),
     path('<int:pk>/submit/', QuizSubmitView.as_view(), name='quiz-submit'),
     path('<int:pk>/report/', ReportQuizView.as_view(), name='quiz-report'),
     path('<int:pk>/share/',  ShareQuizView.as_view(),  name='quiz-share'),

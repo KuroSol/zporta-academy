@@ -137,6 +137,18 @@ class Profile(models.Model):
     )
     # ────────────────────────────────────────────────────────────────────────────
 
+    # ── Localization (i18n) ────────────────────────────────────────────────────
+    LOCALE_CHOICES = [
+        ('en', 'English'),
+        ('ja', '日本語 (Japanese)'),
+    ]
+    locale = models.CharField(
+        max_length=5,
+        choices=LOCALE_CHOICES,
+        default='en',
+        help_text="User's preferred platform language (UI localization)"
+    )
+    # ────────────────────────────────────────────────────────────────────────────
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

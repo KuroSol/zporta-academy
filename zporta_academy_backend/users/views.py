@@ -28,6 +28,7 @@ from .serializers import ChangePasswordSerializer
 from .serializers import PublicProfileSerializer
 from .serializers import PasswordResetSerializer
 from .serializers import UserScoreSerializer
+from seo.utils import canonical_url
 from datetime import date
 import math
 from subjects.models import Subject
@@ -209,6 +210,7 @@ class LoginView(APIView):
                     'email':       authenticated_user.email,
                     'role':        profile.role,
                     'active_guide':profile.active_guide,
+                    'locale':      profile.locale,  # Include locale for i18n
                     'preferences': pref_data,
                 }, status=HTTP_200_OK)
 
@@ -262,7 +264,7 @@ class PublicGuideProfileView(APIView):
         
         # Build absolute URL for canonical and OG tags
         # Use /guide/{username} to match Next.js route
-        profile_url = request.build_absolute_uri(f"/guide/{username}/")
+        profile_url = canonical_url(f"/guide/{username}/")
         
         # SEO metadata
         display_name = profile.display_name or profile.user.username
@@ -272,7 +274,7 @@ class PublicGuideProfileView(APIView):
         # Profile image for OG tags
         profile_image_url = profile.profile_image.url if profile.profile_image else "/static/default_teacher_avatar.jpg"
         if not profile_image_url.startswith('http'):
-            profile_image_url = request.build_absolute_uri(profile_image_url)
+            profile_image_url = canonical_url(profile_image_url)
         
         # JSON-LD Person schema for rich results
         json_ld_schema = {

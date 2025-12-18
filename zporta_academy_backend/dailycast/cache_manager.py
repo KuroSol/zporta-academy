@@ -114,9 +114,14 @@ class CachedAIInsight(models.Model):
     
     # Cache lifetime
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)  # Track when cache was last updated
     expires_at = models.DateTimeField(
         db_index=True,
         help_text="When this cache should be refreshed (24 hours after creation)"
+    )
+    needs_refresh = models.BooleanField(
+        default=False,
+        help_text="Flag to indicate cache should be refreshed on next opportunity"
     )
     
     class Meta:
@@ -259,11 +264,16 @@ class CacheStatistics(models.Model):
 
 def get_cached_ai_insight(user, subject='', engine='gemini-2.0-flash-exp'):
     """
-    Retrieve cached AI insight if available and fresh.
+    Retrieve cached AI insight using stale-while-revalidate pattern.
+    
+    Strategy:
+    - If cache is fresh: return it immediately (serve from cache)
+    - If cache is stale but exists: return it AND mark for background refresh
+    - If cache doesn't exist: return None (requires fresh analysis)
     
     Returns:
-        - (True, cached_data) if cache exists and is fresh
-        - (False, None) if cache doesn't exist or is stale
+        - (True, cached_data, needs_refresh) if cache exists
+        - (False, None, False) if cache doesn't exist
     """
     try:
         cache = CachedAIInsight.objects.get(
@@ -272,23 +282,36 @@ def get_cached_ai_insight(user, subject='', engine='gemini-2.0-flash-exp'):
             engine=engine
         )
         
-        if cache.is_fresh():
+        is_fresh = cache.is_fresh()
+        
+        if is_fresh:
+            # Cache is fresh - use it and increment hits
             cache.mark_as_used()
-            logger.info(f"✓ Cache HIT: {user.username} - {subject or 'All'} - {engine}")
+            logger.info(f"✓ Cache HIT (fresh): {user.username} - {subject or 'All'} - {engine}")
             # Update statistics
             update_cache_stats(
                 ai_insights_cached=1,
                 ai_insights_hits=1,
                 ai_tokens_saved=cache.tokens_used
             )
-            return True, cache.ai_insights
+            return True, cache.ai_insights, False
         else:
-            logger.info(f"⏱️ Cache EXPIRED: {user.username} - {subject or 'All'} - {engine}")
-            return False, None
+            # Cache is stale - use it but mark for refresh
+            cache.mark_as_used()
+            cache.needs_refresh = True
+            cache.save(update_fields=['needs_refresh', 'hits', 'tokens_saved'])
+            logger.info(f"⚠️ Cache HIT (stale): {user.username} - {subject or 'All'} - {engine} - MARKED FOR REFRESH")
+            # Update statistics
+            update_cache_stats(
+                ai_insights_cached=1,
+                ai_insights_hits=1,
+                ai_tokens_saved=cache.tokens_used
+            )
+            return True, cache.ai_insights, True  # Return cached data + refresh flag
     
     except CachedAIInsight.DoesNotExist:
         logger.info(f"✗ Cache MISS: {user.username} - {subject or 'All'} - {engine}")
-        return False, None
+        return False, None, False
 
 
 def save_ai_insight_cache(user, ai_insights, subject='', engine='gemini-2.0-flash-exp', tokens_used=0):
@@ -407,6 +430,34 @@ def update_cache_stats(**kwargs):
         stats.save()
     except Exception as e:
         logger.exception(f"Error updating cache statistics: {e}")
+
+
+def get_caches_needing_refresh():
+    """
+    Get all cached AI insights that are marked for refresh.
+    Used for background refresh process to update stale caches.
+    
+    Returns:
+        QuerySet of CachedAIInsight objects with needs_refresh=True
+    """
+    return CachedAIInsight.objects.filter(needs_refresh=True).order_by('updated_at')
+
+
+def clear_refresh_flag(cache_id):
+    """
+    Mark a cache item as refreshed (clear the needs_refresh flag).
+    
+    Args:
+        cache_id: ID of the CachedAIInsight object
+    """
+    try:
+        cache = CachedAIInsight.objects.get(id=cache_id)
+        cache.needs_refresh = False
+        cache.updated_at = timezone.now()
+        cache.save(update_fields=['needs_refresh', 'updated_at'])
+        logger.info(f"✓ Refresh flag cleared for cache {cache_id}")
+    except CachedAIInsight.DoesNotExist:
+        logger.warning(f"Cache {cache_id} not found for refresh flag clear")
 
 
 def clear_expired_caches():

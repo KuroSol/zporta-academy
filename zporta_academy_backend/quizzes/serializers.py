@@ -111,7 +111,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'quiz', 'temp_id', 'question_type', 'question_text',
+            'id', 'quiz', 'temp_id', 'permalink', 'question_type', 'question_text',
             'question_image', 'question_image_alt', 'question_audio',
             'allow_speech_to_text', 'option1', 'option1_image', 'option1_image_alt',
             'option1_audio', 'option2', 'option2_image', 'option2_image_alt', 'option2_audio',
@@ -122,7 +122,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             'correct_count', 'wrong_count', 'computed_difficulty_score', 'difficulty_level',
         ]
         read_only_fields = [
-            'id', '_fill_blank', 'question_image_alt', 'option1_image_alt',
+            'id', 'permalink', '_fill_blank', 'question_image_alt', 'option1_image_alt',
             'option2_image_alt', 'option3_image_alt', 'option4_image_alt',
             'attempt_count', 'correct_count', 'wrong_count',
 

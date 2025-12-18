@@ -111,3 +111,118 @@ def invalidate_quiz_course_cache_on_save(sender, instance, **kwargs):
 def invalidate_quiz_course_cache_on_tag_change(sender, instance, **kwargs):
     # Tag changes don't directly map to a single course; skip heavy invalidation.
     pass
+
+
+# ============================================================================
+# QUESTION PERMALINK AUTO-GENERATION SIGNALS
+# ============================================================================
+
+from django.db.models.signals import post_migrate
+from django.utils.text import slugify
+from .models import Question
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def japanese_to_romaji(text):
+    """Romanize Japanese/non-Latin text for URL-safe slugs"""
+    try:
+        from pykakasi import kakasi
+        from unidecode import unidecode
+        
+        kks = kakasi()
+        kks.setMode("H", "a")
+        kks.setMode("K", "a")
+        kks.setMode("J", "a")
+        kks.setMode("r", "Hepburn")
+        romaji = kks.getConverter().do(text)
+        fallback = unidecode(text)
+        return romaji if len(romaji) >= len(fallback) else fallback
+    except ImportError:
+        from unidecode import unidecode
+        return unidecode(text)
+
+
+@receiver(post_save, sender=Question)
+def generate_question_permalink(sender, instance, created, **kwargs):
+    """
+    Auto-generate permalink for newly created questions.
+    This ensures new questions always get a permalink.
+    """
+    if not instance.permalink and instance.quiz_id:
+        # Prevent recursion
+        if hasattr(instance, '_generating_permalink'):
+            return
+        
+        try:
+            instance._generating_permalink = True
+            
+            # Get question number in quiz
+            question_count = Question.objects.filter(
+                quiz_id=instance.quiz_id,
+                id__lt=instance.id if instance.id else 999999999
+            ).count() + 1
+            
+            # Extract clean text
+            clean_text = BeautifulSoup(instance.question_text or "", "html.parser").get_text().strip()
+            
+            # Generate multilingual slug
+            question_slug = slugify(japanese_to_romaji(clean_text))[:60]
+            
+            if not question_slug:
+                question_slug = f"question-{question_count}"
+            
+            # Build permalink
+            quiz_permalink = instance.quiz.permalink if instance.quiz.permalink else f"quiz-{instance.quiz_id}"
+            permalink = f"{quiz_permalink}/q-{question_count}-{question_slug}"
+            
+            # Handle duplicates
+            base_permalink = permalink
+            counter = 1
+            while Question.objects.filter(permalink=permalink).exclude(id=instance.id).exists():
+                permalink = f"{base_permalink}-{counter}"
+                counter += 1
+            
+            # Save without triggering signal again
+            Question.objects.filter(id=instance.id).update(permalink=permalink)
+            logger.info(f"Generated permalink for question {instance.id}: {permalink}")
+            
+        except Exception as e:
+            logger.error(f"Error generating permalink for question {instance.id}: {str(e)}")
+        finally:
+            if hasattr(instance, '_generating_permalink'):
+                delattr(instance, '_generating_permalink')
+
+
+@receiver(post_migrate)
+def populate_missing_permalinks(sender, **kwargs):
+    """
+    After migrations run, check for questions without permalinks
+    and generate them. This is a safety net for old data.
+    """
+    # Only run for quizzes app
+    if sender.name != 'quizzes':
+        return
+    
+    try:
+        # Find questions without permalinks
+        missing = Question.objects.filter(permalink__isnull=True).select_related('quiz')
+        count = missing.count()
+        
+        if count > 0:
+            logger.info(f"🔄 Found {count} questions without permalinks. Generating...")
+            
+            processed = 0
+            for question in missing:
+                try:
+                    # Trigger the save method which will generate permalink
+                    question.save()
+                    processed += 1
+                except Exception as e:
+                    logger.error(f"Error generating permalink for question {question.id}: {str(e)}")
+            
+            logger.info(f"✅ Generated permalinks for {processed}/{count} questions")
+                    
+    except Exception as e:
+        logger.warning(f"Could not populate missing permalinks: {str(e)}")

@@ -10,6 +10,7 @@ from dailycast.views_admin_ajax import (
     get_tts_voices_ajax,
     analyze_user_ai_ajax,
     list_ai_reports_ajax,
+    analyze_english_level_ajax,
 )
 
 app_name = 'dailycast_ajax'
@@ -31,4 +32,6 @@ urlpatterns = [
     # AI-powered user analysis and recommendations
     path('analyze-user/', analyze_user_ai_ajax, name='analyze-user'),
     path('ai-reports/', list_ai_reports_ajax, name='ai-reports'),
+    # English level analyzer from student notes
+    path('analyze-english-level/', analyze_english_level_ajax, name='analyze-english-level'),
 ]

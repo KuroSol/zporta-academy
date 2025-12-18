@@ -1,4 +1,7 @@
 from django.shortcuts import redirect
+
+from seo.utils import canonical_url
+
 from .models import SEOSetting, Redirect
 
 class SEOMiddleware:
@@ -20,6 +23,6 @@ class SEOMiddleware:
             response['X-SEO-Title'] = seo_settings.title
             response['X-SEO-Description'] = seo_settings.description
             if seo_settings.canonical_url:
-                response['Link'] = f'<{seo_settings.canonical_url}>; rel="canonical"'
+                response['Link'] = f'<{canonical_url(seo_settings.canonical_url)}>; rel="canonical"'
 
         return response

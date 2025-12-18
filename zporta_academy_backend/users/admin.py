@@ -1,5 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.urls import reverse
+from django.utils.html import format_html
+from django.http import HttpResponseRedirect
 from .models import Profile
 from .activity_models import UserActivity
 from .guide_application_models import GuideApplicationRequest
@@ -13,8 +16,25 @@ class ProfileInline(admin.StackedInline):
 
 class UserAdmin(admin.ModelAdmin):
     inlines = (ProfileInline,)
-    list_display = ("username", "email", "date_joined", "is_active")
+    list_display = ("username", "email", "date_joined", "is_active", "export_json_link")
     search_fields = ("username", "email")
+    actions = ['export_user_data_json']
+    
+    def export_json_link(self, obj):
+        """Display inline export link in list view."""
+        url = reverse('user-data-export', kwargs={'user_id': obj.id})
+        return format_html('<a href="{}" class="button">Export JSON</a>', url)
+    export_json_link.short_description = 'Export'
+    
+    def export_user_data_json(self, request, queryset):
+        """Batch action to export selected users (redirects to first user if multiple selected)."""
+        if queryset.count() == 1:
+            user = queryset.first()
+            url = reverse('user-data-export', kwargs={'user_id': user.id})
+            return HttpResponseRedirect(url)
+        else:
+            self.message_user(request, "Please select only one user to export.")
+    export_user_data_json.short_description = "Export selected user data (JSON)"
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)

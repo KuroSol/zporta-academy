@@ -9,6 +9,7 @@ from rest_framework.parsers import MultiPartParser, FormParser  # Add these for 
 from .models import Post
 from .serializers import PostSerializer
 from rest_framework import generics
+from seo.utils import canonical_url
 
 class PostRetrieveView(RetrieveAPIView):
     queryset = Post.objects.all()
@@ -54,11 +55,13 @@ class DynamicPostView(APIView):
         # Use seo_title if provided, otherwise fallback to the post title
         title = post.seo_title if post.seo_title else post.title
         description = post.seo_description if post.seo_description else ""
-        canonical_url = post.canonical_url if post.canonical_url else ""
+        canonical_url_value = canonical_url(post.canonical_url or f"/posts/{post.permalink}/")
         og_title = post.og_title if post.og_title else title
         og_description = post.og_description if post.og_description else description
         # For the og_image, if using an ImageField, you can access its URL:
         og_image = post.og_image.url if post.og_image else ""
+        if og_image and not og_image.startswith("http"):
+            og_image = canonical_url(og_image)
 
         # Render the post content with SEO metadata
         html_content = f"""
@@ -69,12 +72,13 @@ class DynamicPostView(APIView):
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>{title}</title>
             <meta name="description" content="{description}">
-            <link rel="canonical" href="{canonical_url}">
+            <link rel="canonical" href="{canonical_url_value}">
             
             <!-- Open Graph tags -->
             <meta property="og:title" content="{og_title}">
             <meta property="og:description" content="{og_description}">
             <meta property="og:image" content="{og_image}">
+            <meta property="og:url" content="{canonical_url_value}">
         </head>
         <body>
             <h1>{post.title}</h1>

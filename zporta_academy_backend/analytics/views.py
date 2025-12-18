@@ -565,3 +565,78 @@ class QuizListAPIView(generics.ListAPIView):
             return Quiz.objects.none()
 
         return Quiz.objects.filter(pk__in=qids, status='published')
+
+
+# ============================================================================
+# QUESTION-LEVEL TRACKING VIEWS
+# ============================================================================
+
+class QuizSessionDetailView(views.APIView):
+    """
+    GET /api/analytics/sessions/<session_id>/details/
+    Returns detailed breakdown of a quiz session with per-question timing and hints
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, session_id):
+        from .admin_helpers import get_quiz_session_details
+        
+        # Check if user owns this session
+        session_events = ActivityEvent.objects.filter(session_id=session_id).first()
+        if not session_events:
+            return Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if session_events.user != request.user and not request.user.is_staff:
+            return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        details = get_quiz_session_details(session_id)
+        return Response(details, status=status.HTTP_200_OK)
+
+
+class QuestionAnalyticsView(views.APIView):
+    """
+    GET /api/analytics/questions/<question_id>/analytics/
+    Returns aggregated analytics for a specific question (accuracy, timing, hints usage)
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request, question_id):
+        from .admin_helpers import get_question_analytics
+        
+        try:
+            analytics = get_question_analytics(question_id)
+            return Response(analytics, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error fetching question analytics for ID {question_id}: {e}")
+            return Response(
+                {"error": "Could not fetch analytics"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UserQuizHistoryView(views.APIView):
+    """
+    GET /api/analytics/users/<user_id>/quiz-history/?quiz_id=<optional>
+    Returns all quiz attempts for a user with timing and completion status
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, user_id):
+        from .admin_helpers import get_user_quiz_history
+        
+        # Only allow users to see their own history (unless staff)
+        if request.user.id != user_id and not request.user.is_staff:
+            return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        quiz_id = request.query_params.get('quiz_id')
+        if quiz_id:
+            try:
+                quiz_id = int(quiz_id)
+            except ValueError:
+                return Response({"error": "Invalid quiz_id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        history = get_user_quiz_history(user_id, quiz_id)
+        return Response({
+            'user_id': user_id,
+            'attempts': history
+        }, status=status.HTTP_200_OK)

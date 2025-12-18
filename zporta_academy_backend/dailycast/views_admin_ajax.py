@@ -1199,3 +1199,68 @@ def list_ai_reports_ajax(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@require_GET
+@login_required
+@user_passes_test(is_admin_or_staff)
+def analyze_english_level_ajax(request):
+    """
+    AJAX endpoint: Analyze student's English level from their notes.
+    
+    Query params:
+    - user_id: User ID to analyze (required)
+    - days_back: Number of days to analyze (default: 180)
+    
+    Returns JSON:
+    {
+        "success": true,
+        "analysis": {
+            "grammar_weak_areas": [...],
+            "grammar_strong_areas": [...],
+            "vocabulary_analysis": {...},
+            "exam_predictions": {...},
+            "study_recommendations": {...},
+            "meta": {...}
+        }
+    }
+    """
+    try:
+        user_id = request.GET.get('user_id')
+        if not user_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'user_id parameter required'
+            }, status=400)
+        
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': f'User with ID {user_id} not found'
+            }, status=404)
+        
+        days_back = request.GET.get('days_back', 180)
+        try:
+            days_back = int(days_back)
+        except (ValueError, TypeError):
+            days_back = 180
+        
+        from dailycast.english_level_analyzer import analyze_student_english_level
+        
+        analysis = analyze_student_english_level(user)
+        
+        return JsonResponse({
+            'success': True,
+            'user_id': user.id,
+            'username': user.username,
+            'analysis': analysis
+        })
+    
+    except Exception as e:
+        logger.exception(f"Error in analyze_english_level_ajax: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
