@@ -63,12 +63,13 @@
 
 .imagePanel h2 {
     font-size: 2rem;
-    color: var(--color-text-primary);
-    font-weight: 700;
+    color: #FFFFFF;
+    font-weight: 800;
     margin-bottom: 1rem;
     position: relative;
     z-index: 1;
     letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .imagePanel p {
@@ -78,7 +79,8 @@
     position: relative;
     z-index: 1;
     max-width: 90%;
-    font-weight: 500;
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* --- Right Form Panel --- */
