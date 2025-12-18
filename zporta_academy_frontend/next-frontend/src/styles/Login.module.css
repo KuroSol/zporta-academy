@@ -73,11 +73,12 @@
 
 .imagePanel p {
     font-size: 1.05rem;
-    color: var(--color-text-secondary);
+    color: #FFFFFF;
     line-height: 1.7;
     position: relative;
     z-index: 1;
     max-width: 90%;
+    font-weight: 500;
 }
 
 /* --- Right Form Panel --- */
@@ -100,9 +101,10 @@
 
 .subtitle {
     font-size: 1.05rem;
-    color: var(--color-text-secondary);
+    color: #E8D5C9;
     margin-bottom: 2.5rem;
     line-height: 1.6;
+    font-weight: 500;
 }
 
 .formSection {
@@ -116,11 +118,11 @@
 .formGroup label {
     display: block;
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
+    font-weight: 700;
+    color: #F0D4C6;
     margin-bottom: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
 }
 
 .input {

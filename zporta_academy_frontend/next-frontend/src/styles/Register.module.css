@@ -108,11 +108,11 @@
 .label {
   display: block;
   margin-bottom: 0.65rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 700;
+  color: #F0D4C6;
   font-size: 0.9rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .input,
