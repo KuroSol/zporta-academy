@@ -8,10 +8,13 @@ import React, {
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { AuthContext } from "@/context/AuthContext";
+import { useT } from "@/context/LanguageContext";
 import apiClient from "@/api";
+import Footer from "@/components/layout/Footer";
 import styles from "@/styles/HomePage.module.css";
 import { quizPermalinkToUrl } from "@/utils/urls";
 import LoginModal from "@/components/LoginModal";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 import {
   FaRocket,
@@ -72,10 +75,12 @@ const FaSpinner = ({ className, ...props }) => (
 const HomePage = () => {
   const router = useRouter();
   const { user, token, logout } = useContext(AuthContext);
+  const t = useT();
   const hexagonSectionRef = useRef(null);
   const searchHexagonRef = useRef(null);
 
   const [isSearchExpanded, setSearchExpanded] = useState(false);
+  const [heroExpanded, setHeroExpanded] = useState(false);
 
   // --- Search State (from Explorer logic) ---
   const [searchTerm, setSearchTerm] = useState("");
@@ -93,6 +98,9 @@ const HomePage = () => {
 
   // --- Dynamic Spotlight Effect ---
   useEffect(() => {
+    // Only add mouse effect if authenticated (hexagon nav mode)
+    if (!user) return;
+
     const handleMouseMove = (e) => {
       if (hexagonSectionRef.current) {
         const rect = hexagonSectionRef.current.getBoundingClientRect();
@@ -108,7 +116,7 @@ const HomePage = () => {
       if (currentRef)
         currentRef.removeEventListener("mousemove", handleMouseMove);
     };
-  }, []);
+  }, [user]);
 
   // --- Close search on outside click/escape ---
   useEffect(() => {
@@ -325,14 +333,20 @@ const HomePage = () => {
       setLoadingQuizAttempts(true);
       setErrorQuizAttempts("");
       try {
-        const res = await apiClient.get(
-          "/events/?event_type=quiz_answer_submitted&ordering=-timestamp"
-        );
-        if (!Array.isArray(res.data)) {
-          setErrorQuizAttempts("Unexpected data format for quiz attempts.");
-          setLatestQuizAttempts([]);
-          return;
-        }
+        // TEMPORARILY DISABLED: /api/events/ endpoint not implemented yet
+        // const res = await apiClient.get(
+        //   "/events/?event_type=quiz_answer_submitted&ordering=-timestamp"
+        // );
+        // if (!Array.isArray(res.data)) {
+        //   setErrorQuizAttempts("Unexpected data format for quiz attempts.");
+        //   setLatestQuizAttempts([]);
+        //   return;
+        // }
+
+        // Mock empty response for now
+        setLatestQuizAttempts([]);
+        setLoadingQuizAttempts(false);
+        return;
         const grouped = res.data.reduce((acc, event) => {
           const quizId = event.object_id;
           if (!quizId) return acc;
@@ -439,127 +453,363 @@ const HomePage = () => {
           onClose={() => setLoginModalOpen(false)}
         />
 
-        <section className={styles.heroSection}>
-          <h1 className={styles.heroTitle}>Welcome to Zporta Academy</h1>
-          <p className={styles.heroSubtitle}>
-            Learn anything, anywhere. Start your journey today.
-          </p>
-          <div className={styles.heroCta}>
-            <button
-              className={styles.ctaPrimary}
-              onClick={() => setLoginModalOpen(true)}
+        {/* Language Switcher - Top Right */}
+        <div className={styles.languageSwitcherWrapper}>
+          <LanguageSwitcher />
+        </div>
+
+        {/* NEW HERO: Expandable Center Hexagon */}
+        <section className={styles.landingHeroSection}>
+          <div className={styles.landingHeroContent}>
+            {/* Text & CTA - Fades out when expanded */}
+            <div
+              className={`${styles.landingIntroText} ${
+                heroExpanded ? styles.heroFaded : ""
+              }`}
             >
-              Get Started
-            </button>
-            <button
-              className={styles.ctaSecondary}
-              onClick={() => setLoginModalOpen(true)}
+              <h1 className={styles.landingHeroTitle}>
+                {t("landing.heroTitle")}
+              </h1>
+              <p className={styles.landingHeroSubtitle}>
+                {t("landing.heroSubtitle")}
+              </p>
+
+              {/* CTA Buttons */}
+              <div className={styles.landingCtaButtons}>
+                <button
+                  className={styles.landingCtaPrimary}
+                  onClick={() => router.push("/register")}
+                >
+                  {t("landing.getStarted")}
+                </button>
+                <button
+                  className={styles.landingCtaSecondary}
+                  onClick={() => router.push("/login")}
+                >
+                  {t("landing.loginButton")}
+                </button>
+              </div>
+            </div>
+
+            {/* Center Expandable Hexagon - Moves to center/overlays when expanded */}
+            <div
+              className={`${styles.landingHexagonWrapper} ${
+                heroExpanded ? styles.wrapperExpanded : ""
+              }`}
             >
-              Sign In
-            </button>
+              {heroExpanded && (
+                <svg className={styles.connectionSvg} viewBox="0 0 600 450">
+                  <defs>
+                    <linearGradient
+                      id="grad1"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop
+                        offset="0%"
+                        style={{
+                          stopColor: "var(--zporta-gold)",
+                          stopOpacity: 0.2,
+                        }}
+                      />
+                      <stop
+                        offset="100%"
+                        style={{
+                          stopColor: "var(--zporta-gold)",
+                          stopOpacity: 0.8,
+                        }}
+                      />
+                    </linearGradient>
+                  </defs>
+                  {/* Circuit-style paths connecting center (300,225) to nodes */}
+                  {/* Top (Mentorship) */}
+                  <path
+                    d="M300,225 L300,25"
+                    className={styles.connectionPath}
+                  />
+                  {/* Top Right (Study) */}
+                  <path
+                    d="M300,225 L515,105"
+                    className={styles.connectionPath}
+                    style={{ animationDelay: "0.1s" }}
+                  />
+                  {/* Bottom Right (Compare) */}
+                  <path
+                    d="M300,225 L515,345"
+                    className={styles.connectionPath}
+                    style={{ animationDelay: "0.2s" }}
+                  />
+                  {/* Bottom (Community) */}
+                  <path
+                    d="M300,225 L300,425"
+                    className={styles.connectionPath}
+                    style={{ animationDelay: "0.3s" }}
+                  />
+                  {/* Bottom Left (Progress) */}
+                  <path
+                    d="M300,225 L85,345"
+                    className={styles.connectionPath}
+                    style={{ animationDelay: "0.4s" }}
+                  />
+                  {/* Top Left (Certificates) */}
+                  <path
+                    d="M300,225 L85,105"
+                    className={styles.connectionPath}
+                    style={{ animationDelay: "0.5s" }}
+                  />
+                </svg>
+              )}
+
+              <button
+                className={`${styles.landingCenterHexagon} ${
+                  heroExpanded ? styles.landingHexagonExpanded : ""
+                }`}
+                onClick={() => setHeroExpanded(!heroExpanded)}
+                aria-label="Explore learning features"
+                aria-expanded={heroExpanded}
+              >
+                <FaBrain
+                  size="3em"
+                  className={`${styles.landingHexIcon} ${
+                    heroExpanded ? styles.landingHexIconActive : ""
+                  }`}
+                />
+                <span className={styles.landingHexLabel}>Explore</span>
+              </button>
+
+              {/* 6 Surrounding Feature Hexagons (appear when expanded) */}
+              {heroExpanded && (
+                <>
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex1}`}
+                    onClick={() => router.push("/register/mentorship")}
+                    aria-label={t("nav.mentorship")}
+                  >
+                    <FaUserFriends
+                      size="2em"
+                      className={styles.landingHexIcon}
+                    />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.mentorship")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.mentorship.title")}</h4>
+                      <p>{t("landing.features.mentorship.description")}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex2}`}
+                    onClick={() => router.push("/register/study-track")}
+                    aria-label={t("nav.studyTrack")}
+                  >
+                    <FaBook size="2em" className={styles.landingHexIcon} />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.studyTrack")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.studyTrack.title")}</h4>
+                      <p>{t("landing.features.studyTrack.description")}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex3}`}
+                    onClick={() => router.push("/register/compare-skills")}
+                    aria-label={t("nav.compareSkills")}
+                  >
+                    <FaFilter size="2em" className={styles.landingHexIcon} />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.compareSkills")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.compareSkills.title")}</h4>
+                      <p>{t("landing.features.compareSkills.description")}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex4}`}
+                    onClick={() => router.push("/register/community")}
+                    aria-label={t("nav.community")}
+                  >
+                    <FaRocket size="2em" className={styles.landingHexIcon} />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.community")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.community.title")}</h4>
+                      <p>{t("landing.features.community.description")}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex5}`}
+                    onClick={() => router.push("/register/progress")}
+                    aria-label={t("nav.progress")}
+                  >
+                    <FaCheckCircle
+                      size="2em"
+                      className={styles.landingHexIcon}
+                    />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.progress")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.progress.title")}</h4>
+                      <p>{t("landing.features.progress.description")}</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={`${styles.landingFeatureHexagon} ${styles.landingFeatureHex6}`}
+                    onClick={() => router.push("/register/certificates")}
+                    aria-label={t("nav.certificates")}
+                  >
+                    <FaGraduationCap
+                      size="2em"
+                      className={styles.landingHexIcon}
+                    />
+                    <span className={styles.landingHexLabel}>
+                      {t("nav.certificates")}
+                    </span>
+                    <div className={styles.hexPopover}>
+                      <h4>{t("landing.features.certificates.title")}</h4>
+                      <p>{t("landing.features.certificates.description")}</p>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </section>
 
-        {loadingPublic ? (
-          <div className={styles.loadingSection}>
-            <LoadingPlaceholder message="Loading content..." />
+        {/* HOW IT WORKS Section */}
+        <section className={styles.landingHowItWorks}>
+          <h2>{t("landing.howItWorks.title")}</h2>
+          <div className={styles.landingStepsGrid}>
+            <div className={styles.landingStep}>
+              <div className={styles.landingStepNumber}>1</div>
+              <h3>{t("landing.howItWorks.step1Title")}</h3>
+              <p>{t("landing.howItWorks.step1Desc")}</p>
+            </div>
+            <div className={styles.landingStep}>
+              <div className={styles.landingStepNumber}>2</div>
+              <h3>{t("landing.howItWorks.step2Title")}</h3>
+              <p>{t("landing.howItWorks.step2Desc")}</p>
+            </div>
+            <div className={styles.landingStep}>
+              <div className={styles.landingStepNumber}>3</div>
+              <h3>{t("landing.howItWorks.step3Title")}</h3>
+              <p>{t("landing.howItWorks.step3Desc")}</p>
+            </div>
           </div>
-        ) : (
-          <>
-            {publicCourses.length > 0 && (
-              <section className={styles.contentSection}>
-                <h2 className={styles.sectionTitle}>
-                  <FaBook /> Explore Courses
-                </h2>
-                <div className={styles.cardGrid}>
-                  {publicCourses.map((course) => (
-                    <div
-                      key={course.id}
-                      className={styles.contentCard}
-                      onClick={() => setLoginModalOpen(true)}
-                    >
-                      {course.cover_image && (
-                        <div className={styles.cardImage}>
-                          <img src={course.cover_image} alt={course.title} />
-                        </div>
-                      )}
-                      <div className={styles.cardBody}>
-                        <h3>{course.title}</h3>
-                        <p className={styles.cardMeta}>
-                          {course.created_by && `By ${course.created_by}`}
-                        </p>
-                        <button className={styles.cardBtn}>View Course</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+        </section>
 
-            {publicLessons.length > 0 && (
-              <section className={styles.contentSection}>
-                <h2 className={styles.sectionTitle}>
-                  <FaGraduationCap /> Recent Lessons
-                </h2>
-                <div className={styles.cardGrid}>
-                  {publicLessons.map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className={styles.contentCard}
-                      onClick={() => setLoginModalOpen(true)}
-                    >
-                      <div className={styles.cardBody}>
-                        <h3>{lesson.title}</h3>
-                        <p className={styles.cardMeta}>
-                          {lesson.created_by && `By ${lesson.created_by}`}
-                        </p>
-                        {lesson.is_premium && (
-                          <span className={styles.premiumBadge}>Premium</span>
-                        )}
-                        <button className={styles.cardBtn}>
-                          Start Learning
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+        {/* FEATURED CONTENT Preview */}
+        <section className={styles.landingFeaturedSection}>
+          <h2>{t("landing.whatYouWillLearn.title")}</h2>
+          <div className={styles.landingFeaturePreviewGrid}>
+            {/* Sample Lesson Card */}
+            <div className={styles.landingPreviewCard}>
+              <div className={styles.landingPreviewHeader}>
+                <FaBook className={styles.landingPreviewIcon} />
+                <span className={styles.landingPreviewBadge}>
+                  {t("landing.whatYouWillLearn.lessonLabel")}
+                </span>
+              </div>
+              <h3>{t("samples.jsPatterns.title")}</h3>
+              <p className={styles.landingPreviewDes}>
+                {t("samples.jsPatterns.description")}
+              </p>
+              <div className={styles.landingPreviewMeta}>
+                <span>
+                  {t("landing.whatYouWillLearn.minRead", { minutes: 12 })}
+                </span>
+                <span>{t("landing.whatYouWillLearn.intermediate")}</span>
+              </div>
+            </div>
 
-            {publicQuizzes.length > 0 && (
-              <section className={styles.contentSection}>
-                <h2 className={styles.sectionTitle}>
-                  <FaBrain /> Practice Quizzes
-                </h2>
-                <div className={styles.cardGrid}>
-                  {publicQuizzes.map((quiz) => (
-                    <div
-                      key={quiz.id}
-                      className={styles.contentCard}
-                      onClick={() => setLoginModalOpen(true)}
-                    >
-                      <div className={styles.cardBody}>
-                        <h3>{quiz.title}</h3>
-                        <p className={styles.cardMeta}>
-                          {quiz.created_by && `By ${quiz.created_by}`}
-                        </p>
-                        <button className={styles.cardBtn}>Take Quiz</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+            {/* Sample Quiz Card */}
+            <div className={styles.landingPreviewCard}>
+              <div className={styles.landingPreviewHeader}>
+                <FaBrain className={styles.landingPreviewIcon} />
+                <span className={styles.landingPreviewBadge}>
+                  {t("landing.whatYouWillLearn.quizLabel")}
+                </span>
+              </div>
+              <h3>{t("samples.reactHooks.title")}</h3>
+              <p className={styles.landingPreviewDes}>
+                {t("samples.reactHooks.description")}
+              </p>
+              <div className={styles.landingPreviewMeta}>
+                <span>
+                  {t("landing.whatYouWillLearn.questionsCount", { count: 15 })}
+                </span>
+                <span>{t("landing.whatYouWillLearn.advanced")}</span>
+              </div>
+            </div>
 
-        <section className={styles.ctaSection}>
-          <h2>Ready to start learning?</h2>
+            {/* Sample Path Card */}
+            <div className={styles.landingPreviewCard}>
+              <div className={styles.landingPreviewHeader}>
+                <FaRocket className={styles.landingPreviewIcon} />
+                <span className={styles.landingPreviewBadge}>
+                  {t("landing.whatYouWillLearn.pathLabel")}
+                </span>
+              </div>
+              <h3>{t("samples.fullStack.title")}</h3>
+              <p className={styles.landingPreviewDes}>
+                {t("samples.fullStack.description")}
+              </p>
+              <div className={styles.landingPreviewMeta}>
+                <span>
+                  {t("landing.whatYouWillLearn.lessonsCount", { count: 24 })}
+                </span>
+                <span>{t("landing.whatYouWillLearn.beginnerFriendly")}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* TRUST SIGNALS Section */}
+        <section className={styles.landingTrustSection}>
+          <h2>{t("landing.whyJoin.title")}</h2>
+          <div className={styles.landingTrustGrid}>
+            <div className={styles.landingTrustItem}>
+              <div className={styles.landingTrustIcon}>🔒</div>
+              <h3>{t("landing.whyJoin.securePrivateTitle")}</h3>
+              <p>{t("landing.whyJoin.securePrivateDesc")}</p>
+            </div>
+            <div className={styles.landingTrustItem}>
+              <div className={styles.landingTrustIcon}>👥</div>
+              <h3>{t("landing.whyJoin.vibrantCommunityTitle")}</h3>
+              <p>{t("landing.whyJoin.vibrantCommunityDesc")}</p>
+            </div>
+            <div className={styles.landingTrustItem}>
+              <div className={styles.landingTrustIcon}>🏆</div>
+              <h3>{t("landing.whyJoin.verifiedCertificatesTitle")}</h3>
+              <p>{t("landing.whyJoin.verifiedCertificatesDesc")}</p>
+            </div>
+            <div className={styles.landingTrustItem}>
+              <div className={styles.landingTrustIcon}>⚡</div>
+              <h3>{t("landing.whyJoin.learnAtYourPaceTitle")}</h3>
+              <p>{t("landing.whyJoin.learnAtYourPaceDesc")}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA Section */}
+        <section className={styles.landingFinalCta}>
+          <h2>{t("landing.ctaTitle")}</h2>
+          <p>{t("landing.ctaSubtitle")}</p>
           <button
-            className={styles.ctaPrimary}
-            onClick={() => setLoginModalOpen(true)}
+            className={styles.landingCtaPrimary}
+            onClick={() => router.push("/register")}
           >
-            Join Zporta Academy
+            {t("landing.createFreeAccount")}
           </button>
         </section>
       </div>
@@ -589,17 +839,17 @@ const HomePage = () => {
             className={`${styles.hexagon} ${styles.hex1}`}
           >
             <FaRocket size="2em" className={styles.icon} />
-            <span className={styles.label}>AI Dashboard</span>
+            <span className={styles.label}>{t("nav.aiDashboard")}</span>
           </Link>
 
           <Link href="/setup" className={`${styles.hexagon} ${styles.hex2}`}>
             <FaFilter size="2em" className={styles.icon} />
-            <span className={styles.label}>Setup</span>
+            <span className={styles.label}>{t("nav.setup")}</span>
           </Link>
 
           <Link href="/learn" className={`${styles.hexagon} ${styles.hex3}`}>
             <FaBook size="2em" className={styles.icon} />
-            <span className={styles.label}>Courses / Lessons</span>
+            <span className={styles.label}>{t("nav.coursesLessons")}</span>
           </Link>
 
           <div
@@ -613,7 +863,7 @@ const HomePage = () => {
               <FaSearch className={styles.searchIcon} />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder={t("search.searchPlaceholder")}
                 className={styles.searchInput}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -622,9 +872,13 @@ const HomePage = () => {
             </div>
             {isSearchExpanded && searchTerm.trim() && (
               <div className={styles.searchDropdown}>
-                {isSearching && <LoadingPlaceholder message="Searching..." />}
+                {isSearching && (
+                  <LoadingPlaceholder message={t("common.loading")} />
+                )}
                 {!isSearching && !hasAnyResults && (
-                  <EmptyState message={`No results for "${searchTerm}"`} />
+                  <EmptyState
+                    message={`${t("search.noResults")} "${searchTerm}"`}
+                  />
                 )}
                 {!isSearching &&
                   hasAnyResults &&
@@ -646,18 +900,18 @@ const HomePage = () => {
             className={`${styles.hexagon} ${styles.hex5}`}
           >
             <FaBrain size="2em" className={styles.icon} />
-            <span className={styles.label}>Quizzes</span>
+            <span className={styles.label}>{t("nav.quizzes")}</span>
           </Link>
           <Link
             href="/learn/?tab=guides"
             className={`${styles.hexagon} ${styles.hex6}`}
           >
             <FaClipboardList size="2em" className={styles.icon} />
-            <span className={styles.label}>Guides</span>
+            <span className={styles.label}>{t("nav.guides")}</span>
           </Link>
           <Link href="/posts" className={`${styles.hexagon} ${styles.hex7}`}>
             <FaNewspaper size="2em" className={styles.icon} />
-            <span className={styles.label}>Posts</span>
+            <span className={styles.label}>{t("nav.posts")}</span>
           </Link>
         </div>
       </section>
@@ -672,8 +926,8 @@ const HomePage = () => {
               <FaRocket />
             </span>
             {showTeacherSections && !showStudentSections
-              ? "Go to Teacher Dashboard"
-              : "Review Your Study Plan"}
+              ? t("dashboard.teacherDashboard")
+              : t("dashboard.studyPlan")}
           </button>
         </header>
 
@@ -681,7 +935,7 @@ const HomePage = () => {
           {showStudentSections && (
             <>
               <div className={styles.dashboardCard}>
-                <h2>Your Courses</h2>
+                <h2>{t("dashboard.yourCourses")}</h2>
                 {loadingEnrolled ? (
                   <LoadingPlaceholder />
                 ) : errorEnrolled ? (
@@ -756,18 +1010,18 @@ const HomePage = () => {
                     )}
                   </div>
                 ) : (
-                  <EmptyState message="You haven't enrolled in any courses yet. Explore some now!" />
+                  <EmptyState message={t("dashboard.noCourses")} />
                 )}
                 <button
                   className={styles.cardActionButton}
                   onClick={() => router.push("/enrolled-courses")}
                 >
-                  See All Your Courses
+                  {t("dashboard.seeAllCourses")}
                 </button>
               </div>
 
               <div className={styles.dashboardCard}>
-                <h2>Recently Completed Lessons</h2>
+                <h2>{t("dashboard.yourLessons")}</h2>
                 {loadingLessons ? (
                   <LoadingPlaceholder />
                 ) : errorLessons ? (
@@ -810,18 +1064,18 @@ const HomePage = () => {
                     )}
                   </div>
                 ) : (
-                  <EmptyState message="No recently completed lessons to show." />
+                  <EmptyState message={t("dashboard.noRecentLessons")} />
                 )}
                 <button
                   className={styles.cardActionButton}
                   onClick={() => router.push("/lessons/completed")}
                 >
-                  View All Completed
+                  {t("common.viewMore")}
                 </button>
               </div>
 
               <div className={styles.dashboardCard}>
-                <h2>Recent Quizzes</h2>
+                <h2>{t("dashboard.yourQuizzes")}</h2>
                 {loadingQuizAttempts ? (
                   <LoadingPlaceholder />
                 ) : errorQuizAttempts ? (
@@ -875,13 +1129,13 @@ const HomePage = () => {
                     )}
                   </div>
                 ) : (
-                  <EmptyState message="No recent quiz attempts found." />
+                  <EmptyState message={t("dashboard.noRecentQuizzes")} />
                 )}
                 <button
                   className={styles.cardActionButton}
                   onClick={() => router.push("/analytics")}
                 >
-                  See All Analytics & Statistics
+                  {t("dashboard.seeAllAnalytics")}
                 </button>
               </div>
             </>
@@ -890,158 +1144,36 @@ const HomePage = () => {
           {showTeacherSections && (
             <>
               <div className={styles.dashboardCard}>
-                <h2>Teacher Dashboard</h2>
-                <p>
-                  Access tools to manage your courses, lessons, and student
-                  interactions.
-                </p>
+                <h2>{t("dashboard.teacherDashboardTitle")}</h2>
+                <p>{t("dashboard.teacherDashboardDesc")}</p>
                 <button
                   className={styles.cardActionButton}
                   onClick={() => router.push("/teacher-dashboard")}
                 >
-                  Go to Teacher Dashboard
+                  {t("dashboard.teacherDashboard")}
                 </button>
               </div>
               <div className={styles.dashboardCard}>
-                <h2>Student Inquiries</h2>
-                <p>Review and respond to questions from your students.</p>
-                <button
-                  className={styles.cardActionButton}
-                  onClick={() => router.push("/teacher-questions")}
-                >
-                  View Student Questions
-                </button>
+                <h2>{t("dashboard.studentInquiries")}</h2>
+                {inquiriesLoading ? (
+                  <LoadingPlaceholder
+                    message={t("dashboard.loadingInquiries")}
+                  />
+                ) : inquiries && inquiries.length > 0 ? (
+                  <div className={styles.inquiryList}>
+                    {inquiries.map((inquiry) => (
+                      <div key={inquiry.id} className={styles.inquiryItem}>
+                        <h4>{inquiry.title}</h4>
+                        <p>{inquiry.message}</p>
+                        <small>{formatDate(inquiry.created_at)}</small>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState message={t("dashboard.noInquiries")} />
+                )}
               </div>
             </>
-          )}
-
-          {loadingDiscover ? (
-            <div
-              className={`${styles.discoverSection} ${styles.discoverSectionLoading}`}
-            >
-              {" "}
-              <LoadingPlaceholder message="Loading new content..." />{" "}
-            </div>
-          ) : errorDiscover ? (
-            <div
-              className={`${styles.discoverSection} ${styles.discoverSectionError}`}
-            >
-              {" "}
-              <ErrorMessage message={errorDiscover} />{" "}
-            </div>
-          ) : latestPosts.length > 0 || randomCourses.length > 0 ? (
-            <>
-              {latestPosts.length > 0 && (
-                <section className={styles.discoverSection}>
-                  <div className={styles.discoverHeader}>
-                    <h3>Recent Posts from Zporta</h3>
-                    <Link href="/posts" className={styles.discoverSeeAllBtn}>
-                      See All Posts
-                    </Link>
-                  </div>
-                  <div className={styles.discoverGrid}>
-                    {latestPosts.map(
-                      (post) =>
-                        post && (
-                          <Link
-                            href={
-                              post.permalink ? `/posts/${post.permalink}` : "#"
-                            }
-                            key={post.id}
-                            className={styles.discoverCardLink}
-                          >
-                            {post.og_image_url ? (
-                              <img
-                                src={post.og_image_url}
-                                alt=""
-                                className={styles.discoverImage}
-                                loading="lazy"
-                                onError={(e) =>
-                                  (e.target.style.display = "none")
-                                }
-                              />
-                            ) : (
-                              <div className={styles.discoverPlaceholder}>
-                                <FaNewspaper />
-                              </div>
-                            )}
-                            <div className={styles.discoverInfo}>
-                              <h4>{post.title || "Untitled Post"}</h4>
-                              <p>
-                                {post.created_at
-                                  ? new Date(
-                                      post.created_at
-                                    ).toLocaleDateString()
-                                  : ""}
-                              </p>
-                            </div>
-                          </Link>
-                        )
-                    )}
-                  </div>
-                </section>
-              )}
-              {randomCourses.length > 0 && (
-                <section className={styles.discoverSection}>
-                  <div className={styles.discoverHeader}>
-                    <h3>Explore New Courses</h3>
-                    <Link
-                      href="/learn?tab=courses"
-                      className={styles.discoverSeeAllBtn}
-                    >
-                      Explore All
-                    </Link>
-                  </div>
-                  <div className={styles.discoverGrid}>
-                    {randomCourses.map(
-                      (course) =>
-                        course && (
-                          <Link
-                            href={
-                              course.permalink
-                                ? `/courses/${course.permalink}`
-                                : "#"
-                            }
-                            key={course.id}
-                            className={styles.discoverCardLink}
-                          >
-                            {course.cover_image ? (
-                              <img
-                                src={course.cover_image}
-                                alt=""
-                                className={styles.discoverImage}
-                                loading="lazy"
-                                onError={(e) =>
-                                  (e.target.style.display = "none")
-                                }
-                              />
-                            ) : (
-                              <div className={styles.discoverPlaceholder}>
-                                <FaGraduationCap />
-                              </div>
-                            )}
-                            <div className={styles.discoverInfo}>
-                              <h4>{course.title || "Untitled Course"}</h4>
-                              <p className={styles.courseTypeLabel}>
-                                {course.course_type
-                                  ? course.course_type.charAt(0).toUpperCase() +
-                                    course.course_type.slice(1)
-                                  : "Standard"}
-                              </p>
-                            </div>
-                          </Link>
-                        )
-                    )}
-                  </div>
-                </section>
-              )}
-            </>
-          ) : (
-            <div
-              className={`${styles.discoverSection} ${styles.discoverSectionEmpty}`}
-            >
-              <EmptyState message="Nothing new to discover right now. Check back later!" />
-            </div>
           )}
         </main>
       </div>
@@ -1123,6 +1255,7 @@ const SearchBlock = ({ title, items }) => {
           {expanded ? "Show less" : `Show ${sortedItems.length - 4} more`}
         </button>
       )}
+      <Footer />
     </div>
   );
 };

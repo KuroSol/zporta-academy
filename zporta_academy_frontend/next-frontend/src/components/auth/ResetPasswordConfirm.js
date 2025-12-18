@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import apiClient from "@/api";
+import Footer from "@/components/layout/Footer";
 import styles from "@/styles/PasswordReset.module.css";
 
 export default function ResetPasswordConfirm({ uid, token, onSuccess }) {
@@ -67,6 +68,7 @@ export default function ResetPasswordConfirm({ uid, token, onSuccess }) {
 
         <div className={styles.backLink}><Link href="/login">Back to Login</Link></div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
+import { useT } from "@/context/LanguageContext";
+import Footer from "@/components/layout/Footer";
 import styles from "@/styles/Register.module.css";
 
 const aiImageUrl =
@@ -12,6 +14,7 @@ const aiImageUrl =
 export default function Register() {
   const router = useRouter();
   const { login } = useContext(AuthContext);
+  const t = useT();
   const { token: invitationToken } = router.query;
 
   const [formData, setFormData] = useState({
@@ -297,15 +300,13 @@ export default function Register() {
         {/* Left: Image panel */}
         <div className={styles.imagePanel}>
           <img src={aiImageUrl} alt="Zporta Academy Registration Visual" />
-          <h2>Join Zporta Academy</h2>
-          <p>
-            Unlock a world of knowledge. Sign up to start exploring and guiding.
-          </p>
+          <h2>{t("register.main.joinZporta")}</h2>
+          <p>{t("register.main.joinSubtitle")}</p>
         </div>
 
         {/* Right: Form panel */}
         <div className={styles.formPanel}>
-          <h2>Create Your Account</h2>
+          <h2>{t("register.main.pageTitle")}</h2>
 
           {message && (
             <p
@@ -320,7 +321,7 @@ export default function Register() {
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
               <label htmlFor="reg-username" className={styles.label}>
-                Username
+                {t("register.main.usernameLabel")}
               </label>
               <input
                 id="reg-username"
@@ -335,7 +336,7 @@ export default function Register() {
 
             <div className={styles.formGroup}>
               <label htmlFor="reg-email" className={styles.label}>
-                Email
+                {t("register.main.emailLabel")}
               </label>
               <input
                 id="reg-email"
@@ -350,7 +351,7 @@ export default function Register() {
 
             <div className={styles.formGroup}>
               <label htmlFor="reg-password" className={styles.label}>
-                Password
+                {t("register.main.passwordLabel")}
               </label>
               <input
                 id="reg-password"
@@ -367,7 +368,7 @@ export default function Register() {
             {!invitationToken && !invitationData && (
               <div className={styles.formGroup}>
                 <label htmlFor="reg-invitation" className={styles.label}>
-                  Have an Invitation Code? (Optional)
+                  {t("register.main.invitationCode")}
                 </label>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <input
@@ -376,7 +377,7 @@ export default function Register() {
                     value={manualInvitationCode}
                     onChange={(e) => setManualInvitationCode(e.target.value)}
                     className={styles.input}
-                    placeholder="Paste your teacher invitation code here"
+                    placeholder={t("register.main.invitationPlaceholder")}
                     style={{ flex: 1 }}
                   />
                   <button
@@ -385,12 +386,11 @@ export default function Register() {
                     className={styles.verifyButton}
                     disabled={!manualInvitationCode.trim()}
                   >
-                    Verify
+                    {t("register.main.verifyButton")}
                   </button>
                 </div>
                 <small className={styles.helpText}>
-                  Get instant teacher approval with an invitation from an
-                  existing teacher!
+                  {t("register.main.invitationHelpText")}
                 </small>
               </div>
             )}
@@ -398,7 +398,7 @@ export default function Register() {
             {!invitationToken && !invitationData && (
               <div className={styles.formGroup}>
                 <label htmlFor="reg-role" className={styles.label}>
-                  Join As
+                  {t("register.main.joinAs")}
                 </label>
                 <select
                   id="reg-role"
@@ -407,12 +407,13 @@ export default function Register() {
                   onChange={handleChange}
                   className={styles.select}
                 >
-                  <option value="explorer">Explorer (Student)</option>
-                  <option value="guide">Guide (Teacher)</option>
+                  <option value="explorer">
+                    {t("register.main.explorer")}
+                  </option>
+                  <option value="guide">{t("register.main.guide")}</option>
                 </select>
                 <small className={styles.helpText}>
-                  Note: Teachers automatically have access to student features
-                  too!
+                  {t("register.main.roleHelpText")}
                 </small>
               </div>
             )}
@@ -428,11 +429,10 @@ export default function Register() {
                       onChange={(e) => setApplyForTeacher(e.target.checked)}
                       className={styles.checkbox}
                     />
-                    <span>Apply to become a teacher</span>
+                    <span>{t("register.main.applyTeacher")}</span>
                   </label>
                   <small className={styles.helpText}>
-                    Your application will be reviewed by administrators. Or get
-                    invited by an existing teacher for instant approval!
+                    {t("register.main.applyTeacherHelpText")}
                   </small>
                 </div>
               )}
@@ -441,7 +441,7 @@ export default function Register() {
               <>
                 <div className={styles.formGroup}>
                   <label htmlFor="reg-motivation" className={styles.label}>
-                    Why do you want to teach? *
+                    {t("register.main.whyTeach")}
                   </label>
                   <textarea
                     id="reg-motivation"
@@ -450,14 +450,14 @@ export default function Register() {
                     onChange={handleAppChange}
                     required={applyForTeacher}
                     className={styles.textarea}
-                    placeholder="Tell us about your passion for teaching and what makes you a great educator..."
+                    placeholder={t("register.main.motivation")}
                     rows="3"
                   />
                 </div>
 
                 <div className={styles.formGroup}>
                   <label htmlFor="reg-experience" className={styles.label}>
-                    Teaching Experience (Optional)
+                    {t("register.main.teachingExperience")}
                   </label>
                   <textarea
                     id="reg-experience"
@@ -465,14 +465,14 @@ export default function Register() {
                     value={teacherApplication.experience}
                     onChange={handleAppChange}
                     className={styles.textarea}
-                    placeholder="Describe your teaching background, certifications, education..."
+                    placeholder={t("register.main.experiencePlaceholder")}
                     rows="3"
                   />
                 </div>
 
                 <div className={styles.formGroup}>
                   <label htmlFor="reg-subjects" className={styles.label}>
-                    What will you teach? *
+                    {t("register.main.whatTeach")}
                   </label>
                   <input
                     id="reg-subjects"
@@ -482,7 +482,7 @@ export default function Register() {
                     onChange={handleAppChange}
                     required={applyForTeacher}
                     className={styles.input}
-                    placeholder="e.g., Japanese, Mathematics, Guitar, Programming"
+                    placeholder={t("register.main.teachPlaceholder")}
                   />
                 </div>
               </>
@@ -491,18 +491,15 @@ export default function Register() {
             {(invitationToken || invitationData) && (
               <div className={styles.formGroup}>
                 <div className={styles.invitationBadge}>
-                  🎓 Teacher Invitation
-                  <small>
-                    You&apos;re registering as an approved teacher (instant
-                    approval)
-                  </small>
+                  {t("register.main.teacherInvitation")}
+                  <small>{t("register.main.teacherApproved")}</small>
                 </div>
               </div>
             )}
 
             <div className={styles.formGroup}>
               <label htmlFor="reg-bio" className={styles.label}>
-                Short Bio (Optional)
+                {t("register.main.shortBio")}
               </label>
               <textarea
                 id="reg-bio"
@@ -510,25 +507,27 @@ export default function Register() {
                 value={formData.bio}
                 onChange={handleChange}
                 className={styles.textarea}
-                placeholder="Tell us a little about yourself or your interests..."
+                placeholder={t("register.main.bioPlaceholder")}
               />
             </div>
 
             <button type="submit" className={styles.submitButton}>
-              Register
+              {t("register.main.register")}
             </button>
           </form>
 
-          <div className={styles.separator}>Or</div>
+          <div className={styles.separator}>{t("register.main.or")}</div>
 
           {/* Google button renders here */}
           <div id="google-signup" className={styles.googleButtonContainer} />
 
           <p className={styles.authLink}>
-            Already have an account? <Link href="/login">Login here</Link>
+            {t("register.main.alreadyHaveAccount")}{" "}
+            <Link href="/login">{t("register.main.loginHere")}</Link>
           </p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

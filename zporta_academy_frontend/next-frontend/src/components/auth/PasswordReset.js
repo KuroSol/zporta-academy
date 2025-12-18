@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import apiClient from "@/api";
+import Footer from "@/components/layout/Footer";
 import styles from "@/styles/PasswordReset.module.css";
 
 const PasswordReset = () => {
@@ -76,6 +77,7 @@ const PasswordReset = () => {
                     <Link href="/login">Back to Login</Link>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 };

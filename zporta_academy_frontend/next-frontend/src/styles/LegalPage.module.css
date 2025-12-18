@@ -1,0 +1,247 @@
+/* LegalPage.module.css */
+
+.legalPageContainer {
+  min-height: 100vh;
+  background: var(--bg-page, #13171a);
+  color: var(--text-primary, #F0D4C6);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.backToHome {
+  max-width: 900px;
+  margin: 0 auto 1rem auto;
+  width: 100%;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-bronze, #A57B62);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+  padding: 0.5rem 0;
+}
+
+.backLink:hover {
+  color: var(--color-beige, #F0D4C6);
+}
+
+.legalContent {
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--card-bg, #231810);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.languageSection {
+  margin-bottom: 4rem;
+}
+
+.languageSection:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  border-bottom: 2px solid var(--color-bronze, #A57B62);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.mainTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-beige, #F0D4C6);
+  margin: 0;
+}
+
+.language {
+  font-size: 0.875rem;
+  color: var(--text-tertiary, #B6C6E3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-bronze, #A57B62);
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.section h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-secondary, #E4D6CC);
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.section p {
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary, #F0D4C6);
+}
+
+.section ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.section li {
+  line-height: 1.7;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #F0D4C6);
+}
+
+.section strong {
+  color: var(--text-secondary, #E4D6CC);
+  font-weight: 600;
+}
+
+.section a {
+  color: var(--color-neutral-gray, #8295D0);
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.section a:hover {
+  color: var(--color-bronze, #A57B62);
+}
+
+.infoBlock {
+  background: var(--surface-2, #2D1F16);
+  padding: 1.25rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--color-bronze, #A57B62);
+}
+
+.infoBlock p {
+  margin-bottom: 0.75rem;
+}
+
+.infoBlock p:last-child {
+  margin-bottom: 0;
+}
+
+.subsection {
+  margin-bottom: 1.5rem;
+}
+
+.subsection:last-child {
+  margin-bottom: 0;
+}
+
+.placeholder {
+  background: rgba(165, 123, 98, 0.15);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-style: italic;
+  color: var(--color-bronze, #A57B62);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .legalPageContainer {
+    padding: 1rem 0.5rem;
+  }
+
+  .legalContent {
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+
+  .mainTitle {
+    font-size: 1.5rem;
+  }
+
+  .section h2 {
+    font-size: 1.25rem;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .legalContent {
+    padding: 1rem;
+  }
+
+  .mainTitle {
+    font-size: 1.25rem;
+  }
+
+  .section h2 {
+    font-size: 1.125rem;
+  }
+
+  .section h3 {
+    font-size: 1rem;
+  }
+}
+
+/* Footer styles */
+.legalFooter {
+  background: var(--bg-secondary, #231810);
+  border-top: 1px solid var(--color-bronze, #A57B62);
+  padding: 1.5rem 1rem;
+  margin-top: 3rem;
+  width: 100%;
+}
+
+.footerContent {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: var(--text-secondary, #E4D6CC);
+  font-size: 0.875rem;
+}
+
+.footerContent p {
+  margin: 0;
+}
+
+.footerHomeLink {
+  color: var(--color-bronze, #A57B62);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footerHomeLink:hover {
+  color: var(--color-beige, #F0D4C6);
+}
+
+@media (max-width: 768px) {
+  .footerContent {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
