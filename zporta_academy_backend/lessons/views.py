@@ -36,6 +36,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from urllib.parse import unquote, urlparse
 import requests
+from seo.utils import canonical_url
 
 class LessonViewSet(ModelViewSet):
     serializer_class = LessonSerializer
