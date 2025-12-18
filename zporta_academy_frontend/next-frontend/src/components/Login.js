@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import { AuthContext } from "@/context/AuthContext";
 import { useT } from "@/context/LanguageContext";
 import apiClient from "@/api";
-import Footer from "@/components/layout/Footer";
 import styles from "@/styles/Login.module.css";
 
 const aiImageUrl =
@@ -343,7 +342,6 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 import { useT } from "@/context/LanguageContext";
-import Footer from "@/components/layout/Footer";
 import styles from "@/styles/Register.module.css";
 
 const aiImageUrl =
@@ -535,7 +534,6 @@ export default function Register() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
