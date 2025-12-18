@@ -243,7 +243,9 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
 
           {/* Google at the top */}
           <div className={styles.oauthTop}>
-            <div className={styles.oauthTitle}>{t("auth.continueWithGoogle") || "Continue with Google"}</div>
+            <div className={styles.oauthTitle}>
+              {t("auth.continueWithGoogle") || "Continue with Google"}
+            </div>
             <div id="google-login-button" className={styles.googleButtonContainer} />
           </div>
 
@@ -253,11 +255,10 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
             </div>
           )}
 
+          {/* Username/Password login */}
           <form onSubmit={handleLogin} className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label htmlFor="login-username">
-                {t("auth.usernameOrEmail")}
-              </label>
+              <label htmlFor="login-username">{t("auth.usernameOrEmail")}</label>
               <input
                 id="login-username"
                 type="text"
@@ -274,70 +275,65 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
               <input
                 id="login-password"
                 type="password"
-                <div className={styles.separator}>
-                  <span>{t("auth.or")}</span>
-                </div>
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                className={styles.input}
+                autoComplete="current-password"
+              />
+            </div>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={isLoading}
+            >
+              {isLoading ? t("common.loading") : t("auth.login")}
+            </button>
+            <div>
+              <Link href="/password-reset" className={styles.forgotPasswordLink}>
+                {t("auth.forgotPassword")}
+              </Link>
+            </div>
+          </form>
 
-                <div className={styles.alternativeLogins}>
-                  {/* Magic link */}
-                  <form
-                    onSubmit={handleMagicLinkRequest}
-                    className={styles.magicLinkForm}
-                  >
-                    <div className={styles.formGroup}>
-                      <label htmlFor="magic-email">{t("auth.loginLink")}</label>
-                      <div className={styles.magicLinkInputGroup}>
-                        <input
-                          id="magic-email"
-                          type="email"
-                          value={emailForMagicLink}
-                          onChange={(e) => setEmailForMagicLink(e.target.value)}
-                          placeholder={t("auth.enterEmail")}
-                          disabled={isLoading}
-                          className={styles.input}
-                        />
-                        <button
-                          type="submit"
-                          className={styles.magicLinkButton}
-                          disabled={isLoading}
-                        >
-                          {t("auth.send")}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                    placeholder={t("auth.enterEmail")}
-                    disabled={isLoading}
-                    className={styles.input}
-                  />
-                  <button
-
-                {/* Small legal note inside the card */}
-                <div className={styles.legalNote}>
-                  © {new Date().getFullYear()} Zporta Academy • <Link href="/legal/tokushoho">Legal</Link>
-                </div>
-                    type="submit"
-                    className={styles.magicLinkButton}
-                    disabled={isLoading}
-                  >
-                    {t("auth.send")}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* Google login button mounts here */}
-            <div
-              id="google-login-button"
-              className={styles.googleButtonContainer}
-            />
+          <div className={styles.separator}>
+            <span>{t("auth.or")}</span>
           </div>
 
+          {/* Magic link login */}
+          <form onSubmit={handleMagicLinkRequest} className={styles.magicLinkForm}>
+            <div className={styles.formGroup}>
+              <label htmlFor="magic-email">{t("auth.loginLink")}</label>
+              <div className={styles.magicLinkInputGroup}>
+                <input
+                  id="magic-email"
+                  type="email"
+                  value={emailForMagicLink}
+                  onChange={(e) => setEmailForMagicLink(e.target.value)}
+                  placeholder={t("auth.enterEmail")}
+                  disabled={isLoading}
+                  className={styles.input}
+                />
+                <button
+                  type="submit"
+                  className={styles.magicLinkButton}
+                  disabled={isLoading}
+                >
+                  {t("auth.send")}
+                </button>
+              </div>
+            </div>
+          </form>
+
           <p className={styles.registerLink}>
-            {t("auth.noAccount")}{" "}
-            <Link href="/register">{t("auth.signUp")}</Link>
+            {t("auth.noAccount")} <Link href="/register">{t("auth.signUp")}</Link>
           </p>
+
+          {/* Small legal note inside the card */}
+          <div className={styles.legalNote}>
+            © {new Date().getFullYear()} Zporta Academy • <Link href="/legal/tokushoho">Legal</Link>
+          </div>
         </div>
       </div>
       <Footer />
