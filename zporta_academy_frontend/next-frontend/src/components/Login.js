@@ -16,6 +16,11 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
   const { login } = useContext(AuthContext);
   const t = useT();
 
+  const resolveT = (key, fallback) => {
+    const val = t(key);
+    return val && val.includes(".") ? fallback : val || fallback;
+  };
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [emailForMagicLink, setEmailForMagicLink] = useState("");
@@ -238,13 +243,13 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
 
         {/* Right: forms */}
         <div className={styles.formPanel}>
-          <h2>{t("auth.signInTitle")}</h2>
-          <p className={styles.subtitle}>{t("auth.loginIntro")}</p>
+          <h2>{resolveT("auth.signInTitle", "Welcome back")}</h2>
+          <p className={styles.subtitle}>{resolveT("auth.loginIntro", "Choose your preferred method to continue.")}</p>
 
           {/* Google at the top */}
           <div className={styles.oauthTop}>
             <div className={styles.oauthTitle}>
-              {t("auth.continueWithGoogle") || "Continue with Google"}
+              {resolveT("auth.continueWithGoogle", "Continue with Google")}
             </div>
             <div id="google-login-button" className={styles.googleButtonContainer} />
           </div>
@@ -258,7 +263,7 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
           {/* Username/Password login */}
           <form onSubmit={handleLogin} className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label htmlFor="login-username">{t("auth.usernameOrEmail")}</label>
+              <label htmlFor="login-username">{resolveT("auth.usernameOrEmail", "Username or Email")}</label>
               <input
                 id="login-username"
                 type="text"
@@ -271,7 +276,7 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
               />
             </div>
             <div className={styles.formGroup}>
-              <label htmlFor="login-password">{t("auth.password")}</label>
+              <label htmlFor="login-password">{resolveT("auth.password", "Password")}</label>
               <input
                 id="login-password"
                 type="password"
@@ -288,30 +293,30 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
               className={styles.submitButton}
               disabled={isLoading}
             >
-              {isLoading ? t("common.loading") : t("auth.login")}
+              {isLoading ? resolveT("common.loading", "Loading...") : resolveT("auth.login", "Login")}
             </button>
             <div>
               <Link href="/password-reset" className={styles.forgotPasswordLink}>
-                {t("auth.forgotPassword")}
+                {resolveT("auth.forgotPassword", "Forgot Password?")}
               </Link>
             </div>
           </form>
 
           <div className={styles.separator}>
-            <span>{t("auth.or")}</span>
+            <span>{resolveT("auth.or", "Or")}</span>
           </div>
 
           {/* Magic link login */}
           <form onSubmit={handleMagicLinkRequest} className={styles.magicLinkForm}>
             <div className={styles.formGroup}>
-              <label htmlFor="magic-email">{t("auth.loginLink")}</label>
+              <label htmlFor="magic-email">{resolveT("auth.loginLink", "Continue with a Login Link")}</label>
               <div className={styles.magicLinkInputGroup}>
                 <input
                   id="magic-email"
                   type="email"
                   value={emailForMagicLink}
                   onChange={(e) => setEmailForMagicLink(e.target.value)}
-                  placeholder={t("auth.enterEmail")}
+                  placeholder={resolveT("auth.enterEmail", "Enter your email")}
                   disabled={isLoading}
                   className={styles.input}
                 />
@@ -320,14 +325,16 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
                   className={styles.magicLinkButton}
                   disabled={isLoading}
                 >
-                  {t("auth.send")}
+                  {resolveT("auth.send", "Send")}
                 </button>
               </div>
             </div>
           </form>
 
           <p className={styles.registerLink}>
-            {t("auth.noAccount")} <Link href="/register">{t("auth.signUp")}</Link>
+            {resolveT("auth.noAccount", "Don't have an account?")}
+            {" "}
+            <Link href="/register">{resolveT("auth.signUp", "Sign Up")}</Link>
           </p>
 
           {/* Small legal note inside the card */}

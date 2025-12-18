@@ -310,7 +310,7 @@ export default function Register() {
 
           {/* Google at the top */}
           <div className={styles.oauthTop}>
-            <div className={styles.oauthTitle}>{t("auth.continueWithGoogle") || "Continue with Google"}</div>
+            <div className={styles.oauthTitle}>{(t("auth.continueWithGoogle") && t("auth.continueWithGoogle").includes(".")) ? "Continue with Google" : (t("auth.continueWithGoogle") || "Continue with Google")}</div>
             <div id="google-signup" className={styles.googleButtonContainer} />
           </div>
 

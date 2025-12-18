@@ -1,51 +1,37 @@
-/* Define modern color palette and variables 
-:root {
-    --primary-color: #4A90E2; /* A friendly, modern blue 
-    --primary-hover: #357ABD;
-    --secondary-color: #50E3C2; /* A vibrant accent color 
-    --text-dark: #333;
-    --text-light-DEPRECATED: #5a6168; /* This is being replaced by direct color values below 
-    --text-var(--bg): #fff;
-    --bg-light: #f7f9fc;
-    --bg-var(--bg): var(--bg);
-    --border-color: #dfe3e8;
-    --error-color: #D0021B;
-    --success-color: #7ED321;
-    --info-color: #4A90E2;
-    --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
-    --border-radius: 12px;
-}
-*/
+/* src/styles/Login.module.css */
+
 .loginPageContainer {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: var(--bg-light);
+    background-color: var(--bg-page);
     padding: 2rem;
-    font-family: 'Inter', sans-serif; /* Assumes Inter is loaded */
+    font-family: 'Inter', sans-serif;
 }
 
 .loginBox {
     display: flex;
     width: 100%;
     max-width: 1000px;
-    background-color: var(--bg-var(--bg));
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    background-color: var(--bg-container);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     overflow: hidden;
+    border: 1px solid var(--color-border);
 }
 
 /* --- Left Image Panel --- */
 .imagePanel {
     flex-basis: 45%;
-    background: linear-gradient(135deg, #f0f7ff 0%, #e0ecf7 100%);
+    background-color: var(--bg-subtle);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 3rem;
     text-align: center;
+    border-right: 1px solid var(--color-border);
 }
 
 .imagePanel img {
@@ -56,14 +42,14 @@
 
 .imagePanel h2 {
     font-size: 1.75rem;
-    color: var(--text-dark);
+    color: var(--color-text-primary);
     font-weight: 600;
     margin-bottom: 1rem;
 }
 
 .imagePanel p {
     font-size: 1rem;
-    color: #5a6168; /* Direct color set */
+    color: var(--color-text-secondary);
     line-height: 1.6;
 }
 
@@ -73,18 +59,19 @@
     padding: 3rem 3.5rem;
     display: flex;
     flex-direction: column;
+    background-color: var(--bg-container);
 }
 
 .formPanel h2 {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-dark);
+    color: var(--color-text-primary);
     margin-bottom: 0.5rem;
 }
 
 .subtitle {
     font-size: 1rem;
-    color: #5a6168; /* Direct color set */
+    color: var(--color-text-secondary);
     margin-bottom: 2rem;
 }
 
@@ -100,35 +87,38 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #5a6168; /* Direct color set */
+    color: var(--color-text-secondary);
     margin-bottom: 0.5rem;
 }
 
 .input {
     width: 100%;
     padding: 0.875rem 1rem;
-    border: 1px solid var(--border-color);
+    background-color: var(--bg-page);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     font-size: 1rem;
+    color: var(--color-text-primary);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(165, 123, 98, 0.2); /* Bronze with opacity */
 }
 
 .input:disabled {
-    background-color: #f2f2f2;
+    background-color: var(--bg-subtle);
+    color: var(--color-text-disabled);
     cursor: not-allowed;
 }
 
 .submitButton {
     width: 100%;
     padding: 1rem;
-    background-color: var(--primary-color);
-    color: var(--text-var(--bg));
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary-bg);
     border: none;
     border-radius: 8px;
     font-size: 1rem;
@@ -139,7 +129,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-    background-color: var(--primary-hover);
+    background-color: var(--color-deep-bronze);
 }
 
 .submitButton:active:not(:disabled) {
@@ -147,53 +137,48 @@
 }
 
 .submitButton:disabled {
-    background-color: #a0c7f1;
-    cursor: wait;
+    background-color: var(--color-neutral-gray);
+    cursor: not-allowed;
 }
 
-.subtleLink {
+.forgotPasswordLink {
     display: block;
-    text-align: right;
-    font-size: 0.875rem;
-    color: var(--primary-color);
+    margin-top: 1rem;
+    text-align: center;
+    color: var(--color-primary);
     text-decoration: none;
-    margin-top: 0.75rem;
+    font-size: 0.9rem;
 }
 
-.subtleLink:hover {
+.forgotPasswordLink:hover {
     text-decoration: underline;
 }
 
+/* --- Separator --- */
 .separator {
     display: flex;
     align-items: center;
     text-align: center;
-    color: var(--border-color);
     margin: 1.5rem 0;
-}
-
-.separator span {
-    padding: 0 1rem;
-    color: #5a6168; /* Direct color set */
-    font-size: 0.875rem;
-    font-weight: 500;
+    color: var(--color-text-secondary);
 }
 
 .separator::before,
 .separator::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.alternativeLogins {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+.separator span {
+    padding: 0 10px;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
 }
 
+/* --- Magic Link Form --- */
 .magicLinkForm {
-    width: 100%;
+    margin-bottom: 1.5rem;
 }
 
 .magicLinkInputGroup {
@@ -201,60 +186,98 @@
     gap: 0.5rem;
 }
 
-.magicLinkInputGroup .input {
-    flex-grow: 1;
-}
-
 .magicLinkButton {
-    padding: 0.875rem 1.25rem;
-    background-color: var(--secondary-color);
-    color: var(--text-var(--bg));
-    border: none;
+    padding: 0 1.5rem;
+    background-color: transparent;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
     border-radius: 8px;
-    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .magicLinkButton:hover:not(:disabled) {
-    background-color: #45c4a8;
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary-bg);
 }
 
-.magicLinkButton:disabled {
-    background-color: #a0e3d4;
-    cursor: wait;
+/* --- Register Link --- */
+.registerLink {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+}
+
+.registerLink a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 0.25rem;
+}
+
+.registerLink a:hover {
+    text-decoration: underline;
+}
+
+/* --- Google Button Container --- */
+.oauthTop {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.oauthTitle {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
 }
 
 .googleButtonContainer {
     display: flex;
     justify-content: center;
-    width: 100%;
+    min-height: 40px; /* Prevent layout shift */
 }
 
-/* Top OAuth block */
-.oauthTop {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.oauthTitle {
-    font-size: 0.95rem;
-    color: #5a6168;
-}
-
-.legalNote {
+/* --- Messages --- */
+.message {
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
     text-align: center;
-    font-size: 0.8rem;
-    color: #7a838b;
-    margin-top: 1rem;
+}
+
+.error {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #ff6b6b;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #51cf66;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.info {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: #339af0;
+    border: 1px solid rgba(23, 162, 184, 0.2);
+}
+
+/* --- Legal Note --- */
+.legalNote {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
 }
 
 .legalNote a {
-    color: var(--primary-color);
+    color: var(--color-text-secondary);
     text-decoration: none;
 }
 
@@ -262,72 +285,30 @@
     text-decoration: underline;
 }
 
-/* --- THIS STYLE IS FIXED FOR ALIGNMENT AND COLOR --- */
-.registerLink {
-    text-align: center;
-    padding-top: 2rem;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #5a6168; /* Direct color set */
-}
-
-.registerLink a {
-    color: var(--primary-color);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.registerLink a:hover {
-    text-decoration: underline;
-}
-
-/* Message Styles */
-.message {
+/* --- Modal Variant --- */
+.modalLoginContainer {
     padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.modalLoginContainer h2 {
     text-align: center;
-    border: 1px solid transparent;
+    margin-bottom: 1.5rem;
+    color: var(--color-text-primary);
 }
 
-.message.error {
-    background-color: var(--danger-bg);
-    border-color: var(--danger-border);
-    color: var(--error-color);
-}
-
-.message.success {
-    background-color: #e8f5e9;
-    border-color: #a5d6a7;
-    color: #388E3C;
-}
-
-.message.info {
-    background-color: #e3f2fd;
-    border-color: #90caf9;
-    color: var(--primary-color);
-}
-
-
-/* Responsive Adjustments */
-@media (max-width: 900px) {
+/* --- Responsive --- */
+@media (max-width: 768px) {
     .loginBox {
         flex-direction: column;
-        max-width: 450px;
     }
+
     .imagePanel {
-        display: none; /* Hide image panel on smaller screens for a focused view */
+        display: none; /* Hide image on mobile to save space */
     }
+
     .formPanel {
-        padding: 2.5rem 2rem;
+        padding: 2rem;
     }
 }
-.modalLoginContainer {
-  width: 100%;
-  max-width: 360px;
-  padding: 1.5rem;
-  background: var(--bg-var(--bg));
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-}
+
