@@ -829,7 +829,7 @@ const QuizPage = ({
       <div className={styles.pageContainer}>
         <div className={styles.quizContainer}>
           <div className={styles.quizHeader}>
-          <div className={styles.quizTimerOverlay}>
+            <div className={styles.quizTimerOverlay}>
             <QuizTimer
               startTime={quizStartTime.current}
               isActive={!!quizStartTime.current}
@@ -1141,6 +1141,7 @@ const QuizPage = ({
         }
       />
     </div>
+    </>
   );
 };
 
