@@ -790,7 +790,10 @@ const QuizPage = ({
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com").replace(/\/$/, "").replace("www.", "");
   const quizTitle = quizData?.title || "Quiz";
   const quizDescription = quizData?.description || `Practice with ${questions?.length || 0} questions on Zporta Academy.`;
-  const canonicalUrl = permalink ? `${siteUrl}/quizzes/${permalink}/` : siteUrl;
+  // Prefer the working "q" route for canonical if a question permalink exists
+  const canonicalUrl = currentQuestion?.permalink
+    ? `${siteUrl}/quizzes/q/${currentQuestion.permalink}`
+    : (permalink ? `${siteUrl}/quizzes/${permalink}/` : siteUrl);
   const ogImage = quizData?.og_image_url || `${siteUrl}/images/default-og.png`;
   const author = quizData?.created_by?.username || quizData?.created_by || "Zporta Academy";
 
