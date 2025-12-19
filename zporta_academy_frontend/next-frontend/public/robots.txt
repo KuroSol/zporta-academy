@@ -1,9 +1,40 @@
-User-agent: *
+User-Agent: *
 Allow: /
+Allow: /_next/static/
+Allow: /images/
+Allow: /locales/
+Allow: /public/
 
-# Allow all pages except admin, draft content, and user-specific pages
-Disallow: /admin/
+# Disallow private/admin areas
 Disallow: /api/
+Disallow: /admin/
+Disallow: /administration-zporta-repersentiivie/
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /setup
+Disallow: /password-reset
+Disallow: /change-password
+Disallow: /reset-password-confirm/
+Disallow: /profile
+Disallow: /notifications
+Disallow: /enrolled-courses
+Disallow: /diary
+Disallow: /analytics/
+Disallow: /study/
+Disallow: /_next/
+Disallow: /.well-known/
 
-# Sitemap
-Sitemap: https://zportaacademy.com/sitemap.xml
+# Crawl optimization
+Crawl-delay: 1
+User-agent: Googlebot
+Crawl-delay: 0
+
+# Allow specific static assets
+Allow: /_next/static/
+Allow: /_next/image
+Allow: *.js$
+Allow: *.css$
+
+# Sitemap for discovery
+Sitemap: https://zportaacademy.com/api/sitemap.xml

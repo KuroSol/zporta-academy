@@ -74,15 +74,12 @@ const nextConfig = {
         ? "https://www.zportaacademy.com/api/"
         : "http://127.0.0.1:8000/api/"),
   },
-  // Proxy sitemap.xml requests to Django backend
+  // Proxy sitemap and robots.txt requests
   async rewrites() {
-    const backendUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/$/, "") ||
-      "http://127.0.0.1:8000";
     return [
       {
         source: "/sitemap.xml",
-        destination: `${backendUrl}/sitemap.xml`,
+        destination: "/api/sitemap.xml", // Use Next.js sitemap API
       },
       {
         source: "/robots.txt",
