@@ -4,7 +4,12 @@ import CourseDetail from "@/components/CourseDetail";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 
-const ABS = (base, path) => (path?.startsWith("http") ? path : `${base.replace(/\/$/,"")}${path}`);
+const ABS = (base, path) => {
+  if (!path || typeof path !== "string") return null;
+  return path.startsWith("http")
+    ? path
+    : `${base.replace(/\/$/, "")}${path}`;
+};
 
 export default function CourseDetailPage({ initialCourse, initialLessons, initialSeo, siteUrl, permalink }) {
   const [course, setCourse] = useState(initialCourse || null);
@@ -44,11 +49,11 @@ export default function CourseDetailPage({ initialCourse, initialLessons, initia
         <meta property="og:title" content={initialSeo?.og_title || title} />
         <meta property="og:description" content={initialSeo?.og_description || desc} />
         <meta property="og:url" content={ogUrl} />
-        {ogImg ? <meta property="og:image" content={ABS(siteUrl, ogImg)} /> : null}
+        {ABS(siteUrl, ogImg) ? <meta property="og:image" content={ABS(siteUrl, ogImg)} /> : null}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={initialSeo?.og_title || title} />
         <meta name="twitter:description" content={initialSeo?.og_description || desc} />
-        {ogImg ? <meta name="twitter:image" content={ABS(siteUrl, ogImg)} /> : null}
+        {ABS(siteUrl, ogImg) ? <meta name="twitter:image" content={ABS(siteUrl, ogImg)} /> : null}
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         {focus ? <meta name="keywords" content={focus} /> : null}
         {/* JSON-LD: Course + Breadcrumb */}
@@ -116,9 +121,7 @@ export async function getServerSideProps(ctx) {
     // Public fetch only. If draft, this returns 404; do NOT short-circuit to 404 page.
     const res = await fetch(`${apiBase}/courses/${encodeURIComponent(permalink)}/`, { 
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-      // Force IPv4 on Windows by using explicit family option
-      family: 4
+      signal: AbortSignal.timeout(5000) // 5 second timeout
     });
     if (!res.ok) {
       return { props: { initialCourse: null, initialLessons: [], initialSeo: null, siteUrl, permalink } };

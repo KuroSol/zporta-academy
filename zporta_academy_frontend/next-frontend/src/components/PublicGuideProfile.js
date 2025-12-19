@@ -628,68 +628,76 @@ export default function PublicGuideProfile() {
   return (
     <>
       <Head>
-        <title>
-          {seoData?.title ||
-            `${profile?.display_name || profile?.username} - ${
-              profile?.teaching_specialties ||
-              (isTeacher ? "Teacher" : "Student")
-            } | Zporta Academy`}
-        </title>
-        <meta
-          name="description"
-          content={
-            seoData?.description ||
-            profile?.teacher_about ||
-            profile?.bio ||
-            `${
-              profile?.display_name || profile?.username
-            }'s profile on Zporta Academy`
-          }
-        />
-        {seoData?.canonical_url && (
-          <link rel="canonical" href={seoData.canonical_url} />
-        )}
-        {seoData?.robots && <meta name="robots" content={seoData.robots} />}
-
-        <meta
-          name="keywords"
-          content={`${profile?.display_name || profile?.username}, ${
-            isTeacher ? profile?.teaching_specialties || "teacher" : "student"
-          }, online learning, education, Zporta Academy`}
-        />
-
-        <meta property="og:type" content="profile" />
-        <meta
-          property="og:title"
-          content={
-            seoData?.og_title ||
-            seoData?.title ||
-            `${profile?.display_name || profile?.username}`
-          }
-        />
-        <meta
-          property="og:description"
-          content={
-            seoData?.og_description ||
-            seoData?.description ||
-            profile?.teacher_about ||
-            profile?.bio
-          }
-        />
-        <meta
-          property="og:url"
-          content={
-            seoData?.canonical_url ||
-            (typeof window !== "undefined" ? window.location.href : "")
-          }
-        />
-        {(seoData?.og_image || profile?.profile_image_url) && (
-          <meta
-            property="og:image"
-            content={seoData?.og_image || profile?.profile_image_url}
-          />
-        )}
-        <meta property="og:site_name" content="Zporta Academy" />
+        {(() => {
+          const siteUrl = (
+            process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com"
+          )
+            .replace(/\/$/, "")
+            .replace("www.", "");
+          const canon = seoData?.canonical_url ||
+            (username ? `${siteUrl}/guide/${username}` : siteUrl);
+          const ogUrl = canon;
+          return (
+            <>
+              <title>
+                {seoData?.title ||
+                  `${profile?.display_name || profile?.username} - ${
+                    profile?.teaching_specialties ||
+                    (isTeacher ? "Teacher" : "Student")
+                  } | Zporta Academy`}
+              </title>
+              <meta
+                name="description"
+                content={
+                  seoData?.description ||
+                  profile?.teacher_about ||
+                  profile?.bio ||
+                  `${
+                    profile?.display_name || profile?.username
+                  }'s profile on Zporta Academy`
+                }
+              />
+              <link rel="canonical" href={canon} />
+              {seoData?.robots && (
+                <meta name="robots" content={seoData.robots} />
+              )}
+              <meta
+                name="keywords"
+                content={`${profile?.display_name || profile?.username}, ${
+                  isTeacher
+                    ? profile?.teaching_specialties || "teacher"
+                    : "student"
+                }, online learning, education, Zporta Academy`}
+              />
+              <meta property="og:type" content="profile" />
+              <meta
+                property="og:title"
+                content={
+                  seoData?.og_title ||
+                  seoData?.title ||
+                  `${profile?.display_name || profile?.username}`
+                }
+              />
+              <meta
+                property="og:description"
+                content={
+                  seoData?.og_description ||
+                  seoData?.description ||
+                  profile?.teacher_about ||
+                  profile?.bio
+                }
+              />
+              <meta property="og:url" content={ogUrl} />
+              {(seoData?.og_image || profile?.profile_image_url) && (
+                <meta
+                  property="og:image"
+                  content={seoData?.og_image || profile?.profile_image_url}
+                />
+              )}
+              <meta property="og:site_name" content="Zporta Academy" />
+            </>
+          );
+        })()}
 
         {!seoData?.json_ld && profile && (
           <script
@@ -699,7 +707,15 @@ export default function PublicGuideProfile() {
                 "@context": "https://schema.org",
                 "@type": "Person",
                 name: profile.display_name || profile.username,
-                url: typeof window !== "undefined" ? window.location.href : "",
+                url: (function () {
+                  const siteUrl = (
+                    process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com"
+                  )
+                    .replace(/\/$/, "")
+                    .replace("www.", "");
+                  return seoData?.canonical_url ||
+                    (username ? `${siteUrl}/guide/${username}` : siteUrl);
+                })(),
                 image: profile.profile_image_url,
                 description: isTeacher
                   ? profile.teacher_about || ""
