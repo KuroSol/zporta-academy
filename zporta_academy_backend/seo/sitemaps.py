@@ -178,13 +178,21 @@ class TeacherSitemap(CanonicalSitemap):
 
 
 def canonical_sitemap_index(request, *args, **kwargs):
-    """Wrap Django's sitemap index to force canonical host in <loc> entries."""
+    """
+    Wrap Django's sitemap index to:
+    1. Force canonical host in <loc> entries (NOT xmlns namespace)
+    2. Ensure proper XML content-type
+    3. Prevent BOM issues by using UTF-8 encoding
+    """
     response = django_sitemap_index(request, *args, **kwargs)
     if getattr(response, "status_code", None) == 200:
         if hasattr(response, "render"):
             response.render()
         if getattr(response, "content", None):
-            body = response.content.decode()
-            body = re.sub(r"https?://[^/]+", CANONICAL_ORIGIN, body)
-            response.content = body.encode()
+            body = response.content.decode('utf-8')
+            # Replace domain ONLY in <loc> tags, NOT in xmlns attribute
+            body = re.sub(r'<loc>https?://[^/]+', f'<loc>{CANONICAL_ORIGIN}', body)
+            response.content = body.encode('utf-8')
+            # Ensure correct content-type (Django should set this, but we make it explicit)
+            response['Content-Type'] = 'application/xml; charset=utf-8'
     return response

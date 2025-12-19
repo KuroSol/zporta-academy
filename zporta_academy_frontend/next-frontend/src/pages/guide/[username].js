@@ -1,11 +1,7 @@
-// src/pages/guides/[username].js
-import dynamic from "next/dynamic";
+// src/pages/guide/[username].js
+import PublicGuideProfile from "@/components/PublicGuideProfile";
 
-const PublicGuideProfile = dynamic(
-  () => import("@/components/PublicGuideProfile").then(m => m.default || m),
-  { ssr: false }
-);
-
+// SSR enabled - component has window checks and Head tags for proper SEO
 export default function GuideProfilePage() {
   return <PublicGuideProfile />;
 }

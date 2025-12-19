@@ -106,7 +106,8 @@ export async function getServerSideProps(ctx) {
   const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api")
     .replace(/\/$/, "")
     .replace(/localhost/g, '127.0.0.1');
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://zportaacademy.com";
+  // Force non-www for canonical URLs
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://zportaacademy.com").replace("www.", "");
 
   // Conservative cache headers for public SSR responses
   try { ctx.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=120'); } catch (_) {}

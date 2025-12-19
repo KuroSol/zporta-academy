@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import Head from "next/head";
 import apiClient from "../api";
 import he from "he";
 import { AuthContext } from "../context/AuthContext";
@@ -785,10 +786,49 @@ const QuizPage = ({
     }
   };
 
+  // SEO Metadata
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com").replace(/\/$/, "").replace("www.", "");
+  const quizTitle = quizData?.title || "Quiz";
+  const quizDescription = quizData?.description || `Practice with ${questions?.length || 0} questions on Zporta Academy.`;
+  const canonicalUrl = permalink ? `${siteUrl}/quizzes/${permalink}/` : siteUrl;
+  const ogImage = quizData?.og_image_url || `${siteUrl}/images/default-og.png`;
+  const author = quizData?.created_by?.username || quizData?.created_by || "Zporta Academy";
+
   return (
-    <div className={styles.pageContainer}>
-      <div className={styles.quizContainer}>
-        <div className={styles.quizHeader}>
+    <>
+      <Head>
+        <title>{quizTitle} - Zporta Academy Quiz</title>
+        <meta name="description" content={quizDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta name="robots" content="index,follow" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={quizTitle} />
+        <meta property="og:description" content={quizDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="article:author" content={author} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={quizTitle} />
+        <meta name="twitter:description" content={quizDescription} />
+        <meta name="twitter:image" content={ogImage} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Quiz",
+              name: quizTitle,
+              description: quizDescription,
+              author: { "@type": "Person", name: author },
+              educationalLevel: quizData?.difficulty || "Intermediate",
+              url: canonicalUrl,
+            }),
+          }}
+        />
+      </Head>
+      <div className={styles.pageContainer}>
+        <div className={styles.quizContainer}>
+          <div className={styles.quizHeader}>
           <div className={styles.quizTimerOverlay}>
             <QuizTimer
               startTime={quizStartTime.current}

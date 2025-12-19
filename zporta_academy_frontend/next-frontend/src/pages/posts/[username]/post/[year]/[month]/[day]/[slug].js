@@ -23,7 +23,7 @@ export async function getServerSideProps({ params, req }){
 }
 
 export default function Page({ post, previousPost, nextPost }){
-  const site  = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.zportaacademy.com';
+  const site  = (process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com').replace(/\/$/, '').replace('www.', '');
   const url   = `${site}/posts/${post.permalink}`;
   const title = post.seo_title || post.title;
   const desc  = post.seo_description || (post.content ? post.content.replace(/<[^>]+>/g,'').slice(0,160) : '');
