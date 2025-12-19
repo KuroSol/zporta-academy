@@ -634,7 +634,8 @@ export default function PublicGuideProfile() {
           )
             .replace(/\/$/, "")
             .replace("www.", "");
-          const canon = seoData?.canonical_url ||
+          const canon =
+            seoData?.canonical_url ||
             (username ? `${siteUrl}/guide/${username}` : siteUrl);
           const ogUrl = canon;
           return (
@@ -709,12 +710,15 @@ export default function PublicGuideProfile() {
                 name: profile.display_name || profile.username,
                 url: (function () {
                   const siteUrl = (
-                    process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com"
+                    process.env.NEXT_PUBLIC_SITE_URL ||
+                    "https://zportaacademy.com"
                   )
                     .replace(/\/$/, "")
                     .replace("www.", "");
-                  return seoData?.canonical_url ||
-                    (username ? `${siteUrl}/guide/${username}` : siteUrl);
+                  return (
+                    seoData?.canonical_url ||
+                    (username ? `${siteUrl}/guide/${username}` : siteUrl)
+                  );
                 })(),
                 image: profile.profile_image_url,
                 description: isTeacher
