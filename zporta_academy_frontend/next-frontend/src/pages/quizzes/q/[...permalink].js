@@ -1,13 +1,4 @@
 // Individual Question Page - SEO-friendly permalink URL
-// OPTIMIZATION NOTES:
-// - Question load timeout: 8 seconds (fail fast if backend is slow)
-// - Feed API timeout: 7 seconds (fail fast)
-// - Feed fetch debounced 500ms to avoid rapid calls
-// - Analytics section lazy-loads 1 second after question (non-blocking)
-// - Prefetch now only fetches feed list (fast), not individual question details
-// - Debouncing on wheel scroll: min 600ms between navigations prevents rapid scroll issues
-// - Debouncing on button click: min 800ms between navigations prevents spam clicks
-// - Debouncing on swipe: min 600ms between swipe events prevents rapid mobile swipes
 import { useRouter } from "next/router";
 import { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
@@ -81,7 +72,6 @@ function QuestionDetailPage() {
   const [error, setError] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [loadAnalytics, setLoadAnalytics] = useState(false); // Lazy load analytics
   const [quizStartTime, setQuizStartTime] = useState(Date.now());
   const [hintsUsed, setHintsUsed] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -97,18 +87,15 @@ function QuestionDetailPage() {
   const [touchEndY, setTouchEndY] = useState(null);
   const [explorerNextPermalink, setExplorerNextPermalink] = useState(null);
   const [explorerPrevPermalink, setExplorerPrevPermalink] = useState(null);
+  const [historyPrevPermalink, setHistoryPrevPermalink] = useState(null);
   const [backendNextPermalink, setBackendNextPermalink] = useState(null);
   const [wheelDelta, setWheelDelta] = useState(0);
   const [transitionDir, setTransitionDir] = useState(null);
   const [prefetchQueue, setPrefetchQueue] = useState([]);
   const [isPrefetching, setIsPrefetching] = useState(false);
-  const [isEndOfContent, setIsEndOfContent] = useState(false);
   const containerRef = useRef(null);
   const prefetchAbortRef = useRef(null);
   const prefetchRequestCountRef = useRef(0);
-  const navigationDebounceRef = useRef(null);
-  const lastNavigationTimeRef = useRef(0);
-  const navigationHistoryRef = useRef([]); // Stack of visited question permalinks for scroll-up
 
   const DEFAULT_AVATAR =
     "https://zportaacademy.com/media/managed_images/zpacademy.png";
@@ -210,37 +197,14 @@ function QuestionDetailPage() {
     const fetchQuestion = async () => {
       let active = true;
       try {
-        setTransitionDir(null); // Reset transition state BEFORE loading
         setLoading(true);
         const permalinkString = Array.isArray(permalink)
           ? permalink.join("/")
           : permalink;
-
-        // Push previous permalink to history stack before loading new one
-        if (
-          question?.permalink &&
-          navigationHistoryRef.current[
-            navigationHistoryRef.current.length - 1
-          ] !== question.permalink
-        ) {
-          navigationHistoryRef.current.push(question.permalink);
-          console.log(
-            "[NAV HISTORY] Pushed:",
-            question.permalink,
-            "Stack:",
-            navigationHistoryRef.current
-          );
-        }
-
-        // Fetch with 8 second timeout (fail fast if backend is slow)
-        const response = await apiClient.get(`/quizzes/q/${permalinkString}/`, {
-          timeout: 8000,
-        });
-
+        const response = await apiClient.get(`/quizzes/q/${permalinkString}/`);
         if (!active) return;
         setQuestion(response.data);
         setQuizStartTime(Date.now());
-
         // Reset form state for new question
         if (active) {
           setSelectedAnswer(null);
@@ -262,17 +226,63 @@ function QuestionDetailPage() {
     };
 
     fetchQuestion();
-
-    // Lazy load analytics 1 second after question loads (non-blocking)
-    const analyticsTimer = setTimeout(() => {
-      setLoadAnalytics(true);
-    }, 1000);
-
     return () => {
-      clearTimeout(analyticsTimer);
       /* prevent setState after unmount */
     };
   }, [permalink]);
+
+  // Reset transition state when question changes
+  useEffect(() => {
+    setTransitionDir(null);
+    setWheelDelta(0);
+  }, [question?.id]);
+
+  // Track quiz visit history (quiz-level, not question-level) for proper up arrow behavior
+  // Up arrow should only be enabled after viewing at least 2 different quizzes
+  useEffect(() => {
+    if (!question?.quiz?.id) return;
+    const currentQuizId = question.quiz.id;
+    try {
+      // CLEAR OLD BROKEN HISTORY
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("quizHistory");
+      }
+
+      const raw =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("quizVisitHistory")
+          : null;
+      const hist = raw ? JSON.parse(raw) : [];
+
+      // ONLY KEEP NUMERIC IDS
+      const filtered = Array.isArray(hist)
+        ? hist.filter(
+            (id) =>
+              id !== currentQuizId &&
+              (typeof id === "number" || /^\d+$/.test(String(id)))
+          )
+        : [];
+
+      const updated = [...filtered, currentQuizId].slice(-50);
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("quizVisitHistory", JSON.stringify(updated));
+      }
+
+      // Only set previous permalink if we have at least 2 quizzes in history
+      // This ensures up arrow is disabled on first quiz visit
+      if (updated.length >= 2) {
+        const prevQuizId = updated[updated.length - 2];
+        // We need to find the first question permalink for this quiz
+        // For now, just enable the button - we'll fetch it when clicked
+        setHistoryPrevPermalink(prevQuizId);
+      } else {
+        setHistoryPrevPermalink(null);
+      }
+    } catch (e) {
+      setHistoryPrevPermalink(null);
+    }
+  }, [question?.quiz?.id]);
 
   // Compute next quiz (first question permalink) from Explorer order stored in sessionStorage
   useEffect(() => {
@@ -397,9 +407,8 @@ function QuestionDetailPage() {
 
   // Continuous prefetch of next 3 quizzes to avoid "End of Content"
   // Refills queue whenever it drops below 2 items
-  // STOPS when end of content is reached
   useEffect(() => {
-    if (!question || isEndOfContent) return;
+    if (!question) return;
     let active = true;
 
     const doPrefetch = async () => {
@@ -424,13 +433,10 @@ function QuestionDetailPage() {
           const historyData = sessionStorage.getItem("quizVisitHistory");
           if (historyData) {
             const history = JSON.parse(historyData);
-            // Limit exclude list to last 20 to avoid filtering out all quizzes
             excludeIds = Array.isArray(history)
-              ? history
-                  .filter(
-                    (id) => typeof id === "number" || /^\d+$/.test(String(id))
-                  )
-                  .slice(-20)
+              ? history.filter(
+                  (id) => typeof id === "number" || /^\d+$/.test(String(id))
+                )
               : [];
           }
         } catch (e) {}
@@ -438,7 +444,6 @@ function QuestionDetailPage() {
           [...(excludeIds || []), question?.quiz?.id].filter(Boolean)
         );
 
-        // Feed API now properly excludes items
         const resp = await apiClient.get(`/feed/next/`, {
           params: {
             current_question: current,
@@ -450,52 +455,50 @@ function QuestionDetailPage() {
                 : undefined,
           },
           signal,
-          timeout: 12000,
         });
 
         if (!active || requestId !== prefetchRequestCountRef.current) return;
 
         const items = resp?.data?.items;
-        const isEndOfContentSignal = resp?.data?.is_end_of_content;
-
-        if (isEndOfContentSignal) {
-          // Got end-of-content signal - stop prefetching
-          if (active) {
-            setIsEndOfContent(true);
-            setIsPrefetching(false);
-          }
-          return;
-        }
-
         if (Array.isArray(items) && items.length) {
-          // Get permalinks from feed response
+          // Prefetch the next 3 quizzes' detail pages
           const candidates = items
             .map((it) => ({
               permalink: it?.first_question_permalink || it?.first_question_url,
               quizId: it?.id,
-              title: it?.title,
-              totalQuestions: it?.total_questions,
             }))
             .filter((it) => it.permalink)
-            .slice(0, 5); // Prefetch up to 5
+            .slice(0, 3);
 
-          // Just queue the permalinks - don't fetch details
-          // Details will be fetched by the actual question page load
-          const newItems = candidates.map((cand) => ({
-            permalink: cand.permalink,
-            quizId: cand.quizId,
-            title: cand.title,
-          }));
-
+          const newItems = [];
+          for (const cand of candidates) {
+            // Skip if already in queue
+            if (prefetchQueue.some((q) => q.permalink === cand.permalink)) {
+              newItems.push(cand);
+              continue;
+            }
+            try {
+              const norm = cand.permalink.split("/").filter(Boolean).join("/");
+              const detail = await apiClient.get(`/quizzes/q/${norm}/`, {
+                signal,
+                timeout: 15000,
+              });
+              if (!active || requestId !== prefetchRequestCountRef.current)
+                return;
+              newItems.push({
+                permalink: cand.permalink,
+                quizId: cand.quizId,
+                data: detail.data, // cache the quiz data
+              });
+            } catch (e) {
+              if (e?.code === "ERR_CANCELED" || e?.name === "CanceledError")
+                return;
+              // Log but don't fail the whole prefetch
+              console.warn("Prefetch item failed:", cand.permalink, e?.message);
+            }
+          }
           if (active && requestId === prefetchRequestCountRef.current) {
-            setPrefetchQueue((prev) => {
-              // Avoid duplicates
-              const existing = new Set(prev.map((p) => p.permalink));
-              const filtered = newItems.filter(
-                (ni) => !existing.has(ni.permalink)
-              );
-              return [...prev, ...filtered].slice(0, 5);
-            });
+            setPrefetchQueue((prev) => [...prev, ...newItems].slice(0, 5));
           }
         }
       } catch (e) {
@@ -512,86 +515,69 @@ function QuestionDetailPage() {
     return () => {
       active = false;
     };
-  }, [question?.quiz?.id, isEndOfContent]);
+  }, [question?.quiz?.id]);
 
   // Fetch backend-personalized next quiz first-question permalink ONLY when quiz changes
   // (not on horizontal navigation to different questions in same quiz)
-  // Debounced to avoid rapid calls
-  // STOPS when end of content is reached
   useEffect(() => {
-    if (!question || isEndOfContent) return;
+    if (!question) return;
+    const fetchNext = async () => {
+      try {
+        const current =
+          question.permalink ||
+          (Array.isArray(permalink) ? permalink.join("/") : permalink);
 
-    // Debounce the fetch to avoid rapid calls
-    const timeoutId = setTimeout(() => {
-      const fetchNext = async () => {
+        // Build exclude list from quiz visit history (quiz IDs only, not permalinks)
+        // Use quizVisitHistory which stores only quiz IDs (numbers)
+        let excludeIds = [];
         try {
-          const current =
-            question.permalink ||
-            (Array.isArray(permalink) ? permalink.join("/") : permalink);
-
-          // Build exclude list from quiz visit history
-          let excludeIds = [];
-          try {
-            const historyData = sessionStorage.getItem("quizVisitHistory");
-            if (historyData) {
-              const history = JSON.parse(historyData);
-              // Include ALL visited quizzes to properly exclude them
-              excludeIds = Array.isArray(history)
-                ? history.filter(
-                    (id) => typeof id === "number" || /^\d+$/.test(String(id))
-                  )
-                : [];
-            }
-          } catch (e) {
-            console.warn("Failed to parse quiz visit history", e);
-          }
-
-          // Add current quiz to exclude list
-          const allExcludeIds = new Set(
-            [...(excludeIds || []), question?.quiz?.id].filter(Boolean)
-          );
-
-          // Now that backend /feed/next/ properly excludes, send full exclude list
-          const resp = await apiClient.get(`/feed/next/`, {
-            params: {
-              current_question: current,
-              current_quiz_id: question?.quiz?.id,
-              limit: 20,
-              exclude:
-                allExcludeIds.size > 0
-                  ? Array.from(allExcludeIds).join(",")
-                  : undefined,
-            },
-            timeout: 7000,
-          });
-
-          const items = resp?.data?.items;
-          const isEndOfContentSignal = resp?.data?.is_end_of_content;
-
-          if (isEndOfContentSignal) {
-            setIsEndOfContent(true);
-            setBackendNextPermalink(null);
-            return;
-          }
-
-          if (Array.isArray(items) && items.length) {
-            const first = items[0];
-            const p =
-              first?.first_question_permalink || first?.first_question_url;
-            setBackendNextPermalink(p || null);
-          } else {
-            setBackendNextPermalink(null);
+          const historyData = sessionStorage.getItem("quizVisitHistory");
+          if (historyData) {
+            const history = JSON.parse(historyData);
+            // This history contains only quiz IDs (numbers)
+            excludeIds = Array.isArray(history)
+              ? history.filter(
+                  (id) => typeof id === "number" || /^\d+$/.test(String(id))
+                )
+              : [];
           }
         } catch (e) {
-          setBackendNextPermalink(null);
+          console.warn("Failed to parse quiz visit history", e);
         }
-      };
-      fetchNext();
-    }, 500); // Wait 500ms after quiz ID changes before fetching
 
-    return () => clearTimeout(timeoutId);
+        // Add current quiz to exclude list before sending request
+        const allExcludeIds = new Set(
+          [...(excludeIds || []), question?.quiz?.id].filter(Boolean)
+        );
+
+        const resp = await apiClient.get(`/feed/next/`, {
+          params: {
+            current_question: current,
+            current_quiz_id: question?.quiz?.id,
+            limit: 20,
+            exclude:
+              allExcludeIds.size > 0
+                ? Array.from(allExcludeIds).join(",")
+                : undefined,
+          },
+        });
+        const items = resp?.data?.items;
+        if (Array.isArray(items) && items.length) {
+          const first = items[0];
+          const p =
+            first?.first_question_permalink || first?.first_question_url;
+          setBackendNextPermalink(p || null);
+        } else {
+          const p = resp?.data?.first_question_permalink;
+          setBackendNextPermalink(p || null);
+        }
+      } catch (e) {
+        setBackendNextPermalink(null);
+      }
+    };
+    fetchNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [question?.quiz?.id, isEndOfContent]);
+  }, [question?.quiz?.id]);
 
   // OLD duplicate history tracking removed - now using quizVisitHistory only (see earlier useEffect)
 
@@ -643,15 +629,6 @@ function QuestionDetailPage() {
   const directNavigate = (target) => {
     const path = toPath(target);
     if (!path) return;
-
-    // Prevent rapid clicks - debounce navigation
-    const now = Date.now();
-    if (now - lastNavigationTimeRef.current < 800) {
-      console.warn("[DEBOUNCE] Ignoring rapid navigation click");
-      return;
-    }
-    lastNavigationTimeRef.current = now;
-
     router.push(path);
   };
 
@@ -670,16 +647,8 @@ function QuestionDetailPage() {
     if (touchStartY == null || touchEndY == null) return;
     const deltaY = touchStartY - touchEndY;
     if (Math.abs(deltaY) < 70) return;
-
-    // Prevent rapid swipe navigation
-    const now = Date.now();
-    if (now - lastNavigationTimeRef.current < 600) {
-      return;
-    }
-
     const nextPath = explorerNextPermalink || backendNextPermalink;
     if (deltaY > 0 && nextPath) {
-      lastNavigationTimeRef.current = now;
       navigateWithTransition(nextPath, "up");
     } else if (deltaY < 0) {
       const backTarget =
@@ -687,10 +656,7 @@ function QuestionDetailPage() {
         explorerPrevPermalink ||
         question?.previous_question_permalink ||
         question?.navigation?.prev?.permalink;
-      if (backTarget) {
-        lastNavigationTimeRef.current = now;
-        navigateWithTransition(backTarget, "down");
-      }
+      if (backTarget) navigateWithTransition(backTarget, "down");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [touchEndY]);
@@ -702,6 +668,7 @@ function QuestionDetailPage() {
     // Scroll up = go back to previous visited if available
     if (dy < -120) {
       const backTarget =
+        historyPrevPermalink ||
         explorerPrevPermalink ||
         question?.previous_question_permalink ||
         question?.navigation?.prev?.permalink;
@@ -713,20 +680,12 @@ function QuestionDetailPage() {
 
     const nextPath = explorerNextPermalink || backendNextPermalink;
     if (!nextPath) return;
-
-    // Prevent rapid scrolling - debounce navigation
-    const now = Date.now();
-    if (now - lastNavigationTimeRef.current < 600) {
-      return; // Ignore scroll if less than 600ms since last navigation
-    }
-
     // accumulate downward scroll only
     const down = Math.max(0, dy);
     const next = wheelDelta + down;
     if (next > 320) {
       setWheelDelta(0);
       navigateWithTransition(nextPath, "up");
-      lastNavigationTimeRef.current = now;
     } else {
       setWheelDelta(next);
     }
@@ -776,65 +735,18 @@ function QuestionDetailPage() {
   }
 
   if (!question) {
-    console.warn(
-      "[DEBUG] !question - loading=",
-      loading,
-      "error=",
-      error,
-      "permalink=",
-      permalink
-    );
     return (
       <>
         <AppHeader />
-        <div
-          className={styles.container}
-          style={{
-            minHeight: "80vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#f5f5f5",
-          }}
-        >
+        <div className={styles.container}>
           {loading ? (
             <div className={styles.loading}>Loading question...</div>
           ) : (
-            <div
-              style={{
-                padding: "2rem",
-                backgroundColor: "white",
-                borderRadius: "8px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                maxWidth: "600px",
-              }}
-            >
-              <h2 style={{ color: "#d32f2f", marginBottom: "1rem" }}>
-                ⚠️ Unable to load question
-              </h2>
-              <p
-                style={{
-                  color: "#666",
-                  marginBottom: "1rem",
-                  fontSize: "1rem",
-                }}
-              >
-                {error || "Please check your connection or try again."}
-              </p>
-              <button
-                onClick={() => router.replace(router.asPath)}
-                style={{
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "#1976d2",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Retry
-              </button>
-            </div>
+            <ErrorState
+              title="Unable to load question"
+              message={error || "Please check your connection or try again."}
+              onRetry={() => router.replace(router.asPath)}
+            />
           )}
         </div>
       </>
@@ -1073,13 +985,12 @@ function QuestionDetailPage() {
                   ⭐ Standalone
                 </span>
               )}
-              {loadAnalytics && typeof question.times_answered === "number" && (
+              {typeof question.times_answered === "number" && (
                 <span className={styles.footerPill} title="Times answered">
                   📊 {question.times_answered}
                 </span>
               )}
-              {loadAnalytics &&
-                typeof question.times_correct === "number" &&
+              {typeof question.times_correct === "number" &&
                 typeof question.times_wrong === "number" && (
                   <>
                     <button
@@ -1103,11 +1014,6 @@ function QuestionDetailPage() {
                     </span>
                   </>
                 )}
-              {!loadAnalytics && (
-                <span className={styles.footerPill} style={{ opacity: 0.5 }}>
-                  ⏳ Analytics loading...
-                </span>
-              )}
             </div>
           </div>
 
@@ -1165,31 +1071,36 @@ function QuestionDetailPage() {
                 )}
               </>
             ) : null}
-            {/* Up arrow: previous quiz from local navigation history */}
+            {/* Up arrow: previous quiz from history - disabled until at least 2 quizzes viewed */}
             <button
-              onClick={() => {
-                // Pop from local history stack and navigate back
-                if (navigationHistoryRef.current.length > 0) {
-                  const prevPermalink = navigationHistoryRef.current.pop();
-                  console.log(
-                    "[NAV HISTORY] Popped:",
-                    prevPermalink,
-                    "Remaining stack:",
-                    navigationHistoryRef.current
-                  );
-                  directNavigate(prevPermalink);
-                } else {
-                  // No history, just scroll to top
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+              onClick={async () => {
+                // historyPrevPermalink now contains quiz ID, not permalink
+                // Need to fetch the first question permalink for that quiz
+                if (historyPrevPermalink) {
+                  try {
+                    // Fetch quiz details to get first question permalink
+                    const resp = await apiClient.get(
+                      `/quizzes/${historyPrevPermalink}/`
+                    );
+                    const firstQ = resp?.data?.first_question_permalink;
+                    if (firstQ) {
+                      navigateWithTransition(firstQ, "down");
+                    }
+                  } catch (e) {
+                    console.error("Failed to fetch previous quiz", e);
+                  }
+                } else if (explorerPrevPermalink) {
+                  navigateWithTransition(explorerPrevPermalink, "down");
                 }
               }}
               className={styles.navIconButtonUp}
               aria-label="Previous quiz"
               title={
-                navigationHistoryRef.current.length > 0
+                historyPrevPermalink || explorerPrevPermalink
                   ? "Previous quiz (scroll up)"
-                  : "No previous quiz - scroll to top"
+                  : "Start of feed - scroll down to continue"
               }
+              disabled={!(historyPrevPermalink || explorerPrevPermalink)}
             >
               <ChevronUp size={20} />
             </button>
@@ -1200,12 +1111,6 @@ function QuestionDetailPage() {
             isPrefetching ? (
               <button
                 onClick={() => {
-                  // Debounce rapid clicks - prevent user from clicking too fast
-                  const now = Date.now();
-                  if (now - lastNavigationTimeRef.current < 800) {
-                    return; // Ignore click if less than 800ms since last navigation
-                  }
-
                   // Only allow click if we have something ready
                   if (isPrefetching && prefetchQueue.length === 0) return;
                   // Try prefetched first, then fallback to explorer/backend
@@ -1215,9 +1120,6 @@ function QuestionDetailPage() {
                     explorerNextPermalink ||
                     backendNextPermalink;
                   if (!p) return;
-
-                  lastNavigationTimeRef.current = now;
-
                   // If prefetched, pop from queue
                   if (nextItem) {
                     setPrefetchQueue((prev) => prev.slice(1));
@@ -1229,9 +1131,7 @@ function QuestionDetailPage() {
                 title={
                   prefetchQueue.length > 0
                     ? "Next quiz ready (scroll down)"
-                    : isPrefetching
-                    ? "Loading next quiz..."
-                    : "No more content"
+                    : "Loading next quiz..."
                 }
                 disabled={isPrefetching && prefetchQueue.length === 0}
               >
@@ -1282,7 +1182,7 @@ function QuestionDetailPage() {
                     lineHeight: 1.4,
                   }}
                 >
-                  You&apos;ve reached the end of this subject&apos;s content
+                  {`You've reached the end of this subject's content`}
                 </div>
                 <Link
                   href="/quizzes"

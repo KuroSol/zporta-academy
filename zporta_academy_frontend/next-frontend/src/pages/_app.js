@@ -2,7 +2,6 @@
 import "@/styles/globals.css";
 
 import React, { useContext, useMemo } from "react";
-import App from "next/app";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -63,7 +62,7 @@ export default function MyApp({ Component, pageProps }) {
 
   return (
     <AuthProvider>
-      <LanguageProvider initialLocale={pageProps.initialLocale}>
+      <LanguageProvider>
         <AuthModalProvider>
           <Head>
             {/* Global sitemap reference */}
@@ -79,31 +78,3 @@ export default function MyApp({ Component, pageProps }) {
     </AuthProvider>
   );
 }
-
-// Ensure SSR picks the best initial locale (cookie or Accept-Language)
-MyApp.getInitialProps = async (appContext) => {
-  const appProps = await App.getInitialProps(appContext);
-  const req = appContext.ctx?.req;
-  let initialLocale = undefined;
-
-  if (req) {
-    try {
-      // Resolve from cookie first, then Accept-Language
-      const { resolveLocale } = require("@/lib/i18n");
-      initialLocale = resolveLocale({
-        cookieString: req.headers?.cookie || "",
-        acceptLanguage: req.headers?.["accept-language"] || "",
-      });
-    } catch (_) {
-      // no-op; default will be used client-side
-    }
-  }
-
-  return {
-    ...appProps,
-    pageProps: {
-      ...appProps.pageProps,
-      initialLocale,
-    },
-  };
-};
