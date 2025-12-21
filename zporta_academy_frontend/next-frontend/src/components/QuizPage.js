@@ -133,6 +133,7 @@ const QuizPage = ({
   const { openLoginModal } = useContext(AuthModalContext);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [quizStats, setQuizStats] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -143,6 +144,18 @@ const QuizPage = ({
   const [hintsUsed, setHintsUsed] = useState({});
   // Track quiz start time for total duration
   const quizStartTime = useRef(null);
+
+  // Check sessionStorage for delete success message on mount
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const msg = sessionStorage.getItem("quizDeleteMessage");
+      if (msg) {
+        setSuccessMessage(msg);
+        sessionStorage.removeItem("quizDeleteMessage");
+        setTimeout(() => setSuccessMessage(""), 5000);
+      }
+    }
+  }, []);
 
   let quizCreatorUsername = null;
   if (quizData?.created_by) {
@@ -529,11 +542,15 @@ const QuizPage = ({
     setError(null);
     try {
       await apiClient.delete(`/quizzes/${quizData.id}/delete/`);
-      window.location.href = "/dashboard";
+      // Store success message in sessionStorage before redirecting
+      sessionStorage.setItem("quizDeleteMessage", "Quiz deleted successfully!");
+      // Redirect to user profile instead of dashboard
+      setTimeout(() => {
+        router.push(`/guide/${user?.username || "profile"}`);
+      }, 500);
     } catch (err) {
       console.error("Error deleting quiz:", err);
-      setError("Failed to delete quiz.");
-    } finally {
+      setError("Failed to delete quiz. Please try again.");
       setIsDeleting(false);
     }
   };
@@ -788,6 +805,18 @@ const QuizPage = ({
   return (
     <div className={styles.pageContainer}>
       <div className={styles.quizContainer}>
+        {successMessage && (
+          <div style={{
+            backgroundColor: "#d4edda",
+            color: "#155724",
+            padding: "1rem",
+            marginBottom: "1rem",
+            borderRadius: "4px",
+            border: "1px solid #c3e6cb"
+          }}>
+            ✓ {successMessage}
+          </div>
+        )}
         <div className={styles.quizHeader}>
           <div className={styles.quizTimerOverlay}>
             <QuizTimer
