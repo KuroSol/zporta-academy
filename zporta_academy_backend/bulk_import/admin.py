@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 import json
-from .models import BulkImportJob
+from .models import BulkImportJob, BulkImportQuizMenu
 from .import_handler import BulkImportHandler
 from .quiz_import_handler import QuizBulkImportHandler
 
@@ -171,3 +171,24 @@ class BulkImportJobAdmin(admin.ModelAdmin):
             obj.errors = obj.errors + [f'Critical error: {exc}'] if obj.errors else [f'Critical error: {exc}']
             obj.save()
             messages.error(request, f'Bulk import failed: {exc}')
+
+
+@admin.register(BulkImportQuizMenu)
+class BulkImportQuizMenuAdmin(admin.ModelAdmin):
+    """
+    Admin entry that appears as 'Bulk import quiz' and redirects to the
+    quiz-upload page under BulkImportJob.
+    """
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Build the BulkImportJob changelist URL and append the quiz-upload path
+        base = reverse('admin:bulk_import_bulkimportjob_changelist')
+        return HttpResponseRedirect(f"{base}quiz-upload/")

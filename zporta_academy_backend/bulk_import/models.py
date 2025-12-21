@@ -38,3 +38,10 @@ class BulkImportJob(models.Model):
     
     def __str__(self):
         return f"Import {self.id} - {self.status}"
+
+# Proxy model to expose a dedicated admin menu item for quiz uploads
+class BulkImportQuizMenu(BulkImportJob):
+    class Meta:
+        proxy = True
+        verbose_name = 'Bulk import quiz'
+        verbose_name_plural = 'Bulk import quiz'
