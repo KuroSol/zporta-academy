@@ -27,7 +27,6 @@ from analytics.utils import update_memory_stat_item, log_event
 from analytics.models import ActivityEvent
 from rest_framework.decorators import api_view, permission_classes
 from analytics.utils import get_or_create_quiz_session_id
-from seo.utils import canonical_url
 
 
 logger = logging.getLogger(__name__)
@@ -497,9 +496,7 @@ class DynamicQuizView(APIView):
         if quiz.status != 'published' and not (user and (user == quiz.created_by or user.is_staff)):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = QuizSerializer(quiz, context={"request": request})
-        data = serializer.data
-        data["canonical_url"] = canonical_url(data.get("canonical_url") or f"/quizzes/{quiz.permalink}/")
-        return Response({"quiz": data})
+        return Response({"quiz": serializer.data})
 
 class QuizListByCourseView(generics.ListAPIView):
     serializer_class = QuizSerializer

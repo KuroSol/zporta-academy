@@ -16,23 +16,19 @@ if (typeof window !== "undefined") {
     const fs = require("fs");
     const path = require("path");
     const cwd = process.cwd && process.cwd();
-    
+
     if (!cwd || typeof cwd !== "string") {
-      console.warn("process.cwd() is not available, skipping i18n load on server");
+      console.warn(
+        "process.cwd() is not available, skipping i18n load on server"
+      );
       translations = {};
     } else {
       translations = {
         en: JSON.parse(
-          fs.readFileSync(
-            path.join(cwd, "public/locales/en.json"),
-            "utf-8"
-          )
+          fs.readFileSync(path.join(cwd, "public/locales/en.json"), "utf-8")
         ),
         ja: JSON.parse(
-          fs.readFileSync(
-            path.join(cwd, "public/locales/ja.json"),
-            "utf-8"
-          )
+          fs.readFileSync(path.join(cwd, "public/locales/ja.json"), "utf-8")
         ),
       };
     }

@@ -12,7 +12,6 @@ from tags.models    import Tag
 from django.contrib.contenttypes.fields import GenericRelation
 from analytics.models import ActivityEvent
 from unidecode import unidecode
-from seo.utils import CANONICAL_ORIGIN, canonical_url
 
 # --- japanese_to_romaji function ---
 def japanese_to_romaji(text):
@@ -184,12 +183,12 @@ class Quiz(models.Model):
             self.focus_keyword = slugify(japanese_to_romaji(self.title))
 
         # --- Canonical URL: point to your quiz’s public URL ---
-            if not self.canonical_url and self.permalink:
-                self.canonical_url = canonical_url(f"/quizzes/{self.permalink}/")
+        if not self.canonical_url and self.permalink:
+            self.canonical_url = f"https://www.zportaacademy.com/quizzes/{self.permalink}/"
 
         # --- Default OG image (unchanged) ---
-            if not self.og_image:
-                self.og_image = f"{CANONICAL_ORIGIN}/static/default_quiz_image.png"
+        if not self.og_image:
+            self.og_image = "https://www.zportaacademy.com/static/default_quiz_image.png"
  
         # stamp first publish time
         if self.status == 'published' and not self.published_at:

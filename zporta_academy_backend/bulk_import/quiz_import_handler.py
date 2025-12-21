@@ -155,11 +155,15 @@ class QuizBulkImportHandler:
             permalink=permalink,
         )
         
-        # Add tags
+        # Add tags - properly validate and parse
         tag_names = quiz_data.get('tag_names', [])
-        for tag_name in tag_names:
-            tag, _ = Tag.objects.get_or_create(name=tag_name)
-            quiz.tags.add(tag)
+        clean_tags = self._parse_and_validate_tags(tag_names)
+        for tag_name in clean_tags:
+            try:
+                tag, _ = Tag.objects.get_or_create(name=tag_name)
+                quiz.tags.add(tag)
+            except Exception as e:
+                logger.warning(f'Could not create tag "{tag_name}" for quiz: {e}')
         
         self.created_quizzes.append(quiz.id)
         
@@ -167,11 +171,60 @@ class QuizBulkImportHandler:
         for question_data in quiz_data.get('questions', []):
             self._process_question(question_data, quiz)
     
+    def _parse_and_validate_tags(self, tag_names):
+        """
+        Parse tag names which may be strings or arrays.
+        Handle cases where tag_names might be a JSON string representation.
+        """
+        import re
+        import json
+        
+        cleaned = []
+        for item in tag_names or []:
+            if not item:
+                continue
+            
+            # If it's a string that looks like JSON, try to parse it
+            if isinstance(item, str) and item.strip().startswith(('[', '{')):
+                try:
+                    parsed = json.loads(item)
+                    if isinstance(parsed, list):
+                        cleaned.extend([str(t).strip() for t in parsed if str(t).strip()])
+                    elif isinstance(parsed, dict):
+                        # If it's a dict, skip it as invalid tag format
+                        logger.warning(f'Skipping dict-like tag: {item}')
+                    else:
+                        cleaned.append(str(parsed).strip())
+                except json.JSONDecodeError:
+                    # If parsing fails, use as-is and let validation handle it
+                    cleaned.append(str(item).strip())
+            else:
+                # Regular string tag
+                cleaned.append(str(item).strip())
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        final = []
+        for tag in cleaned:
+            if tag and tag not in seen:
+                seen.add(tag)
+                final.append(tag)
+        
+        return final
+    
     def _process_question(self, question_data, quiz):
-        """Create question"""
+        """Create question - skip dragdrop questions if they lack fill_blank data"""
         # Normalize type and clean empty option fields
         qt_raw = (question_data.get('question_type') or 'mcq').lower()
         question_type = 'short' if qt_raw in ['short', 'short_answer'] else qt_raw
+        
+        # Skip dragdrop questions that don't have fill_blank data
+        if question_type == 'dragdrop':
+            fill_blank_data = question_data.get('fill_blank')
+            if not fill_blank_data or not fill_blank_data.get('sentence') or not fill_blank_data.get('words'):
+                logger.warning(f'Skipping dragdrop question - missing fill_blank data: {question_data.get("question_text", "")[:50]}')
+                return
+        
         def clean(v):
             return None if v in ['', ' ', None] else v
         # Normalize hint2 to empty string to avoid NULL constraint issues

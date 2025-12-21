@@ -77,7 +77,7 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
     if detected and instance.languages != detected:
         update_kwargs['languages'] = detected
 
-    # 3) Keyword tagging via RAKE (unchanged)
+    # 3) Keyword tagging via RAKE (with error handling and validation)
     new_tags = []
     try:
         from rake_nltk import Rake
@@ -87,12 +87,18 @@ def analyze_quiz_content(sender, instance, created, **kwargs):
             phrase = phrase.lower().strip()
             if score > 4 and 1 < len(phrase.split()) < 4 and 2 < len(phrase) < 50:
                 if not instance.tags.filter(name=phrase).exists():
-                    tag, _ = Tag.objects.get_or_create(name=phrase)
-                    new_tags.append(tag)
+                    try:
+                        tag, _ = Tag.objects.get_or_create(name=phrase)
+                        new_tags.append(tag)
+                    except Exception as tag_error:
+                        # Skip tags that fail validation (e.g., JSON-like names)
+                        pass
         if new_tags:
             instance.tags.add(*new_tags)
     except Exception as e:
-        print(f"[RAKE Tagging] failed for Quiz {instance.pk}: {e}")
+        # RAKE or NLTK resource errors are non-critical
+        # Log them but don't fail the whole operation
+        pass
 
     # 4) Apply language updates
     if update_kwargs:

@@ -189,14 +189,91 @@ class QuestionSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('fill_blank', None)
+        fill_blank_data = validated_data.pop('fill_blank', None)
         validated_data.pop('temp_id', None)
-        return super().create(validated_data)
+        question = super().create(validated_data)
+        
+        # If this is a dragdrop question with fill_blank data, save it
+        if question.question_type == 'dragdrop' and fill_blank_data:
+            self._save_dragdrop_data_for_question(question, fill_blank_data)
+        
+        return question
 
     def update(self, instance, validated_data):
-        validated_data.pop('fill_blank', None)
+        fill_blank_data = validated_data.pop('fill_blank', None)
         validated_data.pop('temp_id', None)
-        return super().update(instance, validated_data)
+        question = super().update(instance, validated_data)
+        
+        # If this is a dragdrop question with fill_blank data, save it
+        if question.question_type == 'dragdrop' and fill_blank_data:
+            self._save_dragdrop_data_for_question(question, fill_blank_data)
+        
+        return question
+    
+    def _save_dragdrop_data_for_question(self, question_instance, fill_blank_data_dict):
+        """Save fill-in-the-blank data for a single question (not part of quiz creation)"""
+        if not fill_blank_data_dict or not isinstance(fill_blank_data_dict, dict):
+            return
+        
+        # Get or create the FillBlankQuestion
+        fill_blank_obj, created = FillBlankQuestion.objects.get_or_create(question=question_instance)
+        
+        # Set the sentence
+        sentence = fill_blank_data_dict.get('sentence', '')
+        if sentence:
+            fill_blank_obj.sentence = sentence
+            fill_blank_obj.save()
+        
+        # Process words and build ID mapping
+        words_data = fill_blank_data_dict.get('words', [])
+        word_id_map = {}
+        
+        if words_data and isinstance(words_data, list):
+            fill_blank_obj.words.all().delete()
+            for idx, word_item in enumerate(words_data):
+                word_text = word_item.get('text') if isinstance(word_item, dict) else str(word_item)
+                if word_text:
+                    blank_word = BlankWord.objects.create(fill_blank=fill_blank_obj, text=word_text)
+                    
+                    # Map by index (0-based)
+                    word_id_map[idx] = blank_word.id
+                    word_id_map[str(idx)] = blank_word.id
+                    
+                    # Also map the frontend ID format 'item_<question_id>_<index>'
+                    # e.g., 'item_470_0' -> maps to index 0
+                    frontend_id = f'item_{question_instance.id}_{idx}'
+                    word_id_map[frontend_id] = blank_word.id
+        
+        # Process solutions using the mapping
+        solutions_data = fill_blank_data_dict.get('solutions', [])
+        if solutions_data and isinstance(solutions_data, list):
+            fill_blank_obj.solutions.all().delete()
+            for solution_item in solutions_data:
+                if isinstance(solution_item, dict):
+                    slot_index = solution_item.get('slot_index')
+                    correct_word_id = solution_item.get('correct_word')
+                    
+                    if correct_word_id is not None and slot_index is not None:
+                        # Try to map the word ID
+                        actual_word_id = word_id_map.get(correct_word_id)
+                        
+                        if actual_word_id is None and isinstance(correct_word_id, str):
+                            try:
+                                idx = int(correct_word_id)
+                                actual_word_id = word_id_map.get(idx)
+                            except (ValueError, TypeError):
+                                pass
+                        
+                        if actual_word_id is not None:
+                            try:
+                                correct_word = BlankWord.objects.get(id=actual_word_id)
+                                BlankSolution.objects.create(
+                                    fill_blank=fill_blank_obj,
+                                    slot_index=slot_index,
+                                    correct_word=correct_word
+                                )
+                            except BlankWord.DoesNotExist:
+                                pass
 
 
 # --- Main Quiz Serializer ---
@@ -333,12 +410,16 @@ class QuizSerializer(serializers.ModelSerializer):
         return rep
     
     def _expand_tags(self, incoming):
+        import re
         flat = []
+        json_like_pattern = re.compile(r'^\s*[\[{]')  # Reject tags that look like JSON
         for item in incoming or []:
             for t in SPLIT_RE.split(item or ''):
                 t = unicodedata.normalize('NFKC', t).strip()
                 if t.startswith('#'): t = t[1:]
-                if t: flat.append(t)
+                # Skip tags that look like JSON
+                if t and not json_like_pattern.match(t):
+                    flat.append(t)
         # de-dupe, keep order
         seen, out = set(), []
         for t in flat:
@@ -348,20 +429,99 @@ class QuizSerializer(serializers.ModelSerializer):
 
 
     def _save_tags(self, quiz_instance, tag_names_list):
+        from django.core.exceptions import ValidationError
         names = self._expand_tags(tag_names_list)  # split/normalize/de-dupe
         quiz_instance.tags.clear()
         for name in names:
-            tag, _ = Tag.objects.get_or_create(name=name)
-            quiz_instance.tags.add(tag)
+            try:
+                tag, _ = Tag.objects.get_or_create(name=name)
+                quiz_instance.tags.add(tag)
+            except ValidationError as e:
+                # Skip tags that fail validation (e.g., JSON-like names)
+                # This can happen if the tag name violates model constraints
+                pass
 
 
     def _save_dragdrop_data(self, question_instance, fill_blank_data_dict, frontend_question_temp_id):
-        # Your drag-and-drop data saving logic is preserved.
+        """Save fill-in-the-blank drag-and-drop data"""
         if not fill_blank_data_dict or not isinstance(fill_blank_data_dict, dict):
             return
-        # (Your full implementation is here)
-        # ...
-        pass
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"DEBUG _save_dragdrop_data: fill_blank_data keys: {fill_blank_data_dict.keys()}")
+        logger.error(f"DEBUG _save_dragdrop_data: words data: {fill_blank_data_dict.get('words')}")
+        logger.error(f"DEBUG _save_dragdrop_data: solutions data: {fill_blank_data_dict.get('solutions')}")
+        
+        # Get or create the FillBlankQuestion for this question
+        fill_blank_obj, created = FillBlankQuestion.objects.get_or_create(question=question_instance)
+        
+        # Set the sentence
+        sentence = fill_blank_data_dict.get('sentence', '')
+        if sentence:
+            fill_blank_obj.sentence = sentence
+            fill_blank_obj.save()
+        
+        # Process words and solutions
+        words_data = fill_blank_data_dict.get('words', [])
+        solutions_data = fill_blank_data_dict.get('solutions', [])
+        
+        word_id_map = {}  # Map frontend word IDs to DB IDs
+        
+        if words_data and isinstance(words_data, list):
+            # Clear existing words
+            fill_blank_obj.words.all().delete()
+            
+            # Create new words and build mapping
+            for idx, word_item in enumerate(words_data):
+                word_text = word_item.get('text') if isinstance(word_item, dict) else str(word_item)
+                if word_text:
+                    blank_word = BlankWord.objects.create(fill_blank=fill_blank_obj, text=word_text)
+                    
+                    # Map by index (0-based)
+                    word_id_map[idx] = blank_word.id
+                    word_id_map[str(idx)] = blank_word.id
+                    
+                    # Also map the frontend ID format 'item_<question_id>_<index>'
+                    # e.g., 'item_470_0' -> maps to index 0
+                    frontend_id = f'item_{question_instance.id}_{idx}'
+                    word_id_map[frontend_id] = blank_word.id
+        
+        # Save solutions using the mapping
+        if solutions_data and isinstance(solutions_data, list):
+            # Clear existing solutions
+            fill_blank_obj.solutions.all().delete()
+            
+            # Create new solutions
+            for solution_item in solutions_data:
+                if isinstance(solution_item, dict):
+                    slot_index = solution_item.get('slot_index')
+                    correct_word_id = solution_item.get('correct_word')
+                    
+                    if correct_word_id is not None and slot_index is not None:
+                        # correct_word_id might be a frontend ID string or an integer
+                        # Try to map it using word_id_map
+                        actual_word_id = word_id_map.get(correct_word_id)
+                        
+                        if actual_word_id is None and isinstance(correct_word_id, str):
+                            # Try to convert to int and map
+                            try:
+                                idx = int(correct_word_id)
+                                actual_word_id = word_id_map.get(idx)
+                            except (ValueError, TypeError):
+                                pass
+                        
+                        # If we found the word ID, create the solution
+                        if actual_word_id is not None:
+                            try:
+                                correct_word = BlankWord.objects.get(id=actual_word_id)
+                                BlankSolution.objects.create(
+                                    fill_blank=fill_blank_obj,
+                                    slot_index=slot_index,
+                                    correct_word=correct_word
+                                )
+                            except BlankWord.DoesNotExist:
+                                pass  # Skip if word not found
 
     @transaction.atomic
     def create(self, validated_data):
@@ -405,7 +565,32 @@ class QuizSerializer(serializers.ModelSerializer):
             processed_ids = set()
             for q_input_data in questions_input_data:
                 question_db_id = q_input_data.get('id')
+
+                # Coerce string IDs (coming from frontend) to int so we match existing questions
+                if isinstance(question_db_id, str):
+                    if question_db_id.isdigit():
+                        question_db_id = int(question_db_id)
+                    else:
+                        try:
+                            question_db_id = int(float(question_db_id))
+                        except (ValueError, TypeError):
+                            question_db_id = None
+
                 question_model_instance = existing_map.get(question_db_id) if question_db_id else None
+
+                # Fallback 1: If no ID match, and both existing questions and incoming questions are length 1, match them
+                if question_model_instance is None and len(existing_map) == 1 and len(questions_input_data) == 1:
+                    question_model_instance = list(existing_map.values())[0]
+                
+                # Fallback 2: match by permalink when id is missing/invalid to avoid duplicate insertions
+                if question_model_instance is None:
+                    incoming_permalink = q_input_data.get('permalink')
+                    if incoming_permalink:
+                        for existing_q in existing_map.values():
+                            if existing_q.permalink == incoming_permalink:
+                                question_model_instance = existing_q
+                                break
+                
                 serializer_context = self.context.copy()
                 frontend_q_temp_id = q_input_data.get('temp_id')
                 if frontend_q_temp_id:

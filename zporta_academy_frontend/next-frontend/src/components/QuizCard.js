@@ -421,27 +421,6 @@ const QuizCard = ({
     }
   }, [quiz?.id, isExpanded, publicStats, fetchPublicQuizStats]);
 
-  // Derived state for questions and progress
-  // MUST be defined BEFORE useEffects that depend on currentQuestion
-  const questions = useMemo(
-    () =>
-      (quiz.questions || []).map((q, index) => ({
-        ...q,
-        temp_id: `card_q_${quiz.id}_${index}`,
-      })),
-    [quiz.questions, quiz.id]
-  );
-  const totalQuestions = questions.length;
-  const isQuizCompleted =
-    totalQuestions > 0 &&
-    Object.keys(submittedAnswers).length === totalQuestions;
-  const safeCurrentIndex = Math.min(
-    Math.max(0, currentIndex),
-    Math.max(0, totalQuestions - 1)
-  );
-  const currentQuestion = totalQuestions > 0 ? questions[safeCurrentIndex] : {};
-  const currentQuestionId = currentQuestion?.id;
-
   // Handle URL updates when modal is opened/closed and when navigating questions
   useEffect(() => {
     if (isExpanded && currentQuestion?.permalink) {
@@ -468,6 +447,26 @@ const QuizCard = ({
       quizStartTime.current = Date.now();
     }
   }, [isExpanded]);
+
+  // Derived state for questions and progress
+  const questions = useMemo(
+    () =>
+      (quiz.questions || []).map((q, index) => ({
+        ...q,
+        temp_id: `card_q_${quiz.id}_${index}`,
+      })),
+    [quiz.questions, quiz.id]
+  );
+  const totalQuestions = questions.length;
+  const isQuizCompleted =
+    totalQuestions > 0 &&
+    Object.keys(submittedAnswers).length === totalQuestions;
+  const safeCurrentIndex = Math.min(
+    Math.max(0, currentIndex),
+    Math.max(0, totalQuestions - 1)
+  );
+  const currentQuestion = totalQuestions > 0 ? questions[safeCurrentIndex] : {};
+  const currentQuestionId = currentQuestion?.id;
   const isAnswerSubmittedForCurrent = currentQuestionId
     ? !!submittedAnswers[currentQuestionId]
     : false;
