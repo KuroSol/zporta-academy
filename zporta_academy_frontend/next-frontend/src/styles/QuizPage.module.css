@@ -137,7 +137,7 @@
 .quizHeader { padding-top: 1.75rem; }
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--zporta-gold), var(--danger-border));
+  background: linear-gradient(90deg, var(--zporta-gold), #fca5a5);
   border-radius: 99px;
   transition: width 0.4s ease-in-out;
 }
@@ -550,7 +550,7 @@
 }
 
 .draggableWord:hover {
-  background-color: var(--bg-secondary); /* gray-50 */
+  background-color: #f9fafb; /* gray-50 */
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }

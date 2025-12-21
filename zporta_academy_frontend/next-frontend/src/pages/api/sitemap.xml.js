@@ -4,20 +4,21 @@
  * Called via: https://zportaacademy.com/api/sitemap.xml
  */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://zportaacademy.com";
 
 // Define all static routes that should be indexed
 const STATIC_ROUTES = [
-  { path: '/', priority: 1.0, changefreq: 'daily' },
-  { path: '/explore', priority: 0.9, changefreq: 'weekly' },
-  { path: '/quizzes', priority: 0.9, changefreq: 'weekly' },
-  { path: '/posts', priority: 0.8, changefreq: 'weekly' },
-  { path: '/lessons', priority: 0.9, changefreq: 'weekly' },
-  { path: '/courses', priority: 0.9, changefreq: 'weekly' },
-  { path: '/guide', priority: 0.7, changefreq: 'monthly' },
-  { path: '/tags', priority: 0.6, changefreq: 'weekly' },
-  { path: '/legal/privacy-policy', priority: 0.5, changefreq: 'monthly' },
-  { path: '/legal/terms-of-service', priority: 0.5, changefreq: 'monthly' },
+  { path: "/", priority: 1.0, changefreq: "daily" },
+  { path: "/explore", priority: 0.9, changefreq: "weekly" },
+  { path: "/quizzes", priority: 0.9, changefreq: "weekly" },
+  { path: "/posts", priority: 0.8, changefreq: "weekly" },
+  { path: "/lessons", priority: 0.9, changefreq: "weekly" },
+  { path: "/courses", priority: 0.9, changefreq: "weekly" },
+  { path: "/guide", priority: 0.7, changefreq: "monthly" },
+  { path: "/tags", priority: 0.6, changefreq: "weekly" },
+  { path: "/legal/privacy-policy", priority: 0.5, changefreq: "monthly" },
+  { path: "/legal/terms-of-service", priority: 0.5, changefreq: "monthly" },
 ];
 
 // Fetch dynamic routes from backend API
@@ -25,32 +26,33 @@ async function getDynamicRoutes() {
   try {
     // If you have a backend API endpoint that returns all dynamic routes, call it here
     // For now, returning empty array - update with your actual API
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
     const routes = [];
-    
+
     // Example: Fetch courses
     try {
       const coursesRes = await fetch(`${backendUrl}/api/courses/?limit=10000`, {
         timeout: 5000,
       }).catch(() => null);
-      
+
       if (coursesRes?.ok) {
         const coursesData = await coursesRes.json();
         const courses = coursesData.results || [];
-        
+
         courses.forEach((course) => {
           if (course.username && course.date && course.subject && course.slug) {
             routes.push({
               path: `/courses/${course.username}/${course.date}/${course.subject}/${course.slug}`,
               priority: 0.7,
-              changefreq: 'weekly',
+              changefreq: "weekly",
             });
           }
         });
       }
     } catch (err) {
-      console.warn('Failed to fetch courses for sitemap:', err.message);
+      console.warn("Failed to fetch courses for sitemap:", err.message);
     }
 
     // Example: Fetch quizzes
@@ -58,23 +60,23 @@ async function getDynamicRoutes() {
       const quizzesRes = await fetch(`${backendUrl}/api/quizzes/?limit=10000`, {
         timeout: 5000,
       }).catch(() => null);
-      
+
       if (quizzesRes?.ok) {
         const quizzesData = await quizzesRes.json();
         const quizzes = quizzesData.results || [];
-        
+
         quizzes.forEach((quiz) => {
           if (quiz.username && quiz.subject && quiz.date && quiz.slug) {
             routes.push({
               path: `/quizzes/${quiz.username}/${quiz.subject}/${quiz.date}/${quiz.slug}`,
               priority: 0.6,
-              changefreq: 'weekly',
+              changefreq: "weekly",
             });
           }
         });
       }
     } catch (err) {
-      console.warn('Failed to fetch quizzes for sitemap:', err.message);
+      console.warn("Failed to fetch quizzes for sitemap:", err.message);
     }
 
     // Example: Fetch posts (guide profiles)
@@ -82,28 +84,28 @@ async function getDynamicRoutes() {
       const postsRes = await fetch(`${backendUrl}/api/guides/?limit=10000`, {
         timeout: 5000,
       }).catch(() => null);
-      
+
       if (postsRes?.ok) {
         const postsData = await postsRes.json();
         const posts = postsData.results || [];
-        
+
         posts.forEach((post) => {
           if (post.username) {
             routes.push({
               path: `/guide/${post.username}`,
               priority: 0.6,
-              changefreq: 'weekly',
+              changefreq: "weekly",
             });
           }
         });
       }
     } catch (err) {
-      console.warn('Failed to fetch guides for sitemap:', err.message);
+      console.warn("Failed to fetch guides for sitemap:", err.message);
     }
 
     return routes;
   } catch (err) {
-    console.error('Error fetching dynamic routes for sitemap:', err);
+    console.error("Error fetching dynamic routes for sitemap:", err);
     return [];
   }
 }
@@ -114,12 +116,12 @@ function generateSitemapXML(routes) {
       (route) => `
   <url>
     <loc>${SITE_URL}${route.path}</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <changefreq>${route.changefreq || 'weekly'}</changefreq>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>${route.changefreq || "weekly"}</changefreq>
     <priority>${route.priority || 0.5}</priority>
   </url>`
     )
-    .join('');
+    .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -135,8 +137,8 @@ ${sitemapEntries}
 export default async function handler(req, res) {
   try {
     // Allow only GET requests
-    if (req.method !== 'GET') {
-      return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method Not Allowed" });
     }
 
     // Get all routes
@@ -152,12 +154,15 @@ export default async function handler(req, res) {
     const sitemapXML = generateSitemapXML(uniqueRoutes);
 
     // Return as XML
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400"
+    );
     res.write(sitemapXML);
     res.end();
   } catch (err) {
-    console.error('Sitemap generation error:', err);
-    res.status(500).json({ error: 'Failed to generate sitemap' });
+    console.error("Sitemap generation error:", err);
+    res.status(500).json({ error: "Failed to generate sitemap" });
   }
 }

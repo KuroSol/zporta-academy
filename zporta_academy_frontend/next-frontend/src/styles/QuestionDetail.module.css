@@ -48,10 +48,10 @@
   text-align: center;
   padding: 3rem 1rem;
   font-size: 1.125rem;
-  color: var(--text-muted);
+  color: #6b7280;
 }
 
-.error { color: var(--danger); }
+.error { color: #dc2626; }
 
 .error h2 {
   font-size: 1.5rem;
@@ -102,7 +102,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-secondary);
+  background: #f3f4f6;
   border-radius: 8px;
   padding: 2px;
 }
@@ -112,7 +112,7 @@
   height: 24px;
   object-fit: cover;
   clip-path: polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%);
-  background: var(--border);
+  background: #e5e7eb;
 }
 
 .creatorMeta { display: flex; flex-direction: column; line-height: 1.1; }
@@ -150,11 +150,11 @@
   margin-right: auto;
 }
 
-.difficultyBadge[data-difficulty-level="very-easy"] { background: var(--success-bg); border-color: #10b981; color: #047857; }
-.difficultyBadge[data-difficulty-level="easy"] { background: var(--bg-secondary); border-color: var(--accent); color: var(--text); }
-.difficultyBadge[data-difficulty-level="medium"] { background: var(--warning-bg); border-color: #f59e0b; color: var(--warning); }
-.difficultyBadge[data-difficulty-level="slightly-hard"] { background: #fed7aa; border-color: #fb923c; color: var(--warning); }
-.difficultyBadge[data-difficulty-level="hard"] { background: #fecaca; border-color: var(--danger); color: var(--danger); }
+.difficultyBadge[data-difficulty-level="very-easy"] { background: #d1fae5; border-color: #10b981; color: #047857; }
+.difficultyBadge[data-difficulty-level="easy"] { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+.difficultyBadge[data-difficulty-level="medium"] { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.difficultyBadge[data-difficulty-level="slightly-hard"] { background: #fed7aa; border-color: #fb923c; color: #92400e; }
+.difficultyBadge[data-difficulty-level="hard"] { background: #fecaca; border-color: #ef4444; color: #991b1b; }
 
 .headerActions {
   display: inline-flex;
@@ -379,7 +379,7 @@
 
 .checkmark, .xmark { font-size: 1.1rem; font-weight: bold; flex-shrink: 0; }
 .checkmark { color: #10b981; }
-.xmark { color: var(--danger); }
+.xmark { color: #ef4444; }
 
 /* Feedback */
 .feedback {

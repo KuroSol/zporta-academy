@@ -806,14 +806,16 @@ const QuizPage = ({
     <div className={styles.pageContainer}>
       <div className={styles.quizContainer}>
         {successMessage && (
-          <div style={{
-            backgroundColor: "#d4edda",
-            color: "#155724",
-            padding: "1rem",
-            marginBottom: "1rem",
-            borderRadius: "4px",
-            border: "1px solid #c3e6cb"
-          }}>
+          <div
+            style={{
+              backgroundColor: "#d4edda",
+              color: "#155724",
+              padding: "1rem",
+              marginBottom: "1rem",
+              borderRadius: "4px",
+              border: "1px solid #c3e6cb",
+            }}
+          >
             ✓ {successMessage}
           </div>
         )}
