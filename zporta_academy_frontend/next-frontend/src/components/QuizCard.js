@@ -34,6 +34,15 @@ import {
   ArrowRight,
   Share2,
 } from "lucide-react";
+const EMPTY_STATS = Object.freeze({
+  quizTitle: "",
+  uniqueParticipants: 0,
+  uniqueFinishers: 0,
+  totalAnswersSubmittedForQuiz: 0,
+  totalCorrectAnswersForQuiz: 0,
+  totalWrongAnswersForQuiz: 0,
+  questionsStats: [],
+});
 // For short answer questions we render a plain text input directly.
 const DEFAULT_AVATAR =
   "https://zportaacademy.com/media/managed_images/zpacademy.png";
@@ -300,16 +309,8 @@ const QuizCard = ({
   const [feedback, setFeedback] = useState({});
   const [cardError, setCardError] = useState(null);
   const [isLoadingSubmission, setIsLoadingSubmission] = useState(false);
-  const [publicStats, setPublicStats] = useState({
-    quizTitle: "",
-    uniqueParticipants: 0,
-    uniqueFinishers: 0,
-    totalAnswersSubmittedForQuiz: 0,
-    totalCorrectAnswersForQuiz: 0,
-    totalWrongAnswersForQuiz: 0,
-    questionsStats: [],
-  });
-  const [isLoadingPublicStats, setIsLoadingPublicStats] = useState(true);
+  const [publicStats, setPublicStats] = useState(null);
+  const [isLoadingPublicStats, setIsLoadingPublicStats] = useState(false);
   const [publicStatsError, setPublicStatsError] = useState(null);
   const [showCorrectUsers, setShowCorrectUsers] = useState(false);
   const [correctUsers, setCorrectUsers] = useState([]);
@@ -326,6 +327,7 @@ const QuizCard = ({
   const [hintsUsed, setHintsUsed] = useState({});
   // Track quiz start time for total duration
   const quizStartTime = useRef(null);
+  const publicStatsCacheRef = useRef({});
 
   const { token, logout } = useContext(AuthContext) || {};
   const router = useRouter();
@@ -381,16 +383,26 @@ const QuizCard = ({
   // Fetch public stats for the quiz
   const fetchPublicQuizStats = useCallback(async () => {
     if (!quiz?.id || (quiz.status && quiz.status !== "published")) {
+      setPublicStats(null);
       setIsLoadingPublicStats(false);
       return;
     }
+    if (isLoadingPublicStats) return; // in-flight guard
+
+    const cached = publicStatsCacheRef.current[quiz.id];
+    if (cached) {
+      setPublicStats(cached);
+      setIsLoadingPublicStats(false);
+      return;
+    }
+
     setIsLoadingPublicStats(true);
     setPublicStatsError(null);
     try {
       const response = await apiClient.get(
         `/analytics/quizzes/${quiz.id}/detailed-statistics/`
       );
-      setPublicStats({
+      const stats = {
         quizTitle: response.data.quiz_title || quiz.title,
         uniqueParticipants: response.data.unique_participants ?? 0,
         uniqueFinishers: response.data.unique_finishers ?? 0,
@@ -403,7 +415,9 @@ const QuizCard = ({
         questionsStats: Array.isArray(response.data.questions_stats)
           ? response.data.questions_stats
           : [],
-      });
+      };
+      publicStatsCacheRef.current[quiz.id] = stats;
+      setPublicStats(stats);
     } catch (err) {
       if (err?.response?.status !== 404) {
         setPublicStatsError("Could not load quiz statistics.");
@@ -411,42 +425,7 @@ const QuizCard = ({
     } finally {
       setIsLoadingPublicStats(false);
     }
-  }, [quiz?.id, quiz.title, quiz.status]);
-
-  // PERFORMANCE FIX: Only fetch stats when card is expanded (not on mount)
-  // This prevents 70+ simultaneous API calls when Explorer page loads
-  useEffect(() => {
-    if (quiz?.id && isExpanded && !publicStats) {
-      fetchPublicQuizStats();
-    }
-  }, [quiz?.id, isExpanded, publicStats, fetchPublicQuizStats]);
-
-  // Handle URL updates when modal is opened/closed and when navigating questions
-  useEffect(() => {
-    if (isExpanded && currentQuestion?.permalink) {
-      const newUrl = `/quizzes/q/${currentQuestion.permalink}`;
-      window.history.pushState({ quizModal: true }, "", newUrl);
-    }
-  }, [isExpanded, currentQuestion?.permalink]);
-
-  // Handle browser back button to close modal
-  useEffect(() => {
-    const handlePopState = (e) => {
-      if (isExpanded && e.state?.quizModal !== true) {
-        setIsExpanded(false);
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [isExpanded]);
-
-  // Start timer when expanded
-  useEffect(() => {
-    if (isExpanded && !quizStartTime.current) {
-      quizStartTime.current = Date.now();
-    }
-  }, [isExpanded]);
+  }, [quiz?.id, quiz.title, quiz.status, isLoadingPublicStats]);
 
   // Derived state for questions and progress
   const questions = useMemo(
@@ -476,13 +455,46 @@ const QuizCard = ({
 
   const currentQuestionPublicStats = useMemo(
     () =>
-      currentQuestionId && Array.isArray(publicStats.questionsStats)
+      currentQuestionId && Array.isArray(publicStats?.questionsStats)
         ? publicStats.questionsStats.find(
             (qs) => qs.question_id === currentQuestionId
           )
         : null,
-    [currentQuestionId, publicStats.questionsStats]
+    [currentQuestionId, publicStats?.questionsStats]
   );
+  const displayStats = publicStats || EMPTY_STATS;
+
+  // PERFORMANCE FIX: Only fetch stats when card is expanded (not on mount)
+  // This prevents 70+ simultaneous API calls when Explorer page loads
+  useEffect(() => {
+    if (!quiz?.id || !isExpanded) return;
+    const cached = publicStatsCacheRef.current[quiz.id];
+    if (cached) {
+      setPublicStats(cached);
+      return;
+    }
+    if (!publicStats) fetchPublicQuizStats();
+  }, [quiz?.id, isExpanded, publicStats, fetchPublicQuizStats]);
+
+  // Handle URL updates when modal is opened/closed and when navigating questions
+  useEffect(() => {
+    if (isExpanded && currentQuestion?.permalink) {
+      const newUrl = `/quizzes/q/${currentQuestion.permalink}`;
+      window.history.pushState({ quizModal: true }, "", newUrl);
+    }
+  }, [isExpanded, currentQuestion?.permalink]);
+
+  // Handle browser back button to close modal
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (isExpanded && e.state?.quizModal !== true) {
+        setIsExpanded(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isExpanded]);
 
   const fetchCorrectUsers = useCallback(
     async (page = 1) => {
@@ -988,7 +1000,7 @@ const QuizCard = ({
               <h2
                 className={styles.cardTitle}
                 dangerouslySetInnerHTML={{
-                  __html: publicStats.quizTitle || quiz.title || "Quiz",
+                  __html: displayStats.quizTitle || quiz.title || "Quiz",
                 }}
               />
 
@@ -1044,16 +1056,16 @@ const QuizCard = ({
                       }}
                     >
                       <Users size={14} />
-                      <span>{publicStats.uniqueParticipants}</span>
+                      <span>{displayStats.uniqueParticipants}</span>
                     </button>
 
                     <div className={styles.statItem} title="Correct">
                       <CheckCircle size={14} className={styles.correctText} />
-                      <span>{publicStats.totalCorrectAnswersForQuiz}</span>
+                      <span>{displayStats.totalCorrectAnswersForQuiz}</span>
                     </div>
                     <div className={styles.statItem} title="Wrong">
                       <XCircle size={14} className={styles.incorrectText} />
-                      <span>{publicStats.totalWrongAnswersForQuiz}</span>
+                      <span>{displayStats.totalWrongAnswersForQuiz}</span>
                     </div>
                   </>
                 )}
