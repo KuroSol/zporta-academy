@@ -1,0 +1,18 @@
+.viewportFixed{position:fixed;top:var(--app-header-height);left:0;width:100vw;height:calc(100dvh - var(--app-header-height));z-index:1;background:#0b0b0c;color:#fff}
+.verticalSnapContainer{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.verticalSnapContainer::-webkit-scrollbar{display:none}
+.snapItem{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center}
+.spacer{width:100%}
+.skeleton{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#999}
+.endMarker{height:60%;display:flex;align-items:center;justify-content:center;color:#888}
+
+/* Horizontal question pager styles (used by QuizCard in feed mode) */
+.feedQuestionPager{position:relative;width:100%;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;display:flex;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.feedQuestionPager::-webkit-scrollbar{display:none}
+.feedQuestionSlide{flex:0 0 100%;height:100%;scroll-snap-align:start;display:flex;align-items:center;justify-content:center}
+.feedCardInner{width:100%;height:100%;display:flex;flex-direction:column}
+
+/* Dots indicator */
+.dotsBar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
+.dot{width:6px;height:6px;border-radius:9999px;background:rgba(255,255,255,0.45)}
+.dotActive{background:#fff}
