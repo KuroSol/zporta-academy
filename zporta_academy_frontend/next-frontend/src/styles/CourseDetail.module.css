@@ -73,7 +73,7 @@
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     text-decoration: none;
-    var(--bg)-space: nowrap;
+    white-space: nowrap;
 }
 .zportaBtn:disabled {
     opacity: 0.6;
@@ -227,7 +227,7 @@
 .descriptionViewer {
     /* Make the description feel like a card: readable, tactile, and scrollable */
     line-height: 1.8;
-    color: #0f172a; /* slate-900 for stronger contrast */
+    /*color: #0f172a;  slate-900 for stronger contrast */
     font-size: 1.05rem;
     background: var(--bg);
     border: 1px solid #e6eef8; /* softer border for the card */
@@ -518,7 +518,7 @@
 .lessonTitle {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #1e293b;
+    /*color: #1e293b;*/
     margin: 0 0 0.5rem 0;
     transition: color 0.3s ease;
 }
@@ -1246,7 +1246,7 @@
   color: #0f172a; /* slate-900 */
   overflow: hidden;
   text-overflow: ellipsis;
-  var(--bg)-space: nowrap;
+    white-space: nowrap;
 }
 
 .detachBtn {
