@@ -131,8 +131,8 @@
 
 /* --- Admin Toolbar --- */
 .adminToolbar {
-    background-color: #1e293b; /* slate-800 */
-    color: var(--bg);
+    background-color: #262c35; /* slate-800 */
+    color: var(--text);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -174,7 +174,7 @@
     padding: 2.5rem;
 }
 .headerContent {
-    color: var(--bg);
+    color: var(--text);
 }
 .subjectPill {
     background-color: rgba(255, 255, 255, 0.2);
