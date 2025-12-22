@@ -7,8 +7,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: none;
+    background: rgba(19, 23, 26, 0.95) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 9999;
     display: flex;
     align-items: center;
@@ -231,9 +232,8 @@
 .correctText { color: var(--correct-color) !important; }
 .incorrectText { color: var(--incorrect-color) !important; }
 
-/* --- Expanded View Styles (Now Modal) --- */
 .expandedContent {
-    background: var(--bg-card);
+    background: #231810;
     border-radius: var(--radius);
     max-width: 900px;
     width: 100%;
@@ -244,8 +244,10 @@
     gap: 1rem;
     padding: 1.5rem;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.3s ease-out;
+    color: #F0D4C6;
+    border: 1px solid #3A2A1E;
 }
 
 @keyframes slideUp {
@@ -368,7 +370,7 @@
 .questionText {
     font-size: clamp(1rem, 3vw, 1.3rem);
     font-weight: 600;
-    color: var(--text-primary);
+    color: #F0D4C6;
     margin: 0 0 1.5rem 0;
 }
 /* Hints UI (shared with page styles) */
@@ -417,52 +419,50 @@
 }
 .statItemClickable:hover { color: var(--accent-color); }
 
-/* Vertical Answer Options */
-.optionsList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-    max-width: 600px;
-}
 .optionButton {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem; /* Increased gap */
     width: 100%;
-    padding: 0.75rem 0.9rem;
-    font-size: 0.9rem;
+    padding: 1.2rem 1.5rem; /* Increased padding */
+    font-size: 1.1rem; /* Larger font */
     font-weight: 500;
     text-align: left;
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
+    border: 2px solid #3A2A1E;
+    border-radius: 16px; /* More rounded */
     cursor: pointer;
-    background-color: var(--bg-card);
-    color: var(--text-primary);
-    transition: all 0.2s ease;
+    background-color: #2D1F16;
+    color: #F0D4C6;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 0.8rem; /* Spacing between buttons */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .optionButton:hover:not(:disabled) {
-    border-color: var(--accent-color);
-    background-color: #fdfaf0;
+    border-color: #A57B62;
+    background-color: #3A2A1E;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .optionButton.selected {
-    border-color: var(--primary-color);
-    background-color: #f0f2f5;
+    border-color: #A57B62;
+    background-color: #3A2A1E;
+    color: #A57B62;
+    box-shadow: 0 0 0 2px rgba(165, 123, 98, 0.2);
 }
 .optionButton.correct {
-    border-color: var(--correct-color);
-    background-color: #f0fdf4;
-    color: var(--correct-color);
+    border-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
     font-weight: 600;
 }
 .optionButton.incorrect {
-    border-color: var(--incorrect-color);
-    background-color: #fef2f2;
-    color: var(--incorrect-color);
+    border-color: #F44336;
+    background-color: rgba(244, 67, 54, 0.15);
+    color: #F44336;
 }
 .optionButton.disabled {
     opacity: 0.6;
-    background-color: #f5f5f7;
+    background-color: #231810;
     cursor: not-allowed;
 }
 
@@ -472,12 +472,12 @@
 
 /* Feedback & Navigation */
 .feedbackAndNav {
-    min-height: 40px;
+    min-height: 0; /* Was 40px */
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin: 1rem 0;
+    margin: 0; /* Was 1rem 0 */
 }
 .feedbackBox {
     display: flex;
@@ -583,4 +583,420 @@
     .questionProgress { order: 2; width: 100%; }
     .expandedActions { order: 3; margin-left: 0; }
     .closeExpandedButton { order: 4; }
+}
+
+/* --- Feed View Styles (Modern & Responsive) --- */
+.feedCard {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: #13171A;
+    color: #A57B62;
+    position: relative;
+    overflow: hidden; /* Disable internal scrolling to allow deck navigation */
+}
+.feedCard::-webkit-scrollbar { 
+    display: none; 
+}
+
+.feedHeader {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(to bottom, rgba(19, 23, 26, 0.98), rgba(19, 23, 26, 0.9));
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-bottom: 1px solid rgba(165, 123, 98, 0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.feedHeaderTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem; /* Reduced margin */
+}
+
+.feedCreator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s;
+}
+.feedCreator:hover {
+    opacity: 0.8;
+}
+
+.feedCreatorAvatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid #A57B62;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.feedCreatorInfo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.feedCreatorName {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #F0D4C6;
+}
+
+.feedTitleRow {
+    margin-bottom: 0.8rem;
+    width: 100%;
+}
+
+.feedQuizTitle {
+    font-size: 1.1rem; /* Larger title */
+    font-weight: 600;
+    color: #A57B62;
+    opacity: 1;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.feedDifficulty {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(165, 123, 98, 0.15);
+    padding: 0.4rem 0.8rem;
+    border-radius: 24px;
+    border: 1px solid rgba(165, 123, 98, 0.3);
+    margin-right: 0;
+    flex-shrink: 0;
+}
+
+.feedDifficultyEmoji {
+    font-size: 1.2rem;
+}
+
+.feedDifficultyText {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #A57B62;
+    letter-spacing: 0.5px;
+}
+
+.feedProgress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.feedProgressText {
+    font-size: 0.85rem;
+    color: #8b9bb4;
+    text-align: right;
+    font-weight: 500;
+}
+
+.feedProgressBar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.feedProgressFill {
+    height: 100%;
+    background: linear-gradient(90deg, #A57B62, #F0D4C6);
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(165, 123, 98, 0.3);
+}
+
+/* Adjust question container for feed view */
+.feedCard .questionContainer {
+    flex: 1;
+    padding: 4rem 2rem 1rem; /* Increased top padding to push content down */
+    margin: 0 auto;
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem; /* Reduced gap */
+    min-height: 0; /* Important for flex nesting */
+    position: relative; /* For absolute positioning of arrows */
+}
+
+/* Navigation Arrows */
+.navArrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.2); /* Semi-transparent dark background */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.navArrow:hover:not(:disabled) {
+    background: rgba(165, 123, 98, 0.4); /* Bronze tint on hover */
+    color: #fff;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.navArrow:disabled {
+    opacity: 0; /* Hide when disabled */
+    pointer-events: none;
+}
+
+.navArrowLeft {
+    left: 1rem;
+}
+
+.navArrowRight {
+    right: 1rem;
+}
+
+/* Smart Content Sizing */
+.feedCard .questionMediaContainer {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 1;
+    min-height: 0;
+}
+
+.feedCard .questionMediaItem {
+    max-height: 25vh; /* Limit image height */
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Tiny Audio Player */
+.audioContainer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.tinyAudio {
+    height: 32px; /* Compact height */
+    width: 80%;
+    max-width: 300px;
+    opacity: 0.9;
+}
+.tinyAudio::-webkit-media-controls-panel {
+    background-color: rgba(165, 123, 98, 0.1);
+}
+.tinyAudio::-webkit-media-controls-play-button,
+.tinyAudio::-webkit-media-controls-current-time-display,
+.tinyAudio::-webkit-media-controls-time-remaining-display {
+    color: #A57B62;
+}
+
+.feedCard .questionText {
+    color: #F0D4C6;
+    font-size: var(--dynamic-font-size, 1.3rem); /* Use variable with fallback */
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Hint Styles */
+.hintButton {
+    background: rgba(165, 123, 98, 0.1);
+    border: 1px solid rgba(165, 123, 98, 0.3);
+    color: #A57B62;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 0.5rem;
+}
+.hintButton:hover {
+    background: rgba(165, 123, 98, 0.2);
+}
+.hintButton.active {
+    background: #A57B62;
+    color: #13171A;
+}
+
+.hintDisplay {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #F0D4C6;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Override option buttons for feed view specifically if needed, 
+   or rely on the global .optionButton update below */
+.feedCard .optionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.feedFooter {
+    padding: 0.5rem 1rem; /* Compact footer */
+    background: rgba(19, 23, 26, 0.98);
+    border-top: 1px solid rgba(165, 123, 98, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    min-height: 50px; /* Ensure minimum height */
+}
+
+.feedStats {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.feedStatItem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.1rem; /* Bigger stats */
+    color: #8b9bb4;
+    font-weight: 600;
+}
+.feedStatItem svg {
+    width: 20px;
+    height: 20px;
+}
+
+.feedActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.feedActionButton {
+    background: rgba(165, 123, 98, 0.1);
+    border: 1px solid rgba(165, 123, 98, 0.2);
+    color: #A57B62;
+    padding: 0.6rem; /* Smaller padding */
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feedActionButton:hover {
+    background: rgba(165, 123, 98, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive adjustments */
+@media (min-width: 1024px) {
+    .feedCard .questionText {
+        font-size: 1.8rem;
+    }
+    .feedCreatorName {
+        font-size: 1.2rem;
+    }
+    .feedHeader {
+        padding: 2rem 6rem 2rem 3rem; /* Extra right padding for sidebar */
+    }
+    .feedCard .questionContainer {
+        max-width: 900px;
+        padding: 5rem 3rem 3rem; /* Increased top padding */
+    }
+}
+
+@media (max-width: 480px) {
+    .feedHeader {
+        padding: 0.75rem 1rem; /* Reduced padding */
+    }
+    .feedCreatorAvatar {
+        width: 36px;
+        height: 36px;
+    }
+    .feedCreatorName {
+        font-size: 0.9rem;
+    }
+    .feedQuizTitle {
+        font-size: 0.85rem;
+    }
+    .feedCard .questionText {
+        /* Scale down the dynamic font size by 20% for mobile */
+        font-size: calc(var(--dynamic-font-size, 1.3rem) * 0.8);
+    }
+    .feedCard .questionContainer {
+        padding: 3rem 1rem 1rem; /* Increased top padding for mobile */
+        /* Ensure content doesn't get hidden under header if header is tall */
+        scroll-margin-top: 120px; 
+    }
+    .feedDifficulty {
+        transform: scale(0.75);
+        transform-origin: right center;
+        margin-left: auto;
+        padding: 0.2rem 0.5rem;
+    }
+    .feedDifficultyEmoji {
+        font-size: 1rem;
+    }
+    .feedDifficultyText {
+        font-size: 0.7rem;
+    }
+
+    /* Compact option buttons on mobile */
+    .feedCard .optionsList {
+        gap: 0.5rem;
+    }
+    .optionButton {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+        gap: 0.8rem;
+    }
+
+    /* Mobile Navigation Arrows */
+    .navArrow {
+        width: 32px;
+        height: 32px;
+        background: rgba(0, 0, 0, 0.05);
+        border: none;
+        top: 65%; /* Move down to avoid sidebar handle at 50% */
+    }
+    .navArrowLeft { left: 0; }
+    .navArrowRight { right: 0; }
 }

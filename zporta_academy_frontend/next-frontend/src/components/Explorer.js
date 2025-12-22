@@ -43,8 +43,9 @@ const ItemCard = ({ item, type, t }) => {
   const defaultPlaceholder =
     "https://placehold.co/600x400/f5f5f7/c7c7cc?text=No+Image";
   let linkUrl;
+  // For quizzes, don't create a link - we want to keep them in explorer
   if (type === "quizzes") {
-    linkUrl = quizPermalinkToUrl(item.permalink);
+    linkUrl = null;
   } else if (type === "guides") {
     const uname =
       item.username || item.user?.username || item.profile?.username;
@@ -62,7 +63,31 @@ const ItemCard = ({ item, type, t }) => {
 
   return (
     <div className={styles.gridItem}>
-      <Link href={linkUrl} className={styles.gridItemLink}>
+      {linkUrl ? (
+        <Link href={linkUrl} className={styles.gridItemLink}>
+          <div className={styles.gridItemCard}>
+            <div className={styles.gridItemImageContainer}>
+              <img
+                src={imageUrl}
+                alt={title}
+                className={styles.gridItemImage}
+                loading="lazy"
+                onError={(e) => {
+                  e.target.src = defaultPlaceholder;
+                }}
+              />
+            </div>
+            <div className={styles.gridItemInfo}>
+              <h3 className={styles.gridItemTitle}>{title}</h3>
+              {creatorName && (
+                <p className={styles.creatorName}>
+                  {t("exploration.by", { name: creatorName })}
+                </p>
+              )}
+            </div>
+          </div>
+        </Link>
+      ) : (
         <div className={styles.gridItemCard}>
           <div className={styles.gridItemImageContainer}>
             <img
@@ -84,7 +109,7 @@ const ItemCard = ({ item, type, t }) => {
             )}
           </div>
         </div>
-      </Link>
+      )}
     </div>
   );
 };

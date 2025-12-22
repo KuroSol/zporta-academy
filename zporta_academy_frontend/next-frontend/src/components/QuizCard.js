@@ -11,6 +11,7 @@ import { useRouter } from "next/router";
 import apiClient from "@/api";
 import { AuthContext } from "@/context/AuthContext";
 import styles from "@/styles/QuizCard.module.css";
+import feedStyles from "@/styles/QuizFeed.module.css";
 import { quizPermalinkToUrl } from "@/utils/urls";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 import { QuizMedia, HintBlock } from "@/components/common/QuizContent";
@@ -63,6 +64,14 @@ const getDisplayName = (u) =>
   u?.user_username ||
   u?.user?.username ||
   "guest";
+
+// Helper to resolve media URLs (images/audio)
+function resolveMediaUrl(url) {
+  if (!url) return null;
+  if (url.startsWith("http") || url.startsWith("blob:")) return url;
+  return `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${url}`;
+}
+
 // Helper for rendering media elements
 const RenderCardMedia = ({
   url,
@@ -300,6 +309,8 @@ const QuizCard = ({
   onItemHidden,
   itemType,
   isFeedView = false,
+  externalQuestionIndex,
+  onExternalQuestionIndexChange,
 }) => {
   // All state from your original file is restored
   const [isExpanded, setIsExpanded] = useState(false);
@@ -464,6 +475,15 @@ const QuizCard = ({
   );
   const displayStats = publicStats || EMPTY_STATS;
 
+  // External control for question index (used by gesture pager)
+  useEffect(() => {
+    if (typeof externalQuestionIndex === "number") {
+      const clamped = Math.max(0, Math.min(totalQuestions - 1, externalQuestionIndex));
+      if (clamped !== currentIndex) setCurrentIndex(clamped);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalQuestionIndex, totalQuestions]);
+
   // PERFORMANCE FIX: Only fetch stats when card is expanded (not on mount)
   // This prevents 70+ simultaneous API calls when Explorer page loads
   useEffect(() => {
@@ -576,6 +596,8 @@ const QuizCard = ({
         : [],
     [currentQuestion]
   );
+
+  // Feed/explore mode is controlled externally via `externalQuestionIndex`.
 
   const handleAnswerChange = (questionId, answer) => {
     if (submittedAnswers[questionId]) return;
@@ -911,24 +933,181 @@ const QuizCard = ({
           </div>
         );
       }
-      case "dragdrop":
-        const href =
-          takeUrl ||
-          (quiz?.permalink
-            ? `/quizzes/${quiz.permalink}`
-            : `/quizzes/${quiz?.id || ""}`);
-        return (
-          <div className={styles.nextBridge}>
-            <p>Open this question in the full quiz view.</p>
-            <a className="btn btn-outline" href={href}>
-              Open Quiz
-            </a>
-          </div>
-        );
+      // other question types handled elsewhere or deferred to full view
       default:
-        return <div>This question type is not supported in this view.</div>;
+        return null;
     }
   };
+
+  // Lightweight rendering for feed/explore pager: show only current question
+  if (isFeedView) {
+    // Dynamic font size based on text length
+    const textLen = currentQuestion.question_text?.length || 0;
+    const dynamicFontSize = 
+        textLen > 300 ? "0.9rem" :
+        textLen > 200 ? "1.0rem" :
+        textLen > 100 ? "1.2rem" : "1.5rem";
+
+    return (
+      <div className={styles.feedCard}>
+        <div className={styles.feedHeader}>
+          <div className={styles.feedHeaderTop}>
+            {quiz.created_by && (
+              <Link
+                href={`/guide/${quiz.created_by.username}`}
+                className={styles.feedCreator}
+              >
+                <img
+                  src={resolveAvatarUrl(quiz.created_by)}
+                  alt={`${getDisplayName(quiz.created_by)}'s avatar`}
+                  className={styles.feedCreatorAvatar}
+                  onError={(e) => {
+                    e.currentTarget.src = DEFAULT_AVATAR;
+                  }}
+                />
+                <div className={styles.feedCreatorInfo}>
+                  <span className={styles.feedCreatorName}>
+                    {getDisplayName(quiz.created_by)}
+                  </span>
+                </div>
+              </Link>
+            )}
+            {quiz.difficulty_explanation && (
+              <div className={styles.feedDifficulty}>
+                <span className={styles.feedDifficultyEmoji}>
+                  {quiz.difficulty_explanation.emoji}
+                </span>
+                <span className={styles.feedDifficultyText}>
+                  {quiz.difficulty_explanation.level_5}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className={styles.feedTitleRow}>
+             <span className={styles.feedQuizTitle}>
+                {quiz.title || "Untitled Quiz"}
+             </span>
+          </div>
+          <div className={styles.feedProgress}>
+             <span className={styles.feedProgressText}>
+                Question {currentIndex + 1} of {totalQuestions}
+             </span>
+             <div className={styles.feedProgressBar}>
+                <div 
+                  className={styles.feedProgressFill} 
+                  style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                />
+             </div>
+          </div>
+        </div>
+
+        <div className={styles.questionContainer}>
+          {/* Navigation Arrows */}
+          <button 
+            className={`${styles.navArrow} ${styles.navArrowLeft}`}
+            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+            disabled={currentIndex === 0}
+            aria-label="Previous question"
+          >
+            <ChevronLeft size={32} />
+          </button>
+          
+          <button 
+            className={`${styles.navArrow} ${styles.navArrowRight}`}
+            onClick={(e) => { e.stopPropagation(); goNext(); }}
+            disabled={currentIndex === totalQuestions - 1}
+            aria-label="Next question"
+          >
+            <ChevronRight size={32} />
+          </button>
+
+          {totalQuestions > 0 ? (
+            <>
+              {/* Image Only */}
+              <QuizMedia
+                imageUrl={resolveMediaUrl(currentQuestion.question_image)}
+                imageAlt={currentQuestion.question_image_alt || "Question image"}
+                audioUrl={null}
+                containerClass={styles.questionMediaContainer}
+                imageClass={styles.questionMediaItem}
+              />
+              
+              <h3
+                className={styles.questionText}
+                style={{ "--dynamic-font-size": dynamicFontSize }}
+                dangerouslySetInnerHTML={{ __html: currentQuestion.question_text }}
+              />
+
+              {/* Audio Only - Tiny & Below Question */}
+              <QuizMedia
+                imageUrl={null}
+                audioUrl={resolveMediaUrl(currentQuestion.question_audio)}
+                containerClass={styles.audioContainer}
+                audioClass={styles.tinyAudio}
+              />
+
+              <HintBlock
+                key={currentQuestionId}
+                hint1={currentQuestion.hint1}
+                hint2={currentQuestion.hint2}
+                mode="collapsible"
+                containerClass={styles.hintsContainer}
+                hintButtonClass={styles.hintButton}
+                hintDisplayClass={styles.hintDisplay}
+                onHintUsed={(hintNum) => {
+                  setHintsUsed((prev) => ({
+                    ...prev,
+                    [currentQuestionId]: [
+                      ...(prev[currentQuestionId] || []),
+                      hintNum,
+                    ],
+                  }));
+                }}
+              />
+
+              {renderAnswerArea()}
+
+              <div className={styles.feedbackAndNav}>
+                {cardError && (
+                  <div className={styles.errorText}>
+                    <AlertTriangle size={14} /> {cardError}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className={styles.noQuestions}>This quiz has no questions.</p>
+          )}
+        </div>
+        
+        <div className={styles.feedFooter}>
+           <div className={styles.feedStats}>
+              <div className={styles.feedStatItem}>
+                 <Users size={14} />
+                 <span>{displayStats.uniqueParticipants || 0}</span>
+              </div>
+              <div className={styles.feedStatItem}>
+                 <CheckCircle size={14} className={styles.correctText} />
+                 <span>{displayStats.totalCorrectAnswersForQuiz || 0}</span>
+              </div>
+           </div>
+           <div className={styles.feedActions}>
+              <button
+                className={styles.feedActionButton}
+                onClick={() => {
+                    const link = quiz?.permalink
+                    ? `${window.location.origin}${quizPermalinkToUrl(quiz.permalink)}`
+                    : window.location.href;
+                    navigator.clipboard.writeText(link).catch(() => {});
+                }}
+              >
+                 <Share2 size={16} />
+              </button>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -1195,6 +1374,7 @@ const QuizCard = ({
                     }}
                   />
                   <HintBlock
+                    key={currentQuestionId}
                     hint1={currentQuestion.hint1}
                     hint2={currentQuestion.hint2}
                     mode="collapsible"

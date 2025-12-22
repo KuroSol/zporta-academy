@@ -260,6 +260,10 @@ body.modal-open {
   --header-accent-hover: #81302B;
   --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   --header-radius-sm: 6px;
+  /* Responsive header height variables */
+  --app-header-height-desktop: 55px;
+  --app-header-height-mobile: 50px;
+  --app-header-height: var(--app-header-height-desktop);
   --app-header-height-desktop: 55px;
   --app-header-height-mobile: 50px;
   --primary-dark: #000000;
@@ -280,8 +284,8 @@ body.modal-open {
   --sidebar-bg-color: rgba(0, 0, 0, 0.98);
   --sidebar-text-color: #F0D4C6;
   --sidebar-accent-color: #A57B62;
-  --zindex-sidebar: 1030;
-  --zindex-sidebar-handle: 1031;
+  --zindex-sidebar: 10000;
+  --zindex-sidebar-handle: 10001;
   --sidebar-width-desktop-collapsed: 60px;
   --sidebar-width-expanded: 250px;
   --sidebar-transition-duration: 0.3s;
@@ -384,21 +388,21 @@ body.modal-open {
   --notes-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* === Semantic Design Tokens - Backgrounds === */
-  --bg: #FFFFFF;
-  --bg-secondary: #F5F3F0;
-  --surface: #FFFFFF;
-  --surface-2: #F5F3F0;
-  --surface-hover: #EDE9E4;
+  --bg: #13171A;
+  --bg-secondary: #231810;
+  --surface: #231810;
+  --surface-2: #2D1F16;
+  --surface-hover: #3A2A1E;
 
   /* === Semantic Design Tokens - Text === */
-  --text: #231810;
-  --text-secondary: #5C4F47;
+  --text: #A57B62;
+  --text-secondary: #C4A89A;
   --text-muted: #8295D0;
   --text-on-dark: #F0D4C6;
   --text-inverse: #FFFFFF;
 
   /* === Semantic Design Tokens - Borders & Dividers === */
-  --border: #E0D7CF;
+  --border: #3A2A1E;
   --border-strong: #A57B62;
   --divider: #E0D7CF;
 
@@ -552,8 +556,8 @@ body.modal-open {
  }
 
   /* === Sidebar === */
-  --zindex-sidebar: 1030;
-  --zindex-sidebar-handle: 1031;
+  --zindex-sidebar: 10000;
+  --zindex-sidebar-handle: 10001;
   --sidebar-width-desktop-collapsed: 60px;
   --sidebar-width-expanded: 250px;
   --sidebar-transition-duration: 0.3s;
@@ -1855,4 +1859,20 @@ button {
     width: 14px;
     height: 14px;
   }
+}
+
+/* Responsive header height for mobile */
+@media (max-width: 768px) {
+  :root {
+    --app-header-height: var(--app-header-height-mobile);
+  }
+}
+
+/* Hide scrollbars utility */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.hide-scrollbar::-webkit-scrollbar { /* Safari/Chrome */
+  display: none;
 }
