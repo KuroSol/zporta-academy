@@ -83,7 +83,7 @@
     font-weight: 500;
     color: var(--zporta-secondary-light);
     transition: color 0.2s ease-in-out;
-    var(--bg)-space: nowrap;
+    white-space: nowrap;
 }
 
 .stepItem:hover .stepCounter {
