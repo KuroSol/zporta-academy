@@ -785,7 +785,7 @@
     font-weight: 700;
     font-size: 1.05rem;
     margin-bottom: 0.75rem;
-    color: #0f172a;
+    /*color: #0f172a;*/
     display: flex;
     align-items: center;
     gap: 0.5rem;
