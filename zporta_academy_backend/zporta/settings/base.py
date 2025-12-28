@@ -185,7 +185,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.co
 # Email Branding Configuration
 SITE_NAME = config('SITE_NAME', default='Zporta Academy')
 SITE_URL = config('SITE_URL', default='https://zportaacademy.com')
-SITE_LOGO_URL = config('SITE_LOGO_URL', default='https://zportaacademy.com/logo.png')
+SITE_LOGO_URL = config('SITE_LOGO_URL', default='https://zportaacademy.com/logo192.png')
 EMAIL_SENDER_NAME = config('EMAIL_SENDER_NAME', default='Zporta Academy')
 
 # Fallback: if credentials are missing in local dev, switch to console backend to avoid SMTP errors.
