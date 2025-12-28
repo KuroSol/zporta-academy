@@ -182,6 +182,12 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None) # Your full Google Wor
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None) # The 16-character App Password you generated
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='info@zportaacademy.com') # Should be the same as EMAIL_HOST_USER for best results
 
+# Email Branding Configuration
+SITE_NAME = config('SITE_NAME', default='Zporta Academy')
+SITE_URL = config('SITE_URL', default='https://zportaacademy.com')
+SITE_LOGO_URL = config('SITE_LOGO_URL', default='https://zportaacademy.com/logo.png')
+EMAIL_SENDER_NAME = config('EMAIL_SENDER_NAME', default='Zporta Academy')
+
 # Fallback: if credentials are missing in local dev, switch to console backend to avoid SMTP errors.
 if (not EMAIL_HOST_USER) or (not EMAIL_HOST_PASSWORD) or EMAIL_HOST_PASSWORD == '':
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

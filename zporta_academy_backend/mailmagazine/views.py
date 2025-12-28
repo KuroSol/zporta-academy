@@ -130,28 +130,61 @@ class TeacherMailMagazineViewSet(viewsets.ModelViewSet):
                 personalized_subject = render_placeholders(raw_subject)
                 personalized_html = render_placeholders(raw_html)
                 
-                # Build wrapper with "View in browser" link
+                # Build wrapper with logo, branding header, and "View in browser" link
+                site_logo = getattr(settings, 'SITE_LOGO_URL', 'https://zportaacademy.com/logo.png')
+                site_name = getattr(settings, 'SITE_NAME', 'Zporta Academy')
+                
                 html_wrapper = f"""
                 <html>
-                  <body style='background:#0b1523;margin:0;padding:24px;font-family:Segoe UI,Arial,sans-serif;color:#ffffff;'>
-                    <div style='max-width:600px;margin:0 auto;background:#142233;padding:32px;border-radius:8px;'>
-                      <div style='background:#0b1523;padding:12px;text-align:center;margin:-32px -32px 24px;border-bottom:1px solid #1e293b;'>
-                        <p style='margin:0;font-size:12px;color:#94a3b8;'>Having trouble viewing this email? <a href='{view_in_browser_url}' style='color:#ffb703;text-decoration:none;'>View in browser</a></p>
+                  <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                  </head>
+                  <body style='background:#0b1523;margin:0;padding:24px;font-family:"Segoe UI",Arial,sans-serif;color:#ffffff;'>
+                    <div style='max-width:600px;margin:0 auto;background:#142233;padding:0;border-radius:8px;overflow:hidden;'>
+                      <!-- Branding Header -->
+                      <div style='background:linear-gradient(135deg, #1e293b 0%, #0f1419 100%);padding:20px 32px;text-align:center;border-bottom:2px solid #ffb703;'>
+                        <a href='{site_url}' style='display:inline-block;text-decoration:none;'>
+                          <img src='{site_logo}' alt='{site_name}' style='max-height:50px;width:auto;margin-bottom:10px;display:block;'>
+                        </a>
+                        <h1 style='margin:0;font-size:18px;color:#ffb703;font-weight:600;'>From {site_name}</h1>
                       </div>
-                      {personalized_html}
-                      <hr style='border:none;border-top:1px solid #1f2e40;margin:32px 0;' />
-                      <p style='font-size:12px;color:#94a3b8;margin:0;'>You are receiving this because you subscribed to this teacher's mail magazine.</p>
-                      <p style='font-size:12px;color:#94a3b8;margin:8px 0 0;'>Manage preferences: <a href='https://zportaacademy.com/preferences/mail-magazines' style='color:#ffb703;'>Click here</a></p>
+                      
+                      <!-- View in Browser Link -->
+                      <div style='background:#0b1523;padding:12px 32px;text-align:center;border-bottom:1px solid #1e293b;'>
+                        <p style='margin:0;font-size:12px;color:#94a3b8;'>Having trouble viewing this email? <a href='{view_in_browser_url}' style='color:#ffb703;text-decoration:none;font-weight:600;'>View in browser</a></p>
+                      </div>
+                      
+                      <!-- Main Content -->
+                      <div style='padding:32px;'>
+                        {personalized_html}
+                      </div>
+                      
+                      <!-- Footer -->
+                      <div style='background:#0b1523;padding:24px 32px;border-top:1px solid #1f2e40;'>
+                        <hr style='border:none;border-top:1px solid #1f2e40;margin:0 0 16px 0;' />
+                        <p style='font-size:12px;color:#94a3b8;margin:0 0 8px 0;'>You are receiving this because you subscribed to this teacher's mail magazine on {site_name}.</p>
+                        <p style='font-size:12px;color:#94a3b8;margin:0;'>
+                          <a href='{site_url}/preferences/mail-magazines' style='color:#ffb703;text-decoration:none;font-weight:600;'>Manage preferences</a> | 
+                          <a href='{site_url}' style='color:#ffb703;text-decoration:none;font-weight:600;'>Visit {site_name}</a>
+                        </p>
+                        <p style='font-size:11px;color:#64748b;margin:12px 0 0 0;'>© 2024 {site_name}. All rights reserved.</p>
+                      </div>
                     </div>
                   </body>
                 </html>
                 """.strip()
                 
                 plain_text = BeautifulSoup(personalized_html, 'html.parser').get_text(separator='\n', strip=True)
+                
+                # Use branded sender name instead of just email
+                sender_name = getattr(settings, 'EMAIL_SENDER_NAME', site_name)
+                from_email_with_name = f'{sender_name} <{settings.EMAIL_HOST_USER}>'
+                
                 email = EmailMultiAlternatives(
                     subject=personalized_subject,
                     body=plain_text,
-                    from_email=settings.EMAIL_HOST_USER,
+                    from_email=from_email_with_name,
                     to=[recipient.email],
                 )
                 email.attach_alternative(html_wrapper, "text/html")
