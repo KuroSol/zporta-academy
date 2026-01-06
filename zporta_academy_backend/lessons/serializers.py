@@ -23,6 +23,20 @@ class LightweightQuizSerializer(serializers.ModelSerializer):
         model = Quiz
         fields = ['id', 'title', 'permalink', 'quiz_type', 'status']
 
+
+class AttachedQuizSerializer(serializers.ModelSerializer):
+    """Tiny payload for edit screen attach/detach lists."""
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = Quiz
+        fields = [
+            'id', 'title', 'permalink', 'quiz_type', 'status',
+            'lesson', 'course', 'subject', 'subject_name', 'created_by_username',
+        ]
+        read_only_fields = fields
+
 class SimpleLessonSerializerForCompletion(serializers.ModelSerializer):
     """ Minimal Lesson details needed for the history card """
     course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
@@ -111,7 +125,7 @@ class LessonSerializer(serializers.ModelSerializer):
         
         # In edit context, return full quiz data with questions
         if is_edit_context:
-            return QuizSerializer(lesson.quizzes.all(), many=True, context=self.context).data
+            return AttachedQuizSerializer(lesson.quizzes.all(), many=True, context=self.context).data
         
         # In public view, return lightweight quiz data (no questions)
         return LightweightQuizSerializer(lesson.quizzes.all(), many=True).data
@@ -127,8 +141,11 @@ class LessonSerializer(serializers.ModelSerializer):
         
         # pull every quiz the user created; the front‑end can then
         # look at each quiz's .lesson and .course to know what's free
-        queryset = Quiz.objects.filter(created_by=request.user)
-        return QuizSerializer(queryset, many=True, context=self.context).data
+        queryset = Quiz.objects.filter(created_by=request.user).only(
+            'id', 'title', 'permalink', 'quiz_type', 'status',
+            'lesson_id', 'course_id', 'subject_id', 'created_by_id'
+        ).select_related('subject', 'created_by')
+        return AttachedQuizSerializer(queryset, many=True, context=self.context).data
   
         # Add 'course' to read_only_fields if it shouldn't be set/changed via this serializer
 

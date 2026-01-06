@@ -17,7 +17,7 @@ from .models import LessonTemplate
 from .serializers import LessonTemplateSerializer
 from rest_framework import viewsets
 from rest_framework import viewsets
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from django.db import transaction
 from rest_framework.viewsets import ModelViewSet
@@ -152,10 +152,25 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     Only the lesson creator is allowed to update or delete.
     Locked lessons (after enrollment) cannot be edited or deleted.
     """
-    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = "permalink"
+
+    def get_queryset(self):
+        """Optimize edit fetch to avoid loading heavy quiz data."""
+        quiz_prefetch = Prefetch(
+            'quizzes',
+            queryset=Quiz.objects.only(
+                'id', 'title', 'permalink', 'quiz_type', 'status',
+                'lesson_id', 'course_id'
+            ).select_related('subject', 'created_by')
+        )
+
+        return (
+            Lesson.objects
+            .select_related('subject', 'course', 'created_by', 'template_ref')
+            .prefetch_related('tags', quiz_prefetch)
+        )
 
     def get_serializer_context(self):
         """Add is_edit_context flag to enable full quiz data in edit views"""
@@ -164,7 +179,7 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         return context
 
     def get_object(self):
-        lesson = get_object_or_404(Lesson, permalink=self.kwargs.get("permalink"))
+        lesson = get_object_or_404(self.get_queryset(), permalink=self.kwargs.get("permalink"))
 
         # Only creator (or staff) may view this detail via the update endpoint
         if self.request.method in ['GET', 'HEAD', 'OPTIONS']:
@@ -402,13 +417,20 @@ class DynamicLessonView(APIView):
             cache.set(cache_key, response_data, timeout=300)
         
         resp = Response(response_data)
-        # Apply robots noindex headers for non-published or premium lessons
-        if lesson.status != Lesson.PUBLISHED or lesson.is_premium:
+        # Only block indexing for premium or draft lessons
+        if lesson.is_premium or lesson.status == Lesson.DRAFT:
             resp["X-Robots-Tag"] = "noindex, nofollow"
             # Also reflect in seo block for clients rendering meta tags
             try:
                 if isinstance(response_data.get("seo"), dict):
                     response_data["seo"]["robots"] = "noindex,nofollow"
+            except Exception:
+                pass
+        else:
+            # Ensure published free lessons are indexable
+            try:
+                if isinstance(response_data.get("seo"), dict):
+                    response_data["seo"].pop("robots", None)
             except Exception:
                 pass
         # Add conservative cache headers for anonymous/public access
