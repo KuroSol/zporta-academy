@@ -37,8 +37,10 @@ const formatDate = (dateString) => {
 };
 
 export default function TagPage({ tag, ogLocale = 'en_US', primaryLang = 'en-US' }) {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.zportaacademy.com';
-  const url = `${site}/tags/${tag.slug}`;
+  // Normalize origin (strip trailing slash and www)
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com').replace(/\/$/, '').replace('www.', '');
+  // Canonical policy: enforce trailing slash for consistency with backend canonical_url helper
+  const canonical = `${site}/tags/${tag.slug}/`;
   const title = `${tag.name} – Tagged Content | Zporta Academy`;
   const desc = tag.description || `Browse all content tagged with ${tag.name} on Zporta Academy`;
   const keywords = [tag.name, 'tags', 'Zporta Academy', 'courses', 'lessons', 'quizzes', 'learning'].join(', ');
@@ -81,11 +83,11 @@ export default function TagPage({ tag, ogLocale = 'en_US', primaryLang = 'en-US'
         <title>{title}</title>
         <meta name="description" content={desc} />
         <meta name="keywords" content={keywords} />
-        <link rel="canonical" href={url} />
+        <link rel="canonical" href={canonical} />
         <meta name="robots" content="index,follow" />
         <meta name="language" content={primaryLang} />
         <meta httpEquiv="content-language" content={primaryLang} />
-        <meta property="og:url" content={url} />
+        <meta property="og:url" content={canonical} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={desc} />

@@ -24,7 +24,9 @@ export async function getServerSideProps({ params, req }){
 
 export default function Page({ post, previousPost, nextPost }){
   const site  = (process.env.NEXT_PUBLIC_SITE_URL || 'https://zportaacademy.com').replace(/\/$/, '').replace('www.', '');
-  const url   = `${site}/posts/${post.permalink}`;
+  // Canonical policy: always trailing slash to match backend canonical_url helper
+  const canonical = (post.canonical_url || `${site}/posts/${post.permalink}/`).replace(/\/$/, '') + '/';
+  const mainEntityUrl = canonical;
   const title = post.seo_title || post.title;
   const desc  = post.seo_description || (post.content ? post.content.replace(/<[^>]+>/g,'').slice(0,160) : '');
   const img   = post.og_image_url || post.og_image || `${site}/images/default-og.png`;
@@ -35,9 +37,9 @@ export default function Page({ post, previousPost, nextPost }){
       <Head>
         <title>{title}</title>
         <meta name="description" content={desc}/>
-        <link rel="canonical" href={url}/>
+        <link rel="canonical" href={canonical}/>
         <meta name="robots" content="index,follow"/>
-        <meta property="og:url" content={url}/>
+        <meta property="og:url" content={canonical}/>
         <meta property="og:type" content="article"/>
         <meta property="og:title" content={post.og_title || title}/>
         <meta property="og:description" content={post.og_description || desc}/>
@@ -54,7 +56,7 @@ export default function Page({ post, previousPost, nextPost }){
             "@type":"Article",
             headline:title, description:desc,
             author:[{ "@type":"Person", name:author }],
-            datePublished: post.created_at, image:[img], mainEntityOfPage:url
+            datePublished: post.created_at, image:[img], mainEntityOfPage:mainEntityUrl
           })}} />
       </Head>
       <PostDetail post={post} previousPost={previousPost} nextPost={nextPost}/>
