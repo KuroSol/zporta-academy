@@ -11,6 +11,7 @@ import { AuthModalProvider } from "@/context/AuthModalContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import AppLayout from "@/components/layout/AppLayout";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { useGlobalContrastChecker } from "@/components/ContrastCheckerProvider";
 // Note: avoid importing CSS Modules globally here; import them in components instead.
 // client-only
 const BottomMenu = dynamic(() => import("@/components/common/BottomMenu"), {
@@ -54,6 +55,9 @@ function Chrome({ children, enabled }) {
 
 export default function MyApp({ Component, pageProps }) {
   const enabled = Component.hideChrome ? false : true;
+  
+  // Enable global contrast checking for all pages
+  useGlobalContrastChecker();
 
   // Apply AppLayout exactly once.
   const applyLayout =

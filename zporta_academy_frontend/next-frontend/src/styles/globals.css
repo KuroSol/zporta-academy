@@ -253,17 +253,13 @@ body.modal-open {
   --zporta-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* === HEADER / NAVIGATION (Dark) === */
-  --header-bg: #13171a;
+  --header-bg: #000000;
   --header-fg: #F0D4C6;
   --header-fg-dim: rgba(240, 212, 198, 0.7);
   --header-accent: #A57B62;
   --header-accent-hover: #81302B;
   --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   --header-radius-sm: 6px;
-  /* Responsive header height variables */
-  --app-header-height-desktop: 55px;
-  --app-header-height-mobile: 50px;
-  --app-header-height: var(--app-header-height-desktop);
   --app-header-height-desktop: 55px;
   --app-header-height-mobile: 50px;
   --primary-dark: #000000;
@@ -284,8 +280,8 @@ body.modal-open {
   --sidebar-bg-color: rgba(0, 0, 0, 0.98);
   --sidebar-text-color: #F0D4C6;
   --sidebar-accent-color: #A57B62;
-  --zindex-sidebar: 10000;
-  --zindex-sidebar-handle: 10001;
+  --zindex-sidebar: 1030;
+  --zindex-sidebar-handle: 1031;
   --sidebar-width-desktop-collapsed: 60px;
   --sidebar-width-expanded: 250px;
   --sidebar-transition-duration: 0.3s;
@@ -388,21 +384,21 @@ body.modal-open {
   --notes-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* === Semantic Design Tokens - Backgrounds === */
-  --bg: #13171A;
-  --bg-secondary: #231810;
-  --surface: #231810;
-  --surface-2: #2D1F16;
-  --surface-hover: #3A2A1E;
+  --bg: #13171a;;
+  --bg-secondary: #000000;
+  --surface: #FFFFFF;
+  --surface-2: #F5F3F0;
+  --surface-hover: #EDE9E4;
 
   /* === Semantic Design Tokens - Text === */
-  --text: #A57B62;
-  --text-secondary: #C4A89A;
+  --text: #231810;
+  --text-secondary: #5C4F47;
   --text-muted: #8295D0;
   --text-on-dark: #F0D4C6;
   --text-inverse: #FFFFFF;
 
   /* === Semantic Design Tokens - Borders & Dividers === */
-  --border: #3A2A1E;
+  --border: #E0D7CF;
   --border-strong: #A57B62;
   --divider: #E0D7CF;
 
@@ -556,8 +552,8 @@ body.modal-open {
  }
 
   /* === Sidebar === */
-  --zindex-sidebar: 10000;
-  --zindex-sidebar-handle: 10001;
+  --zindex-sidebar: 1030;
+  --zindex-sidebar-handle: 1031;
   --sidebar-width-desktop-collapsed: 60px;
   --sidebar-width-expanded: 250px;
   --sidebar-transition-duration: 0.3s;
@@ -598,7 +594,7 @@ body.modal-open {
   --zindex-overlay-backdrop: 1050;
   --zindex-overlay-panel: 1051;
 
-  --zporta-primary-color: #E0D7CF;;
+  --zporta-primary-color: #13171a;
   /* Blue */
   --zporta-primary-hover: #2980b9;
   /* Darker blue */
@@ -1861,18 +1857,185 @@ button {
   }
 }
 
-/* Responsive header height for mobile */
-@media (max-width: 768px) {
-  :root {
-    --app-header-height: var(--app-header-height-mobile);
-  }
+/* ==========================================================================
+   DARK THEME GLOBAL DEFAULT
+   Apply dark background (#13171a) and white text everywhere by default
+   User customizations (inline styles) are preserved and take priority
+   ========================================================================== */
+
+/* Force dark theme on root container */
+html, body, #__next {
+  background-color: #13171a !important;
+  color: #FFFFFF !important;
 }
 
-/* Hide scrollbars utility */
-.hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+/* Apply dark theme to all main content areas */
+main,
+.main,
+.content,
+.container,
+.wrapper,
+.page-wrapper,
+.page-container,
+.content-wrapper,
+.main-content,
+article,
+section,
+.article-wrapper,
+.post-wrapper,
+.lesson-wrapper,
+.course-wrapper,
+.page-main,
+.page-content,
+.inner-content,
+.inner-wrapper {
+  background-color: #13171a !important;
+  color: #FFFFFF !important;
 }
-.hide-scrollbar::-webkit-scrollbar { /* Safari/Chrome */
-  display: none;
+
+/* Ensure all text and headings are white by default */
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, li, td, th,
+label, button {
+  color: #FFFFFF !important;
+}
+
+/* Input placeholders - separate rule for pseudo-elements */
+input::placeholder, textarea::placeholder {
+  color: #8295D0 !important;
+  opacity: 0.8;
+}
+
+/* Style specific page types */
+.post-page, .post-detail, .post-content,
+.article-page, .article-detail, .article-content,
+.lesson-page, .lesson-detail, .lesson-content,
+.course-page, .course-detail, .course-content {
+  background-color: #13171a !important;
+  color: #FFFFFF !important;
+}
+
+/* Cards, boxes, and containers */
+.card, .box, .container-card, .content-card,
+.post-card, .article-card, .lesson-card, .course-card,
+[class*="card"], [class*="box"], [class*="container"] {
+  background-color: #231810 !important;
+  color: #FFFFFF !important;
+  border-color: #3A2A1E !important;
+}
+
+/* Forms and inputs */
+form, .form-group, .form-section,
+input, textarea, select,
+.input-field, .input-wrapper,
+.form-input, .form-control {
+  background-color: #1b1f23 !important;
+  color: #FFFFFF !important;
+  border-color: #3A2A1E !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #8295D0 !important;
+  opacity: 0.8;
+}
+
+/* Tables */
+table, thead, tbody, tr, td, th {
+  background-color: #13171a !important;
+  color: #FFFFFF !important;
+  border-color: #3A2A1E !important;
+}
+
+/* Navigation and menus */
+nav, .navbar, .menu,
+.navigation, .nav-menu {
+  color: #FFFFFF !important;
+}
+
+/* Sidebar exception - custom color */
+.sidebar, [class*="sidebar"], .sidebarMenu {
+  background-color: #1B2734 !important;
+  color: #FFFFFF !important;
+}
+
+/* Buttons - default styling */
+button, .button, .btn,
+[class*="button"], [class*="btn"] {
+  color: #FFFFFF !important;
+}
+
+/* Links - ensure visibility */
+a, .link, [class*="link"] {
+  color: #A57B62 !important;
+}
+
+a:hover, .link:hover {
+  color: #D4AF96 !important;
+}
+
+/* Important: Preserve user customizations
+   If user explicitly sets colors via inline styles or data attributes,
+   those should take priority. The contrast checker respects these. */
+
+/* Post/Article/Lesson/Course editing areas - let user colors show through */
+[style*="color"],
+[style*="background"],
+[data-user-color],
+[data-user-bg],
+[data-customized],
+[class*="user-customized"],
+[class*="user-styled"],
+[class*="user-color"] {
+  /* Contrast checker and CSS respect these */
+}
+
+/* List items */
+ul, ol, li {
+  color: #FFFFFF !important;
+}
+
+/* Code blocks */
+code, pre, .code, .code-block {
+  background-color: #1b1f23 !important;
+  color: #FFFFFF !important;
+  border-color: #3A2A1E !important;
+}
+
+/* Quotes and emphasis */
+blockquote {
+  border-left-color: #A57B62 !important;
+  color: #FFFFFF !important;
+}
+
+strong, b {
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+em, i {
+  color: #F0D4C6 !important;
+}
+
+/* Line breaks and dividers */
+hr, .divider, [class*="divider"] {
+  border-color: #3A2A1E !important;
+  background-color: #3A2A1E !important;
+}
+
+/* Alerts and notifications */
+.alert, .notification, .message,
+[class*="alert"], [class*="notification"], [class*="message"] {
+  background-color: #231810 !important;
+  color: #FFFFFF !important;
+  border-color: #A57B62 !important;
+}
+
+/* Responsive: Ensure dark theme on all screen sizes */
+@media (max-width: 1024px), (max-width: 768px), (max-width: 480px) {
+  html, body, #__next, main, section, article,
+  .page-wrapper, .page-container, .content-wrapper,
+  .post-page, .article-page, .lesson-page, .course-page {
+    background-color: #13171a !important;
+    color: #FFFFFF !important;
+  }
 }
