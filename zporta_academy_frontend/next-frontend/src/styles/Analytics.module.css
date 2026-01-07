@@ -360,7 +360,7 @@
   gap: 12px;
 }
 .analyticsModalHeader .modalClose {
-  background: #fff;
+  background: #13171a;
   color: #667eea;
   border: none;
   border-radius: 50%;
@@ -452,7 +452,7 @@
 
 /* Make recommendations pop visually */
 .recommendationCard {
-  background: #fff;
+  background: #13171a;
   border-left: 6px solid #667eea;
   box-shadow: 0 2px 8px rgba(102,126,234,0.08);
   border-radius: var(--r-sm);
@@ -504,7 +504,7 @@
   margin-bottom: 32px;
 }
 .analyticsCard {
-  background: #fff;
+  background: #13171a;
   border: 1px solid #e0e7ff;
   border-radius: var(--r-md);
   padding: 20px 18px 16px 18px;

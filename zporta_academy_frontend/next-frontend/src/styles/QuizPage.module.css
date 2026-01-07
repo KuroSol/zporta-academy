@@ -261,7 +261,7 @@
 /* Option States */
 .selected {
   border-color: var(--primary-color) !important;
-  background-color: #fffbeb;
+  background-color: #1b1f23;
 }
 .correct {
   border-color: var(--correct-border) !important;
@@ -360,7 +360,7 @@
   color: var(--text-on-dark-bg);
 }
 .navButton:last-child:not(:disabled):hover {
-  background-color: #000;
+  background-color: #1b1f23;
 }
 
 .completionMessage {

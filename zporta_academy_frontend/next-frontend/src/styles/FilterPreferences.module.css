@@ -120,7 +120,7 @@
   text-align:center; padding:2rem; border-radius:var(--r-md);
   background:var(--neutral-bg); color:var(--text-secondary);
 }
-.errorState{ color:var(--error); background:#fff5f5; }
+.errorState{ color:var(--error); background:#1b1f23; }
 
 /* Saving overlay */
 .updatingOverlay{ position:relative; pointer-events:none; }

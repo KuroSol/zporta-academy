@@ -1,5 +1,5 @@
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
-.modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(10,35,66,.3);width:min(420px,90vw);padding:32px;position:relative}
+.modal{background:#13171a;border-radius:16px;box-shadow:0 20px 60px rgba(10,35,66,.3);width:min(420px,90vw);padding:32px;position:relative}
 .close{position:absolute;top:14px;right:14px;background:transparent;border:0;font-size:28px;cursor:pointer;color:#64748b;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background .2s}
 .close:hover{background:#f1f5f9}
 .title{margin:0 0 8px;font-weight:800;color:var(--text);font-size:1.5rem}
@@ -7,5 +7,5 @@
 .actions{display:flex;flex-direction:column;gap:12px}
 .primaryBtn{background:var(--text);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s, box-shadow .2s;box-shadow:0 4px 12px rgba(10,35,66,.2)}
 .primaryBtn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(10,35,66,.3)}
-.secondaryBtn{background:#fff;color:var(--text);border:2px solid var(--text);border-radius:10px;padding:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s, color .2s}
+.secondaryBtn{background:#13171a;color:var(--text);border:2px solid var(--text);border-radius:10px;padding:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s, color .2s}
 .secondaryBtn:hover{background:var(--text);color:#fff}

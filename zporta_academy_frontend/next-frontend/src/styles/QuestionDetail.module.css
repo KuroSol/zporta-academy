@@ -500,7 +500,7 @@
 .navIconButtonRight { right: 0.5rem; }
 
 .navIconButton:hover:not(:disabled) {
-  background: #fff;
+  background: #13171a;
   transform: translateY(-50%) scale(1.15);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -543,7 +543,7 @@
   padding: 0;
 }
 .navIconButtonUp:hover:not(:disabled) {
-  background: #fff;
+  background: #13171a;
   transform: translateX(-50%) scale(1.08);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
@@ -572,7 +572,7 @@
   padding: 0;
 }
 .navIconButtonDown:hover:not(:disabled) {
-  background: #fff;
+  background: #13171a;
   transform: translateX(-50%) scale(1.08);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }

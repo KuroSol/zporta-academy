@@ -15,7 +15,7 @@
 }
 
 .modalContent {
-  background: var(--overlay-panel-bg, #fff);
+  background: #13171a;
   padding: 2rem;
   border-radius: var(--overlay-panel-radius, 16px);
   width: 90%;
@@ -235,6 +235,6 @@
   flex-shrink: 0; padding: .5rem .75rem;
   border: 1px solid var(--border-color, var(--border));
   border-radius: var(--border-radius-md, 8px);
-  background: var(--bg-container, #fff); color: var(--text-primary, var(--text));
+  background: #13171a; color: var(--text-primary, var(--text));
 }
 .modalHeader svg { color: var(--zporta-gold); }

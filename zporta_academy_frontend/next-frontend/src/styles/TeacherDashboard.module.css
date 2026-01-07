@@ -977,7 +977,7 @@
 
 .dangerZone {
   border: 2px solid #fecaca;
-  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+  background: linear-gradient(135deg, #1b1f23 0%, #fef2f2 100%);
 }
 
 .dangerZone .cardIcon {

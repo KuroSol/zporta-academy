@@ -229,7 +229,7 @@
 }
 
 .navLink:not(.disabled):hover {
-  background-color: #fff;
+  background-color: #13171a;
   border-color: var(--accent-color);
 }
 

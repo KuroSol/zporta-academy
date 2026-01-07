@@ -12,9 +12,9 @@
 .chip:hover { background: var(--border); }
 
 .searchBar { position: relative; flex: 1 1 280px; max-width: 420px; }
-.searchInput { width: 100%; padding: 10px 36px 10px 36px; border-radius: 10px; border: 1px solid var(--border); background: #fff; outline: none; }
+.searchInput { width: 100%; padding: 10px 36px 10px 36px; border-radius: 10px; border: 1px solid var(--border); background: #13171a; outline: none; }
 .searchIcon { position: absolute; left: 10px; top: 9px; color: var(--text-muted); }
-.searchDropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 10px; z-index: 50; }
+.searchDropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #13171a; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 10px; z-index: 50; }
 .searchBlock { margin-bottom: 10px; }
 .searchBlockHeaderRow { display: flex; align-items: center; justify-content: space-between; margin: 8px 4px; }
 .searchBlockHeader { font-size: 12px; text-transform: uppercase; color: var(--text-muted); margin: 0; }
@@ -28,7 +28,7 @@
 .sectionTitle { font-size: 18px; font-weight: 700; margin: 10px 0; }
 .statusContainer { color: var(--text-muted); padding: 16px; }
 .grid { display: grid; gap: 14px; grid-template-columns: repeat( auto-fit, minmax(260px, 1fr) ); }
-.card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: inherit; background: #fff; }
+.card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: inherit; background: #13171a; }
 .card:hover { border-color: var(--border); box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
 .media { aspect-ratio: 16/10; border-radius: 10px; overflow: hidden; background: var(--bg-secondary); }
 .placeholder { display: grid; place-items: center; width: 100%; height: 100%; color: var(--disabled-text); font-weight: 700; }

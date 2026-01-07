@@ -16,7 +16,7 @@
   max-width: 900px; /* Max width for readability */
   margin: 30px auto; /* Center the container with top/bottom margin */
   padding: clamp(15px, 4vw, 30px); /* Responsive padding */
-  background: var(--zporta-background-light, #fff); /* Light background */
+  background: #13171a; /* Dark theme background */
   border: 1px solid var(--zporta-border-light, #eee); /* Subtle border */
   border-radius: 10px; /* Rounded corners */
   box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Soft shadow */
@@ -127,7 +127,7 @@
   gap:10px 14px;
   align-items:center;
   justify-content:center;
-  background:#fff;
+  background:#13171a;
   border:1px dashed var(--zporta-info-border, #bde0fe);
   padding:10px 12px;
   border-radius:8px;
@@ -283,7 +283,7 @@
 .lessonContent {
   font-size: 1rem; /* Base font size (16px default) */
   line-height: 1.7; /* Improved readability */
-  color: var(--zporta-text-main, #333); /* Main text color */
+  color: #FFFFFF; /* Main text color */
   margin-bottom: 30px;
 }
 /* Headings */
@@ -454,7 +454,7 @@
   color: var(--zporta-text-light, #6c757d);
 }
 .lessonTags strong {
-    color: var(--zporta-text-main, #333);
+    color: #FFFFFF;
     margin-right: 5px;
 }
 
@@ -471,7 +471,7 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--zporta-background-medium, var(--surface-2));
-  color: var(--zporta-text-main, #333);
+  color: #FFFFFF;
   font-size: 12px;
 }
 
@@ -506,7 +506,7 @@
   font-size: 14px;
   font-weight: 600;
   background: var(--zporta-warning-btn-bg, var(--accent));
-  color: #000;
+  color: #FFFFFF;
   border: 1px solid var(--zporta-warning-btn-bg, var(--accent));
   border-radius: 6px;
   text-decoration: none;
@@ -537,7 +537,7 @@
   margin: 0 0 15px 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--zporta-text-main, #333);
+  color: #FFFFFF;
   text-align: center;
 }
 
@@ -727,12 +727,12 @@
 .editBtn {
     background-color: var(--zporta-warning-btn-bg, var(--accent)); /* Yellow */
     border-color: var(--zporta-warning-btn-bg, var(--accent));
-    color: #000;
+    color: #FFFFFF;
 }
 .editBtn:hover {
     background-color: #ffca2c;
     border-color: #ffc720;
-    color: #000;
+    color: #FFFFFF;
 }
 .deleteBtn {
     background-color: var(--zporta-danger-btn-bg, #dc3545); /* Red */
@@ -882,7 +882,7 @@
   border-radius: 5px;
   font-size: 1rem;
   line-height: 1.5;
-  background-color: var(--zporta-background-light, #fff);
+  background-color: #13171a;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 .inputField:focus,
@@ -899,7 +899,7 @@
     border: 1px solid var(--zporta-border-color, #ced4da);
     border-radius: 5px;
     padding: 5px; /* Optional padding around the editor */
-    background-color: #fff;
+    background-color: #13171a;
 }
 .editorContainer:focus-within { /* Apply focus styles when editor inside is focused */
     border-color: var(--zporta-primary-color, #86b7fe);
@@ -921,7 +921,7 @@
   border-radius: 8px;
   padding: 20px 25px;
   margin: 20px 0;
-  background-color: var(--zporta-background-light, #fff);
+  background-color: #13171a;
 }
 
 .formSection legend {
@@ -979,7 +979,7 @@
   border-radius: 8px;
   padding: 15px 20px;
   margin: 20px 0;
-  background: var(--zporta-background-light, #fff);
+  background: #13171a;
 }
 .formSection legend {
   font-size: 16px;

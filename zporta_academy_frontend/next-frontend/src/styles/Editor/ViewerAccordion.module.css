@@ -43,7 +43,7 @@
   padding: 0 18px; /* No vertical padding when closed */
   max-height: 0; /* Collapsed */
   overflow: hidden; /* Hide content */
-  background-color: #fff;
+  background-color: #13171a;
   border-top: 1px solid #eee;
   opacity: 0; /* Start transparent */
   /* Define transitions */

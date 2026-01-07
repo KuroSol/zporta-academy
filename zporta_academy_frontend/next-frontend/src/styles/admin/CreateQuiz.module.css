@@ -813,7 +813,7 @@
   display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 .modal {
-  background: #fff; border-radius: 12px; width: min(640px, 92vw);
+  background: #13171a; border-radius: 12px; width: min(640px, 92vw);
   max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
@@ -848,7 +848,7 @@
 .formSection legend {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #FFFFFF;
   padding: 0 0.75rem;
   margin-left: 0.5rem;
 }

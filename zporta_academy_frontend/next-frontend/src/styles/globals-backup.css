@@ -181,8 +181,8 @@ body.modal-open {
   --color-white: #FFFFFF;
 
   /* === Semantic Design Tokens - Backgrounds === */
-  --bg: #FFFFFF;
-  --bg-secondary: #F5F3F0;
+  --bg: #231810;
+  --bg-secondary: #000000;
   --surface: #FFFFFF;
   --surface-2: #F5F3F0;
   --surface-hover: #EDE9E4;

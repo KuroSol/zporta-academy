@@ -1,4 +1,4 @@
-﻿/* Profile.module.css - Modern Dark Theme with Crystal Clear Readability */
+/* Profile.module.css - Modern Dark Theme with Crystal Clear Readability */
 
 /* Main Page Layout */
 .profilePage {
@@ -323,7 +323,7 @@
 
 .changePasswordBtn {
   background: linear-gradient(135deg, #ffb703, #fb8500);
-  color: #000000;
+  color: #FFFFFF;
   font-weight: 800;
   box-shadow: 0 4px 12px rgba(255, 183, 3, 0.3);
 }

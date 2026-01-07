@@ -48,7 +48,7 @@
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 900;
     margin-bottom: 16px;
-    background: linear-gradient(135deg, var(--accent-hover) 0%, #fff 100%);
+    background: linear-gradient(135deg, var(--accent-hover) 0%, #13171a 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -98,7 +98,7 @@
 }
 
 .ctaSecondary:hover {
-    background: #fff;
+    background: #13171a;
     color: var(--text);
 }
 
@@ -251,7 +251,7 @@
     font-size: clamp(2.5rem, 8vw, 4rem);
     font-weight: 800;
     letter-spacing: -2px;
-    background: linear-gradient(45deg, var(--zporta-gold), #fff, var(--zporta-gold-dark));
+    background: linear-gradient(45deg, var(--zporta-gold), #13171a, var(--zporta-gold-dark));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -369,6 +369,69 @@
 .hex5 { grid-column: 5 / span 2; grid-row: 2; }
 .hex6 { grid-column: 2 / span 2; grid-row: 3; }
 .hex7 { grid-column: 4 / span 2; grid-row: 3; }
+
+/* --- Pre-Login Hexagon Hub (center click opens branches) --- */
+.centerHexagon { grid-column: 3 / span 2; grid-row: 2; }
+
+.centerHexagonPulse {
+  content: '';
+  position: absolute;
+  inset: -6%;
+  clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+  box-shadow: 0 0 18px rgba(255, 182, 6, 0.35), 0 0 35px rgba(255, 182, 6, 0.25);
+  opacity: 0.6;
+  animation: pulseGlow 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.98); opacity: 0.4; }
+  50% { transform: scale(1.02); opacity: 0.75; }
+  100% { transform: scale(0.98); opacity: 0.4; }
+}
+
+.hubClosed .hexagon {
+  opacity: 0;
+  transform: scale(0.88);
+  pointer-events: none;
+}
+
+.hubClosed .centerHexagon {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.hexagonContainer.hubClosed::after {
+  opacity: 0; /* hide connectors until opened */
+}
+
+.hubOpen .hexagon {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.hexagonContainer.hubOpen::after {
+  opacity: 0.5; /* show connectors when opened */
+}
+
+.hubOpen .hexagon:not(.centerHexagon) {
+  animation: popIn 280ms ease-out both;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Small-screen adjustments for hub */
+@media (max-width: 540px) {
+  .hexagonContainer {
+    max-width: 520px;
+  }
+}
 
 /* --- In-Place Search Expansion Styles --- */
 .hexagonContainer.searchExpanded {
@@ -883,7 +946,7 @@
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 900;
     margin: 0;
-    background: linear-gradient(135deg, var(--zporta-gold) 0%, #fff 50%, var(--zporta-gold-dark) 100%);
+    background: linear-gradient(135deg, var(--zporta-gold) 0%, #13171a 50%, var(--zporta-gold-dark) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

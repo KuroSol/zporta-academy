@@ -70,7 +70,7 @@
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #fff 0%, #e0b050 100%);
+  background: linear-gradient(135deg, #1b1f23 0%, #e0b050 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -280,7 +280,7 @@
 
 .submitBtn {
   background: linear-gradient(135deg, #e0b050 0%, #c09030 100%);
-  color: #000;
+  color: #FFFFFF;
   border: none;
   border-radius: 12px;
   padding: 16px;

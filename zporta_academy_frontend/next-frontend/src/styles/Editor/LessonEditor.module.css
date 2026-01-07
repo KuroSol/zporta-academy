@@ -922,7 +922,7 @@
   padding: 6px 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--r-sm);
-  background: #fff;
+  background: #13171a;
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -943,7 +943,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: #13171a;
   border: 1px solid var(--border-color);
   table-layout: fixed;
 }

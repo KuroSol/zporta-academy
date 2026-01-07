@@ -136,7 +136,7 @@
 .formSection legend {
     font-size: 18px;
     font-weight: 600;
-    color: var(--zporta-secondary-color);
+    color: #FFFFFF;
     padding: 0 10px;
     margin-left: 10px; 
     background-color: inherit; /* So it blends with formSection background */

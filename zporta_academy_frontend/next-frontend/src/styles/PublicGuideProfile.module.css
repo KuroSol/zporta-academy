@@ -491,7 +491,7 @@
 
 .modalSocialLinks a:hover {
   background: #A57B62;
-  color: #000000;
+  color: #FFFFFF;
   transform: translateY(-2px);
   box-shadow: 0 5px 20px rgba(165, 123, 98, 0.4);
 }
@@ -1135,9 +1135,9 @@
 
 .bioModalContent {
   font-size: 1rem;
-  color: #333;
+  color: #FFFFFF;
   word-break: break-word;
-  var(--bg)-space: pre-line;
+  white-space: pre-line;
   line-height: 1.7;
   margin: 0.8rem 0;
 }
