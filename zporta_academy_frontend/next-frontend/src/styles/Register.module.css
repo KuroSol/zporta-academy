@@ -1,14 +1,36 @@
 /* src/styles/Register.module.css - Modern Dark Theme */
 
 .registerPageContainer {
+  /* Force dark theme locally so register doesn’t inherit light defaults */
+  --bg-page: #1b1f23;            /* requested dark */
+  --bg-container: #1b1f23;       /* match form background */
+  --bg-subtle: #1b1f23;          /* remove gradient variation */
+  --color-text-primary: #F0D4C6; /* beige text */
+  --color-text-secondary: #C4A89A;
+  --color-text-tertiary: #8295D0;
+  --color-text-on-primary-bg: #FFFFFF;
+  --color-border: #A57B62;
+  --color-primary: #A57B62;
+
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: var(--bg-page);
-  background-image: linear-gradient(135deg, var(--bg-page) 0%, var(--bg-subtle) 100%);
+  background-color: #1b1f23 !important;
+  background-image: none !important;
   padding: 2rem;
   font-family: 'Inter', sans-serif;
+  position: relative;
+  isolation: isolate; /* ensure ::before sits behind content */
+}
+
+/* Full-viewport dark backdrop to override any parent/body color */
+.registerPageContainer::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-color: #1b1f23 !important;
+  z-index: -1;
 }
 
 .registerBox {
