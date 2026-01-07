@@ -101,13 +101,13 @@ export default function Login({ onSuccess, skipRedirect, inModal = false }) {
         const el = document.getElementById("google-login-button");
         if (el) {
           el.innerHTML = "";
-          window.google.accounts.id.renderButton(el, {
-            theme: "outline",
-            size: "large",
-            type: "standard",
-            text: "signin_with",
-            shape: "rectangular",
-          });
+                window.google.accounts.id.renderButton(el, {
+                  theme: "filled_black", // high-contrast on dark bg
+                  size: "large",
+                  type: "standard",
+                  text: "continue_with",
+                  shape: "rectangular",
+                });
         }
       }
     };

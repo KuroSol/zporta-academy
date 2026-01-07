@@ -122,14 +122,14 @@ export default function Register() {
           });
           const el = document.getElementById("google-signup");
           if (el) {
-            window.google.accounts.id.renderButton(el, {
-              theme: "outline",
-              size: "large",
-              type: "standard",
-              text: "signup_with",
-              shape: "rectangular",
-              width: "300",
-            });
+              window.google.accounts.id.renderButton(el, {
+                theme: "filled_black", // high-contrast on dark bg
+                size: "large",
+                type: "standard",
+                text: "continue_with",
+                shape: "rectangular",
+                width: "300",
+              });
           }
         }
       } catch {
@@ -154,14 +154,14 @@ export default function Register() {
           });
           const el = document.getElementById("google-signup");
           if (el) {
-            window.google.accounts.id.renderButton(el, {
-              theme: "outline",
-              size: "large",
-              type: "standard",
-              text: "signup_with",
-              shape: "rectangular",
-              width: "300",
-            });
+              window.google.accounts.id.renderButton(el, {
+                theme: "filled_black", // high-contrast on dark bg
+                size: "large",
+                type: "standard",
+                text: "continue_with",
+                shape: "rectangular",
+                width: "300",
+              });
           }
         } else {
           showMessage("Failed to load Google Sign-In.");
