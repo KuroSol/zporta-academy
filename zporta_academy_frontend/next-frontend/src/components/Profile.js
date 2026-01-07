@@ -13,6 +13,7 @@ import {
   FaChevronDown,
   FaSpinner,
   FaBookOpen,
+  FaPencilAlt,
   FaQuestionCircle,
   FaChalkboardTeacher,
   FaCamera,
@@ -188,6 +189,14 @@ const Profile = () => {
   const [totalQuizzes, setTotalQuizzes] = useState(0);
   const [quizzesError, setQuizzesError] = useState("");
 
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [isPostsLoadingMore, setIsPostsLoadingMore] = useState(false);
+  const [displayedPostsCount, setDisplayedPostsCount] =
+    useState(ITEMS_PER_LOAD);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [postsError, setPostsError] = useState("");
+
   // --- Scores State ---
   const [scores, setScores] = useState({ learning_score: 0, impact_score: 0 }); // Initialize with 0
   const [scoresLoading, setScoresLoading] = useState(true);
@@ -318,6 +327,28 @@ const Profile = () => {
       ),
     [fetchDataForTab]
   );
+
+  const fetchUserPosts = useCallback(async () => {
+    if (!profile?.username) return;
+    setPostsLoading(true);
+    setPostsError("");
+    try {
+      const res = await apiClient.get(
+        `/posts/?created_by=${profile.username}&ordering=-created_at&page_size=1000`
+      );
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.results || [];
+      setPosts(data);
+      setTotalPosts(data.length);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+      setPostsError("Failed to load your posts. Please try again.");
+      if (err?.response?.status === 401) logout();
+    } finally {
+      setPostsLoading(false);
+    }
+  }, [logout, profile?.username]);
 
   // Fetch user scores
   const fetchUserScores = useCallback(async () => {
@@ -519,6 +550,7 @@ const Profile = () => {
       if (activeTab === "courses") fetchUserCourses();
       else if (activeTab === "lessons") fetchUserLessons();
       else if (activeTab === "quizzes") fetchUserQuizzes();
+      else if (activeTab === "posts") fetchUserPosts();
       else if (activeTab === "settings") {
         fetchEnrolledTeachers();
         if (isTeacherOrAdmin) {
@@ -532,6 +564,7 @@ const Profile = () => {
     fetchUserCourses,
     fetchUserLessons,
     fetchUserQuizzes,
+    fetchUserPosts,
     isTeacherOrAdmin,
   ]);
 
@@ -628,6 +661,20 @@ const Profile = () => {
             setIsQuizzesLoadingMore,
             isQuizzesLoadingMore
           );
+        } else if (
+          activeTab === "posts" &&
+          !postsLoading &&
+          !isPostsLoadingMore &&
+          displayedPostsCount < totalPosts
+        ) {
+          handleLoadMore(
+            displayedPostsCount,
+            setDisplayedPostsCount,
+            totalPosts,
+            ITEMS_PER_LOAD,
+            setIsPostsLoadingMore,
+            isPostsLoadingMore
+          );
         }
       }
     };
@@ -639,15 +686,19 @@ const Profile = () => {
     coursesLoading,
     lessonsLoading,
     quizzesLoading,
+    postsLoading,
     isCoursesLoadingMore,
     isLessonsLoadingMore,
     isQuizzesLoadingMore,
+    isPostsLoadingMore,
     displayedCoursesCount,
     displayedLessonsCount,
     displayedQuizzesCount,
+    displayedPostsCount,
     totalCourses,
     totalLessons,
     totalQuizzes,
+    totalPosts,
     handleLoadMore, // Ensure handleLoadMore is stable or included if it changes
   ]);
 
@@ -1518,7 +1569,7 @@ const Profile = () => {
 
           <main className={styles.profileMainContent}>
             <nav className={styles.tabNavigation}>
-              {["courses", "lessons", "quizzes"].map((tab) => (
+              {["courses", "lessons", "quizzes", "posts"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
@@ -1532,7 +1583,9 @@ const Profile = () => {
                     ? t("nav.courses")
                     : tab === "lessons"
                     ? t("nav.lessons")
-                    : t("nav.quizzes")}
+                    : tab === "quizzes"
+                    ? t("nav.quizzes")
+                    : "Posts"}
                 </button>
               ))}
               {isTeacherOrAdmin && (
@@ -1833,6 +1886,122 @@ const Profile = () => {
                           disabled={isQuizzesLoadingMore}
                         >
                           {isQuizzesLoadingMore
+                            ? t("common.loading")
+                            : t("common.viewMore")}{" "}
+                          <FaChevronDown />
+                        </button>
+                      </div>
+                    )}
+                </div>
+              )}
+              {activeTab === "posts" && (
+                <div>
+                  <h2 className={styles.sectionTitle}>Your Posts</h2>
+                  {postsError && (
+                    <div className={`${styles.errorState} mb-4`}>
+                      {postsError}
+                    </div>
+                  )}
+                  {postsLoading && posts.length === 0 && !postsError ? (
+                    <div className={styles.loadingState}>
+                      <FaSpinner className={styles.spinner} size={24} /> {" "}
+                      {t("common.loading")}
+                    </div>
+                  ) : posts.length > 0 ? (
+                    <div className={styles.cardsGrid}>
+                      {posts.slice(0, displayedPostsCount).map((post) => (
+                        <div key={post.id} className={styles.card}>
+                          <div className={styles.cardImageContainer}>
+                            {post.og_image_url ? (
+                              <img
+                                src={post.og_image_url}
+                                alt={post.title || "Post"}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src =
+                                    "https://placehold.co/600x400/DEE2E6/1B2735?text=Post";
+                                }}
+                              />
+                            ) : (
+                              <FaPencilAlt
+                                size={40}
+                                className={styles.cardImagePlaceholderIcon}
+                              />
+                            )}
+                          </div>
+                          <div className={styles.cardContent}>
+                            <h3 className={styles.cardTitle} title={post.title}>
+                              {post.title}
+                            </h3>
+                            <p className={styles.cardDescription}>
+                              {stripHTML(post.content).substring(0, 160)}
+                              {stripHTML(post.content).length > 160 ? "..." : ""}
+                            </p>
+                            {post.tags && post.tags.length > 0 && (
+                              <div className={styles.tagRow}>
+                                {post.tags.map((tag) => (
+                                  <span
+                                    key={tag.id || tag.slug}
+                                    className={styles.tagPill}
+                                  >
+                                    #{tag.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className={styles.cardActions}>
+                              <button
+                                onClick={() =>
+                                  router.push(`/posts/${post.permalink}`)
+                                }
+                                className={styles.cardButton}
+                              >
+                                View
+                              </button>
+                              <button
+                                onClick={() =>
+                                  router.push(`/posts/${post.permalink}/edit`)
+                                }
+                                className={styles.cardButton}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    !postsLoading &&
+                    !postsError && (
+                      <p className="text-center py-10 text-slate-500">
+                        No posts yet. Create your first story!
+                      </p>
+                    )
+                  )}
+                  {isPostsLoadingMore && (
+                    <div className={`${styles.loadingState} mt-4`}>
+                      {t("common.loading")}
+                    </div>
+                  )}
+                  {!isPostsLoadingMore &&
+                    displayedPostsCount < totalPosts && (
+                      <div className={styles.loadMoreButtonContainer}>
+                        <button
+                          onClick={() =>
+                            handleLoadMore(
+                              displayedPostsCount,
+                              setDisplayedPostsCount,
+                              totalPosts,
+                              ITEMS_PER_LOAD,
+                              setIsPostsLoadingMore,
+                              isPostsLoadingMore
+                            )
+                          }
+                          className={styles.loadMoreButton}
+                          disabled={isPostsLoadingMore}
+                        >
+                          {isPostsLoadingMore
                             ? t("common.loading")
                             : t("common.viewMore")}{" "}
                           <FaChevronDown />

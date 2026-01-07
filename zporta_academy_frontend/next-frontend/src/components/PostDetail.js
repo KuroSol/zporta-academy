@@ -1,6 +1,8 @@
 "use client";
+import { useContext } from 'react';
 import Link from 'next/link';
 import styles from '@/styles/posts/PostDetail.module.css';
+import { AuthContext } from '@/context/AuthContext';
 
 // Helper function to format dates, consistent with the list view
 const formatDate = (dateString) => {
@@ -22,6 +24,11 @@ const formatDate = (dateString) => {
 };
 
 export default function PostDetail({ post, previousPost, nextPost }) {
+  const { user } = useContext(AuthContext);
+  const isOwner =
+    !!(user?.username && post?.created_by) &&
+    user.username.toLowerCase() === post.created_by.toLowerCase();
+
   // This component now ONLY receives props. It doesn't know about `params`.
   if (!post) {
     // A simple loading or not-found state can be handled here if needed,
@@ -41,6 +48,16 @@ export default function PostDetail({ post, previousPost, nextPost }) {
               <span className={styles.dot}>•</span>
               <time className={styles.date}>{formatDate(post.created_at)}</time>
             </div>
+            {isOwner && post.permalink && (
+              <div className={styles.ownerActions}>
+                <Link
+                  href={`/posts/${post.permalink}/edit`}
+                  className={styles.editLink}
+                >
+                  Edit post
+                </Link>
+              </div>
+            )}
             {post.tags && post.tags.length > 0 && (
               <div className={styles.tagsContainer}>
                 {post.tags.map((tag) => (

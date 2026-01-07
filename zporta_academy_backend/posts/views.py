@@ -92,6 +92,7 @@ class PostRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]  # Or customize as needed
+    parser_classes = [MultiPartParser, FormParser]
     lookup_field = "permalink"
 
     def get_object(self):
