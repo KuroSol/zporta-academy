@@ -60,7 +60,7 @@ function SearchGroup({ title, items }) {
     const type = title.toLowerCase();
     switch (type) {
       case 'quizzes': return item.permalink ? `/quizzes/${item.permalink}` : '#';
-      case 'guides': case 'users': return item.username ? `/users/${item.username}` : '#';
+      case 'guides': case 'users': return item.username ? `/guide/${item.username}` : '#';
       case 'tags': return item.slug ? `/tags/${item.slug}` : '#';
       default: return `/${type}/${item.permalink || item.id}`;
     }

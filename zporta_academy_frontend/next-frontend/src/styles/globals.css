@@ -698,6 +698,43 @@ body.modal-open {
   --notes-bg-secondary: #f3f4f6;
   --notes-text-dark: #111827;
   --notes-text-light: #6b7280;
+
+/* ===========================================================================
+   ZPORTA ACADEMY — FINAL THEME NORMALIZATION (Dark Default)
+   Ensures consistent dark palette across auth pages and modals.
+   This block intentionally appears at the end so its values win.
+   =========================================================================== */
+:root {
+  /* Core surfaces */
+  --bg-page: #13171a;           /* page background */
+  --bg-container: #231810;      /* cards/panels */
+  --bg-subtle: #2D1F16;         /* subtle sections */
+  --surface: #231810;           /* generic surface */
+  --surface-2: #2D1F16;
+  --surface-hover: #3A2A1E;
+
+  /* Text colors (beige on dark) */
+  --color-text-primary: #F0D4C6;
+  --color-text-secondary: #C4A89A;
+  --color-text-tertiary: #B6C6E3;
+  --text: #F0D4C6;
+  --text-secondary: #E4D6CC;
+  --text-muted: #B6C6E3;
+  --text-on-dark: #F0D4C6;
+  --text-inverse: #FFFFFF;
+
+  /* Accents & borders */
+  --color-primary: #A57B62;     /* bronze */
+  --color-deep-bronze: #81302B;
+  --color-border: #3A2A1E;
+  --border: #3A2A1E;
+  --border-hover: #A57B62;
+
+  /* Overlay / modal backdrop — make non see-through */
+  --overlay-backdrop: rgba(0, 0, 0, 0.90);
+  --overlay-bg: rgba(0, 0, 0, 0.90);
+  --modal-surface: #231810;
+}
   --notes-border: #e5e7eb;
   --notes-my-note-bg: #e0e7ff;
   --notes-success: #16a34a;

@@ -52,7 +52,7 @@ export default function MailMagazineIssuePage() {
       // Go back to the teacher's profile, specifically the magazines tab if possible
       // Since we can't easily control the tab state from URL without modifying the profile page,
       // we'll just go to the profile. The user can click the tab.
-      router.push(`/guides/${issue.teacher_username}`);
+      router.push(`/guide/${issue.teacher_username}`);
     } else {
       router.back();
     }
