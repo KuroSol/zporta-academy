@@ -260,6 +260,50 @@
     margin-top: 0; /* Remove top margin if directly below quiz */
 }
 
+/* === QUIZ LIST THEME (Explorer → quizzes tab) === */
+.quizLayout {
+  gap: 1.5rem;
+}
+
+.quizLayout :global(.quizCard) {
+  background: radial-gradient(circle at 20% 20%, rgba(165, 123, 98, 0.18), transparent 30%),
+              radial-gradient(circle at 80% 0%, rgba(129, 48, 43, 0.18), transparent 32%),
+              #0d0e10;
+  border: 1px solid #3a2a1e;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+
+.quizLayout :global(.cardTitleContainer) {
+  background: linear-gradient(120deg, rgba(165, 123, 98, 0.12), rgba(12, 13, 15, 0.6));
+  color: #f7f3ef;
+}
+
+.quizLayout :global(.cardTitle) {
+  color: #f7f3ef;
+}
+
+.quizLayout :global(.quizFooter) {
+  background: rgba(13, 14, 16, 0.9);
+  border-top: 1px solid #2a1d14;
+}
+
+.quizLayout :global(.primaryButton) {
+  background: #a57b62;
+  color: #0d0e10;
+  border-color: #a57b62;
+}
+
+.quizLayout :global(.primaryButton:hover) {
+  background: #c18f74;
+  border-color: #c18f74;
+}
+
+.quizLayout :global(.tagStandalone) {
+  background: rgba(165, 123, 98, 0.16);
+  color: #f7f3ef;
+  border: 1px solid rgba(165, 123, 98, 0.4);
+}
+
 
 /* --- Message Containers --- */
 .messageContainer {

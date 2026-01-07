@@ -348,12 +348,11 @@ const QuizCard = ({
   // Global scroll lock (ref-counted) while any overlay is open
   useBodyScrollLock(showCorrectUsers || showParticipants || isExpanded);
 
-  // Memoized random gradient for the card title background
-  const cardGradient = useMemo(() => {
-    const hue1 = Math.floor(Math.random() * 360);
-    const hue2 = (hue1 + Math.floor(Math.random() * 120) + 120) % 360;
-    return `linear-gradient(135deg, hsl(${hue1}, 90%, 92%), hsl(${hue2}, 90%, 95%))`;
-  }, [quiz.id]);
+  // Solid dark header to match bronze theme (no random gradient)
+  const cardGradient = useMemo(
+    () => "linear-gradient(135deg, #0d0e10 0%, #0f1113 100%)",
+    [quiz.id]
+  );
 
   // Intersection observer for visibility tracking
   useEffect(() => {
@@ -478,7 +477,10 @@ const QuizCard = ({
   // External control for question index (used by gesture pager)
   useEffect(() => {
     if (typeof externalQuestionIndex === "number") {
-      const clamped = Math.max(0, Math.min(totalQuestions - 1, externalQuestionIndex));
+      const clamped = Math.max(
+        0,
+        Math.min(totalQuestions - 1, externalQuestionIndex)
+      );
       if (clamped !== currentIndex) setCurrentIndex(clamped);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -943,10 +945,14 @@ const QuizCard = ({
   if (isFeedView) {
     // Dynamic font size based on text length
     const textLen = currentQuestion.question_text?.length || 0;
-    const dynamicFontSize = 
-        textLen > 300 ? "0.9rem" :
-        textLen > 200 ? "1.0rem" :
-        textLen > 100 ? "1.2rem" : "1.5rem";
+    const dynamicFontSize =
+      textLen > 300
+        ? "0.9rem"
+        : textLen > 200
+        ? "1.0rem"
+        : textLen > 100
+        ? "1.2rem"
+        : "1.5rem";
 
     return (
       <div className={styles.feedCard}>
@@ -984,37 +990,45 @@ const QuizCard = ({
             )}
           </div>
           <div className={styles.feedTitleRow}>
-             <span className={styles.feedQuizTitle}>
-                {quiz.title || "Untitled Quiz"}
-             </span>
+            <span className={styles.feedQuizTitle}>
+              {quiz.title || "Untitled Quiz"}
+            </span>
           </div>
           <div className={styles.feedProgress}>
-             <span className={styles.feedProgressText}>
-                Question {currentIndex + 1} of {totalQuestions}
-             </span>
-             <div className={styles.feedProgressBar}>
-                <div 
-                  className={styles.feedProgressFill} 
-                  style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
-                />
-             </div>
+            <span className={styles.feedProgressText}>
+              Question {currentIndex + 1} of {totalQuestions}
+            </span>
+            <div className={styles.feedProgressBar}>
+              <div
+                className={styles.feedProgressFill}
+                style={{
+                  width: `${((currentIndex + 1) / totalQuestions) * 100}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
 
         <div className={styles.questionContainer}>
           {/* Navigation Arrows */}
-          <button 
+          <button
             className={`${styles.navArrow} ${styles.navArrowLeft}`}
-            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              goPrev();
+            }}
             disabled={currentIndex === 0}
             aria-label="Previous question"
           >
             <ChevronLeft size={32} />
           </button>
-          
-          <button 
+
+          <button
             className={`${styles.navArrow} ${styles.navArrowRight}`}
-            onClick={(e) => { e.stopPropagation(); goNext(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              goNext();
+            }}
             disabled={currentIndex === totalQuestions - 1}
             aria-label="Next question"
           >
@@ -1026,16 +1040,20 @@ const QuizCard = ({
               {/* Image Only */}
               <QuizMedia
                 imageUrl={resolveMediaUrl(currentQuestion.question_image)}
-                imageAlt={currentQuestion.question_image_alt || "Question image"}
+                imageAlt={
+                  currentQuestion.question_image_alt || "Question image"
+                }
                 audioUrl={null}
                 containerClass={styles.questionMediaContainer}
                 imageClass={styles.questionMediaItem}
               />
-              
+
               <h3
                 className={styles.questionText}
                 style={{ "--dynamic-font-size": dynamicFontSize }}
-                dangerouslySetInnerHTML={{ __html: currentQuestion.question_text }}
+                dangerouslySetInnerHTML={{
+                  __html: currentQuestion.question_text,
+                }}
               />
 
               {/* Audio Only - Tiny & Below Question */}
@@ -1079,31 +1097,33 @@ const QuizCard = ({
             <p className={styles.noQuestions}>This quiz has no questions.</p>
           )}
         </div>
-        
+
         <div className={styles.feedFooter}>
-           <div className={styles.feedStats}>
-              <div className={styles.feedStatItem}>
-                 <Users size={14} />
-                 <span>{displayStats.uniqueParticipants || 0}</span>
-              </div>
-              <div className={styles.feedStatItem}>
-                 <CheckCircle size={14} className={styles.correctText} />
-                 <span>{displayStats.totalCorrectAnswersForQuiz || 0}</span>
-              </div>
-           </div>
-           <div className={styles.feedActions}>
-              <button
-                className={styles.feedActionButton}
-                onClick={() => {
-                    const link = quiz?.permalink
-                    ? `${window.location.origin}${quizPermalinkToUrl(quiz.permalink)}`
-                    : window.location.href;
-                    navigator.clipboard.writeText(link).catch(() => {});
-                }}
-              >
-                 <Share2 size={16} />
-              </button>
-           </div>
+          <div className={styles.feedStats}>
+            <div className={styles.feedStatItem}>
+              <Users size={14} />
+              <span>{displayStats.uniqueParticipants || 0}</span>
+            </div>
+            <div className={styles.feedStatItem}>
+              <CheckCircle size={14} className={styles.correctText} />
+              <span>{displayStats.totalCorrectAnswersForQuiz || 0}</span>
+            </div>
+          </div>
+          <div className={styles.feedActions}>
+            <button
+              className={styles.feedActionButton}
+              onClick={() => {
+                const link = quiz?.permalink
+                  ? `${window.location.origin}${quizPermalinkToUrl(
+                      quiz.permalink
+                    )}`
+                  : window.location.href;
+                navigator.clipboard.writeText(link).catch(() => {});
+              }}
+            >
+              <Share2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     );

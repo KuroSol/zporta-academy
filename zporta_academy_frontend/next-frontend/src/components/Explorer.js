@@ -97,7 +97,7 @@ const Explorer = () => {
   const t = useT();
   const [activeTab, setActiveTab] = useState(null);
   const [items, setItems] = useState([]);
-  const loadedTabsRef = useRef(new Set());
+  const tabDataCacheRef = useRef({}); // Cache data by tab key
   const [loading, setLoading] = useState(true);
   const { token } = useContext(AuthContext) || {};
 
@@ -136,10 +136,13 @@ const Explorer = () => {
 
   // --- Data Fetching for Tabs ---
   const fetchData = useCallback(async (tabKey) => {
-    if (loadedTabsRef.current.has(tabKey) && items.length > 0) {
-      // Already loaded and displayed; avoid refetching
+    // Check if we have cached data for this tab
+    if (tabDataCacheRef.current[tabKey]) {
+      setItems(tabDataCacheRef.current[tabKey]);
+      setLoading(false);
       return;
     }
+    
     setLoading(true);
     setItems([]);
 
@@ -170,14 +173,14 @@ const Explorer = () => {
         }
 
         setItems(data);
+        tabDataCacheRef.current[tabKey] = data;
       } else {
         const cfg = tabs.find((t) => t.key === tabKey);
         if (!cfg) return;
         const r = await apiClient.get(cfg.path);
         const d = Array.isArray(r.data) ? r.data : r.data?.results || [];
         setItems(d);
-        loadedTabsRef.current.add(tabKey);
-        loadedTabsRef.current.add(tabKey);
+        tabDataCacheRef.current[tabKey] = d;
       }
     } catch (err) {
       console.error(`Error fetching ${tabKey}:`, err);
@@ -333,7 +336,13 @@ const Explorer = () => {
     }
 
     if (activeTab === "quizzes") {
-      return <QuizDeckPager source="explore" items={items} />;
+      return (
+        <div className={`${styles.gridContainer} ${gridLayoutClass}`}>
+          {items.map((quiz) => (
+            <QuizCard key={`quiz-${quiz.id}`} quiz={quiz} />
+          ))}
+        </div>
+      );
     }
 
     return (
