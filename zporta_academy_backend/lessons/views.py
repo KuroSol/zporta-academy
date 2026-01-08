@@ -162,7 +162,7 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             'quizzes',
             queryset=Quiz.objects.only(
                 'id', 'title', 'permalink', 'quiz_type', 'status',
-                'lesson_id', 'course_id'
+                'lesson_id', 'course_id', 'subject_id', 'created_by_id'
             ).select_related('subject', 'created_by')
         )
 
