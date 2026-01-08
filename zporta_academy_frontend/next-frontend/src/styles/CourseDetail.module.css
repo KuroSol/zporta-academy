@@ -88,11 +88,13 @@
 .zportaBtnPrimary {
     background-color: var(--zporta-primary-color, var(--accent));
     color: var(--bg);
-    border-color: var(--zporta-primary-color, var(--accent));
+    border-color: #612926;
+    border-width: 3px;
 }
 .zportaBtnPrimary:hover:not(:disabled) {
     background-color: var(--zporta-primary-hover, var(--accent-hover));
-    border-color: var(--zporta-primary-hover, var(--accent-hover));
+    border-color: #4a1f1c;
+    border-width: 3px;
 }
 .zportaBtnSecondary {
     background-color: #f1f5f9; /* slate-100 */
@@ -339,8 +341,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, #f8fafc 0%, var(--bg) 100%);
-    border: none;
+    background: var(--zporta-background-medium, var(--bg));
+    border: 1px solid var(--zporta-border-light, #e2e8f0);
+    color: var(--zporta-text-color, #e5e7eb);
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -364,7 +367,9 @@
 }
 
 .accordionHeader:hover {
-    background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+    background: rgba(0, 0, 0, 0.4);
+    border-color: var(--zporta-primary-color, var(--accent));
+    box-shadow: 0 0 0 2px var(--zporta-primary-color, var(--accent)) inset;
 }
 
 .accordionHeaderContent {
@@ -387,7 +392,7 @@
 .accordionTitle {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--zporta-heading-on-dark, #ffffff);
     margin: 0;
     transition: color 0.3s ease;
 }
@@ -776,7 +781,6 @@
 /* Selling Points Card */
 .sellingPointsCard {
     margin-top: 1.5rem;
-    background: linear-gradient(180deg,var(--bg) 0%, #f8fafc 100%);
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 1.25rem 1.25rem 1rem;

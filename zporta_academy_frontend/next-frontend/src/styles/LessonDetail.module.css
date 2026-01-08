@@ -528,16 +528,17 @@
 .downloadSectionTop {
   margin: 20px 0;
   padding: 20px;
-  background: linear-gradient(135deg, #e7f3fe 0%, #d4e9ff 100%);
-  border: 1px solid var(--zporta-info-border, #bde0fe);
+  background: var(--zporta-background-medium, var(--bg-page));
+  border: 1px solid var(--zporta-border-light, var(--border));
   border-radius: 8px;
+  color: var(--zporta-text-color, #ffffff);
 }
 
 .downloadTitle {
   margin: 0 0 15px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--zporta-heading-on-dark, #ffffff);
   text-align: center;
 }
 
@@ -609,7 +610,7 @@
   font-weight: 500;
   text-align: center;
   transition: all 0.2s ease-in-out; /* Smooth transition */
-  var(--bg)-space: nowrap; /* Prevent text wrapping */
+  white-space: nowrap; /* Prevent text wrapping */
   overflow: hidden; /* Hide overflow */
   text-overflow: ellipsis; /* Add ellipsis if text is too long */
 }
