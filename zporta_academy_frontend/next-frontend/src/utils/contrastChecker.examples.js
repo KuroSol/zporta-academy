@@ -114,7 +114,6 @@ export function SafeColoredText({ backgroundColor, textColor, children }) {
 // EXAMPLE 5: Styled Component Integration
 // ============================================
 import styled from 'styled-components';
-import { getOptimalTextColor } from '@/utils/contrastChecker';
 
 const StyledCard = styled.div`
   background-color: ${props => props.bgColor};
@@ -174,7 +173,6 @@ export function CustomForm({ formBgColor }) {
 // ============================================
 // EXAMPLE 7: Color Palette Consistency
 // ============================================
-import { getOptimalTextColor, getContrastRatio } from '@/utils/contrastChecker';
 
 const COLOR_PALETTE = {
   primary: '#3498DB',
@@ -221,7 +219,7 @@ export function Button({ variant = 'primary', children }) {
 // ============================================
 // EXAMPLE 8: Checking Multiple Colors
 // ============================================
-import { getContrastRatio, testPalette } from '@/utils/contrastChecker.debug';
+import { testPalette } from '@/utils/contrastChecker.debug';
 
 export function ColorPaletteTest() {
   const backgroundColor = '#FFFFFF';
@@ -257,7 +255,6 @@ export function ColorPaletteTest() {
 // EXAMPLE 9: Dynamic Theme Switcher
 // ============================================
 import { useState } from 'react';
-import { usePageContrast } from '@/hooks/useContrastChecker';
 
 export function ThemeSwitcher() {
   const [theme, setTheme] = useState('light');
@@ -355,6 +352,7 @@ export function AccessibilityCheck() {
 // ============================================
 // QUICK COPY-PASTE SOLUTIONS
 // ============================================
+/*
 
 // ✅ Safe background with auto text color
 <div style={{
@@ -380,6 +378,4 @@ const bestTextColor = getOptimalTextColor(userPickedColor);
 // ✅ Test in console
 reportAllContrastIssues();
 testColorCombination('#FFFFFF', '#000000');
-
-
-export default {};
+*/
