@@ -105,7 +105,7 @@ const DiaryEditor = ({ onNoteCreated }) => {
   const handleCancel = () => { router.back(); };
 
   return (
-    <div className={styles["diary-editor-container"]}>
+    <div className={`${styles["diary-editor-container"]} dark`}>
       <h1>Diary Editor</h1>
       {error && <p className={styles.error}>{error}</p>}
       <div className={styles.editorBox}>

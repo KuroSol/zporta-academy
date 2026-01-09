@@ -4,17 +4,19 @@
   padding: var(--zporta-spacing-lg);
   margin: 0 auto;
   max-width: 800px; /* Consistent max-width */
-  background-color: var(--zporta-bg-light); /* Or var(--bg) for a card effect */
+  background-color: #000000; /* solid black to ensure non-transparent note */
   border-radius: var(--zporta-radius-lg);
   /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); Optional: subtle shadow */
   box-sizing: border-box;
+  color: #ffffff;
 }
 
 /* --- Heading Style --- */
 .diary-editor-container h1 {
-  color: var(--zporta-dark-blue); /* Using dark blue for heading */
+  color: #ffffff; /* Using white for heading on dark background */
   text-align: center;
   font-size: 2rem; /* Clean, modern size */
+
   font-weight: 700;
   margin-bottom: var(--zporta-spacing-lg);
 }
@@ -33,10 +35,26 @@
 
 /* Local anchor + global library classes (valid in CSS Modules) */
 .editorBox {
-  border: 1px solid var(--zporta-border-color);
+  border: 1px solid #333;
   border-radius: var(--zporta-radius-md);
   margin-bottom: var(--zporta-spacing-lg);
-  background-color: var(--bg);
+  background-color: #000000;
+}
+.editorBox :global(.ql-toolbar) {
+  background-color: #000000 !important;
+  border-color: #333 !important;
+}
+.editorBox :global(.ql-toolbar) button svg .ql-stroke {
+  stroke: #ffffff !important;
+}
+.editorBox :global(.ql-toolbar) button svg .ql-fill {
+  fill: #ffffff !important;
+}
+.editorBox :global(.ql-toolbar) .ql-picker {
+  color: #ffffff !important;
+}
+.editorBox :global(.ql-toolbar) .ql-picker-label {
+    color: #ffffff !important; 
 }
 .editorBox :global(.ql-editor) {
   min-height: 200px;
@@ -44,10 +62,10 @@
   font-family: var(--zporta-font-family);
   font-size: 1rem;
   line-height: 1.7;
-  color: var(--zporta-text-primary);
+  color: #ffffff;
 }
 .editorBox :global(.ql-editor.ql-blank::before) {
-  color: var(--zporta-text-secondary);
+  color: #888888;
   font-style: normal;
 }
 
@@ -62,37 +80,47 @@
 .mention-container label {
   margin-bottom: var(--zporta-spacing-sm);
   font-weight: 600;
-  color: var(--zporta-dark-blue); /* Label color */
+  color: #ffffff; /* Label color */
   font-size: 0.95rem;
 }
 
 /* Styling for react-select AsyncSelect component */
 .mention-container :global(.react-select__control) {
-  border: 1px solid var(--zporta-border-color);
+  border: 1px solid #333;
   border-radius: var(--zporta-radius-md);
   padding: var(--zporta-spacing-xs);
-  background-color: var(--bg);
+  background-color: #000000;
+  color: #ffffff;
   box-shadow: none; /* Remove default react-select shadow */
   transition: border-color 0.2s ease;
+}
+.mention-container :global(.react-select__input-container),
+.mention-container :global(.react-select__single-value) {
+    color: #ffffff;
 }
 .mention-container :global(.react-select__control--is-focused) {
   border-color: var(--zporta-gold); /* Gold border on focus */
   box-shadow: 0 0 0 2px rgba(var(--zporta-gold), 0.2);
 }
 .mention-container :global(.react-select__placeholder) {
-  color: var(--zporta-text-secondary);
+  color: #888888;
 }
 .mention-container :global(.react-select__menu) {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1px solid #333;
   border-radius: var(--zporta-radius-md);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   z-index: 10; /* Ensure dropdown is above other elements */
 }
 .mention-container :global(.react-select__option) {
   transition: background-color 0.2s ease, color 0.2s ease;
+  background-color: #000000;
+  color: #ffffff;
 }
 .mention-container :global(.react-select__option--is-focused) {
-  background-color: var(--zporta-gold-lighter); /* Lighter gold for focused option */
-  color: var(--zporta-dark-blue);
+  background-color: #333; /* Dark Grey hover */
+  color: #ffffff;
 }
 .mention-container :global(.react-select__option--is-selected) {
   background-color: var(--zporta-gold);

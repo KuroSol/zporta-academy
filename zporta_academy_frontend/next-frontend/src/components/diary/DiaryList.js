@@ -244,11 +244,13 @@ const DiaryList = () => {
         title={modalNote?.isCommentMode ? 'Add Comment' : 'Edit Entry'}
         size="medium"
       >
-        <CustomEditor
-          ref={modalEditorRef}
-          initialContent={modalNote?.text || ''}
-          enablePrivacyToggle={false}
-        />
+        <div className="dark">
+          <CustomEditor
+            ref={modalEditorRef}
+            initialContent={modalNote?.text || ''}
+            enablePrivacyToggle={false}
+          />
+        </div>
         <div className="modal-actions">
           <button onClick={handleModalSave}>
             {modalNote?.isCommentMode ? 'Submit Comment' : 'Save Changes'}

@@ -22,7 +22,7 @@
 }
 
 .modalContent {
-  background: white;
+  background: #13171A;
   border-radius: var(--zporta-radius-lg);
   box-shadow: 
     0 10px 25px -5px rgba(0, 0, 0, 0.2),

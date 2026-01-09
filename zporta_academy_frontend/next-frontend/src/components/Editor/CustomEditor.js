@@ -991,16 +991,16 @@ const getEditorStyles = (id) => `
         --overlay-panel-radius: 16px;
     }
     .dark #${id} {
-        --zporta-border-color: #374151;
-        --zporta-border-light: #4b5563;
-        --zporta-background-light: #1f2937;
-        --zporta-background-medium: #111827;
-        --zporta-background-dark: #374151;
-        --zporta-text-color: #d1d5db;
-        --zporta-text-light: #9ca3af;
+        --zporta-border-color: #333333;
+        --zporta-border-light: #444444;
+        --zporta-background-light: #000000;
+        --zporta-background-medium: #000000;
+        --zporta-background-dark: #333333;
+        --zporta-text-color: #ffffff;
+        --zporta-text-light: #ffffff;
         --zporta-primary-light: #312e81;
         --zporta-error-bg: #451b1b;
-        --overlay-panel-bg: #1f2937;
+        --overlay-panel-bg: #000000;
     }
 
     #${id}.editorContainer { display: flex; flex-direction: column; border: 1px solid var(--zporta-border-color); border-radius: var(--zporta-radius-md); overflow: hidden; background-color: var(--zporta-background-light); color: var(--zporta-text-color); height: 75vh; min-height: 400px; max-height: 90vh; width: 100%; position: relative; font-family: inherit; }

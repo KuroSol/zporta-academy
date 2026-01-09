@@ -2076,9 +2076,6 @@ hr, .divider, [class*="divider"] {
 [class*="create"], [class*="Create"],
 [class*="edit"], [class*="Edit"],
 [class*="detail"], [class*="Detail"],
-[class*="container"], [class*="Container"],
-[class*="card"], [class*="Card"],
-[class*="modal"], [class*="Modal"],
 [class*="wrapper"], [class*="Wrapper"] {
   background-color: #13171a00 !important;
   color: #ffffff !important;
